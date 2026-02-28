@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.docker
+.env.local
+!.env.example
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.DS_Store

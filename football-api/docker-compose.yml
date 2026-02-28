@@ -1,0 +1,87 @@
+name: football-manager
+
+services:
+
+  # ── Banco de Dados ────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: football-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: football
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: football123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-net
+
+  # ── API FastAPI ───────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: football-api
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:football123@postgres:5432/football
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  # ── Frontend SvelteKit ────────────────────────────────────────
+  frontend:
+    build:
+      context: ../football-frontend
+      dockerfile: Dockerfile
+    container_name: football-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+      ORIGIN: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - app-net
+
+  # ── Adminer (UI para o banco) ─────────────────────────────────
+  adminer:
+    image: adminer:4.8.1
+    container_name: football-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - app-net
+    profiles:
+      - tools
+
+volumes:
+  postgres-data:
+
+networks:
+  app-net:
+    driver: bridge

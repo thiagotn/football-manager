@@ -1,0 +1,14 @@
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Claude Code
+.claude/
+
+# Secrets — never commit these
+.env
+.env.docker
+.env.local

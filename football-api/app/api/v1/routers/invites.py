@@ -1,0 +1,115 @@
+import re
+import secrets
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter
+
+from app.core.config import get_settings
+from app.core.dependencies import DB, CurrentPlayer
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.security import create_access_token, hash_password
+from app.db.repositories.group_repo import GroupRepository
+from app.db.repositories.invite_repo import InviteRepository
+from app.db.repositories.player_repo import PlayerRepository
+from app.models.group import GroupMemberRole
+from app.models.player import PlayerRole
+from app.schemas.auth import TokenResponse
+from app.schemas.invite import InviteAcceptRequest, InviteCreateRequest, InviteResponse
+
+router = APIRouter(prefix="/invites", tags=["invites"])
+
+
+@router.post("", response_model=InviteResponse, status_code=201)
+async def create_invite(body: InviteCreateRequest, db: DB, current: CurrentPlayer):
+    """Gera um link de convite para entrar em um grupo (válido por 30 minutos, uso único)."""
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(body.group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    # Must be group admin or global admin
+    if current.role != PlayerRole.ADMIN:
+        member = await g_repo.get_member(body.group_id, current.id)
+        if not member or member.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem criar convites")
+
+    settings = get_settings()
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.invite_token_expire_minutes
+    )
+    token = secrets.token_urlsafe(32)
+
+    repo = InviteRepository(db)
+    invite = await repo.create(
+        group_id=body.group_id,
+        token=token,
+        expires_at=expires_at,
+        created_by_id=current.id,
+    )
+    return invite
+
+
+@router.get("/{token}", response_model=dict)
+async def get_invite_info(token: str, db: DB):
+    """Retorna informações do convite (grupo destino) sem autenticação."""
+    repo = InviteRepository(db)
+    invite = await repo.get_valid_token(token)
+    if not invite:
+        raise NotFoundError("Convite inválido ou expirado")
+
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(invite.group_id)
+
+    return {
+        "valid": True,
+        "group_id": str(invite.group_id),
+        "group_name": group.name if group else "—",
+        "expires_at": invite.expires_at.isoformat(),
+    }
+
+
+@router.post("/{token}/accept", response_model=TokenResponse)
+async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
+    """
+    Aceita um convite: cria o jogador (se não existe) e entra no grupo.
+    Retorna um token JWT para login imediato.
+    """
+    repo = InviteRepository(db)
+    invite = await repo.get_valid_token(token)
+    if not invite:
+        raise NotFoundError("Convite inválido ou expirado")
+
+    whatsapp = re.sub(r"\D", "", body.whatsapp)
+    p_repo = PlayerRepository(db)
+    g_repo = GroupRepository(db)
+
+    player = await p_repo.get_by_whatsapp(whatsapp)
+
+    if player:
+        # Player exists — just join group if not already member
+        existing_membership = await g_repo.get_member(invite.group_id, player.id)
+        if not existing_membership:
+            await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
+    else:
+        # Create new player
+        player = await p_repo.create(
+            name=body.name,
+            nickname=body.nickname,
+            whatsapp=whatsapp,
+            password_hash=hash_password(body.password),
+            role=PlayerRole.PLAYER,
+        )
+        await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
+
+    # Mark invite as used
+    invite.used = True
+    invite.used_by_id = player.id
+    await db.flush()
+
+    access_token = create_access_token(str(player.id))
+    return TokenResponse(
+        access_token=access_token,
+        player_id=str(player.id),
+        name=player.name,
+        role=player.role,
+    )
