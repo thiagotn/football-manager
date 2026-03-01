@@ -9,8 +9,21 @@
 </div>
 
 <!-- HERO -->
-<section class="bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600 text-white">
-  <div class="max-w-4xl mx-auto px-6 py-20 text-center">
+<section class="relative overflow-hidden text-white" style="min-height:600px;">
+  <picture>
+    <source srcset="/banner-lp.webp" type="image/webp" />
+    <img
+      src="/banner-lp.jpg"
+      alt=""
+      aria-hidden="true"
+      width="1920"
+      height="600"
+      class="absolute inset-0 w-full h-full object-cover object-center"
+      fetchpriority="high"
+    />
+  </picture>
+  <div class="absolute inset-0 bg-primary-900/75"></div>
+  <div class="relative max-w-4xl mx-auto px-6 py-20 text-center">
     <div class="text-6xl mb-6">⚽</div>
     <div class="flex items-center justify-center gap-3 mb-4">
       <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight">
@@ -35,7 +48,7 @@
         Ver perguntas frequentes
       </a>
     </div>
-  </div>
+  </div><!-- /relative content -->
 </section>
 
 <!-- COMO FUNCIONA — JOGADOR -->
