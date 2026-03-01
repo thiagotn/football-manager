@@ -11,6 +11,7 @@ class MatchCreate(BaseModel):
     match_date: date
     start_time: time
     location: str = Field(..., min_length=2, max_length=200)
+    address: str | None = Field(None, max_length=300)
     notes: str | None = Field(None, max_length=500)
 
 
@@ -18,6 +19,7 @@ class MatchUpdate(BaseModel):
     match_date: date | None = None
     start_time: time | None = None
     location: str | None = Field(None, min_length=2, max_length=200)
+    address: str | None = Field(None, max_length=300)
     notes: str | None = None
     status: MatchStatus | None = None
 
@@ -40,6 +42,7 @@ class MatchResponse(BaseModel):
     match_date: date
     start_time: time
     location: str
+    address: str | None
     notes: str | None
     hash: str
     status: MatchStatus

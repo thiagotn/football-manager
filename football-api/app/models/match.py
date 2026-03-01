@@ -49,6 +49,7 @@ class Match(Base, UUIDMixin, TimestampMixin):
     match_date: Mapped[date] = mapped_column(Date, nullable=False)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     location: Mapped[str] = mapped_column(String(200), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     hash: Mapped[str] = mapped_column(String(12), nullable=False, unique=True, index=True)
     status: Mapped[MatchStatus] = mapped_column(

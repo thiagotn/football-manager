@@ -20,7 +20,7 @@
   let showAddMember = $state(false);
 
   let inviteLink = $state('');
-  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', notes: '' });
+  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', address: '', notes: '' });
   let saving = $state(false);
 
   let allPlayers: Player[] = $state([]);
@@ -52,7 +52,7 @@
       const m = await matchesApi.create(groupId, matchForm);
       matchList = [m, ...matchList];
       showMatch = false;
-      matchForm = { match_date: '', start_time: '20:30', location: '', notes: '' };
+      matchForm = { match_date: '', start_time: '20:30', location: '', address: '', notes: '' };
       toastSuccess('Partida criada!');
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     saving = false;
@@ -281,6 +281,10 @@
     <div class="form-group">
       <label class="label" for="mloc">Local *</label>
       <input id="mloc" class="input" bind:value={matchForm.location} placeholder="Ex: Arena GQC — Quadra 3" required />
+    </div>
+    <div class="form-group">
+      <label class="label" for="maddr">Endereço <span class="text-gray-400 font-normal">(opcional — para abrir no Maps)</span></label>
+      <input id="maddr" class="input" bind:value={matchForm.address} placeholder="Ex: Rua das Flores, 123 — São Paulo, SP" />
     </div>
     <div class="form-group">
       <label class="label" for="mnotes">Observações</label>

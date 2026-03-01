@@ -140,6 +140,15 @@
           <div class="flex flex-wrap gap-4 mt-3 text-primary-100 text-sm">
             <span class="flex items-center gap-1.5"><Clock size={14} />{match.start_time.slice(0,5)}</span>
             <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
+            {#if match.address}
+              <a
+                href="https://maps.google.com/?q={encodeURIComponent(match.address)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors">
+                <MapPin size={14} /> Ver no Maps
+              </a>
+            {/if}
           </div>
           {#if match.notes}
             <p class="text-sm text-primary-200 mt-3 bg-primary-800/30 rounded-lg px-3 py-2">{match.notes}</p>

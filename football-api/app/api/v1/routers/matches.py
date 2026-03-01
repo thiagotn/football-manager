@@ -38,6 +38,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         match_date=match.match_date,
         start_time=match.start_time,
         location=match.location,
+        address=match.address,
         notes=match.notes,
         hash=match.hash,
         status=match.status,

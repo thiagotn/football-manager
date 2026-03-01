@@ -54,7 +54,7 @@ export type GroupMember = { id: string; player: PlayerPublic; role: 'admin' | 'm
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type Match = {
   id: string; number: number; group_id: string; match_date: string; start_time: string;
-  location: string; notes: string | null; hash: string; status: 'open' | 'closed';
+  location: string; address: string | null; notes: string | null; hash: string; status: 'open' | 'closed';
   created_at: string; updated_at: string;
 };
 export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string };
