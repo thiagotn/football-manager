@@ -41,6 +41,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         address=match.address,
         court_type=match.court_type,
         players_per_team=match.players_per_team,
+        max_players=match.max_players,
         notes=match.notes,
         hash=match.hash,
         status=match.status,
@@ -108,6 +109,10 @@ async def create_match(group_id: uuid.UUID, body: MatchCreate, db: DB, current: 
         match_date=body.match_date,
         start_time=body.start_time,
         location=body.location,
+        address=body.address,
+        court_type=body.court_type,
+        players_per_team=body.players_per_team,
+        max_players=body.max_players,
         notes=body.notes,
         hash=hash_,
         created_by_id=current.id,
@@ -198,6 +203,13 @@ async def set_attendance(
         raise NotFoundError("Partida não encontrada")
     if match.status == MatchStatus.CLOSED:
         raise ForbiddenError("Esta partida está encerrada")
+
+    if body.status == AttendanceStatus.CONFIRMED and match.max_players is not None:
+        confirmed = await repo.count_confirmed(match_id, exclude_player_id=body.player_id)
+        if confirmed >= match.max_players:
+            raise ForbiddenError(
+                f"Partida lotada. O limite de {match.max_players} jogadores já foi atingido."
+            )
 
     attendance = await repo.upsert_attendance(match_id, body.player_id, body.status)
     await db.refresh(attendance, ["player"])

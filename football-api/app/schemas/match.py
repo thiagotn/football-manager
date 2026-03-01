@@ -14,6 +14,7 @@ class MatchCreate(BaseModel):
     address: str | None = Field(None, max_length=300)
     court_type: CourtType | None = None
     players_per_team: int | None = Field(None, ge=2, le=15)
+    max_players: int | None = Field(None, ge=2)
     notes: str | None = Field(None, max_length=500)
 
 
@@ -24,6 +25,7 @@ class MatchUpdate(BaseModel):
     address: str | None = Field(None, max_length=300)
     court_type: CourtType | None = None
     players_per_team: int | None = Field(None, ge=2, le=15)
+    max_players: int | None = Field(None, ge=2)
     notes: str | None = None
     status: MatchStatus | None = None
 
@@ -49,6 +51,7 @@ class MatchResponse(BaseModel):
     address: str | None
     court_type: CourtType | None
     players_per_team: int | None
+    max_players: int | None
     notes: str | None
     hash: str
     status: MatchStatus

@@ -17,6 +17,7 @@
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
   let pending   = $derived(match?.attendances.filter(a => a.status === 'pending')   ?? []);
   let mine      = $derived(match?.attendances.find(a => a.player.id === $currentPlayer?.id));
+  let isFull    = $derived(!!match?.max_players && (match?.confirmed_count ?? 0) >= match.max_players && mine?.status !== 'confirmed');
 
   $effect(() => {
     let cancelled = false;
@@ -151,13 +152,18 @@
               </a>
             {/if}
           </div>
-          {#if match.court_type || match.players_per_team}
+          {#if match.court_type || match.players_per_team || match.max_players}
             <div class="flex flex-wrap gap-3 mt-2 text-primary-200 text-xs">
               {#if match.court_type}
                 <span class="bg-primary-800/40 rounded px-2 py-0.5">{COURT_LABELS[match.court_type]}</span>
               {/if}
               {#if match.players_per_team}
                 <span class="bg-primary-800/40 rounded px-2 py-0.5">{match.players_per_team} na linha + goleiro</span>
+              {/if}
+              {#if match.max_players}
+                <span class="bg-primary-800/40 rounded px-2 py-0.5 {match.confirmed_count >= match.max_players ? 'text-red-300 font-semibold' : ''}">
+                  {match.confirmed_count}/{match.max_players} vagas
+                </span>
               {/if}
             </div>
           {/if}
@@ -169,9 +175,12 @@
         <!-- Scoreboard summary -->
         <div class="grid grid-cols-3 divide-x divide-gray-100">
           <div class="px-4 py-4 text-center">
-            <p class="text-2xl font-bold text-green-600">{match.confirmed_count}</p>
+            <p class="text-2xl font-bold text-green-600">
+              {match.confirmed_count}{#if match.max_players}<span class="text-base text-gray-400">/{match.max_players}</span>{/if}
+            </p>
             <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
-              <CheckCircle size={11} /> Confirmados
+              <CheckCircle size={11} />
+              {match.max_players && match.confirmed_count >= match.max_players ? 'Lotada!' : 'Confirmados'}
             </p>
           </div>
           <div class="px-4 py-4 text-center">
@@ -203,10 +212,15 @@
               </span>
             </p>
           {/if}
+          {#if isFull}
+            <p class="text-sm text-red-500 font-medium text-center py-2">
+              ⛔ Partida lotada — {match.max_players} jogadores já confirmados.
+            </p>
+          {/if}
           <div class="flex gap-3">
             <button
               class="flex-1 btn {mine?.status === 'confirmed' ? 'btn-primary' : 'btn-secondary'}"
-              onclick={() => respond('confirmed')} disabled={responding}>
+              onclick={() => respond('confirmed')} disabled={responding || isFull}>
               <CheckCircle size={16} /> Vou jogar!
             </button>
             <button

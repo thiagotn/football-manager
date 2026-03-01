@@ -21,7 +21,7 @@
 
   let inviteLink = $state('');
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
-  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', notes: '' });
+  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' });
   let saving = $state(false);
 
   let allPlayers: Player[] = $state([]);
@@ -53,7 +53,7 @@
       const m = await matchesApi.create(groupId, matchForm);
       matchList = [m, ...matchList];
       showMatch = false;
-      matchForm = { match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', notes: '' };
+      matchForm = { match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' };
       toastSuccess('Partida criada!');
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     saving = false;
@@ -191,11 +191,12 @@
                     <span class="flex items-center gap-1"><Clock size={12} />{m.start_time.slice(0,5)}</span>
                     <span class="flex items-center gap-1"><MapPin size={12} />{m.location}</span>
                   </p>
-                  {#if m.court_type || m.players_per_team}
+                  {#if m.court_type || m.players_per_team || m.max_players}
                     <p class="text-xs text-gray-400 flex flex-wrap gap-2 mt-1">
                       {#if m.court_type}<span>{COURT_LABELS[m.court_type]}</span>{/if}
                       {#if m.court_type && m.players_per_team}<span>·</span>{/if}
                       {#if m.players_per_team}<span>{m.players_per_team} na linha + goleiro</span>{/if}
+                      {#if m.max_players}<span>· máx. {m.max_players} jogadores</span>{/if}
                     </p>
                   {/if}
                 </div>
@@ -314,6 +315,10 @@
           {/each}
         </select>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="label" for="mmaxp">Máximo de jogadores <span class="text-gray-400 font-normal">(opcional — limita confirmações)</span></label>
+      <input id="mmaxp" class="input" type="number" min="2" bind:value={matchForm.max_players} placeholder="Ex: 14" />
     </div>
     <div class="form-group">
       <label class="label" for="mnotes">Observações</label>

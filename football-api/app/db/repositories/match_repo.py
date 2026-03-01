@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -58,6 +58,16 @@ class MatchRepository(BaseRepository[Match]):
             )
         )
         return result.scalar_one_or_none()
+
+    async def count_confirmed(self, match_id: UUID, exclude_player_id: UUID | None = None) -> int:
+        q = select(func.count()).where(
+            Attendance.match_id == match_id,
+            Attendance.status == AttendanceStatus.CONFIRMED,
+        )
+        if exclude_player_id:
+            q = q.where(Attendance.player_id != exclude_player_id)
+        result = await self.session.execute(q)
+        return result.scalar_one()
 
     async def create_pending_attendances(self, match_id: UUID, player_ids: list[UUID]) -> None:
         for player_id in player_ids:

@@ -66,6 +66,7 @@ class Match(Base, UUIDMixin, TimestampMixin):
     address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     court_type: Mapped[CourtType | None] = mapped_column(_court_type_col, nullable=True)
     players_per_team: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    max_players: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     hash: Mapped[str] = mapped_column(String(12), nullable=False, unique=True, index=True)
     status: Mapped[MatchStatus] = mapped_column(
