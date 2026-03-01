@@ -39,6 +39,8 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         start_time=match.start_time,
         location=match.location,
         address=match.address,
+        court_type=match.court_type,
+        players_per_team=match.players_per_team,
         notes=match.notes,
         hash=match.hash,
         status=match.status,

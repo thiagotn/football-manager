@@ -2,7 +2,7 @@ import uuid
 from datetime import date, time
 from enum import Enum as PyEnum
 
-from sqlalchemy import Date, ForeignKey, Integer, String, Text, Time, UniqueConstraint
+from sqlalchemy import Date, ForeignKey, Integer, SmallInteger, String, Text, Time, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum, UUID
 from sqlalchemy import text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -16,6 +16,13 @@ class MatchStatus(str, PyEnum):
     CLOSED = "closed"
 
 
+class CourtType(str, PyEnum):
+    CAMPO    = "campo"
+    SINTETICO = "sintetico"
+    TERRAO   = "terrao"
+    QUADRA   = "quadra"
+
+
 class AttendanceStatus(str, PyEnum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
@@ -25,6 +32,13 @@ class AttendanceStatus(str, PyEnum):
 _match_status_col = PgEnum(
     MatchStatus,
     name="match_status",
+    create_type=False,
+    values_callable=lambda x: [e.value for e in x],
+)
+
+_court_type_col = PgEnum(
+    CourtType,
+    name="court_type",
     create_type=False,
     values_callable=lambda x: [e.value for e in x],
 )
@@ -50,6 +64,8 @@ class Match(Base, UUIDMixin, TimestampMixin):
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     location: Mapped[str] = mapped_column(String(200), nullable=False)
     address: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    court_type: Mapped[CourtType | None] = mapped_column(_court_type_col, nullable=True)
+    players_per_team: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     hash: Mapped[str] = mapped_column(String(12), nullable=False, unique=True, index=True)
     status: Mapped[MatchStatus] = mapped_column(

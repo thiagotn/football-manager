@@ -3,7 +3,7 @@ from datetime import date, datetime, time
 
 from pydantic import BaseModel, Field
 
-from app.models.match import MatchStatus, AttendanceStatus
+from app.models.match import AttendanceStatus, CourtType, MatchStatus
 from app.schemas.player import PlayerPublic
 
 
@@ -12,6 +12,8 @@ class MatchCreate(BaseModel):
     start_time: time
     location: str = Field(..., min_length=2, max_length=200)
     address: str | None = Field(None, max_length=300)
+    court_type: CourtType | None = None
+    players_per_team: int | None = Field(None, ge=2, le=15)
     notes: str | None = Field(None, max_length=500)
 
 
@@ -20,6 +22,8 @@ class MatchUpdate(BaseModel):
     start_time: time | None = None
     location: str | None = Field(None, min_length=2, max_length=200)
     address: str | None = Field(None, max_length=300)
+    court_type: CourtType | None = None
+    players_per_team: int | None = Field(None, ge=2, le=15)
     notes: str | None = None
     status: MatchStatus | None = None
 
@@ -43,6 +47,8 @@ class MatchResponse(BaseModel):
     start_time: time
     location: str
     address: str | None
+    court_type: CourtType | None
+    players_per_team: int | None
     notes: str | None
     hash: str
     status: MatchStatus

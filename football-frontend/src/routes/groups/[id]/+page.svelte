@@ -20,7 +20,8 @@
   let showAddMember = $state(false);
 
   let inviteLink = $state('');
-  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', address: '', notes: '' });
+  const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
+  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', notes: '' });
   let saving = $state(false);
 
   let allPlayers: Player[] = $state([]);
@@ -52,7 +53,7 @@
       const m = await matchesApi.create(groupId, matchForm);
       matchList = [m, ...matchList];
       showMatch = false;
-      matchForm = { match_date: '', start_time: '20:30', location: '', address: '', notes: '' };
+      matchForm = { match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', notes: '' };
       toastSuccess('Partida criada!');
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     saving = false;
@@ -190,6 +191,13 @@
                     <span class="flex items-center gap-1"><Clock size={12} />{m.start_time.slice(0,5)}</span>
                     <span class="flex items-center gap-1"><MapPin size={12} />{m.location}</span>
                   </p>
+                  {#if m.court_type || m.players_per_team}
+                    <p class="text-xs text-gray-400 flex flex-wrap gap-2 mt-1">
+                      {#if m.court_type}<span>{COURT_LABELS[m.court_type]}</span>{/if}
+                      {#if m.court_type && m.players_per_team}<span>·</span>{/if}
+                      {#if m.players_per_team}<span>{m.players_per_team} na linha + goleiro</span>{/if}
+                    </p>
+                  {/if}
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
@@ -285,6 +293,27 @@
     <div class="form-group">
       <label class="label" for="maddr">Endereço <span class="text-gray-400 font-normal">(opcional — para abrir no Maps)</span></label>
       <input id="maddr" class="input" bind:value={matchForm.address} placeholder="Ex: Rua das Flores, 123 — São Paulo, SP" />
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="label" for="mcourt">Tipo de quadra</label>
+        <select id="mcourt" class="input" bind:value={matchForm.court_type}>
+          <option value="">— selecione —</option>
+          <option value="campo">Campo</option>
+          <option value="sintetico">Sintético</option>
+          <option value="terrao">Terrão</option>
+          <option value="quadra">Quadra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="label" for="mplayers">Jogadores por time <span class="text-gray-400 font-normal">(sem goleiro)</span></label>
+        <select id="mplayers" class="input" bind:value={matchForm.players_per_team}>
+          <option value="">— selecione —</option>
+          {#each [4, 5, 6, 7, 8, 9, 10] as n}
+            <option value={n}>{n} na linha</option>
+          {/each}
+        </select>
+      </div>
     </div>
     <div class="form-group">
       <label class="label" for="mnotes">Observações</label>

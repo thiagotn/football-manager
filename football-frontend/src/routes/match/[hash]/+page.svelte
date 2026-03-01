@@ -7,6 +7,7 @@
   import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users } from 'lucide-svelte';
 
   const matchHash = $page.params.hash;
+  const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
 
   let match: MatchDetail | null = $state(null);
   let loading = $state(true);
@@ -150,6 +151,16 @@
               </a>
             {/if}
           </div>
+          {#if match.court_type || match.players_per_team}
+            <div class="flex flex-wrap gap-3 mt-2 text-primary-200 text-xs">
+              {#if match.court_type}
+                <span class="bg-primary-800/40 rounded px-2 py-0.5">{COURT_LABELS[match.court_type]}</span>
+              {/if}
+              {#if match.players_per_team}
+                <span class="bg-primary-800/40 rounded px-2 py-0.5">{match.players_per_team} na linha + goleiro</span>
+              {/if}
+            </div>
+          {/if}
           {#if match.notes}
             <p class="text-sm text-primary-200 mt-3 bg-primary-800/30 rounded-lg px-3 py-2">{match.notes}</p>
           {/if}
