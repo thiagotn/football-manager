@@ -24,7 +24,6 @@
   </picture>
   <div class="absolute inset-0 bg-primary-900/75"></div>
   <div class="relative max-w-4xl mx-auto px-6 py-20 text-center">
-    <div class="text-6xl mb-6">⚽</div>
     <div class="flex items-center justify-center gap-3 mb-4">
       <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight">
         Joga Bonito

@@ -130,7 +130,20 @@
     {:else}
       <!-- Match card -->
       <div class="card mb-6 overflow-hidden">
-        <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-5 text-white">
+        <div class="relative overflow-hidden px-6 py-5 text-white" style="min-height:140px;">
+          <picture>
+            <source srcset="/banners/banner-{match.court_type ?? 'default'}.webp" type="image/webp" />
+            <img
+              src="/banners/banner-{match.court_type ?? 'default'}.jpg"
+              alt=""
+              aria-hidden="true"
+              width="1920"
+              height="600"
+              class="absolute inset-0 w-full h-full object-cover object-center"
+            />
+          </picture>
+          <div class="absolute inset-0 bg-primary-900/80"></div>
+          <div class="relative">
           <p class="text-sm font-medium text-primary-200 mb-1">
             <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'} mr-2">
               {match.status === 'open' ? 'Aberta' : 'Encerrada'}
@@ -141,15 +154,16 @@
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-4 mt-3 text-primary-100 text-sm">
             <span class="flex items-center gap-1.5"><Clock size={14} />{match.start_time.slice(0,5)}</span>
-            <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
             {#if match.address}
               <a
                 href="https://maps.google.com/?q={encodeURIComponent(match.address)}"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors">
-                <MapPin size={14} /> Ver no Maps
+                <MapPin size={14} />{match.location}
               </a>
+            {:else}
+              <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
             {/if}
           </div>
           {#if match.court_type || match.players_per_team || match.max_players}
@@ -170,7 +184,8 @@
           {#if match.notes}
             <p class="text-sm text-primary-200 mt-3 bg-primary-800/30 rounded-lg px-3 py-2">{match.notes}</p>
           {/if}
-        </div>
+          </div><!-- /relative content -->
+        </div><!-- /banner header -->
 
         <!-- Scoreboard summary -->
         <div class="grid grid-cols-3 divide-x divide-gray-100">
@@ -247,8 +262,8 @@
                 <li class="px-5 py-3 flex items-center gap-3">
                   <span class="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                   <div>
-                    <p class="text-sm font-medium text-gray-900">{a.player.name}</p>
-                    {#if a.player.nickname}<p class="text-xs text-gray-400">{a.player.nickname}</p>{/if}
+                    <p class="text-sm font-medium text-gray-900">{a.player.nickname || a.player.name}</p>
+                    {#if a.player.nickname}<p class="text-xs text-gray-400">{a.player.name}</p>{/if}
                   </div>
                 </li>
               {/each}
@@ -268,7 +283,7 @@
               {#each declined as a}
                 <li class="px-5 py-3 text-sm text-gray-600 flex items-center gap-3">
                   <XCircle size={14} class="text-red-400 shrink-0" />
-                  {a.player.name}{a.player.nickname ? ` (${a.player.nickname})` : ''}
+                  {a.player.nickname || a.player.name}{a.player.nickname ? ` (${a.player.name})` : ''}
                 </li>
               {/each}
             </ul>
@@ -287,7 +302,7 @@
               {#each pending as a}
                 <li class="px-5 py-3 text-sm text-gray-500 flex items-center gap-3">
                   <Clock3 size={14} class="text-gray-400 shrink-0" />
-                  {a.player.name}{a.player.nickname ? ` (${a.player.nickname})` : ''}
+                  {a.player.nickname || a.player.name}{a.player.nickname ? ` (${a.player.name})` : ''}
                 </li>
               {/each}
             </ul>
