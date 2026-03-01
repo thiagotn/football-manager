@@ -33,6 +33,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
 
     return MatchDetailResponse(
         id=match.id,
+        number=match.number,
         group_id=match.group_id,
         match_date=match.match_date,
         start_time=match.start_time,

@@ -134,6 +134,7 @@
               {match.status === 'open' ? 'Aberta' : 'Encerrada'}
             </span>
             {match.group_name}
+            <span class="ml-1 opacity-70">· #{match.number}</span>
           </p>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-4 mt-3 text-primary-100 text-sm">

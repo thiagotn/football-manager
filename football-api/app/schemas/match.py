@@ -35,6 +35,7 @@ class MatchResponse(BaseModel):
     model_config = {"from_attributes": True}
 
     id: uuid.UUID
+    number: int
     group_id: uuid.UUID
     match_date: date
     start_time: time

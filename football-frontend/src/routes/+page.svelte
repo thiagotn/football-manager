@@ -116,7 +116,9 @@
                 <Calendar size={18} class="text-green-600" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 capitalize">{fmtDate(m.match_date)}</p>
+                <p class="text-sm font-medium text-gray-900 capitalize">{fmtDate(m.match_date)}
+                  <span class="text-xs text-gray-400 font-normal ml-1">#{m.number}</span>
+                </p>
                 <p class="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                   <Clock size={11} />{m.start_time.slice(0,5)}
                   <MapPin size={11} class="ml-1" /><span class="truncate">{m.location}</span>

@@ -167,6 +167,8 @@ async def update_member_role(
 ):
     repo = GroupRepository(db)
     if current.role != PlayerRole.ADMIN:
+        if body.role == GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas super administradores podem promover membros a admin de grupo")
         caller = await repo.get_member(group_id, current.id)
         if not caller or caller.role != GroupMemberRole.ADMIN:
             raise ForbiddenError()

@@ -5,7 +5,7 @@
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff } from 'lucide-svelte';
 
   const groupId = $page.params.id;
 
@@ -90,6 +90,17 @@
     saving = false;
   }
 
+  async function toggleRole(playerId: string, currentRole: string, name: string) {
+    const newRole = currentRole === 'admin' ? 'member' : 'admin';
+    const action = newRole === 'admin' ? 'tornar presidente' : 'remover a presidência de';
+    if (!confirm(`Deseja ${action} "${name}"?`)) return;
+    try {
+      await groupsApi.updateMemberRole(groupId, playerId, newRole);
+      group = await groupsApi.get(groupId);
+      toastSuccess(newRole === 'admin' ? `${name} agora é presidente do grupo` : `${name} voltou a ser membro`);
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao alterar papel'); }
+  }
+
   async function removeMember(playerId: string, name: string) {
     if (!confirm(`Remover "${name}" do grupo?`)) return;
     try {
@@ -171,7 +182,7 @@
             <div class="card hover:shadow-md transition-shadow">
               <div class="card-body flex items-center gap-4">
                 <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center shrink-0 text-primary-700 font-bold text-sm">
-                  {new Date(m.match_date + 'T00:00').getDate()}/{new Date(m.match_date + 'T00:00').getMonth() + 1}
+                  #{m.number}
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="font-medium text-gray-900 capitalize">{fmtDate(m.match_date)}</p>
@@ -215,16 +226,33 @@
                 <td class="text-gray-500 font-mono text-xs">{m.player.id.slice(0,8)}…</td>
                 <td>
                   <span class="badge {m.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
-                    {m.role === 'admin' ? 'Admin' : 'Membro'}
+                    {m.role === 'admin' ? 'Presidente' : 'Membro'}
                   </span>
                 </td>
                 {#if isGroupAdmin()}
                   <td>
                     {#if m.player.id !== $currentPlayer?.id}
-                      <button onclick={() => removeMember(m.player.id, m.player.name)}
-                        class="btn-ghost btn-sm text-red-500 hover:bg-red-50">
-                        <Trash2 size={14} />
-                      </button>
+                      <div class="flex gap-1 justify-end">
+                        {#if m.role === 'admin'}
+                          <button
+                            onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
+                            title="Remover presidência"
+                            class="btn-ghost btn-sm text-gray-400 hover:bg-gray-100">
+                            <ShieldOff size={14} />
+                          </button>
+                        {:else if $isAdmin}
+                          <button
+                            onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
+                            title="Tornar presidente"
+                            class="btn-ghost btn-sm text-blue-500 hover:bg-blue-50">
+                            <ShieldCheck size={14} />
+                          </button>
+                        {/if}
+                        <button onclick={() => removeMember(m.player.id, m.player.name)}
+                          class="btn-ghost btn-sm text-red-500 hover:bg-red-50">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     {/if}
                   </td>
                 {/if}
