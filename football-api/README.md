@@ -128,12 +128,18 @@ make docs         # Abre Swagger no browser
 ## Para produção (Supabase)
 
 1. Crie um projeto em [supabase.com](https://supabase.com)
-2. Rode o SQL em `migrations/001_initial_schema.sql` no SQL Editor do Supabase
+2. No **SQL Editor** do Supabase, execute as migrations **em ordem**:
+   - `migrations/001_initial_schema.sql` — schema base, enums e seed do admin
+   - `migrations/002_seed_dev.sql` — dados de exemplo *(omitir em produção)*
+   - `migrations/003_match_number.sql` — numeração sequencial de partidas
+   - `migrations/004_match_address.sql` — campo de endereço para Google Maps
 3. Copie a connection string (Settings → Database → Connection string)
-4. Configure a variável de ambiente:
+4. Configure as variáveis de ambiente:
    ```
    DATABASE_URL=postgresql+asyncpg://postgres:<senha>@db.<projeto>.supabase.co:5432/postgres
    SECRET_KEY=<openssl rand -hex 32>
    ```
 5. Deploy da API em Railway, Render, Fly.io, etc.
 6. Build do frontend com `VITE_API_URL=https://sua-api.com/api/v1`
+
+> **Novas migrations futuras:** sempre que um arquivo `migrations/00N_*.sql` for adicionado ao repositório, execute-o no SQL Editor do Supabase antes de fazer o deploy da API correspondente.
