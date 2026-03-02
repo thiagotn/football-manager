@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db.repositories.base import BaseRepository
 from app.models.group import Group, GroupMember, GroupMemberRole
+from app.models.player import Player, PlayerRole
 
 
 class GroupRepository(BaseRepository[Group]):
@@ -47,6 +48,18 @@ class GroupRepository(BaseRepository[Group]):
     async def get_member_ids(self, group_id: UUID) -> list[UUID]:
         result = await self.session.execute(
             select(GroupMember.player_id).where(GroupMember.group_id == group_id)
+        )
+        return list(result.scalars().all())
+
+    async def get_non_admin_member_ids(self, group_id: UUID) -> list[UUID]:
+        """Retorna IDs dos membros do grupo excluindo jogadores com role admin."""
+        result = await self.session.execute(
+            select(GroupMember.player_id)
+            .join(Player, Player.id == GroupMember.player_id)
+            .where(
+                GroupMember.group_id == group_id,
+                Player.role != PlayerRole.ADMIN,
+            )
         )
         return list(result.scalars().all())
 

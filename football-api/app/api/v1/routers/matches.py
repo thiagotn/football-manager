@@ -27,9 +27,11 @@ def _generate_hash() -> str:
 
 
 def _build_detail(match: Match) -> MatchDetailResponse:
-    confirmed = [a for a in match.attendances if a.status == AttendanceStatus.CONFIRMED]
-    declined = [a for a in match.attendances if a.status == AttendanceStatus.DECLINED]
-    pending = [a for a in match.attendances if a.status == AttendanceStatus.PENDING]
+    # Exclui o super admin (role=admin) das listas de presença
+    attendances = [a for a in match.attendances if a.player.role != PlayerRole.ADMIN]
+    confirmed = [a for a in attendances if a.status == AttendanceStatus.CONFIRMED]
+    declined = [a for a in attendances if a.status == AttendanceStatus.DECLINED]
+    pending = [a for a in attendances if a.status == AttendanceStatus.PENDING]
 
     return MatchDetailResponse(
         id=match.id,
@@ -47,7 +49,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         status=match.status,
         created_at=match.created_at,
         updated_at=match.updated_at,
-        attendances=[AttendanceResponse.model_validate(a) for a in match.attendances],
+        attendances=[AttendanceResponse.model_validate(a) for a in attendances],
         confirmed_count=len(confirmed),
         declined_count=len(declined),
         pending_count=len(pending),
@@ -118,7 +120,7 @@ async def create_match(group_id: uuid.UUID, body: MatchCreate, db: DB, current: 
         created_by_id=current.id,
     )
 
-    member_ids = await g_repo.get_member_ids(group_id)
+    member_ids = await g_repo.get_non_admin_member_ids(group_id)
     await m_repo.create_pending_attendances(match.id, member_ids)
 
     return match
