@@ -21,7 +21,7 @@
   <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
     <div class="flex items-center gap-1">
       <span class="text-xl font-bold mr-1">⚽</span>
-      <span class="font-semibold text-sm mr-1 hidden sm:inline">Joga Bonito</span>
+      <span class="font-semibold text-sm mr-1 hidden sm:inline">rachao.app</span>
       <span class="text-xs font-semibold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full mr-2">Beta</span>
       {#each links as l}
         {#if !l.adminOnly || $isAdmin}

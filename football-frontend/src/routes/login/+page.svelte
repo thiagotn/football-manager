@@ -26,14 +26,14 @@
   }
 </script>
 
-<svelte:head><title>Login — Joga Bonito</title></svelte:head>
+<svelte:head><title>Login — rachao.app</title></svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-700 to-primary-900 flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
     <div class="text-center mb-8">
       <div class="text-5xl mb-3">⚽</div>
       <div class="flex items-center justify-center gap-2 mb-1">
-        <h1 class="text-2xl font-bold text-gray-900">Joga Bonito</h1>
+        <h1 class="text-2xl font-bold text-gray-900">rachao.app</h1>
         <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
       </div>
       <p class="text-sm text-gray-500">Gestão de grupos e partidas</p>

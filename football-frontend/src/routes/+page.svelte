@@ -37,7 +37,7 @@
   }
 </script>
 
-<svelte:head><title>Dashboard — Joga Bonito</title></svelte:head>
+<svelte:head><title>Dashboard — rachao.app</title></svelte:head>
 
 <main class="max-w-7xl mx-auto px-4 py-8">
   <div class="mb-8">

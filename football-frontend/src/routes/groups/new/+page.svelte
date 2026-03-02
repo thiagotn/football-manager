@@ -23,7 +23,7 @@
   }
 </script>
 
-<svelte:head><title>Novo Grupo — Joga Bonito</title></svelte:head>
+<svelte:head><title>Novo Grupo — rachao.app</title></svelte:head>
 
 <main class="max-w-xl mx-auto px-4 py-8">
   <div class="mb-6">

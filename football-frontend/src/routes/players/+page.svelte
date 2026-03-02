@@ -87,7 +87,7 @@
   }
 </script>
 
-<svelte:head><title>Jogadores — Joga Bonito</title></svelte:head>
+<svelte:head><title>Jogadores — rachao.app</title></svelte:head>
 
 <main class="max-w-7xl mx-auto px-4 py-8">
   <div class="flex flex-wrap items-center justify-between gap-4 mb-6">

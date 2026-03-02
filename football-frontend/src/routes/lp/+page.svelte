@@ -1,5 +1,5 @@
 <svelte:head>
-  <title>Joga Bonito — Organize suas peladas com facilidade</title>
+  <title>rachao.app — Organize suas peladas com facilidade</title>
   <meta name="description" content="Gerencie grupos de futebol, convide jogadores e controle presenças em um clique." />
 </svelte:head>
 
@@ -26,7 +26,7 @@
   <div class="relative max-w-4xl mx-auto px-6 py-20 text-center">
     <div class="flex items-center justify-center gap-3 mb-4">
       <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight">
-        Joga Bonito
+        rachao.app
       </h1>
       <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full self-center">Beta</span>
     </div>
@@ -201,7 +201,7 @@
 <!-- FOOTER -->
 <footer class="bg-gray-900 text-gray-400 py-8 px-6 text-center text-xs">
   <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-    <span class="text-white font-semibold">⚽ Joga Bonito</span>
+    <span class="text-white font-semibold">⚽ rachao.app</span>
     <div class="flex gap-5">
       <a href="/faq" class="hover:text-white transition-colors">FAQ</a>
       <a href="/login" class="hover:text-white transition-colors">Entrar</a>

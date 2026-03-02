@@ -55,7 +55,7 @@
   }
 </script>
 
-<svelte:head><title>Convite — Joga Bonito</title></svelte:head>
+<svelte:head><title>Convite — rachao.app</title></svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-700 to-primary-900 flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">

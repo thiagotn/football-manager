@@ -125,7 +125,7 @@
   }
 </script>
 
-<svelte:head><title>{group?.name ?? 'Grupo'} — Joga Bonito</title></svelte:head>
+<svelte:head><title>{group?.name ?? 'Grupo'} — rachao.app</title></svelte:head>
 
 <main class="max-w-7xl mx-auto px-4 py-8">
   {#if loading}

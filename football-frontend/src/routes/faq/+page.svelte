@@ -7,7 +7,7 @@
 
   const faqs = [
     {
-      q: 'O que é o Joga Bonito?',
+      q: 'O que é o rachao.app?',
       a: 'É uma plataforma para organizar partidas de futebol amador. Você entra em grupos, recebe convites para partidas e confirma (ou recusa) sua presença com um clique.',
     },
     {
@@ -38,7 +38,7 @@
 </script>
 
 <svelte:head>
-  <title>FAQ — Joga Bonito</title>
+  <title>FAQ — rachao.app</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50">

@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-  <title>Minha Conta — Joga Bonito</title>
+  <title>Minha Conta — rachao.app</title>
 </svelte:head>
 
 <main class="max-w-lg mx-auto px-4 py-8">

@@ -46,7 +46,7 @@
 </script>
 
 <svelte:head>
-  <title>Guia do Admin — Joga Bonito</title>
+  <title>Guia do Admin — rachao.app</title>
 </svelte:head>
 
 {#if $isAdmin}

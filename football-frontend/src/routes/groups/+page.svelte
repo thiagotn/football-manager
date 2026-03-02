@@ -57,7 +57,7 @@
   }
 </script>
 
-<svelte:head><title>Grupos — Joga Bonito</title></svelte:head>
+<svelte:head><title>Grupos — rachao.app</title></svelte:head>
 
 <main class="max-w-7xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-6">
