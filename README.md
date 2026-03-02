@@ -150,7 +150,9 @@ docker compose build --no-cache   # Rebuild forçado sem cache
 football-manager/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml              # CI/CD: build → GHCR → deploy no VPS
+│       └── deploy.yml              # CI/CD: build → GHCR → deploy no VPS (disparo manual)
+├── scripts/
+│   └── setup-vps.sh                # Prepara o VPS Ubuntu 24.04 para receber o deploy
 ├── football-api/                   # Backend
 │   ├── app/
 │   │   ├── main.py                 # Entrypoint FastAPI
@@ -191,17 +193,113 @@ football-manager/
 | `APP_ENV` | Ambiente da aplicação | `development` |
 | `DEBUG` | Modo debug | `true` |
 
-### Produção (`football-api/.env.prod`)
+### Produção (`/opt/football-manager/.env.prod` no VPS)
 
 | Variável | Descrição |
 |---|---|
 | `POSTGRES_DB` | Nome do banco |
 | `POSTGRES_USER` | Usuário do banco |
 | `POSTGRES_PASSWORD` | Senha do banco |
-| `SECRET_KEY` | Gere com `openssl rand -hex 32` |
+| `SECRET_KEY` | Gerado automaticamente pelo `setup-vps.sh` |
 | `ACME_EMAIL` | E-mail para notificações do Let's Encrypt |
 
-> O arquivo `.env.prod` nunca é commitado. Copie `.env.prod.example` no VPS e preencha os valores.
+> O arquivo `.env.prod` nunca é commitado. Ele é criado pelo script de setup diretamente no VPS.
+
+---
+
+## Deploy em produção (VPS)
+
+### Pré-requisitos
+
+- VPS com **Ubuntu 24.04 LTS** (Hostinger KVM ou similar)
+- Acesso SSH como root
+- Domínio `rachao.app` (e `api.rachao.app`, `www.rachao.app`) com DNS apontando para o IP do VPS
+- Repositório clonado localmente com as [secrets do GitHub configuradas](#secrets-do-github)
+
+---
+
+### Passo 1 — Preparar o VPS (executar uma única vez)
+
+Conecte via SSH e execute o script de setup:
+
+```bash
+ssh root@<IP_DO_VPS>
+
+# Baixa e executa o script de setup
+bash <(curl -fsSL https://raw.githubusercontent.com/thiagotn/football-manager/main/scripts/setup-vps.sh)
+```
+
+O script realiza automaticamente:
+- Atualização do sistema
+- Instalação do **Docker CE** + **Docker Compose v2** (repositório oficial)
+- Configuração do **firewall UFW** (libera SSH, 80/tcp e 443/tcp)
+- Criação do diretório `/opt/football-manager`
+- Geração do arquivo `.env.prod` com `SECRET_KEY` pré-preenchida
+
+---
+
+### Passo 2 — Configurar as variáveis de produção
+
+```bash
+nano /opt/football-manager/.env.prod
+```
+
+Preencha os dois campos obrigatórios:
+
+```env
+POSTGRES_PASSWORD=escolha_uma_senha_forte
+ACME_EMAIL=seu@email.com        # para notificações de certificado SSL
+```
+
+> `SECRET_KEY` já foi gerada pelo setup. Os demais campos podem ser mantidos.
+
+---
+
+### Passo 3 — Configurar as secrets no GitHub
+
+Acesse **Settings → Secrets and variables → Actions** no repositório e crie:
+
+| Secret | Valor |
+|---|---|
+| `VPS_HOST` | IP público do VPS |
+| `VPS_USER` | `root` (ou usuário com acesso ao Docker) |
+| `VPS_SSH_KEY` | Conteúdo da chave privada SSH (`~/.ssh/id_ed25519`) |
+| `VPS_PORT` | `22` (padrão) |
+
+> Para gerar um par de chaves dedicado ao deploy:
+> ```bash
+> ssh-keygen -t ed25519 -C "github-deploy" -f ~/.ssh/football_deploy
+> ssh-copy-id -i ~/.ssh/football_deploy.pub root@<IP_DO_VPS>
+> # Cole o conteúdo de ~/.ssh/football_deploy no secret VPS_SSH_KEY
+> ```
+
+---
+
+### Passo 4 — Fazer o deploy
+
+No GitHub, acesse **Actions → Deploy to Production → Run workflow → Run workflow**.
+
+O pipeline executa em dois jobs sequenciais:
+
+```
+Run workflow (manual)
+       │
+       ▼
+  Job: build
+  ├── Build API image   → ghcr.io/thiagotn/football-manager-api:latest
+  └── Build Frontend    → ghcr.io/thiagotn/football-manager-frontend:latest
+       │
+       ▼
+  Job: deploy
+  ├── SCP: envia docker-compose.prod.yml + migrations para o VPS
+  └── SSH: docker compose pull → up -d → image prune
+```
+
+> O certificado TLS é emitido automaticamente pelo Traefik via Let's Encrypt na primeira vez que o deploy sobe. Aguarde ~30 segundos após o primeiro deploy para o certificado estar ativo.
+
+---
+
+### Secrets do GitHub
 
 ---
 

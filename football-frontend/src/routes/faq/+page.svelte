@@ -24,7 +24,7 @@
     },
     {
       q: 'Como compartilhar uma partida com amigos?',
-      a: 'Na página da partida, clique no botão "WhatsApp" para enviar uma mensagem pronta com todos os detalhes (data, local, confirmados, link). Você também pode usar "Copiar link" para compartilhar de outra forma.',
+      a: 'Na página da partida, role até o final da lista de jogadores. Lá você encontra dois botões: "Compartilhar no WhatsApp" envia uma mensagem pronta com todos os detalhes (data, local, confirmados e link), e "Copiar link" copia o link da partida para você colar onde quiser.',
     },
     {
       q: 'Como criar minha conta?',
@@ -48,11 +48,12 @@
   </div>
   <!-- Header -->
   <div class="bg-primary-700 text-white py-8 px-4 text-center">
-    <span class="text-3xl">⚽</span>
-    <div class="flex items-center justify-center gap-2 mt-2">
-      <h1 class="text-2xl font-bold">Perguntas Frequentes</h1>
+    <div class="flex items-center justify-center gap-2 mb-3">
+      <span class="font-semibold text-lg tracking-tight">rachao.app</span>
       <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
     </div>
+    <span class="text-3xl">⚽</span>
+    <h1 class="text-2xl font-bold mt-2">Perguntas Frequentes</h1>
     <p class="text-primary-200 mt-1 text-sm">Tudo o que você precisa saber para jogar</p>
   </div>
 

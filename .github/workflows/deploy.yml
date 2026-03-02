@@ -1,9 +1,7 @@
 name: Deploy to Production
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch: # permite disparar manualmente pelo GitHub UI
+  workflow_dispatch: # disparado manualmente via GitHub Actions UI
 
 env:
   API_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-api
