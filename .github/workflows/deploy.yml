@@ -81,7 +81,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
-          source: "football-api/docker-compose.prod.yml,football-api/migrations"
+          source: "football-api/docker-compose.prod.yml,football-api/traefik-dynamic.yml,football-api/migrations"
           target: ${{ env.DEPLOY_DIR }}
           strip_components: 1 # remove o prefixo football-api/ dos caminhos
 

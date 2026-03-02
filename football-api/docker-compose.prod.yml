@@ -7,12 +7,9 @@ services:
     image: traefik:v3.2
     container_name: football-traefik
     restart: unless-stopped
-    environment:
-      - DOCKER_API_VERSION=1.47
     command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedByDefault=false"
-      - "--providers.docker.network=app-net"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
@@ -25,7 +22,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro
       - letsencrypt:/letsencrypt
     networks:
       - app-net
@@ -53,10 +50,6 @@ services:
   # ── API FastAPI ────────────────────────────────────────────────
   api:
     image: ghcr.io/thiagotn/football-manager-api:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
     container_name: football-api
     restart: unless-stopped
     environment:
@@ -70,22 +63,10 @@ services:
         condition: service_healthy
     networks:
       - app-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`api.rachao.app`)"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls=true"
-      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
 
   # ── Frontend SvelteKit ─────────────────────────────────────────
   frontend:
     image: ghcr.io/thiagotn/football-manager-frontend:latest
-    build:
-      context: ../football-frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: https://api.rachao.app/api/v1
     container_name: football-frontend
     restart: unless-stopped
     environment:
@@ -94,26 +75,6 @@ services:
       - api
     networks:
       - app-net
-    labels:
-      - "traefik.enable=true"
-      # Rota principal: rachao.app
-      - "traefik.http.routers.frontend.rule=Host(`rachao.app`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.frontend.tls.domains[0].main=rachao.app"
-      - "traefik.http.routers.frontend.tls.domains[0].sans=www.rachao.app"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-      # Redirect www.rachao.app → rachao.app
-      - "traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\\.rachao\\.app(.*)"
-      - "traefik.http.middlewares.www-redirect.redirectregex.replacement=https://rachao.app$${1}"
-      - "traefik.http.middlewares.www-redirect.redirectregex.permanent=true"
-      - "traefik.http.routers.www.rule=Host(`www.rachao.app`)"
-      - "traefik.http.routers.www.entrypoints=websecure"
-      - "traefik.http.routers.www.tls=true"
-      - "traefik.http.routers.www.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.www.middlewares=www-redirect"
-      - "traefik.http.routers.www.service=frontend"
 
 volumes:
   postgres-data:
