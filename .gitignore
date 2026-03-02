@@ -12,3 +12,7 @@ Thumbs.db
 .env
 .env.docker
 .env.local
+.env.prod
+
+# Configurações de infra local (obsoletas)
+proxy/

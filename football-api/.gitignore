@@ -5,7 +5,9 @@ venv/
 .env
 .env.docker
 .env.local
+.env.prod
 !.env.example
+!.env.prod.example
 .pytest_cache/
 .coverage
 htmlcov/

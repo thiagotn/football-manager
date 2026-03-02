@@ -3,6 +3,9 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
+# VITE_API_URL é embutida em tempo de build pelo Vite
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 # Generate .svelte-kit (needed for path aliases)
 RUN npx svelte-kit sync || true
 RUN npm run build

@@ -1,44 +1,53 @@
-# ⚽ Football Manager — API + Frontend
+# Football Manager — API
 
-Sistema completo para gestão de grupos e partidas de futebol.
+Backend da aplicação: REST API construída com FastAPI + SQLAlchemy assíncrono + PostgreSQL.
 
 ## Stack
 
 | Camada | Tecnologia |
 |--------|-----------|
 | **Backend** | Python 3.12 + FastAPI + SQLAlchemy 2.0 (async) |
-| **Banco** | PostgreSQL 16 (compatível com Supabase) |
+| **Banco** | PostgreSQL 16 |
 | **Auth** | JWT (HS256) + bcrypt |
-| **Frontend** | SvelteKit 2 + TailwindCSS 3 |
-| **Infra** | Docker Compose |
+| **Frontend** | SvelteKit 5 + TailwindCSS |
+| **Proxy (prod)** | Traefik v3 + Let's Encrypt |
+| **CI/CD** | GitHub Actions → GHCR → VPS |
 
 ---
 
-## Subindo o projeto
+## Desenvolvimento local
 
-### Pré-requisitos
-- Docker Desktop (ou Docker Engine + Compose Plugin)
-- Make (opcional)
+> Todos os comandos abaixo devem ser executados a partir deste diretório (`football-api/`).
+
+### 1. Configurar o ambiente
 
 ```bash
-# Clone e suba tudo
-git clone <repo>
-cd football-manager
+cp .env.example .env.docker
+```
+
+O `.env.docker` já vem configurado para rodar localmente. Não é necessário alterar nada.
+
+### 2. Subir os containers
+
+```bash
 make up
 # ou: docker compose up --build
 ```
 
-Na primeira vez demora ~2-3 minutos (build das imagens).
+Na primeira execução o Docker irá:
+1. Construir as imagens da API (com hot-reload) e do frontend
+2. Iniciar o PostgreSQL e aplicar as migrations automaticamente
+3. Iniciar a API e o frontend
 
-### URLs após o `up`:
+### 3. Acessar
 
 | Serviço | URL |
 |---------|-----|
 | **Frontend** | http://localhost:3000 |
-| **API** | http://localhost:8000 |
-| **API Docs** | http://localhost:8000/docs |
+| **API** | http://localhost:8000/api/v1 |
+| **Swagger** | http://localhost:8000/docs |
+| **ReDoc** | http://localhost:8000/redoc |
 | **Adminer** | `make adminer` → http://localhost:8080 |
-| **Postgres** | localhost:5432 |
 
 ### Login inicial (admin)
 
@@ -47,7 +56,23 @@ WhatsApp: 11999990000
 Senha:    admin123
 ```
 
-> ⚠️ Troque a senha em produção!
+---
+
+## Comandos úteis
+
+```bash
+make up           # Sobe tudo com build
+make up-bg        # Sobe em background e exibe logs da API
+make down         # Para todos os containers
+make down-clean   # Para e apaga o volume do banco (dados zerados)
+make logs         # Logs da API e do frontend em tempo real
+make shell        # Bash dentro do container da API
+make db-connect   # psql direto no banco
+make adminer      # Sobe o Adminer (UI do banco)
+make health       # Verifica saúde da API
+make docs         # Abre o Swagger no browser
+make test         # Roda os testes
+```
 
 ---
 
@@ -59,7 +84,7 @@ Senha:    admin123
 3. Admin gera link de convite (expira em 30 min, uso único)
 4. Jogador acessa o link → preenche nome, WhatsApp e senha → entra no grupo
 5. Admin cria partida (data, hora, local) → sistema gera hash único
-6. Partida gera URL pública: http://localhost:3000/match/<hash>
+6. Partida gera URL pública: /match/<hash>
 7. Jogadores confirmam/recusam presença via frontend
 8. Qualquer pessoa pode ver a lista de confirmados via URL pública
 ```
@@ -109,37 +134,67 @@ Senha:    admin123
 
 ---
 
-## Comandos úteis
+## Migrations
 
-```bash
-make up           # Sobe tudo com hot-reload
-make down         # Para containers
-make down-clean   # Para + apaga volumes (DB zerado)
-make logs         # Logs do api + frontend
-make shell        # Bash no container da API
-make db-connect   # psql direto no banco
-make adminer      # Abre Adminer (UI do banco)
-make health       # Verifica saúde da API
-make docs         # Abre Swagger no browser
-```
+As migrations ficam em `migrations/` e são aplicadas automaticamente pelo PostgreSQL na primeira vez que o container sobe (via `docker-entrypoint-initdb.d`).
+
+| Arquivo | Descrição |
+|---|---|
+| `001_initial_schema.sql` | Schema base, enums e seed do admin |
+| `002_seed_dev.sql` | Dados de exemplo (dev only) |
+| `003_match_number.sql` | Numeração sequencial de partidas |
+| `004_match_address.sql` | Campo de endereço para Google Maps |
+| `005_match_venue_fields.sql` | Tipo de quadra e jogadores por time |
+| `006_match_max_players.sql` | Limite máximo de jogadores por partida |
+
+> Novas migrations devem ser adicionadas como `00N_descricao.sql`. Em produção, o arquivo é copiado automaticamente pelo workflow de CI/CD e aplicado no próximo start do container de banco.
 
 ---
 
-## Para produção (Supabase)
+## Produção
 
-1. Crie um projeto em [supabase.com](https://supabase.com)
-2. No **SQL Editor** do Supabase, execute as migrations **em ordem**:
-   - `migrations/001_initial_schema.sql` — schema base, enums e seed do admin
-   - `migrations/002_seed_dev.sql` — dados de exemplo *(omitir em produção)*
-   - `migrations/003_match_number.sql` — numeração sequencial de partidas
-   - `migrations/004_match_address.sql` — campo de endereço para Google Maps
-3. Copie a connection string (Settings → Database → Connection string)
-4. Configure as variáveis de ambiente:
-   ```
-   DATABASE_URL=postgresql+asyncpg://postgres:<senha>@db.<projeto>.supabase.co:5432/postgres
-   SECRET_KEY=<openssl rand -hex 32>
-   ```
-5. Deploy da API em Railway, Render, Fly.io, etc.
-6. Build do frontend com `VITE_API_URL=https://sua-api.com/api/v1`
+O deploy em produção usa **Traefik como proxy reverso** e **GitHub Actions** para CI/CD.
 
-> **Novas migrations futuras:** sempre que um arquivo `migrations/00N_*.sql` for adicionado ao repositório, execute-o no SQL Editor do Supabase antes de fazer o deploy da API correspondente.
+### Como funciona
+
+```
+git push → main
+    │
+    ▼
+GitHub Actions (.github/workflows/deploy.yml)
+    ├── Build API image   → ghcr.io/thiagotn/football-manager-api:latest
+    ├── Build Frontend    → ghcr.io/thiagotn/football-manager-frontend:latest
+    │
+    ▼
+SSH no VPS
+    ├── docker compose pull   (baixa as novas imagens)
+    └── docker compose up -d  (reinicia os containers)
+```
+
+### Configurar para produção
+
+1. Copie o template de variáveis no VPS:
+
+```bash
+cp .env.prod.example .env.prod
+nano .env.prod
+```
+
+2. Suba com o compose de produção:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+Consulte o `README.md` da raiz do repositório para o guia completo de deploy.
+
+### Diferenças entre os ambientes
+
+| | Local (`docker-compose.yml`) | Produção (`docker-compose.prod.yml`) |
+|---|---|---|
+| Acesso | `localhost:3000` / `localhost:8000` | `rachao.app` / `api.rachao.app` |
+| TLS | Não | Sim (Let's Encrypt automático) |
+| Traefik | Não | Sim |
+| API target | `dev` (hot-reload) | `production` (multi-worker) |
+| Imagens | Build local | Pull do GHCR |
+| Banco exposto | Sim (porta 5432) | Não (somente interno) |

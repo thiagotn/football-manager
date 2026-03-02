@@ -6,30 +6,33 @@ Aplicação web para gerenciamento de grupos de futebol: agendamento de partidas
 
 ## Arquitetura
 
+### Desenvolvimento local
+
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     Navegador                           │
-│              http://localhost:3000                      │
-└────────────────────────┬────────────────────────────────┘
-                         │ HTTP
-┌────────────────────────▼────────────────────────────────┐
-│              Frontend  (SvelteKit + Tailwind)           │
-│                   container: frontend                   │
-│                    porta 3000                           │
-└────────────────────────┬────────────────────────────────┘
-                         │ REST API (HTTP)
-┌────────────────────────▼────────────────────────────────┐
-│                 API  (FastAPI + Python)                 │
-│                   container: api                        │
-│              porta 8000  /api/v1/...                    │
-│          Autenticação via JWT (Bearer token)            │
-└────────────────────────┬────────────────────────────────┘
-                         │ asyncpg
-┌────────────────────────▼────────────────────────────────┐
-│              Banco de Dados  (PostgreSQL 16)            │
-│                  container: postgres                    │
-│                     porta 5432                         │
-└─────────────────────────────────────────────────────────┘
+Navegador
+    │ http://localhost:3000
+    ▼
+Frontend (SvelteKit)       porta 3000
+    │ http://localhost:8000/api/v1
+    ▼
+API (FastAPI)              porta 8000
+    │
+    ▼
+PostgreSQL                 porta 5432
+```
+
+### Produção (VPS + Traefik)
+
+```
+Navegador
+    │ HTTPS
+    ▼
+Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
+    ├── rachao.app      →  Frontend (SvelteKit)
+    └── api.rachao.app  →  API (FastAPI)
+                            │
+                            ▼
+                        PostgreSQL  (sem porta pública)
 ```
 
 ### Componentes
@@ -39,6 +42,7 @@ Aplicação web para gerenciamento de grupos de futebol: agendamento de partidas
 | **Frontend** | SvelteKit 5 + Tailwind CSS | SPA com roteamento client-side. Consome a API via fetch. |
 | **API** | FastAPI + SQLAlchemy (async) | REST API com autenticação JWT. Documentação automática em `/docs`. |
 | **Banco** | PostgreSQL 16 | Armazena jogadores, grupos, partidas, presenças e convites. |
+| **Traefik** | Traefik v3 | Proxy reverso + TLS automático (produção). |
 | **Adminer** | Adminer 4 | Interface web para inspecionar o banco (opcional, via Docker profile). |
 
 ---
@@ -52,20 +56,26 @@ Aplicação web para gerenciamento de grupos de futebol: agendamento de partidas
 
 ## Executar localmente
 
-### 1. Configurar variáveis de ambiente
-
-Copie o template da API e ajuste se necessário:
+> Todos os comandos abaixo devem ser executados a partir do diretório `football-api/`.
 
 ```bash
-cp football-api/.env.example football-api/.env.docker
+cd football-api
 ```
 
-> Por padrão o arquivo já está configurado para o ambiente local. Não é necessário alterar nada para rodar.
+### 1. Configurar variáveis de ambiente
+
+```bash
+cp .env.example .env.docker
+```
+
+O arquivo já vem configurado para o ambiente local. Não é necessário alterar nada para rodar.
 
 ### 2. Subir os containers
 
 ```bash
 docker compose up --build
+# ou com Make:
+make up
 ```
 
 Na primeira execução o Docker irá:
@@ -79,15 +89,21 @@ Na primeira execução o Docker irá:
 |---|---|
 | Frontend | http://localhost:3000 |
 | API (REST) | http://localhost:8000/api/v1 |
-| Documentação interativa (Swagger) | http://localhost:8000/docs |
-| Documentação alternativa (ReDoc) | http://localhost:8000/redoc |
+| Swagger (docs interativa) | http://localhost:8000/docs |
+| ReDoc | http://localhost:8000/redoc |
+
+### Login inicial (admin)
+
+```
+WhatsApp: 11999990000
+Senha:    admin123
+```
 
 ### Adminer (opcional)
 
-Para abrir a interface web do banco de dados:
-
 ```bash
-docker compose --profile tools up adminer
+make adminer
+# ou: docker compose --profile tools up adminer -d
 ```
 
 Acesse http://localhost:8080 e conecte com:
@@ -100,21 +116,30 @@ Acesse http://localhost:8080 e conecte com:
 
 ## Comandos úteis
 
+Execute a partir de `football-api/`:
+
 ```bash
-# Subir em background
-docker compose up -d --build
+make up           # Sobe tudo com build
+make up-bg        # Sobe em background e exibe logs da API
+make down         # Para todos os containers
+make down-clean   # Para e apaga o volume do banco (dados zerados)
+make logs         # Logs da API e do frontend em tempo real
+make shell        # Bash dentro do container da API
+make db-connect   # psql direto no banco
+make adminer      # Sobe o Adminer (UI do banco)
+make health       # Verifica saúde da API
+make docs         # Abre o Swagger no browser
+make test         # Roda os testes
+```
 
-# Ver logs da API em tempo real
-docker compose logs -f api
+Ou com Docker Compose diretamente:
 
-# Parar tudo
-docker compose down
-
-# Remover também o volume do banco (apaga todos os dados)
-docker compose down -v
-
-# Rebuild forçado sem cache
-docker compose build --no-cache
+```bash
+docker compose up -d --build      # Subir em background
+docker compose logs -f api        # Logs da API
+docker compose down               # Parar tudo
+docker compose down -v            # Parar e apagar volumes (banco zerado)
+docker compose build --no-cache   # Rebuild forçado sem cache
 ```
 
 ---
@@ -123,44 +148,60 @@ docker compose build --no-cache
 
 ```
 football-manager/
-├── docker-compose.yml          # Orquestração local dos containers
-├── football-api/               # Backend
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # CI/CD: build → GHCR → deploy no VPS
+├── football-api/                   # Backend
 │   ├── app/
-│   │   ├── main.py             # Entrypoint FastAPI
-│   │   ├── models/             # Modelos SQLAlchemy
-│   │   ├── routers/            # Endpoints da API
-│   │   ├── schemas/            # Schemas Pydantic
-│   │   └── core/               # Config, segurança, DB
-│   ├── migrations/             # Scripts SQL iniciais
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── .env.example            # Template de variáveis de ambiente
-└── football-frontend/          # Frontend
+│   │   ├── main.py                 # Entrypoint FastAPI
+│   │   ├── models/                 # Modelos SQLAlchemy
+│   │   ├── routers/                # Endpoints da API
+│   │   ├── schemas/                # Schemas Pydantic
+│   │   └── core/                   # Config, segurança, DB
+│   ├── migrations/                 # Scripts SQL (aplicados automaticamente na 1ª vez)
+│   ├── Dockerfile                  # Multi-stage: dev e production
+│   ├── docker-compose.yml          # Ambiente local (portas expostas, hot-reload)
+│   ├── docker-compose.prod.yml     # Produção (Traefik, imagens do GHCR)
+│   ├── .env.example                # Template para desenvolvimento local
+│   ├── .env.prod.example           # Template para produção
+│   ├── Makefile                    # Atalhos para comandos comuns
+│   └── pyproject.toml
+└── football-frontend/              # Frontend
     ├── src/
-    │   ├── routes/             # Páginas (SvelteKit file-based routing)
+    │   ├── routes/                 # Páginas (SvelteKit file-based routing)
     │   ├── lib/
-    │   │   ├── api.ts          # Client HTTP para a API
-    │   │   ├── stores/         # Estado global (auth, toast)
-    │   │   └── components/     # Componentes reutilizáveis
-    │   └── app.css             # Estilos globais (Tailwind)
-    └── Dockerfile
+    │   │   ├── api.ts              # Client HTTP para a API
+    │   │   ├── stores/             # Estado global (auth, toast)
+    │   │   └── components/         # Componentes reutilizáveis
+    │   └── app.css                 # Estilos globais (Tailwind)
+    └── Dockerfile                  # Multi-stage: builder e production
 ```
 
 ---
 
 ## Variáveis de ambiente
 
-### API (`football-api/.env.docker`)
+### Local (`football-api/.env.docker`)
 
-| Variável | Descrição | Exemplo |
+| Variável | Descrição | Padrão local |
 |---|---|---|
-| `DATABASE_URL` | String de conexão PostgreSQL | `postgresql+asyncpg://user:pass@host/db` |
-| `SECRET_KEY` | Chave para assinar tokens JWT | string aleatória de 32+ chars |
+| `DATABASE_URL` | String de conexão PostgreSQL | `postgresql+asyncpg://postgres:football123@postgres:5432/football` |
+| `SECRET_KEY` | Chave para assinar tokens JWT | `local-dev-secret-key-...` |
 | `CORS_ORIGINS` | Origens permitidas pelo CORS | `http://localhost:3000` |
-| `APP_ENV` | Ambiente da aplicação | `development` / `production` |
-| `DEBUG` | Modo debug | `true` / `false` |
+| `APP_ENV` | Ambiente da aplicação | `development` |
+| `DEBUG` | Modo debug | `true` |
 
-> Gere uma `SECRET_KEY` segura para produção com: `openssl rand -hex 32`
+### Produção (`football-api/.env.prod`)
+
+| Variável | Descrição |
+|---|---|
+| `POSTGRES_DB` | Nome do banco |
+| `POSTGRES_USER` | Usuário do banco |
+| `POSTGRES_PASSWORD` | Senha do banco |
+| `SECRET_KEY` | Gere com `openssl rand -hex 32` |
+| `ACME_EMAIL` | E-mail para notificações do Let's Encrypt |
+
+> O arquivo `.env.prod` nunca é commitado. Copie `.env.prod.example` no VPS e preencha os valores.
 
 ---
 
