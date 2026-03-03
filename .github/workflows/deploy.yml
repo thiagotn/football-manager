@@ -99,18 +99,48 @@ jobs:
           port: ${{ secrets.VPS_PORT || '22' }}
           envs: GHCR_TOKEN,ACTOR,SHA,DEPLOY_DIR
           script: |
-            set -e
+            set -euo pipefail
 
             echo "==> Login no GHCR..."
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
             cd "$DEPLOY_DIR"
 
-            echo "==> Pull das novas imagens (sha: $SHA)..."
-            docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+            # Exporta variáveis do .env.prod para o shell
+            # (necessário para usar POSTGRES_USER e POSTGRES_DB nas migrations)
+            set -a; source .env.prod; set +a
 
-            echo "==> Reiniciando containers..."
-            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate
+            echo "==> [1/4] Pull das novas imagens (sha: $SHA)..."
+            docker compose -f docker-compose.prod.yml pull
+
+            echo "==> [2/4] Iniciando postgres para aplicar migrations..."
+            # No primeiro deploy: docker-entrypoint-initdb.d inicializa o banco
+            # automaticamente. Em deploys seguintes: container já está rodando.
+            docker compose -f docker-compose.prod.yml up -d postgres
+
+            echo "     Aguardando postgres ficar pronto..."
+            until docker compose -f docker-compose.prod.yml exec -T postgres \
+              pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q 2>/dev/null; do
+              sleep 2
+            done
+            echo "     Postgres pronto ✓"
+
+            echo "==> [3/4] Aplicando migrations..."
+            # Executa todos os arquivos *.sql em ordem, exceto seeds de dev.
+            # Todos os scripts usam IF NOT EXISTS / EXCEPTION WHEN duplicate_object,
+            # portanto são idempotentes — seguros para re-executar a cada deploy.
+            for f in $(ls migrations/*.sql | grep -v 'seed' | sort); do
+              echo "     → $(basename "$f")"
+              docker compose -f docker-compose.prod.yml exec -T postgres \
+                psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                -f "/docker-entrypoint-initdb.d/$(basename "$f")"
+            done
+            echo "     Migrations aplicadas ✓"
+
+            echo "==> [4/4] Reiniciando todos os serviços..."
+            docker compose -f docker-compose.prod.yml up -d \
+              --force-recreate \
+              --remove-orphans
 
             echo "==> Removendo imagens antigas..."
             docker image prune -f
@@ -120,4 +150,4 @@ jobs:
 
             echo ""
             echo "Deploy concluido com sucesso!"
-            docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+            docker compose -f docker-compose.prod.yml ps
