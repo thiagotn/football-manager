@@ -1,6 +1,10 @@
 <svelte:head>
   <title>rachao.app — Organize suas peladas com facilidade</title>
-  <meta name="description" content="Gerencie grupos de futebol, convide jogadores e controle presenças em um clique." />
+  <meta name="description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
+  <meta property="og:url" content="https://rachao.app/lp" />
+  <meta property="og:title" content="rachao.app — Organize suas peladas com facilidade" />
+  <meta property="og:description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
+  <meta property="og:image" content="https://rachao.app/banner-lp.jpg" />
 </svelte:head>
 
 <!-- BETA BANNER -->

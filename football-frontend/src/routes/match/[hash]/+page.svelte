@@ -3,6 +3,8 @@
   import { matches as matchesApi, ApiError } from '$lib/api';
   import type { MatchDetail, Attendance } from '$lib/api';
   import { currentPlayer, isLoggedIn } from '$lib/stores/auth';
+
+  let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users } from 'lucide-svelte';
 
@@ -85,7 +87,15 @@
 </script>
 
 <svelte:head>
-  <title>{match ? `Partida — ${match.location}` : 'Partida'}</title>
+  {#if data.og}
+    <title>{data.og.title} — rachao.app</title>
+    <meta property="og:title" content="{data.og.title} — rachao.app" />
+    <meta property="og:description" content={data.og.description} />
+    <meta property="og:image" content="https://rachao.app/banner-lp.jpg" />
+    <meta property="og:url" content="https://rachao.app/match/{$page.params.hash}" />
+  {:else}
+    <title>{match ? `Partida — ${match.location}` : 'Partida'} — rachao.app</title>
+  {/if}
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50">

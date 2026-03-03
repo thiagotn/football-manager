@@ -71,6 +71,7 @@ services:
     restart: unless-stopped
     environment:
       ORIGIN: https://rachao.app
+      API_INTERNAL_URL: http://api:8000/api/v1
     depends_on:
       - api
     networks:
