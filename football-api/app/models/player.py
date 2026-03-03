@@ -33,6 +33,7 @@ class Player(Base, UUIDMixin, TimestampMixin):
         _player_role_col, nullable=False, default=PlayerRole.PLAYER
     )
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     group_members = relationship("GroupMember", back_populates="player", cascade="all, delete-orphan")

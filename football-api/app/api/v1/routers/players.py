@@ -1,3 +1,4 @@
+import secrets
 import uuid
 
 from fastapi import APIRouter, Query
@@ -8,7 +9,7 @@ from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
 from app.core.security import hash_password
 from app.db.repositories.player_repo import PlayerRepository
 from app.models.player import Player, PlayerRole
-from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate
+from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
 
 router = APIRouter(prefix="/players", tags=["players"])
 
@@ -86,6 +87,21 @@ async def update_player(player_id: uuid.UUID, body: PlayerUpdate, db: DB, curren
     await db.flush()
     await db.refresh(player)
     return player
+
+
+@router.post("/{player_id}/reset-password", response_model=ResetPasswordResponse)
+async def reset_player_password(player_id: uuid.UUID, db: DB, _: AdminPlayer):
+    repo = PlayerRepository(db)
+    player = await repo.get(player_id)
+    if not player:
+        raise NotFoundError("Jogador não encontrado")
+
+    temp_password = secrets.token_urlsafe(8)
+    player.password_hash = hash_password(temp_password)
+    player.must_change_password = True
+    await db.flush()
+
+    return ResetPasswordResponse(temp_password=temp_password)
 
 
 @router.delete("/{player_id}", status_code=204)

@@ -36,7 +36,7 @@ const del = (path: string) => request<void>(path, { method: 'DELETE' });
 // ── Auth ──────────────────────────────────────────────────────
 export const auth = {
   login: (whatsapp: string, password: string) =>
-    post<{ access_token: string; player_id: string; name: string; role: string }>('/auth/login', { whatsapp, password }),
+    post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/login', { whatsapp, password }),
   me: () => get<Player>('/auth/me'),
   changePassword: (current_password: string, new_password: string) =>
     post<void>('/auth/change-password', { current_password, new_password }),
@@ -46,6 +46,7 @@ export const auth = {
 export type Player = {
   id: string; name: string; nickname: string | null;
   whatsapp: string; role: 'admin' | 'player'; active: boolean;
+  must_change_password: boolean;
   created_at: string; updated_at: string;
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string };
@@ -73,6 +74,7 @@ export const players = {
   update: (id: string, data: Partial<{ name: string; nickname: string; whatsapp: string; password: string; role: string; active: boolean }>) =>
     patch<Player>(`/players/${id}`, data),
   delete: (id: string) => del(`/players/${id}`),
+  resetPassword: (id: string) => post<{ temp_password: string }>(`/players/${id}/reset-password`),
 };
 
 // ── Groups ────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ async def login(body: LoginRequest, db: DB):
         player_id=str(player.id),
         name=player.name,
         role=player.role,
+        must_change_password=player.must_change_password,
     )
 
 
@@ -45,4 +46,5 @@ async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentP
     repo = PlayerRepository(db)
     player = await repo.get(current.id)
     player.password_hash = hash_password(body.new_password)
+    player.must_change_password = False
     await db.flush()

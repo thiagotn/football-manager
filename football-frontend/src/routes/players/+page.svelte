@@ -3,7 +3,7 @@
   import type { Player } from '$lib/api';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
-  import { Plus, Users, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-svelte';
+  import { Plus, Users, Pencil, Trash2, Eye, EyeOff, Search, KeyRound, Copy } from 'lucide-svelte';
 
   let playerList: Player[] = $state([]);
   let loading = $state(true);
@@ -12,8 +12,12 @@
 
   let showCreate = $state(false);
   let showEdit = $state(false);
+  let showReset = $state(false);
   let editing: Player | null = $state(null);
+  let resetTarget: Player | null = $state(null);
+  let generatedPassword = $state('');
   let saving = $state(false);
+  let resetting = $state(false);
   let showPw = $state(false);
 
   let form = $state({ name: '', nickname: '', whatsapp: '', password: '', role: 'player' });
@@ -75,6 +79,30 @@
       toastSuccess('Jogador atualizado!');
     } catch (e) { toastError('Erro ao atualizar'); }
     saving = false;
+  }
+
+  function openReset(p: Player) {
+    resetTarget = p;
+    generatedPassword = '';
+    showReset = true;
+  }
+
+  async function doReset() {
+    if (!resetTarget) return;
+    resetting = true;
+    try {
+      const res = await playersApi.resetPassword(resetTarget.id);
+      generatedPassword = res.temp_password;
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao resetar senha');
+      showReset = false;
+    }
+    resetting = false;
+  }
+
+  function copyPassword() {
+    navigator.clipboard.writeText(generatedPassword);
+    toastSuccess('Senha copiada!');
   }
 
   async function deactivate(p: Player) {
@@ -152,9 +180,10 @@
               </td>
               <td>
                 <div class="flex gap-1 justify-end">
-                  <button onclick={() => openEdit(p)} class="btn-ghost btn-sm"><Pencil size={14} /></button>
+                  <button onclick={() => openEdit(p)} class="btn-ghost btn-sm" title="Editar"><Pencil size={14} /></button>
+                  <button onclick={() => openReset(p)} class="btn-ghost btn-sm text-amber-600 hover:bg-amber-50" title="Resetar senha"><KeyRound size={14} /></button>
                   {#if p.active}
-                    <button onclick={() => deactivate(p)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
+                    <button onclick={() => deactivate(p)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50" title="Desativar"><Trash2 size={14} /></button>
                   {/if}
                 </div>
               </td>
@@ -205,6 +234,38 @@
       <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Criando…' : 'Criar'}</button>
     </div>
   </form>
+</Modal>
+
+<!-- Reset password modal -->
+<Modal bind:open={showReset} title="Resetar Senha — {resetTarget?.name ?? ''}">
+  {#if !generatedPassword}
+    <p class="text-sm text-gray-600 mb-4">
+      Uma senha temporária será gerada para <strong>{resetTarget?.name}</strong>.
+      O jogador precisará alterá-la no próximo acesso.
+    </p>
+    <div class="flex gap-3 justify-end">
+      <button class="btn btn-secondary" onclick={() => showReset = false}>Cancelar</button>
+      <button class="btn bg-amber-500 hover:bg-amber-600 text-white" onclick={doReset} disabled={resetting}>
+        <KeyRound size={15} /> {resetting ? 'Gerando…' : 'Gerar senha temporária'}
+      </button>
+    </div>
+  {:else}
+    <p class="text-sm text-gray-600 mb-3">Senha temporária gerada. Compartilhe com o jogador:</p>
+    <div class="flex items-center gap-2 mb-4">
+      <code class="flex-1 bg-gray-100 rounded-lg px-4 py-3 font-mono text-lg tracking-widest text-center text-gray-900 select-all">
+        {generatedPassword}
+      </code>
+      <button class="btn btn-secondary shrink-0" onclick={copyPassword}>
+        <Copy size={15} /> Copiar
+      </button>
+    </div>
+    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+      ⚠️ O jogador será obrigado a alterar esta senha no próximo acesso.
+    </p>
+    <div class="flex justify-end">
+      <button class="btn btn-primary" onclick={() => showReset = false}>Fechar</button>
+    </div>
+  {/if}
 </Modal>
 
 <!-- Edit modal -->

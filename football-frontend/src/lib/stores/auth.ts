@@ -65,11 +65,19 @@ function createAuthStore() {
 
       set({ token, player, loading: false });
     },
-    login(token: string, player: { player_id: string; name: string; role: string }) {
-      const p = { id: player.player_id, name: player.name, role: player.role } as unknown as Player;
+    login(token: string, player: { player_id: string; name: string; role: string; must_change_password?: boolean }) {
+      const p = { id: player.player_id, name: player.name, role: player.role, must_change_password: player.must_change_password ?? false } as unknown as Player;
       localStorage.setItem('token', token);
       localStorage.setItem('player', JSON.stringify(p));
       set({ token, player: p, loading: false });
+    },
+    setMustChangePassword(value: boolean) {
+      update(state => {
+        if (!state.player) return state;
+        const updatedPlayer = { ...state.player, must_change_password: value };
+        localStorage.setItem('player', JSON.stringify(updatedPlayer));
+        return { ...state, player: updatedPlayer };
+      });
     },
     logout() {
       localStorage.removeItem('token');

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth as authApi, ApiError } from '$lib/api';
-  import { currentPlayer } from '$lib/stores/auth';
+  import { authStore, currentPlayer } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { Eye, EyeOff, KeyRound } from 'lucide-svelte';
 
@@ -22,6 +22,7 @@
     saving = true;
     try {
       await authApi.changePassword(currentPw, newPw);
+      authStore.setMustChangePassword(false);
       toastSuccess('Senha alterada com sucesso!');
       currentPw = '';
       newPw = '';
@@ -42,6 +43,12 @@
     <h1 class="text-2xl font-bold text-gray-900">Minha Conta</h1>
     <p class="text-sm text-gray-500 mt-0.5">Informações do seu perfil e segurança</p>
   </div>
+
+  {#if $currentPlayer?.must_change_password}
+    <div class="bg-amber-50 border border-amber-300 text-amber-800 rounded-lg px-4 py-3 mb-6 text-sm font-medium">
+      ⚠️ Sua senha foi redefinida pelo administrador. Por favor, defina uma nova senha abaixo antes de continuar.
+    </div>
+  {/if}
 
   <!-- Dados do perfil (somente leitura) -->
   <div class="card card-body mb-6">

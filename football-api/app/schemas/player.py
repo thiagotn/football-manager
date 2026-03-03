@@ -52,8 +52,13 @@ class PlayerResponse(BaseModel):
     whatsapp: str
     role: PlayerRole
     active: bool
+    must_change_password: bool
     created_at: datetime
     updated_at: datetime
+
+
+class ResetPasswordResponse(BaseModel):
+    temp_password: str
 
 
 class PlayerPublic(BaseModel):

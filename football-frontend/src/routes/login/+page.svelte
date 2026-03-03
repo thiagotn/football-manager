@@ -17,7 +17,7 @@
     try {
       const res = await auth.login(whatsapp, password);
       authStore.login(res.access_token, res);
-      goto('/');
+      goto(res.must_change_password ? '/profile' : '/');
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Erro ao conectar';
     } finally {

@@ -12,6 +12,7 @@ class TokenResponse(BaseModel):
     player_id: str
     name: str
     role: str
+    must_change_password: bool = False
 
 
 class ChangePasswordRequest(BaseModel):
