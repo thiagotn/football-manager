@@ -38,7 +38,7 @@
     </div>
 
     <!-- Links — desktop -->
-    <div class="hidden sm:flex items-center gap-1">
+    <div class="hidden min-[940px]:flex items-center gap-1">
       {#each links as l}
         {#if !l.adminOnly || $isAdmin}
           <a
@@ -54,7 +54,7 @@
     </div>
 
     <!-- Direita — desktop -->
-    <div class="hidden sm:flex items-center gap-2">
+    <div class="hidden min-[940px]:flex items-center gap-2">
       <span class="text-sm text-primary-200">{$currentPlayer?.name}</span>
       <a href="/profile"
         class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600 {$page.url.pathname === '/profile' ? 'bg-primary-900' : ''}"
@@ -70,7 +70,7 @@
 
     <!-- Hambúrguer — mobile -->
     <button
-      class="sm:hidden p-2 rounded-lg hover:bg-primary-600 transition-colors"
+      class="min-[940px]:hidden p-2 rounded-lg hover:bg-primary-600 transition-colors"
       onclick={() => menuOpen = !menuOpen}
       aria-label="Menu"
     >
@@ -84,7 +84,7 @@
 
   <!-- Menu mobile dropdown -->
   {#if menuOpen}
-    <div class="sm:hidden bg-primary-800 border-t border-primary-600 px-4 pb-4 pt-2 space-y-1">
+    <div class="min-[940px]:hidden bg-primary-800 border-t border-primary-600 px-4 pb-4 pt-2 space-y-1">
       <!-- Usuário -->
       <p class="text-xs text-primary-300 px-2 py-1 font-medium">{$currentPlayer?.name}</p>
 
