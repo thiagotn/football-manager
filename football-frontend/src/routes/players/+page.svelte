@@ -154,8 +154,8 @@
         <thead>
           <tr>
             <th>Jogador</th>
-            <th>WhatsApp</th>
-            <th>Perfil</th>
+            <th class="hidden sm:table-cell">WhatsApp</th>
+            <th class="hidden sm:table-cell">Perfil</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -164,11 +164,16 @@
           {#each filtered as p}
             <tr>
               <td>
-                <p class="font-medium">{p.name}</p>
-                {#if p.nickname}<p class="text-xs text-gray-400">{p.nickname}</p>{/if}
+                <p class="font-medium">
+                  {p.nickname || p.name}
+                  <span class="sm:hidden text-xs text-gray-400 font-normal ml-1">
+                    ({p.role === 'admin' ? 'Admin' : 'Jogador'})
+                  </span>
+                </p>
+                {#if p.nickname}<p class="text-xs text-gray-400 hidden sm:block">{p.name}</p>{/if}
               </td>
-              <td class="font-mono text-xs text-gray-600">{p.whatsapp}</td>
-              <td>
+              <td class="font-mono text-xs text-gray-600 hidden sm:table-cell">{p.whatsapp}</td>
+              <td class="hidden sm:table-cell">
                 <span class="badge {p.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
                   {p.role === 'admin' ? 'Admin' : 'Jogador'}
                 </span>

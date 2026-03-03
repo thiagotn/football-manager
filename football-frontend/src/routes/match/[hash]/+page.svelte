@@ -14,6 +14,7 @@
   let match: MatchDetail | null = $state(null);
   let loading = $state(true);
   let responding = $state(false);
+  let responded = $state(false);
 
   let confirmed = $derived(match?.attendances.filter(a => a.status === 'confirmed') ?? []);
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
@@ -53,6 +54,7 @@
       await matchesApi.setAttendance(match.group_id, match.id, $currentPlayer.id, status);
       match = await matchesApi.getByHash(matchHash);
       toastSuccess(status === 'confirmed' ? '✅ Presença confirmada!' : '❌ Falta registrada');
+      responded = true;
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     responding = false;
   }
@@ -115,19 +117,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50">
-  <!-- Header bar -->
-  <div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-1.5 px-4">
-    Versao Beta — produto em desenvolvimento.
-  </div>
-  <div class="bg-primary-700 text-white py-4 px-4">
-    <div class="flex items-center justify-center gap-2">
-      <span class="text-xl">⚽</span>
-      <span class="font-semibold text-lg tracking-tight">rachao.app</span>
-      <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
-    </div>
-  </div>
-
-  <main class="max-w-2xl mx-auto px-4 py-8">
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-8">
     {#if loading}
       <div class="animate-pulse space-y-4">
         <div class="h-8 bg-gray-200 rounded w-2/3"></div>
@@ -143,8 +133,8 @@
 
     {:else}
       <!-- Match card -->
-      <div class="card mb-6 overflow-hidden">
-        <div class="relative overflow-hidden px-6 py-5 text-white" style="min-height:140px;">
+      <div class="card mb-4 overflow-hidden">
+        <div class="relative overflow-hidden px-4 py-4 text-white" style="min-height:100px;">
           <picture>
             <source srcset="/banners/banner-{match.court_type ?? 'default'}.webp" type="image/webp" />
             <img
@@ -167,7 +157,7 @@
             </span>
           </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
-          <div class="flex flex-wrap gap-4 mt-3 text-primary-100 text-sm">
+          <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
             <span class="flex items-center gap-1.5"><Clock size={14} />{match.start_time.slice(0,5)}</span>
             {#if match.address}
               <a
@@ -200,30 +190,30 @@
             </div>
           {/if}
           {#if match.notes}
-            <p class="text-sm text-primary-200 mt-3 bg-primary-800/30 rounded-lg px-3 py-2">{match.notes}</p>
+            <p class="text-sm text-primary-200 mt-2 bg-primary-800/30 rounded-lg px-3 py-1.5">{match.notes}</p>
           {/if}
           </div><!-- /relative content -->
         </div><!-- /banner header -->
 
         <!-- Scoreboard summary -->
         <div class="grid grid-cols-3 divide-x divide-gray-100">
-          <div class="px-4 py-4 text-center">
-            <p class="text-2xl font-bold text-green-600">
-              {match.confirmed_count}{#if match.max_players}<span class="text-base text-gray-400">/{match.max_players}</span>{/if}
+          <div class="px-3 py-3 text-center">
+            <p class="text-xl font-bold text-green-600">
+              {match.confirmed_count}{#if match.max_players}<span class="text-sm text-gray-400">/{match.max_players}</span>{/if}
             </p>
             <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
               <CheckCircle size={11} />
               {match.max_players && match.confirmed_count >= match.max_players ? 'Lotada!' : 'Confirmados'}
             </p>
           </div>
-          <div class="px-4 py-4 text-center">
-            <p class="text-2xl font-bold text-red-500">{match.declined_count}</p>
+          <div class="px-3 py-3 text-center">
+            <p class="text-xl font-bold text-red-500">{match.declined_count}</p>
             <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
               <XCircle size={11} /> Recusaram
             </p>
           </div>
-          <div class="px-4 py-4 text-center">
-            <p class="text-2xl font-bold text-gray-400">{match.pending_count}</p>
+          <div class="px-3 py-3 text-center">
+            <p class="text-xl font-bold text-gray-400">{match.pending_count}</p>
             <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
               <Clock3 size={11} /> Pendentes
             </p>
@@ -233,55 +223,56 @@
 
       <!-- My RSVP (only if logged in and in the match) -->
       {#if $isLoggedIn && match.status === 'open'}
-        <div class="card mb-6 card-body">
+        <div class="card mb-4 card-body">
           <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
             <Users size={16} class="text-primary-600" /> Sua Confirmação
           </h3>
-          {#if mine}
-            <p class="text-sm text-gray-500 mb-3">
-              Status atual:
-              <span class="font-medium {mine.status === 'confirmed' ? 'text-green-600' : mine.status === 'declined' ? 'text-red-500' : 'text-gray-500'}">
-                {mine.status === 'confirmed' ? '✅ Confirmado' : mine.status === 'declined' ? '❌ Recusado' : '⏳ Pendente'}
-              </span>
-            </p>
+          {#if responded}
+            <div class="text-center py-1">
+              <p class="text-sm font-medium {mine?.status === 'confirmed' ? 'text-green-600' : 'text-red-500'}">
+                {mine?.status === 'confirmed' ? '✅ Presença confirmada! Até lá.' : '❌ Falta registrada.'}
+              </p>
+              <button class="text-xs text-gray-400 hover:text-gray-600 mt-2 underline" onclick={() => responded = false}>
+                Alterar resposta
+              </button>
+            </div>
+          {:else}
+            {#if isFull}
+              <p class="text-sm text-red-500 font-medium text-center py-2">
+                ⛔ Partida lotada — {match.max_players} jogadores já confirmados.
+              </p>
+            {/if}
+            <div class="flex gap-3">
+              <button
+                class="flex-1 btn {mine?.status === 'confirmed' ? 'btn-primary' : 'btn-secondary'}"
+                onclick={() => respond('confirmed')} disabled={responding || isFull}>
+                <CheckCircle size={16} /> Vou jogar!
+              </button>
+              <button
+                class="flex-1 btn {mine?.status === 'declined' ? 'btn-danger' : 'btn-secondary'}"
+                onclick={() => respond('declined')} disabled={responding}>
+                <XCircle size={16} /> Não posso
+              </button>
+            </div>
           {/if}
-          {#if isFull}
-            <p class="text-sm text-red-500 font-medium text-center py-2">
-              ⛔ Partida lotada — {match.max_players} jogadores já confirmados.
-            </p>
-          {/if}
-          <div class="flex gap-3">
-            <button
-              class="flex-1 btn {mine?.status === 'confirmed' ? 'btn-primary' : 'btn-secondary'}"
-              onclick={() => respond('confirmed')} disabled={responding || isFull}>
-              <CheckCircle size={16} /> Vou jogar!
-            </button>
-            <button
-              class="flex-1 btn {mine?.status === 'declined' ? 'btn-danger' : 'btn-secondary'}"
-              onclick={() => respond('declined')} disabled={responding}>
-              <XCircle size={16} /> Não posso
-            </button>
-          </div>
         </div>
       {/if}
 
       <!-- Players lists -->
-      <div class="space-y-4">
+      <div class="space-y-3">
         <!-- Confirmed -->
         {#if confirmed.length > 0}
           <div class="card overflow-hidden">
-            <div class="card-header bg-green-50">
-              <h3 class="font-semibold text-green-800 flex items-center gap-2">
-                <CheckCircle size={16} /> Confirmados ({confirmed.length})
+            <div class="px-4 py-2 bg-green-50 border-b border-gray-100">
+              <h3 class="text-sm font-semibold text-green-800 flex items-center gap-1.5">
+                <CheckCircle size={14} /> Confirmados ({confirmed.length})
               </h3>
             </div>
             <ul class="divide-y divide-gray-100">
               {#each confirmed as a, i}
-                <li class="px-5 py-3 flex items-center gap-3">
-                  <span class="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900">{a.player.nickname || a.player.name}</p>
-                  </div>
+                <li class="px-4 py-2 flex items-center gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                  <p class="text-sm font-medium text-gray-900">{a.player.nickname || a.player.name}</p>
                 </li>
               {/each}
             </ul>
@@ -291,15 +282,15 @@
         <!-- Declined -->
         {#if declined.length > 0}
           <div class="card overflow-hidden">
-            <div class="card-header bg-red-50">
-              <h3 class="font-semibold text-red-700 flex items-center gap-2">
-                <XCircle size={16} /> Recusaram ({declined.length})
+            <div class="px-4 py-2 bg-red-50 border-b border-gray-100">
+              <h3 class="text-sm font-semibold text-red-700 flex items-center gap-1.5">
+                <XCircle size={14} /> Recusaram ({declined.length})
               </h3>
             </div>
             <ul class="divide-y divide-gray-100">
               {#each declined as a}
-                <li class="px-5 py-3 text-sm text-gray-600 flex items-center gap-3">
-                  <XCircle size={14} class="text-red-400 shrink-0" />
+                <li class="px-4 py-2 text-sm text-gray-600 flex items-center gap-2.5">
+                  <XCircle size={13} class="text-red-400 shrink-0" />
                   {a.player.nickname || a.player.name}
                 </li>
               {/each}
@@ -310,15 +301,15 @@
         <!-- Pending -->
         {#if pending.length > 0}
           <div class="card overflow-hidden">
-            <div class="card-header">
-              <h3 class="font-semibold text-gray-600 flex items-center gap-2">
-                <Clock3 size={16} /> Aguardando ({pending.length})
+            <div class="px-4 py-2 border-b border-gray-100">
+              <h3 class="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+                <Clock3 size={14} /> Aguardando ({pending.length})
               </h3>
             </div>
             <ul class="divide-y divide-gray-100">
               {#each pending as a}
-                <li class="px-5 py-3 text-sm text-gray-500 flex items-center gap-3">
-                  <Clock3 size={14} class="text-gray-400 shrink-0" />
+                <li class="px-4 py-2 text-sm text-gray-500 flex items-center gap-2.5">
+                  <Clock3 size={13} class="text-gray-400 shrink-0" />
                   {a.player.nickname || a.player.name}
                 </li>
               {/each}
@@ -328,7 +319,7 @@
       </div>
 
       <!-- Share footer -->
-      <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
+      <div class="mt-6 pt-5 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
         <button onclick={shareWhatsApp} class="flex-1 btn btn-secondary justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -340,6 +331,7 @@
           <Link2 size={16} /> Copiar link
         </button>
       </div>
+      <p class="text-center text-xs text-gray-400 mt-4">⚽ rachao.app</p>
     {/if}
   </main>
 </div>

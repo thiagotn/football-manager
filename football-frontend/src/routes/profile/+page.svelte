@@ -2,6 +2,7 @@
   import { auth as authApi, ApiError } from '$lib/api';
   import { authStore, currentPlayer } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
+  import { goto } from '$app/navigation';
   import { Eye, EyeOff, KeyRound } from 'lucide-svelte';
 
   let currentPw = $state('');
@@ -24,9 +25,7 @@
       await authApi.changePassword(currentPw, newPw);
       authStore.setMustChangePassword(false);
       toastSuccess('Senha alterada com sucesso!');
-      currentPw = '';
-      newPw = '';
-      confirmPw = '';
+      goto('/');
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao alterar senha');
     }
@@ -91,7 +90,8 @@
         <div class="relative">
           <input id="current-pw" class="input pr-10"
             type={showCurrent ? 'text' : 'password'}
-            bind:value={currentPw} placeholder="••••••" required autocomplete="current-password" />
+            bind:value={currentPw} placeholder="••••••" required autocomplete="current-password"
+            disabled={saving} />
           <button type="button" onclick={() => showCurrent = !showCurrent}
             class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
             {#if showCurrent}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
@@ -104,7 +104,8 @@
         <div class="relative">
           <input id="new-pw" class="input pr-10"
             type={showNew ? 'text' : 'password'}
-            bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password" />
+            bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password"
+            disabled={saving} />
           <button type="button" onclick={() => showNew = !showNew}
             class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
             {#if showNew}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
@@ -116,7 +117,8 @@
         <label class="label" for="confirm-pw">Confirmar nova senha</label>
         <input id="confirm-pw" class="input"
           type="password" bind:value={confirmPw}
-          placeholder="Repita a nova senha" required autocomplete="new-password" />
+          placeholder="Repita a nova senha" required autocomplete="new-password"
+          disabled={saving} />
       </div>
 
       {#if validationError}
