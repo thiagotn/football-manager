@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime, time
+from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
@@ -65,6 +66,8 @@ class MatchDetailResponse(MatchResponse):
     declined_count: int = 0
     pending_count: int = 0
     group_name: str = ""
+    group_per_match_amount: Decimal | None = None
+    group_monthly_amount: Decimal | None = None
 
 
 class SetAttendanceRequest(BaseModel):

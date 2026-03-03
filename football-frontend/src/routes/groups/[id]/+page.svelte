@@ -5,7 +5,7 @@
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
 
   const groupId = $page.params.id;
 
@@ -18,6 +18,7 @@
   let showMatch = $state(false);
   let showInvite = $state(false);
   let showAddMember = $state(false);
+  let showEditGroup = $state(false);
 
   let inviteLink = $state('');
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
@@ -26,6 +27,42 @@
 
   let allPlayers: Player[] = $state([]);
   let addMemberId = $state('');
+
+  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '' });
+
+  function fmtPricingParts(perMatch: number | string | null, monthly: number | string | null): string[] {
+    const parts: string[] = [];
+    if (perMatch != null) parts.push(`R$ ${Number(perMatch).toFixed(2).replace('.', ',')} avulso`);
+    if (monthly != null) parts.push(`R$ ${Number(monthly).toFixed(2).replace('.', ',')} mensal`);
+    return parts;
+  }
+
+  function openEditGroup() {
+    if (!group) return;
+    editForm = {
+      name: group.name,
+      description: group.description ?? '',
+      per_match_amount: group.per_match_amount != null ? String(group.per_match_amount) : '',
+      monthly_amount: group.monthly_amount != null ? String(group.monthly_amount) : '',
+    };
+    showEditGroup = true;
+  }
+
+  async function saveEditGroup() {
+    saving = true;
+    try {
+      await groupsApi.update(groupId, {
+        name: editForm.name,
+        description: editForm.description || undefined,
+        per_match_amount: editForm.per_match_amount !== '' ? parseFloat(editForm.per_match_amount) : null,
+        monthly_amount: editForm.monthly_amount !== '' ? parseFloat(editForm.monthly_amount) : null,
+      });
+      group = await groupsApi.get(groupId);
+      showEditGroup = false;
+      toastSuccess('Grupo atualizado!');
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
+    saving = false;
+  }
 
   $effect(() => {
     let cancelled = false;
@@ -140,9 +177,15 @@
         <h1 class="text-2xl font-bold text-gray-900">{group.name}</h1>
         {#if group.description}<p class="text-gray-500 text-sm mt-1">{group.description}</p>{/if}
         <p class="text-xs text-gray-400 mt-1">{group.total_members} membro{group.total_members !== 1 ? 's' : ''}</p>
+        {#if group.per_match_amount != null || group.monthly_amount != null}
+          <p class="text-xs text-amber-700 mt-1 font-medium">{fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}</p>
+        {:else}
+          <p class="text-xs text-green-600 mt-1">Partida aberta — sem cobrança</p>
+        {/if}
       </div>
       {#if isGroupAdmin()}
         <div class="flex flex-wrap gap-2">
+          <button class="btn-secondary btn-sm" onclick={openEditGroup}><Pencil size={14} /> Editar</button>
           <button class="btn-secondary btn-sm" onclick={generateInvite}><Link size={14} /> Convidar</button>
           {#if tab === 'members'}
             <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar</button>
@@ -198,6 +241,9 @@
                       {#if m.players_per_team}<span>{m.players_per_team} na linha + goleiro</span>{/if}
                       {#if m.max_players}<span>· máx. {m.max_players} jogadores</span>{/if}
                     </p>
+                  {/if}
+                  {#if group && (group.per_match_amount != null || group.monthly_amount != null)}
+                    <p class="text-xs text-amber-700 font-medium mt-1">{fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}</p>
                   {/if}
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
@@ -358,6 +404,38 @@
     <div class="flex gap-3 justify-end">
       <button type="button" class="btn-secondary" onclick={() => showAddMember = false}>Cancelar</button>
       <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Adicionando…' : 'Adicionar'}</button>
+    </div>
+  </form>
+</Modal>
+
+<!-- Edit group modal -->
+<Modal bind:open={showEditGroup} title="Editar Grupo">
+  <form onsubmit={(e) => { e.preventDefault(); saveEditGroup(); }} class="space-y-4">
+    <div class="form-group">
+      <label class="label" for="egname">Nome *</label>
+      <input id="egname" class="input" bind:value={editForm.name} required minlength="2" maxlength="100" />
+    </div>
+    <div class="form-group">
+      <label class="label" for="egdesc">Descrição</label>
+      <textarea id="egdesc" class="input resize-none" rows="2" bind:value={editForm.description} placeholder="Opcional…"></textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="label" for="egpermatch">Valor avulso (R$)</label>
+        <input id="egpermatch" class="input" type="number" min="0" step="0.01"
+          bind:value={editForm.per_match_amount} placeholder="Ex: 25,00" />
+        <p class="text-xs text-gray-400 mt-0.5">Deixe vazio se não cobrar por partida</p>
+      </div>
+      <div class="form-group">
+        <label class="label" for="egmonthly">Mensalidade (R$)</label>
+        <input id="egmonthly" class="input" type="number" min="0" step="0.01"
+          bind:value={editForm.monthly_amount} placeholder="Ex: 75,00" />
+        <p class="text-xs text-gray-400 mt-0.5">Deixe vazio se não cobrar mensalidade</p>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end pt-2">
+      <button type="button" class="btn-secondary" onclick={() => showEditGroup = false}>Cancelar</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
     </div>
   </form>
 </Modal>

@@ -39,6 +39,13 @@
     });
   }
 
+  function fmtPricingParts(perMatch: number | string | null, monthly: number | string | null): string[] {
+    const parts: string[] = [];
+    if (perMatch != null) parts.push(`R$ ${Number(perMatch).toFixed(2).replace('.', ',')} avulso`);
+    if (monthly != null) parts.push(`R$ ${Number(monthly).toFixed(2).replace('.', ',')} mensal`);
+    return parts;
+  }
+
   async function respond(status: 'confirmed' | 'declined') {
     if (!match || !$currentPlayer) return;
     responding = true;
@@ -152,9 +159,8 @@
           <div class="absolute inset-0 bg-primary-900/80"></div>
           <div class="relative">
           <div class="flex items-center justify-between mb-1">
-            <p class="text-sm font-medium text-primary-200">
-              {match.group_name}
-              <span class="ml-1 opacity-70">· #{match.number}</span>
+            <p class="text-sm font-bold text-white">
+              #{match.number} {match.group_name}
             </p>
             <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
               {match.status === 'open' ? 'Aberta' : 'Encerrada'}
@@ -175,7 +181,7 @@
               <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
             {/if}
           </div>
-          {#if match.court_type || match.players_per_team || match.max_players}
+          {#if match.court_type || match.players_per_team || match.max_players || match.group_per_match_amount != null || match.group_monthly_amount != null}
             <div class="flex flex-wrap gap-3 mt-2 text-primary-200 text-xs">
               {#if match.court_type}
                 <span class="bg-primary-800/40 rounded px-2 py-0.5">{COURT_LABELS[match.court_type]}</span>
@@ -188,6 +194,9 @@
                   {match.confirmed_count}/{match.max_players} vagas
                 </span>
               {/if}
+              {#each fmtPricingParts(match.group_per_match_amount, match.group_monthly_amount) as part}
+                <span class="bg-amber-500/30 text-amber-200 rounded px-2 py-0.5 font-medium">{part}</span>
+              {/each}
             </div>
           {/if}
           {#if match.notes}
@@ -272,7 +281,6 @@
                   <span class="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                   <div>
                     <p class="text-sm font-medium text-gray-900">{a.player.nickname || a.player.name}</p>
-                    {#if a.player.nickname}<p class="text-xs text-gray-400">{a.player.name}</p>{/if}
                   </div>
                 </li>
               {/each}
@@ -292,7 +300,7 @@
               {#each declined as a}
                 <li class="px-5 py-3 text-sm text-gray-600 flex items-center gap-3">
                   <XCircle size={14} class="text-red-400 shrink-0" />
-                  {a.player.nickname || a.player.name}{a.player.nickname ? ` (${a.player.name})` : ''}
+                  {a.player.nickname || a.player.name}
                 </li>
               {/each}
             </ul>
@@ -311,7 +319,7 @@
               {#each pending as a}
                 <li class="px-5 py-3 text-sm text-gray-500 flex items-center gap-3">
                   <Clock3 size={14} class="text-gray-400 shrink-0" />
-                  {a.player.nickname || a.player.name}{a.player.nickname ? ` (${a.player.name})` : ''}
+                  {a.player.nickname || a.player.name}
                 </li>
               {/each}
             </ul>

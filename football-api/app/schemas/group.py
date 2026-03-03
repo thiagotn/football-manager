@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_validator
 import re
@@ -20,6 +21,8 @@ class GroupCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     description: str | None = Field(None, max_length=500)
     slug: str | None = Field(None, max_length=60, description="Deixe vazio para gerar automaticamente")
+    per_match_amount: Decimal | None = None
+    monthly_amount: Decimal | None = None
 
     @field_validator("slug", mode="before")
     @classmethod
@@ -32,6 +35,8 @@ class GroupCreate(BaseModel):
 class GroupUpdate(BaseModel):
     name: str | None = Field(None, min_length=2, max_length=100)
     description: str | None = None
+    per_match_amount: Decimal | None = None
+    monthly_amount: Decimal | None = None
 
 
 class GroupMemberResponse(BaseModel):
@@ -50,6 +55,8 @@ class GroupResponse(BaseModel):
     name: str
     description: str | None
     slug: str
+    per_match_amount: Decimal | None
+    monthly_amount: Decimal | None
     created_at: datetime
     updated_at: datetime
 

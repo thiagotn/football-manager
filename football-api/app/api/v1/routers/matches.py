@@ -54,6 +54,8 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         declined_count=len(declined),
         pending_count=len(pending),
         group_name=match.group.name if match.group else "",
+        group_per_match_amount=match.group.per_match_amount if match.group else None,
+        group_monthly_amount=match.group.monthly_amount if match.group else None,
     )
 
 
