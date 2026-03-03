@@ -333,7 +333,7 @@
           <Link2 size={16} /> Copiar link
         </button>
       </div>
-      <p class="text-center text-xs text-gray-400 mt-4">⚽ rachao.app</p>
+      <p class="text-center text-xs text-gray-400 mt-4">⚽ <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 underline underline-offset-2">rachao.app</a></p>
     {/if}
   </main>
 </div>
