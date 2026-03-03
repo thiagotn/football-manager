@@ -24,7 +24,7 @@
           allMatches.push(...ms.slice(0, 2).map(m => ({ ...m, group_name: g.name, group_slug: g.slug, group_id: g.id })));
         }
         if (!cancelled) recentMatches = allMatches
-          .sort((a, b) => b.match_date.localeCompare(a.match_date))
+          .sort((a, b) => a.match_date.localeCompare(b.match_date))
           .slice(0, 5);
       } catch (e) { console.error('[dashboard] erro:', e); }
       if (!cancelled) loading = false;

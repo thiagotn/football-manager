@@ -277,7 +277,7 @@
 <!-- Create match modal -->
 <Modal bind:open={showMatch} title="Nova Partida">
   <form onsubmit={(e) => { e.preventDefault(); createMatch(); }} class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
         <label class="label" for="mdate">Data *</label>
         <input id="mdate" class="input" type="date" bind:value={matchForm.match_date} required />
@@ -295,7 +295,7 @@
       <label class="label" for="maddr">Endereço <span class="text-gray-400 font-normal">(opcional — para abrir no Maps)</span></label>
       <input id="maddr" class="input" bind:value={matchForm.address} placeholder="Ex: Rua das Flores, 123 — São Paulo, SP" />
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
         <label class="label" for="mcourt">Tipo de quadra</label>
         <select id="mcourt" class="input" bind:value={matchForm.court_type}>

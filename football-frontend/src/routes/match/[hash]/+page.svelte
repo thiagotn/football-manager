@@ -60,19 +60,28 @@
 
   function shareWhatsApp() {
     if (!match) return;
-    const playerList = confirmed.length > 0
+    const confirmedList = confirmed.length > 0
       ? confirmed.map((a, i) => `${i + 1} - ${a.player.nickname || a.player.name}`).join('\n')
       : 'Nenhum confirmado ainda';
+    const declinedList = declined.length > 0
+      ? declined.map(a => `- ${a.player.nickname || a.player.name}`).join('\n')
+      : 'Nenhum';
+    const pendingList = pending.length > 0
+      ? pending.map(a => `- ${a.player.nickname || a.player.name}`).join('\n')
+      : 'Nenhum';
     const lines = [
       `*${match.group_name}*`,
       fmtDateShare(match.match_date),
       `Local: ${match.location}`,
       '',
       `Confirmados (${confirmed.length}):`,
-      playerList,
+      confirmedList,
       '',
-      `Nao vao: ${declined.length}`,
-      `Pendentes: ${pending.length}`,
+      `Nao vao (${declined.length}):`,
+      declinedList,
+      '',
+      `Pendentes (${pending.length}):`,
+      pendingList,
       '',
       window.location.href,
     ];
@@ -142,13 +151,15 @@
           </picture>
           <div class="absolute inset-0 bg-primary-900/80"></div>
           <div class="relative">
-          <p class="text-sm font-medium text-primary-200 mb-1">
-            <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'} mr-2">
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-sm font-medium text-primary-200">
+              {match.group_name}
+              <span class="ml-1 opacity-70">· #{match.number}</span>
+            </p>
+            <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
               {match.status === 'open' ? 'Aberta' : 'Encerrada'}
             </span>
-            {match.group_name}
-            <span class="ml-1 opacity-70">· #{match.number}</span>
-          </p>
+          </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-4 mt-3 text-primary-100 text-sm">
             <span class="flex items-center gap-1.5"><Clock size={14} />{match.start_time.slice(0,5)}</span>
