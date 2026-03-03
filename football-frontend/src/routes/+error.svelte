@@ -24,7 +24,7 @@
 
   <!-- Banner de erro -->
   {#if $page.status === 404}
-    <div class="relative overflow-hidden" style="min-height: 240px;">
+    <div class="overflow-hidden h-32 sm:h-44">
       <picture>
         <source srcset="/error-404.webp" type="image/webp" />
         <img
@@ -33,21 +33,21 @@
           aria-hidden="true"
           width="1920"
           height="600"
-          class="absolute inset-0 w-full h-full object-cover object-center"
+          class="w-full h-full object-cover"
+          style="object-position: 25% 55%"
         />
       </picture>
-      <div class="absolute inset-0 bg-primary-900/60"></div>
-      <div class="relative px-6 py-12 text-white text-center max-w-2xl mx-auto">
-        <span class="inline-block text-xs font-bold bg-red-500 text-white px-2.5 py-0.5 rounded-full mb-4">
-          Erro 404
-        </span>
-        <h1 class="text-3xl sm:text-4xl font-bold leading-snug">
-          A bola saiu pela<br>linha de fundo.
-        </h1>
-        <p class="text-primary-200 mt-3 text-sm">
-          Essa página foi para o vestiário mais cedo que o esperado.
-        </p>
-      </div>
+    </div>
+    <div class="bg-primary-800 px-6 py-8 text-white text-center">
+      <span class="inline-block text-xs font-bold bg-red-500 text-white px-2.5 py-0.5 rounded-full mb-3">
+        Erro 404
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold leading-snug">
+        A bola saiu pela linha de fundo.
+      </h1>
+      <p class="text-primary-200 mt-2 text-sm">
+        Essa página foi para o vestiário mais cedo que o esperado.
+      </p>
     </div>
 
   {:else}
