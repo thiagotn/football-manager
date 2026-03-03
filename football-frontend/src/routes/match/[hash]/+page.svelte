@@ -15,6 +15,7 @@
   let loading = $state(true);
   let responding = $state(false);
   let responded = $state(false);
+  let lastStatus: 'confirmed' | 'declined' | null = $state(null);
 
   let confirmed = $derived(match?.attendances.filter(a => a.status === 'confirmed') ?? []);
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
@@ -54,6 +55,7 @@
       await matchesApi.setAttendance(match.group_id, match.id, $currentPlayer.id, status);
       match = await matchesApi.getByHash(matchHash);
       toastSuccess(status === 'confirmed' ? '✅ Presença confirmada!' : '❌ Falta registrada');
+      lastStatus = status;
       responded = true;
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     responding = false;
@@ -229,10 +231,10 @@
           </h3>
           {#if responded}
             <div class="text-center py-1">
-              <p class="text-sm font-medium {mine?.status === 'confirmed' ? 'text-green-600' : 'text-red-500'}">
-                {mine?.status === 'confirmed' ? '✅ Presença confirmada! Até lá.' : '❌ Falta registrada.'}
+              <p class="text-sm font-medium {lastStatus === 'confirmed' ? 'text-green-600' : 'text-red-500'}">
+                {lastStatus === 'confirmed' ? '✅ Presença confirmada! Até lá.' : '❌ Falta registrada.'}
               </p>
-              <button class="text-xs text-gray-400 hover:text-gray-600 mt-2 underline" onclick={() => responded = false}>
+              <button class="text-xs text-gray-400 hover:text-gray-600 mt-2 underline" onclick={() => { responded = false; lastStatus = null; }}>
                 Alterar resposta
               </button>
             </div>
