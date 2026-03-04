@@ -62,6 +62,7 @@ class Match(Base, UUIDMixin, TimestampMixin):
     )
     match_date: Mapped[date] = mapped_column(Date, nullable=False)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
+    end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     location: Mapped[str] = mapped_column(String(200), nullable=False)
     address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     court_type: Mapped[CourtType | None] = mapped_column(_court_type_col, nullable=True)

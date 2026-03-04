@@ -35,6 +35,19 @@
     return () => { cancelled = true; };
   });
 
+  function fmtTimeRange(start: string, end: string | null): string {
+    const s = start.slice(0, 5);
+    if (!end) return s;
+    const e = end.slice(0, 5);
+    const [sh, sm] = s.split(':').map(Number);
+    const [eh, em] = e.split(':').map(Number);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins <= 0) return `${s} – ${e}`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    const dur = h && m ? `${h}h${String(m).padStart(2, '0')}` : h ? `${h}h` : `${m}min`;
+    return `${s} – ${e} (${dur})`;
+  }
+
   function fmtDate(d: string) {
     return new Date(d + 'T00:00').toLocaleDateString('pt-BR', {
       weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
@@ -160,7 +173,7 @@
           </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
-            <span class="flex items-center gap-1.5"><Clock size={14} />{match.start_time.slice(0,5)}</span>
+            <span class="flex items-center gap-1.5"><Clock size={14} />{fmtTimeRange(match.start_time, match.end_time)}</span>
             {#if match.address}
               <a
                 href="https://maps.google.com/?q={encodeURIComponent(match.address)}"

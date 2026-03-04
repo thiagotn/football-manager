@@ -54,7 +54,7 @@ export type Group = { id: string; name: string; description: string | null; slug
 export type GroupMember = { id: string; player: PlayerPublic; role: 'admin' | 'member'; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type Match = {
-  id: string; number: number; group_id: string; match_date: string; start_time: string;
+  id: string; number: number; group_id: string; match_date: string; start_time: string; end_time: string | null;
   location: string; address: string | null;
   court_type: 'campo' | 'sintetico' | 'terrao' | 'quadra' | null;
   players_per_team: number | null;
@@ -98,7 +98,7 @@ export const matches = {
   getByHash: (hash: string) => get<MatchDetail>(`/matches/public/${hash}`),
   create: (groupId: string, data: { match_date: string; start_time: string; location: string; notes?: string }) =>
     post<Match>(`/groups/${groupId}/matches`, data),
-  update: (groupId: string, matchId: string, data: Partial<{ match_date: string; start_time: string; location: string; notes: string; status: string }>) =>
+  update: (groupId: string, matchId: string, data: Partial<{ match_date: string; start_time: string; end_time: string | null; location: string; address: string | null; court_type: string | null; players_per_team: number | null; max_players: number | null; notes: string | null; status: string }>) =>
     patch<Match>(`/groups/${groupId}/matches/${matchId}`, data),
   delete: (groupId: string, matchId: string) => del(`/groups/${groupId}/matches/${matchId}`),
   setAttendance: (groupId: string, matchId: string, playerId: string, status: string) =>

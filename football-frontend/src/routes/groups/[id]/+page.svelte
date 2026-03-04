@@ -16,13 +16,16 @@
 
   // Modals
   let showMatch = $state(false);
+  let showEditMatch = $state(false);
   let showInvite = $state(false);
   let showAddMember = $state(false);
   let showEditGroup = $state(false);
 
   let inviteLink = $state('');
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
-  let matchForm = $state({ match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' });
+  let matchForm = $state({ match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' });
+  let editMatchForm = $state({ match_date: '', start_time: '', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '', status: 'open' });
+  let editingMatch: Match | null = $state(null);
   let saving = $state(false);
 
   let allPlayers: Player[] = $state([]);
@@ -90,7 +93,7 @@
       const m = await matchesApi.create(groupId, matchForm);
       matchList = [m, ...matchList];
       showMatch = false;
-      matchForm = { match_date: '', start_time: '20:30', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' };
+      matchForm = { match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' };
       toastSuccess('Partida criada!');
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     saving = false;
@@ -159,6 +162,59 @@
 
   function fmtDate(d: string) {
     return new Date(d + 'T00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+
+  function fmtTimeRange(start: string, end: string | null): string {
+    const s = start.slice(0, 5);
+    if (!end) return s;
+    const e = end.slice(0, 5);
+    const [sh, sm] = s.split(':').map(Number);
+    const [eh, em] = e.split(':').map(Number);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins <= 0) return `${s} – ${e}`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    const dur = h && m ? `${h}h${String(m).padStart(2, '0')}` : h ? `${h}h` : `${m}min`;
+    return `${s} – ${e} (${dur})`;
+  }
+
+  function openEditMatch(m: Match) {
+    editingMatch = m;
+    editMatchForm = {
+      match_date: m.match_date,
+      start_time: m.start_time.slice(0, 5),
+      end_time: m.end_time?.slice(0, 5) ?? '',
+      location: m.location,
+      address: m.address ?? '',
+      court_type: m.court_type ?? '',
+      players_per_team: m.players_per_team ? String(m.players_per_team) : '',
+      max_players: m.max_players ? String(m.max_players) : '',
+      notes: m.notes ?? '',
+      status: m.status,
+    };
+    showEditMatch = true;
+  }
+
+  async function saveEditMatch() {
+    if (!editingMatch) return;
+    saving = true;
+    try {
+      const updated = await matchesApi.update(groupId, editingMatch.id, {
+        match_date: editMatchForm.match_date,
+        start_time: editMatchForm.start_time,
+        end_time: editMatchForm.end_time || null,
+        location: editMatchForm.location,
+        address: editMatchForm.address || null,
+        court_type: (editMatchForm.court_type as any) || null,
+        players_per_team: editMatchForm.players_per_team ? parseInt(editMatchForm.players_per_team) : null,
+        max_players: editMatchForm.max_players ? parseInt(editMatchForm.max_players) : null,
+        notes: editMatchForm.notes || null,
+        status: editMatchForm.status as any,
+      });
+      matchList = matchList.map(m => m.id === updated.id ? updated : m);
+      showEditMatch = false;
+      toastSuccess('Partida atualizada!');
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
+    saving = false;
   }
 </script>
 
@@ -231,7 +287,7 @@
                 <div class="flex-1 min-w-0">
                   <p class="font-medium text-gray-900 capitalize">{fmtDate(m.match_date)}</p>
                   <p class="text-sm text-gray-500 flex flex-wrap gap-3 mt-0.5">
-                    <span class="flex items-center gap-1"><Clock size={12} />{m.start_time.slice(0,5)}</span>
+                    <span class="flex items-center gap-1"><Clock size={12} />{fmtTimeRange(m.start_time, m.end_time)}</span>
                     <span class="flex items-center gap-1"><MapPin size={12} />{m.location}</span>
                   </p>
                   {#if m.court_type || m.players_per_team || m.max_players}
@@ -254,7 +310,10 @@
                     <ChevronRight size={14} />
                   </a>
                   {#if isGroupAdmin()}
-                    <button onclick={() => deleteMatch(m)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50">
+                    <button onclick={() => openEditMatch(m)} class="btn-ghost btn-sm" title="Editar partida">
+                      <Pencil size={14} />
+                    </button>
+                    <button onclick={() => deleteMatch(m)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50" title="Excluir partida">
                       <Trash2 size={14} />
                     </button>
                   {/if}
@@ -323,14 +382,18 @@
 <!-- Create match modal -->
 <Modal bind:open={showMatch} title="Nova Partida">
   <form onsubmit={(e) => { e.preventDefault(); createMatch(); }} class="space-y-4">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="form-group">
+      <label class="label" for="mdate">Data *</label>
+      <input id="mdate" class="input" type="date" bind:value={matchForm.match_date} required />
+    </div>
+    <div class="grid grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="mdate">Data *</label>
-        <input id="mdate" class="input" type="date" bind:value={matchForm.match_date} required />
+        <label class="label" for="mtime">Início *</label>
+        <input id="mtime" class="input" type="time" bind:value={matchForm.start_time} required />
       </div>
       <div class="form-group">
-        <label class="label" for="mtime">Hora *</label>
-        <input id="mtime" class="input" type="time" bind:value={matchForm.start_time} required />
+        <label class="label" for="mendtime">Término <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <input id="mendtime" class="input" type="time" bind:value={matchForm.end_time} />
       </div>
     </div>
     <div class="form-group">
@@ -373,6 +436,76 @@
     <div class="flex gap-3 justify-end pt-2">
       <button type="button" class="btn-secondary" onclick={() => showMatch = false}>Cancelar</button>
       <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Criando…' : 'Criar Partida'}</button>
+    </div>
+  </form>
+</Modal>
+
+<!-- Edit match modal -->
+<Modal bind:open={showEditMatch} title="Editar Partida">
+  <form onsubmit={(e) => { e.preventDefault(); saveEditMatch(); }} class="space-y-4">
+    <div class="form-group">
+      <label class="label" for="emdate">Data *</label>
+      <input id="emdate" class="input" type="date" bind:value={editMatchForm.match_date} required />
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="label" for="emtime">Início *</label>
+        <input id="emtime" class="input" type="time" bind:value={editMatchForm.start_time} required />
+      </div>
+      <div class="form-group">
+        <label class="label" for="emendtime">Término <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <input id="emendtime" class="input" type="time" bind:value={editMatchForm.end_time} />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="label" for="emloc">Local *</label>
+      <input id="emloc" class="input" bind:value={editMatchForm.location} required />
+    </div>
+    <div class="form-group">
+      <label class="label" for="emaddr">Endereço <span class="text-gray-400 font-normal">(opcional)</span></label>
+      <input id="emaddr" class="input" bind:value={editMatchForm.address} placeholder="Ex: Rua das Flores, 123" />
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="label" for="emcourt">Tipo de quadra</label>
+        <select id="emcourt" class="input" bind:value={editMatchForm.court_type}>
+          <option value="">— selecione —</option>
+          <option value="campo">Campo</option>
+          <option value="sintetico">Sintético</option>
+          <option value="terrao">Terrão</option>
+          <option value="quadra">Quadra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="label" for="emplayers">Jogadores por time</label>
+        <select id="emplayers" class="input" bind:value={editMatchForm.players_per_team}>
+          <option value="">— selecione —</option>
+          {#each [4, 5, 6, 7, 8, 9, 10] as n}
+            <option value={n}>{n} na linha</option>
+          {/each}
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="label" for="emmaxp">Máximo de jogadores</label>
+        <input id="emmaxp" class="input" type="number" min="2" bind:value={editMatchForm.max_players} placeholder="Ex: 14" />
+      </div>
+      <div class="form-group">
+        <label class="label" for="emstatus">Status</label>
+        <select id="emstatus" class="input" bind:value={editMatchForm.status}>
+          <option value="open">Aberta</option>
+          <option value="closed">Encerrada</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="label" for="emnotes">Observações</label>
+      <textarea id="emnotes" class="input resize-none" rows="2" bind:value={editMatchForm.notes} placeholder="Opcional…"></textarea>
+    </div>
+    <div class="flex gap-3 justify-end pt-2">
+      <button type="button" class="btn-secondary" onclick={() => showEditMatch = false}>Cancelar</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
     </div>
   </form>
 </Modal>

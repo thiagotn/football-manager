@@ -11,6 +11,7 @@ from app.schemas.player import PlayerPublic
 class MatchCreate(BaseModel):
     match_date: date
     start_time: time
+    end_time: time | None = None
     location: str = Field(..., min_length=2, max_length=200)
     address: str | None = Field(None, max_length=300)
     court_type: CourtType | None = None
@@ -22,6 +23,7 @@ class MatchCreate(BaseModel):
 class MatchUpdate(BaseModel):
     match_date: date | None = None
     start_time: time | None = None
+    end_time: time | None = None
     location: str | None = Field(None, min_length=2, max_length=200)
     address: str | None = Field(None, max_length=300)
     court_type: CourtType | None = None
@@ -48,6 +50,7 @@ class MatchResponse(BaseModel):
     group_id: uuid.UUID
     match_date: date
     start_time: time
+    end_time: time | None
     location: str
     address: str | None
     court_type: CourtType | None
