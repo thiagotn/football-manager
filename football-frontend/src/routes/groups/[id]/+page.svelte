@@ -253,7 +253,11 @@
         {#if group.description}<p class="text-gray-500 text-sm mt-1">{group.description}</p>{/if}
         <p class="text-xs text-gray-400 mt-1">{group.total_members} membro{group.total_members !== 1 ? 's' : ''}</p>
         {#if group.per_match_amount != null || group.monthly_amount != null}
-          <p class="text-xs text-amber-700 mt-1 font-medium">{fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}</p>
+          <div class="flex flex-col text-xs text-amber-700 mt-1 font-medium leading-snug">
+            {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
+              <span>{part}</span>
+            {/each}
+          </div>
         {:else}
           <p class="text-xs text-green-600 mt-1">Partida aberta — sem cobrança</p>
         {/if}
@@ -335,11 +339,11 @@
 
                     <!-- Footer: pricing (left) + actions (right) -->
                     <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                      <span class="text-xs text-amber-700 font-medium">
-                        {#if group && (group.per_match_amount != null || group.monthly_amount != null)}
-                          {fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}
-                        {/if}
-                      </span>
+                      <div class="flex flex-col text-xs text-amber-700 font-medium leading-snug">
+                        {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
+                          <span>{part}</span>
+                        {/each}
+                      </div>
                       <div class="flex items-center gap-1 flex-wrap justify-end">
                         <a href="/match/{m.hash}" class="btn-sm btn-secondary">
                           Ver <ChevronRight size={14} />
