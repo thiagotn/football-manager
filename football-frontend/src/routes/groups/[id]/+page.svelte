@@ -538,7 +538,7 @@
       <button class="btn-primary shrink-0" onclick={copyLink}><Copy size={16} /></button>
     </div>
     <a
-      href="https://wa.me/?text={encodeURIComponent(`Você foi convidado para o grupo *${group?.name}* no Rachão!\n\nClique no link abaixo para criar sua conta e entrar no grupo:\n${inviteLink}`)}"
+      href="https://wa.me/?text={encodeURIComponent(`Você foi convidado para o grupo *${group?.name}* no rachao.app!\n\nClique no link abaixo para criar sua conta e entrar no grupo:\n${inviteLink}`)}"
       target="_blank"
       rel="noopener noreferrer"
       class="btn-secondary w-full flex items-center justify-center gap-2">
