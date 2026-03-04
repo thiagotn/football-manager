@@ -18,7 +18,7 @@ export async function load({ params }) {
     const dateLabel = fmtDate(match.match_date);
     return {
       og: {
-        title: `Pelada ${match.group_name} — ${dateLabel}`,
+        title: `Rachão ${match.group_name} — ${dateLabel}`,
         description: `${match.location} · ${match.start_time?.slice(0, 5)} · ${match.confirmed_count} confirmado(s). Confirme sua presença!`,
       },
     };
