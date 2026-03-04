@@ -5,6 +5,7 @@
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
 
   const groupId = $page.params.id;
@@ -32,6 +33,18 @@
   let addMemberId = $state('');
 
   let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '' });
+
+  let confirmOpen = $state(false);
+  let confirmMessage = $state('');
+  let confirmLabel = $state('Confirmar');
+  let confirmAction = $state<() => void>(() => {});
+
+  function askConfirm(message: string, label: string, action: () => void) {
+    confirmMessage = message;
+    confirmLabel = label;
+    confirmAction = action;
+    confirmOpen = true;
+  }
 
   function fmtPricingParts(perMatch: number | string | null, monthly: number | string | null): string[] {
     const parts: string[] = [];
@@ -133,31 +146,37 @@
 
   async function toggleRole(playerId: string, currentRole: string, name: string) {
     const newRole = currentRole === 'admin' ? 'member' : 'admin';
-    const action = newRole === 'admin' ? 'tornar presidente' : 'remover a presidência de';
-    if (!confirm(`Deseja ${action} "${name}"?`)) return;
-    try {
-      await groupsApi.updateMemberRole(groupId, playerId, newRole);
-      group = await groupsApi.get(groupId);
-      toastSuccess(newRole === 'admin' ? `${name} agora é presidente do grupo` : `${name} voltou a ser membro`);
-    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao alterar papel'); }
+    const actionLabel = newRole === 'admin' ? 'Tornar Presidente' : 'Remover Presidência';
+    const msg = newRole === 'admin'
+      ? `Tornar "${name}" presidente do grupo?`
+      : `Remover a presidência de "${name}"?`;
+    askConfirm(msg, actionLabel, async () => {
+      try {
+        await groupsApi.updateMemberRole(groupId, playerId, newRole);
+        group = await groupsApi.get(groupId);
+        toastSuccess(newRole === 'admin' ? `${name} agora é presidente do grupo` : `${name} voltou a ser membro`);
+      } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao alterar papel'); }
+    });
   }
 
   async function removeMember(playerId: string, name: string) {
-    if (!confirm(`Remover "${name}" do grupo?`)) return;
-    try {
-      await groupsApi.removeMember(groupId, playerId);
-      group = await groupsApi.get(groupId);
-      toastSuccess('Membro removido');
-    } catch (e) { toastError('Erro ao remover membro'); }
+    askConfirm(`Remover "${name}" do grupo?`, 'Remover', async () => {
+      try {
+        await groupsApi.removeMember(groupId, playerId);
+        group = await groupsApi.get(groupId);
+        toastSuccess('Membro removido');
+      } catch (e) { toastError('Erro ao remover membro'); }
+    });
   }
 
   async function deleteMatch(m: Match) {
-    if (!confirm('Excluir esta partida?')) return;
-    try {
-      await matchesApi.delete(groupId, m.id);
-      matchList = matchList.filter(x => x.id !== m.id);
-      toastSuccess('Partida excluída');
-    } catch (e) { toastError('Erro ao excluir'); }
+    askConfirm('Excluir esta partida?', 'Excluir', async () => {
+      try {
+        await matchesApi.delete(groupId, m.id);
+        matchList = matchList.filter(x => x.id !== m.id);
+        toastSuccess('Partida excluída');
+      } catch (e) { toastError('Erro ao excluir'); }
+    });
   }
 
   function fmtDate(d: string) {
@@ -322,15 +341,15 @@
                         {/if}
                       </span>
                       <div class="flex items-center gap-1">
-                        <a href="/match/{m.hash}" class="btn-secondary btn-sm" title="Ver partida">
-                          <ChevronRight size={14} />
+                        <a href="/match/{m.hash}" class="btn-icon btn-secondary" title="Ver partida">
+                          <ChevronRight size={16} />
                         </a>
                         {#if isGroupAdmin()}
-                          <button onclick={() => openEditMatch(m)} class="btn-ghost btn-sm" title="Editar partida">
-                            <Pencil size={14} />
+                          <button onclick={() => openEditMatch(m)} class="btn-icon btn-ghost" title="Editar partida">
+                            <Pencil size={16} />
                           </button>
-                          <button onclick={() => deleteMatch(m)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50" title="Excluir partida">
-                            <Trash2 size={14} />
+                          <button onclick={() => deleteMatch(m)} class="btn-icon btn-ghost text-red-500 hover:bg-red-50" title="Excluir partida">
+                            <Trash2 size={16} />
                           </button>
                         {/if}
                       </div>
@@ -370,20 +389,20 @@
                           <button
                             onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
                             title="Remover presidência"
-                            class="btn-ghost btn-sm text-gray-400 hover:bg-gray-100">
-                            <ShieldOff size={14} />
+                            class="btn-icon btn-ghost text-gray-400 hover:bg-gray-100">
+                            <ShieldOff size={16} />
                           </button>
                         {:else}
                           <button
                             onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
                             title="Tornar presidente"
-                            class="btn-ghost btn-sm text-blue-500 hover:bg-blue-50">
-                            <ShieldCheck size={14} />
+                            class="btn-icon btn-ghost text-blue-500 hover:bg-blue-50">
+                            <ShieldCheck size={16} />
                           </button>
                         {/if}
                         <button onclick={() => removeMember(m.player.id, m.player.name)}
-                          class="btn-ghost btn-sm text-red-500 hover:bg-red-50">
-                          <Trash2 size={14} />
+                          class="btn-icon btn-ghost text-red-500 hover:bg-red-50">
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     {/if}
@@ -570,6 +589,14 @@
     </div>
   </form>
 </Modal>
+
+<!-- Confirm dialog -->
+<ConfirmDialog
+  bind:open={confirmOpen}
+  message={confirmMessage}
+  confirmLabel={confirmLabel}
+  onConfirm={confirmAction}
+/>
 
 <!-- Edit group modal -->
 <Modal bind:open={showEditGroup} title="Editar Grupo">

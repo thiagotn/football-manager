@@ -3,6 +3,7 @@
   import type { Player } from '$lib/api';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Plus, Users, Pencil, Trash2, Eye, EyeOff, Search, KeyRound, Copy } from 'lucide-svelte';
 
   let playerList: Player[] = $state([]);
@@ -19,6 +20,16 @@
   let saving = $state(false);
   let resetting = $state(false);
   let showPw = $state(false);
+
+  let confirmOpen = $state(false);
+  let confirmMessage = $state('');
+  let confirmAction = $state<() => void>(() => {});
+
+  function askConfirm(message: string, action: () => void) {
+    confirmMessage = message;
+    confirmAction = action;
+    confirmOpen = true;
+  }
 
   let form = $state({ name: '', nickname: '', whatsapp: '', password: '', role: 'player' });
   let editForm = $state({ name: '', nickname: '', role: '' });
@@ -106,12 +117,13 @@
   }
 
   async function deactivate(p: Player) {
-    if (!confirm(`Desativar "${p.name}"?`)) return;
-    try {
-      await playersApi.delete(p.id);
-      playerList = playerList.map(x => x.id === p.id ? { ...x, active: false } : x);
-      toastSuccess('Jogador desativado');
-    } catch { toastError('Erro ao desativar'); }
+    askConfirm(`Desativar "${p.name}"?`, async () => {
+      try {
+        await playersApi.delete(p.id);
+        playerList = playerList.map(x => x.id === p.id ? { ...x, active: false } : x);
+        toastSuccess('Jogador desativado');
+      } catch { toastError('Erro ao desativar'); }
+    });
   }
 </script>
 
@@ -185,10 +197,10 @@
               </td>
               <td>
                 <div class="flex gap-1 justify-end">
-                  <button onclick={() => openEdit(p)} class="btn-ghost btn-sm" title="Editar"><Pencil size={14} /></button>
-                  <button onclick={() => openReset(p)} class="btn-ghost btn-sm text-amber-600 hover:bg-amber-50" title="Resetar senha"><KeyRound size={14} /></button>
+                  <button onclick={() => openEdit(p)} class="btn-icon btn-ghost" title="Editar"><Pencil size={16} /></button>
+                  <button onclick={() => openReset(p)} class="btn-icon btn-ghost text-amber-600 hover:bg-amber-50" title="Resetar senha"><KeyRound size={16} /></button>
                   {#if p.active}
-                    <button onclick={() => deactivate(p)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50" title="Desativar"><Trash2 size={14} /></button>
+                    <button onclick={() => deactivate(p)} class="btn-icon btn-ghost text-red-500 hover:bg-red-50" title="Desativar"><Trash2 size={16} /></button>
                   {/if}
                 </div>
               </td>
@@ -272,6 +284,14 @@
     </div>
   {/if}
 </Modal>
+
+<!-- Confirm dialog -->
+<ConfirmDialog
+  bind:open={confirmOpen}
+  message={confirmMessage}
+  confirmLabel="Desativar"
+  onConfirm={confirmAction}
+/>
 
 <!-- Edit modal -->
 <Modal bind:open={showEdit} title="Editar Jogador">

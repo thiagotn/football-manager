@@ -4,6 +4,7 @@
   import { isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Plus, Trophy, ChevronRight, Trash2 } from 'lucide-svelte';
 
   let groupList: Group[] = $state([]);
@@ -12,6 +13,16 @@
   let showCreate = $state(false);
   let form = $state({ name: '', description: '', slug: '' });
   let saving = $state(false);
+
+  let confirmOpen = $state(false);
+  let confirmMessage = $state('');
+  let confirmAction = $state<() => void>(() => {});
+
+  function askConfirm(message: string, action: () => void) {
+    confirmMessage = message;
+    confirmAction = action;
+    confirmOpen = true;
+  }
 
   $effect(() => {
     let cancelled = false;
@@ -46,14 +57,15 @@
   }
 
   async function deleteGroup(g: Group) {
-    if (!confirm(`Excluir "${g.name}"? Esta ação não pode ser desfeita.`)) return;
-    try {
-      await groupsApi.delete(g.id);
-      groupList = groupList.filter(x => x.id !== g.id);
-      toastSuccess('Grupo excluído');
-    } catch (e) {
-      toastError('Erro ao excluir grupo');
-    }
+    askConfirm(`Excluir "${g.name}"? Esta ação não pode ser desfeita.`, async () => {
+      try {
+        await groupsApi.delete(g.id);
+        groupList = groupList.filter(x => x.id !== g.id);
+        toastSuccess('Grupo excluído');
+      } catch (e) {
+        toastError('Erro ao excluir grupo');
+      }
+    });
   }
 </script>
 
@@ -109,8 +121,8 @@
           </a>
           {#if $isAdmin}
             <div class="px-6 pb-4 flex justify-end">
-              <button onclick={() => deleteGroup(g)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50">
-                <Trash2 size={14} />
+              <button onclick={() => deleteGroup(g)} class="btn-icon btn-ghost text-red-500 hover:bg-red-50" title="Excluir grupo">
+                <Trash2 size={16} />
               </button>
             </div>
           {/if}
@@ -141,3 +153,10 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmDialog
+  bind:open={confirmOpen}
+  message={confirmMessage}
+  confirmLabel="Excluir"
+  onConfirm={confirmAction}
+/>
