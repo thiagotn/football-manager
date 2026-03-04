@@ -20,7 +20,6 @@ class InviteResponse(BaseModel):
 
 
 class InviteAcceptRequest(BaseModel):
-    token: str
     name: str
     nickname: str | None = None
     whatsapp: str
