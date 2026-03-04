@@ -110,6 +110,8 @@ export const matches = {
 export const invites = {
   create: (groupId: string) => post<{ id: string; token: string; expires_at: string }>('/invites', { group_id: groupId }),
   getInfo: (token: string) => get<{ valid: boolean; group_name: string; expires_at: string }>(`/invites/${token}`),
-  accept: (token: string, data: { name: string; nickname?: string; whatsapp: string; password: string }) =>
+  checkWhatsapp: (token: string, whatsapp: string) =>
+    get<{ exists: boolean; first_name: string | null }>(`/invites/${token}/check?whatsapp=${encodeURIComponent(whatsapp)}`),
+  accept: (token: string, data: { name?: string; nickname?: string; whatsapp: string; password: string }) =>
     post<{ access_token: string; player_id: string; name: string; role: string }>(`/invites/${token}/accept`, data),
 };

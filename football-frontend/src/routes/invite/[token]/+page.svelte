@@ -3,16 +3,23 @@
   import { invites, ApiError } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
-  import { UserPlus, CheckCircle, Eye, EyeOff } from 'lucide-svelte';
+  import { UserPlus, CheckCircle, Eye, EyeOff, ArrowLeft } from 'lucide-svelte';
 
   const token = $page.params.token;
+
+  type Step = 'whatsapp' | 'login' | 'register';
 
   let info: { group_name: string; expires_at: string } | null = $state(null);
   let expired = $state(false);
   let loading = $state(true);
 
-  let form = $state({ name: '', nickname: '', whatsapp: '', password: '' });
+  let step = $state<Step>('whatsapp');
+  let whatsapp = $state('');
+  let firstName = $state('');           // nome do usuário existente (para boas-vindas)
+
+  let form = $state({ name: '', nickname: '', password: '' });
   let showPw = $state(false);
+  let checking = $state(false);        // aguardando resposta do check
   let submitting = $state(false);
   let done = $state(false);
   let error = $state('');
@@ -23,7 +30,7 @@
       try {
         const i = await invites.getInfo(token);
         if (!cancelled) info = i;
-      } catch (e) {
+      } catch {
         if (!cancelled) expired = true;
       }
       if (!cancelled) loading = false;
@@ -31,16 +38,36 @@
     return () => { cancelled = true; };
   });
 
+  async function checkWhatsapp() {
+    error = '';
+    checking = true;
+    try {
+      const result = await invites.checkWhatsapp(token, whatsapp);
+      if (result.exists) {
+        firstName = result.first_name ?? '';
+        step = 'login';
+      } else {
+        step = 'register';
+      }
+    } catch (e) {
+      error = e instanceof ApiError ? e.message : 'Erro ao verificar WhatsApp';
+    }
+    checking = false;
+  }
+
   async function accept() {
     error = '';
     submitting = true;
     try {
-      const res = await invites.accept(token, {
-        name: form.name,
-        nickname: form.nickname || undefined,
-        whatsapp: form.whatsapp,
+      const payload: { whatsapp: string; password: string; name?: string; nickname?: string } = {
+        whatsapp,
         password: form.password,
-      });
+      };
+      if (step === 'register') {
+        payload.name = form.name;
+        if (form.nickname) payload.nickname = form.nickname;
+      }
+      const res = await invites.accept(token, payload);
       authStore.login(res.access_token, res);
       done = true;
       setTimeout(() => goto('/'), 2000);
@@ -48,6 +75,12 @@
       error = e instanceof ApiError ? e.message : 'Erro ao aceitar convite';
     }
     submitting = false;
+  }
+
+  function back() {
+    error = '';
+    form = { name: '', nickname: '', password: '' };
+    step = 'whatsapp';
   }
 
   function fmtExpiry(s: string) {
@@ -94,36 +127,96 @@
         <div class="alert-error mb-4">{error}</div>
       {/if}
 
-      <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-3">
-        <div class="form-group">
-          <label class="label" for="name">Nome completo *</label>
-          <input id="name" class="input" bind:value={form.name} placeholder="Seu nome" required minlength="2" />
-        </div>
-        <div class="form-group">
-          <label class="label" for="nick">Apelido</label>
-          <input id="nick" class="input" bind:value={form.nickname} placeholder="Como te chamam no campo?" />
-        </div>
-        <div class="form-group">
-          <label class="label" for="wa">WhatsApp *</label>
-          <input id="wa" class="input" type="tel" bind:value={form.whatsapp} placeholder="11999990000" required />
-        </div>
-        <div class="form-group">
-          <label class="label" for="pw">Criar senha *</label>
-          <div class="relative">
-            <input id="pw" class="input pr-10" type={showPw ? 'text' : 'password'} bind:value={form.password}
-              placeholder="Mínimo 6 caracteres" required minlength="6" />
-            <button type="button" onclick={() => showPw = !showPw}
-              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              {#if showPw}<EyeOff size={16} />{:else}<Eye size={16} />{/if}
-            </button>
+      <!-- ETAPA 1: WhatsApp -->
+      {#if step === 'whatsapp'}
+        <form onsubmit={(e) => { e.preventDefault(); checkWhatsapp(); }} class="space-y-4">
+          <div class="form-group">
+            <label class="label" for="wa">Seu WhatsApp *</label>
+            <input
+              id="wa" class="input" type="tel"
+              bind:value={whatsapp}
+              placeholder="11999990000"
+              required />
+            <p class="text-xs text-gray-400 mt-1">Usado para identificar se você já tem conta.</p>
           </div>
-        </div>
+          <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={checking}>
+            {checking ? 'Verificando…' : 'Continuar'}
+          </button>
+        </form>
 
-        <button type="submit" class="btn-primary w-full justify-center py-2.5 mt-2" disabled={submitting}>
-          <UserPlus size={16} />
-          {submitting ? 'Entrando…' : 'Entrar no Grupo'}
-        </button>
-      </form>
+      <!-- ETAPA 2a: Usuário existente — só senha -->
+      {:else if step === 'login'}
+        <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-4">
+          <div class="alert-info text-sm">
+            {#if firstName}
+              Olá, <strong>{firstName}</strong>! Você já tem uma conta.
+            {:else}
+              Você já tem uma conta cadastrada.
+            {/if}
+            Entre com sua senha para entrar no grupo.
+          </div>
+          <div class="form-group">
+            <label class="label" for="wa-ro">WhatsApp</label>
+            <input id="wa-ro" class="input bg-gray-50 text-gray-500" value={whatsapp} readonly />
+          </div>
+          <div class="form-group">
+            <label class="label" for="pw">Senha *</label>
+            <div class="relative">
+              <input id="pw" class="input pr-10" type={showPw ? 'text' : 'password'}
+                bind:value={form.password} placeholder="Sua senha" required />
+              <button type="button" onclick={() => showPw = !showPw}
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {#if showPw}<EyeOff size={16} />{:else}<Eye size={16} />{/if}
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={submitting}>
+            <UserPlus size={16} />
+            {submitting ? 'Entrando…' : 'Entrar no Grupo'}
+          </button>
+          <button type="button" onclick={back}
+            class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-1">
+            <ArrowLeft size={13} /> Usar outro número
+          </button>
+        </form>
+
+      <!-- ETAPA 2b: Novo usuário — cadastro completo -->
+      {:else if step === 'register'}
+        <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-3">
+          <p class="text-sm text-gray-500 -mt-1">Preencha seus dados para criar a conta.</p>
+          <div class="form-group">
+            <label class="label" for="name">Nome completo *</label>
+            <input id="name" class="input" bind:value={form.name} placeholder="Seu nome" required minlength="2" />
+          </div>
+          <div class="form-group">
+            <label class="label" for="nick">Apelido</label>
+            <input id="nick" class="input" bind:value={form.nickname} placeholder="Como te chamam no campo?" />
+          </div>
+          <div class="form-group">
+            <label class="label" for="wa-ro2">WhatsApp</label>
+            <input id="wa-ro2" class="input bg-gray-50 text-gray-500" value={whatsapp} readonly />
+          </div>
+          <div class="form-group">
+            <label class="label" for="pw2">Criar senha *</label>
+            <div class="relative">
+              <input id="pw2" class="input pr-10" type={showPw ? 'text' : 'password'}
+                bind:value={form.password} placeholder="Mínimo 6 caracteres" required minlength="6" />
+              <button type="button" onclick={() => showPw = !showPw}
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {#if showPw}<EyeOff size={16} />{:else}<Eye size={16} />{/if}
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-full justify-center py-2.5 mt-1" disabled={submitting}>
+            <UserPlus size={16} />
+            {submitting ? 'Criando conta…' : 'Criar conta e entrar'}
+          </button>
+          <button type="button" onclick={back}
+            class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 hover:text-gray-600">
+            <ArrowLeft size={13} /> Usar outro número
+          </button>
+        </form>
+      {/if}
     {/if}
   </div>
 </div>

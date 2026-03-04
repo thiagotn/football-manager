@@ -19,8 +19,17 @@ class InviteResponse(BaseModel):
     created_at: datetime
 
 
+class InviteCheckRequest(BaseModel):
+    whatsapp: str
+
+
+class InviteCheckResponse(BaseModel):
+    exists: bool
+    first_name: str | None = None
+
+
 class InviteAcceptRequest(BaseModel):
-    name: str
+    name: str | None = None      # obrigatório apenas para usuário novo
     nickname: str | None = None
     whatsapp: str
-    password: str
+    password: str                # obrigatório para ambos (novo cadastro e login)

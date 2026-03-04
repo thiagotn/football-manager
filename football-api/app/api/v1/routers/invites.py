@@ -7,14 +7,14 @@ from fastapi import APIRouter
 from app.core.config import get_settings
 from app.core.dependencies import DB, CurrentPlayer
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
-from app.core.security import create_access_token, hash_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.invite_repo import InviteRepository
 from app.db.repositories.player_repo import PlayerRepository
 from app.models.group import GroupMemberRole
 from app.models.player import PlayerRole
 from app.schemas.auth import TokenResponse
-from app.schemas.invite import InviteAcceptRequest, InviteCreateRequest, InviteResponse
+from app.schemas.invite import InviteAcceptRequest, InviteCheckResponse, InviteCreateRequest, InviteResponse
 
 router = APIRouter(prefix="/invites", tags=["invites"])
 
@@ -68,6 +68,24 @@ async def get_invite_info(token: str, db: DB):
     }
 
 
+@router.get("/{token}/check", response_model=InviteCheckResponse)
+async def check_whatsapp(token: str, whatsapp: str, db: DB):
+    """Verifica se um WhatsApp já tem conta. Requer token válido para evitar enumeração."""
+    repo = InviteRepository(db)
+    invite = await repo.get_valid_token(token)
+    if not invite:
+        raise NotFoundError("Convite inválido ou expirado")
+
+    normalized = re.sub(r"\D", "", whatsapp)
+    p_repo = PlayerRepository(db)
+    player = await p_repo.get_by_whatsapp(normalized)
+
+    if player:
+        first_name = player.name.split()[0]
+        return InviteCheckResponse(exists=True, first_name=first_name)
+    return InviteCheckResponse(exists=False)
+
+
 @router.post("/{token}/accept", response_model=TokenResponse)
 async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
     """
@@ -86,12 +104,16 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
     player = await p_repo.get_by_whatsapp(whatsapp)
 
     if player:
-        # Player exists — just join group if not already member
+        # Usuário existente — valida senha antes de adicionar ao grupo
+        if not verify_password(body.password, player.password_hash):
+            raise ForbiddenError("Senha incorreta")
         existing_membership = await g_repo.get_member(invite.group_id, player.id)
         if not existing_membership:
             await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
     else:
-        # Create new player
+        # Novo usuário — name é obrigatório
+        if not body.name or not body.name.strip():
+            raise ValidationError("Nome é obrigatório para novo cadastro")
         player = await p_repo.create(
             name=body.name,
             nickname=body.nickname,
