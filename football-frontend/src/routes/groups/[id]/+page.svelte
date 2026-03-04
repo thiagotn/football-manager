@@ -373,7 +373,7 @@
                             class="btn-ghost btn-sm text-gray-400 hover:bg-gray-100">
                             <ShieldOff size={14} />
                           </button>
-                        {:else if $isAdmin}
+                        {:else}
                           <button
                             onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
                             title="Tornar presidente"
