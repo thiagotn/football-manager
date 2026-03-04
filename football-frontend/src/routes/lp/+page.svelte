@@ -206,6 +206,7 @@
 <footer class="bg-gray-900 text-gray-400 py-8 px-6 text-center text-xs">
   <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
     <span class="text-white font-semibold">⚽ rachao.app</span>
+    <span class="text-gray-500 text-xs">© 2026</span>
     <div class="flex gap-5">
       <a href="/faq" class="hover:text-white transition-colors">FAQ</a>
       <a href="/login" class="hover:text-white transition-colors">Entrar</a>
