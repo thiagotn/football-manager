@@ -1,8 +1,8 @@
 <svelte:head>
-  <title>rachao.app — Organize suas peladas com facilidade</title>
+  <title>rachao.app — Organize suas partidas de futebol com facilidade</title>
   <meta name="description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
   <meta property="og:url" content="https://rachao.app/lp" />
-  <meta property="og:title" content="rachao.app — Organize suas peladas com facilidade" />
+  <meta property="og:title" content="rachao.app — Organize suas partidas de futebol com facilidade" />
   <meta property="og:description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
   <meta property="og:image" content="https://rachao.app/banner-lp.jpg" />
 </svelte:head>
@@ -35,7 +35,7 @@
       <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full self-center">Beta</span>
     </div>
     <p class="text-xl text-primary-100 max-w-xl mx-auto mb-3">
-      Organize suas peladas sem complicação.
+      Organize suas partidas de futebol sem complicação.
     </p>
     <p class="text-primary-200 max-w-lg mx-auto mb-10 text-sm leading-relaxed">
       Convide jogadores, confirme presenças e compartilhe os detalhes da partida —
@@ -60,7 +60,7 @@
     <div class="text-center mb-12">
       <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Para jogadores</span>
       <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">Como funciona?</h2>
-      <p class="text-gray-500 mt-2 text-sm">Em três passos simples você está dentro da pelada.</p>
+      <p class="text-gray-500 mt-2 text-sm">Em três passos simples você está dentro da partida.</p>
     </div>
 
     <div class="grid sm:grid-cols-3 gap-8">
@@ -108,7 +108,7 @@
   <div class="max-w-4xl mx-auto">
     <div class="text-center mb-12">
       <span class="text-xs font-semibold text-indigo-600 uppercase tracking-widest">Para organizadores</span>
-      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">Tudo que você precisa para gerir sua pelada</h2>
+      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">Tudo que você precisa para gerir suas partidas de futebol</h2>
       <p class="text-gray-500 mt-2 text-sm">Sem planilha, sem contar resposta por resposta no WhatsApp.</p>
     </div>
 
@@ -185,7 +185,7 @@
 <!-- CTA FINAL -->
 <section class="bg-gradient-to-br from-primary-700 to-primary-900 text-white py-16 px-6 text-center">
   <div class="max-w-xl mx-auto">
-    <h2 class="text-2xl sm:text-3xl font-bold mb-3">Pronto para jogar bonito?</h2>
+    <h2 class="text-2xl sm:text-3xl font-bold mb-3">Pronto para o rachão?</h2>
     <p class="text-primary-200 mb-8 text-sm">
       Peça ao organizador do seu grupo um link de convite, ou entre se já tiver conta.
     </p>

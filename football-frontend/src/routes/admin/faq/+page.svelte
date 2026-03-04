@@ -32,7 +32,11 @@
     },
     {
       q: 'Como controlar as presenças?',
-      a: 'Na página da partida (acesso pelo link ou pelo painel do grupo), você vê a lista completa de confirmados, recusados e pendentes. Como admin, você pode alterar manualmente o status de qualquer jogador clicando no nome dele.',
+      a: 'Na página da partida (acesso pelo link ou pelo painel do grupo), você vê a lista completa de confirmados, recusados e pendentes. Como admin do grupo, você pode confirmar ou registrar falta de qualquer jogador diretamente pela lista — basta clicar no botão ao lado do nome. Isso é especialmente útil para jogadores que não acessam o link a tempo.',
+    },
+    {
+      q: 'Posso confirmar a presença de um jogador que não respondeu?',
+      a: 'Sim. Como admin do grupo, você pode confirmar ou recusar a presença de qualquer membro diretamente na página da partida, sem depender do jogador. Na lista de pendentes, use os botões ✓ e ✕ ao lado de cada nome. Nas listas de confirmados e recusados, também há botão para reverter o status caso precise corrigir.',
     },
     {
       q: 'Como remover membros de um grupo?',

@@ -34,6 +34,10 @@
       q: 'O que significa cada status de partida?',
       a: '"Aberta" significa que você ainda pode confirmar ou recusar presença. "Encerrada" significa que a partida já aconteceu ou foi fechada pelo organizador — as respostas não são mais aceitas.',
     },
+    {
+      q: 'E se eu não confirmar pelo link a tempo?',
+      a: 'O organizador do grupo pode confirmar ou registrar sua falta diretamente pela plataforma, sem precisar que você acesse o link. Mas se possível, responda pelo link — isso ajuda o organizador a ter o controle em tempo real.',
+    },
   ];
 </script>
 
