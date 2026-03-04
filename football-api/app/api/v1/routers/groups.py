@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
 from app.db.repositories.group_repo import GroupRepository
+from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
 from app.models.group import GroupMemberRole
 from app.models.player import PlayerRole
@@ -202,4 +203,7 @@ async def remove_member(
     member = await repo.get_member(group_id, player_id)
     if not member:
         raise NotFoundError("Membro não encontrado")
+
+    m_repo = MatchRepository(db)
+    await m_repo.delete_player_attendances_in_open_matches(group_id, player_id)
     await repo.delete(member)

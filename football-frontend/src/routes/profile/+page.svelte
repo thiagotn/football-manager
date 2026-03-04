@@ -1,10 +1,30 @@
 <script lang="ts">
-  import { auth as authApi, ApiError } from '$lib/api';
+  import { auth as authApi, players as playersApi, ApiError } from '$lib/api';
   import { authStore, currentPlayer } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil } from 'lucide-svelte';
 
+  // Nickname
+  let nickname = $state($currentPlayer?.nickname ?? '');
+  let editingNickname = $state(false);
+  let savingNickname = $state(false);
+
+  async function saveNickname() {
+    if (!$currentPlayer) return;
+    savingNickname = true;
+    try {
+      const updated = await playersApi.update($currentPlayer.id, { nickname: nickname.trim() || null });
+      authStore.updatePlayer(updated);
+      editingNickname = false;
+      toastSuccess('Apelido atualizado!');
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao salvar apelido');
+    }
+    savingNickname = false;
+  }
+
+  // Password
   let currentPw = $state('');
   let newPw = $state('');
   let confirmPw = $state('');
@@ -57,12 +77,34 @@
         <dt class="text-gray-500">Nome</dt>
         <dd class="font-medium text-gray-900">{$currentPlayer?.name ?? '—'}</dd>
       </div>
-      {#if $currentPlayer?.nickname}
-        <div class="flex justify-between">
-          <dt class="text-gray-500">Apelido</dt>
-          <dd class="font-medium text-gray-900">{$currentPlayer.nickname}</dd>
-        </div>
-      {/if}
+      <div class="flex justify-between items-center">
+        <dt class="text-gray-500">Apelido</dt>
+        <dd class="flex items-center gap-2">
+          {#if editingNickname}
+            <form onsubmit={(e) => { e.preventDefault(); saveNickname(); }} class="flex items-center gap-2">
+              <input
+                class="input text-sm py-1 px-2 w-36"
+                bind:value={nickname}
+                placeholder="Como te chamam?"
+                maxlength="50"
+                disabled={savingNickname}
+                autofocus />
+              <button type="submit" class="btn-primary btn-sm py-1" disabled={savingNickname}>
+                {savingNickname ? 'Salvando…' : 'Salvar'}
+              </button>
+              <button type="button" class="btn btn-sm py-1" onclick={() => { editingNickname = false; nickname = $currentPlayer?.nickname ?? ''; }}>
+                Cancelar
+              </button>
+            </form>
+          {:else}
+            <span class="font-medium text-gray-900">{$currentPlayer?.nickname || '—'}</span>
+            <button type="button" onclick={() => { nickname = $currentPlayer?.nickname ?? ''; editingNickname = true; }}
+              class="text-gray-400 hover:text-primary-600" title="Editar apelido">
+              <Pencil size={14} />
+            </button>
+          {/if}
+        </dd>
+      </div>
       <div class="flex justify-between">
         <dt class="text-gray-500">WhatsApp</dt>
         <dd class="font-mono text-gray-700">{$currentPlayer?.whatsapp ?? '—'}</dd>

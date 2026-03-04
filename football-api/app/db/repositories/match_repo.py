@@ -1,11 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.repositories.base import BaseRepository
-from app.models.match import Match, Attendance, AttendanceStatus
+from app.models.match import Attendance, AttendanceStatus, Match, MatchStatus
 
 
 class MatchRepository(BaseRepository[Match]):
@@ -72,6 +72,19 @@ class MatchRepository(BaseRepository[Match]):
     async def create_pending_attendances(self, match_id: UUID, player_ids: list[UUID]) -> None:
         for player_id in player_ids:
             self.session.add(Attendance(match_id=match_id, player_id=player_id, status=AttendanceStatus.PENDING))
+        await self.session.flush()
+
+    async def delete_player_attendances_in_open_matches(self, group_id: UUID, player_id: UUID) -> None:
+        open_match_ids = select(Match.id).where(
+            Match.group_id == group_id,
+            Match.status == MatchStatus.OPEN,
+        )
+        await self.session.execute(
+            delete(Attendance).where(
+                Attendance.player_id == player_id,
+                Attendance.match_id.in_(open_match_ids),
+            )
+        )
         await self.session.flush()
 
     async def upsert_attendance(

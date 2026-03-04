@@ -71,6 +71,14 @@ function createAuthStore() {
       localStorage.setItem('player', JSON.stringify(p));
       set({ token, player: p, loading: false });
     },
+    updatePlayer(data: Partial<Player>) {
+      update(state => {
+        if (!state.player) return state;
+        const updatedPlayer = { ...state.player, ...data };
+        localStorage.setItem('player', JSON.stringify(updatedPlayer));
+        return { ...state, player: updatedPlayer };
+      });
+    },
     setMustChangePassword(value: boolean) {
       update(state => {
         if (!state.player) return state;
