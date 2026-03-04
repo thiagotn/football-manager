@@ -196,11 +196,11 @@
                 </span>
               </td>
               <td>
-                <div class="flex gap-1 justify-end">
-                  <button onclick={() => openEdit(p)} class="btn-icon btn-ghost" title="Editar"><Pencil size={16} /></button>
-                  <button onclick={() => openReset(p)} class="btn-icon btn-ghost text-amber-600 hover:bg-amber-50" title="Resetar senha"><KeyRound size={16} /></button>
+                <div class="flex gap-1 justify-end flex-wrap">
+                  <button onclick={() => openEdit(p)} class="btn-sm btn-ghost"><Pencil size={14} /> Editar</button>
+                  <button onclick={() => openReset(p)} class="btn-sm btn-ghost text-amber-600 hover:bg-amber-50"><KeyRound size={14} /> Senha</button>
                   {#if p.active}
-                    <button onclick={() => deactivate(p)} class="btn-icon btn-ghost text-red-500 hover:bg-red-50" title="Desativar"><Trash2 size={16} /></button>
+                    <button onclick={() => deactivate(p)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50"><Trash2 size={14} /> Desativar</button>
                   {/if}
                 </div>
               </td>

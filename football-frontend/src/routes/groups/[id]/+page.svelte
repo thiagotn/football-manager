@@ -340,16 +340,16 @@
                           {fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}
                         {/if}
                       </span>
-                      <div class="flex items-center gap-1">
-                        <a href="/match/{m.hash}" class="btn-icon btn-secondary" title="Ver partida">
-                          <ChevronRight size={16} />
+                      <div class="flex items-center gap-1 flex-wrap justify-end">
+                        <a href="/match/{m.hash}" class="btn-sm btn-secondary">
+                          Ver <ChevronRight size={14} />
                         </a>
                         {#if isGroupAdmin()}
-                          <button onclick={() => openEditMatch(m)} class="btn-icon btn-ghost" title="Editar partida">
-                            <Pencil size={16} />
+                          <button onclick={() => openEditMatch(m)} class="btn-sm btn-ghost">
+                            <Pencil size={14} /> Editar
                           </button>
-                          <button onclick={() => deleteMatch(m)} class="btn-icon btn-ghost text-red-500 hover:bg-red-50" title="Excluir partida">
-                            <Trash2 size={16} />
+                          <button onclick={() => deleteMatch(m)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50">
+                            <Trash2 size={14} /> Excluir
                           </button>
                         {/if}
                       </div>
@@ -367,16 +367,28 @@
     {#if tab === 'members'}
       <div class="card overflow-hidden">
         <table class="table">
-          <thead><tr><th>Jogador</th><th>WhatsApp</th><th>Papel</th>{#if isGroupAdmin()}<th></th>{/if}</tr></thead>
+          <thead>
+            <tr>
+              <th>Jogador</th>
+              <th class="hidden sm:table-cell">WhatsApp</th>
+              <th class="hidden sm:table-cell">Papel</th>
+              {#if isGroupAdmin()}<th></th>{/if}
+            </tr>
+          </thead>
           <tbody>
             {#each group.members as m}
               <tr>
                 <td>
-                  <p class="font-medium text-gray-900">{m.player.name}</p>
+                  <p class="font-medium text-gray-900">
+                    {m.player.name}
+                    <span class="sm:hidden text-xs font-normal text-gray-400 ml-1">
+                      ({m.role === 'admin' ? 'Presidente' : 'Membro'})
+                    </span>
+                  </p>
                   {#if m.player.nickname}<p class="text-xs text-gray-400">{m.player.nickname}</p>{/if}
                 </td>
-                <td class="text-gray-500 font-mono text-xs">{m.player.whatsapp}</td>
-                <td>
+                <td class="text-gray-500 font-mono text-xs hidden sm:table-cell">{m.player.whatsapp}</td>
+                <td class="hidden sm:table-cell">
                   <span class="badge {m.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
                     {m.role === 'admin' ? 'Presidente' : 'Membro'}
                   </span>
@@ -384,25 +396,23 @@
                 {#if isGroupAdmin()}
                   <td>
                     {#if m.player.id !== $currentPlayer?.id}
-                      <div class="flex gap-1 justify-end">
+                      <div class="flex gap-1 justify-end flex-wrap">
                         {#if m.role === 'admin'}
                           <button
                             onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
-                            title="Remover presidência"
-                            class="btn-icon btn-ghost text-gray-400 hover:bg-gray-100">
-                            <ShieldOff size={16} />
+                            class="btn-sm btn-ghost text-gray-500 hover:bg-gray-100">
+                            <ShieldOff size={14} /> Rebaixar
                           </button>
                         {:else}
                           <button
                             onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
-                            title="Tornar presidente"
-                            class="btn-icon btn-ghost text-blue-500 hover:bg-blue-50">
-                            <ShieldCheck size={16} />
+                            class="btn-sm btn-ghost text-blue-600 hover:bg-blue-50">
+                            <ShieldCheck size={14} /> Promover
                           </button>
                         {/if}
                         <button onclick={() => removeMember(m.player.id, m.player.name)}
-                          class="btn-icon btn-ghost text-red-500 hover:bg-red-50">
-                          <Trash2 size={16} />
+                          class="btn-sm btn-ghost text-red-500 hover:bg-red-50">
+                          <Trash2 size={14} /> Remover
                         </button>
                       </div>
                     {/if}

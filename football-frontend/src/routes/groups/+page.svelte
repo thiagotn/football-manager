@@ -121,8 +121,8 @@
           </a>
           {#if $isAdmin}
             <div class="px-6 pb-4 flex justify-end">
-              <button onclick={() => deleteGroup(g)} class="btn-icon btn-ghost text-red-500 hover:bg-red-50" title="Excluir grupo">
-                <Trash2 size={16} />
+              <button onclick={() => deleteGroup(g)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50">
+                <Trash2 size={14} /> Excluir
               </button>
             </div>
           {/if}
