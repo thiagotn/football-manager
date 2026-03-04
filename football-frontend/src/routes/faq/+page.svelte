@@ -48,7 +48,7 @@
 <div class="min-h-screen bg-gray-50">
   <!-- Beta banner -->
   <div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-2 px-4">
-    Versao Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
+    Versão Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
   </div>
   <!-- Header -->
   <div class="bg-primary-700 text-white py-8 px-4 text-center">

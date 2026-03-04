@@ -50,8 +50,9 @@ export type Player = {
   created_at: string; updated_at: string;
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string };
+export type PlayerMemberView = PlayerPublic & { whatsapp: string };
 export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; created_at: string; updated_at: string };
-export type GroupMember = { id: string; player: PlayerPublic; role: 'admin' | 'member'; created_at: string };
+export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type Match = {
   id: string; number: number; group_id: string; match_date: string; start_time: string; end_time: string | null;

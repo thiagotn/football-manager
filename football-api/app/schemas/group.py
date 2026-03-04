@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 import re
 
 from app.models.group import GroupMemberRole
-from app.schemas.player import PlayerPublic
+from app.schemas.player import PlayerPublic, PlayerMemberView
 
 
 def _make_slug(name: str) -> str:
@@ -43,7 +43,7 @@ class GroupMemberResponse(BaseModel):
     model_config = {"from_attributes": True}
 
     id: uuid.UUID
-    player: PlayerPublic
+    player: PlayerMemberView
     role: GroupMemberRole
     created_at: datetime
 

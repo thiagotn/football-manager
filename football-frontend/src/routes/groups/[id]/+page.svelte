@@ -356,7 +356,7 @@
                   <p class="font-medium text-gray-900">{m.player.name}</p>
                   {#if m.player.nickname}<p class="text-xs text-gray-400">{m.player.nickname}</p>{/if}
                 </td>
-                <td class="text-gray-500 font-mono text-xs">{m.player.id.slice(0,8)}…</td>
+                <td class="text-gray-500 font-mono text-xs">{m.player.whatsapp}</td>
                 <td>
                   <span class="badge {m.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
                     {m.role === 'admin' ? 'Presidente' : 'Membro'}
@@ -538,7 +538,7 @@
       <button class="btn-primary shrink-0" onclick={copyLink}><Copy size={16} /></button>
     </div>
     <a
-      href="https://wa.me/?text={encodeURIComponent(`Você foi convidado para o grupo *${group?.name}* no rachao.app.\n\nClique no link abaixo para criar sua conta e entrar no grupo:\n${inviteLink}`)}"
+      href="https://wa.me/?text={encodeURIComponent(`Você foi convidado para o grupo *${group?.name}* no Rachão!\n\nClique no link abaixo para criar sua conta e entrar no grupo:\n${inviteLink}`)}"
       target="_blank"
       rel="noopener noreferrer"
       class="btn-secondary w-full flex items-center justify-center gap-2">

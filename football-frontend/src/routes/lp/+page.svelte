@@ -9,7 +9,7 @@
 
 <!-- BETA BANNER -->
 <div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-2 px-4">
-  Versao Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
+  Versão Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
 </div>
 
 <!-- HERO -->

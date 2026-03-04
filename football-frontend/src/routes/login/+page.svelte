@@ -38,7 +38,7 @@
       </div>
       <p class="text-sm text-gray-500">Gestão de grupos e partidas</p>
       <p class="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5 mt-3">
-        Versao beta — dados podem ser resetados sem aviso.
+        Versão Beta — dados podem ser resetados sem aviso.
       </p>
     </div>
 

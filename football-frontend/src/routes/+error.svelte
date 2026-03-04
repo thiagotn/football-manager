@@ -10,7 +10,7 @@
 
   <!-- Beta banner -->
   <div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-1.5 px-4">
-    Versao Beta — produto em desenvolvimento.
+    Versão Beta — produto em desenvolvimento.
   </div>
 
   <!-- Header (idêntico ao da página de partida e FAQ) -->

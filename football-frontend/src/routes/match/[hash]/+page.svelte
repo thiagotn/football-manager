@@ -128,7 +128,7 @@
       `Confirmados (${confirmed.length}):`,
       confirmedList,
       '',
-      `Nao vao (${declined.length}):`,
+      `Não vão (${declined.length}):`,
       declinedList,
       '',
       `Pendentes (${pending.length}):`,

@@ -69,3 +69,14 @@ class PlayerPublic(BaseModel):
     name: str
     nickname: str | None
     role: PlayerRole
+
+
+class PlayerMemberView(BaseModel):
+    """Dados de jogador exibidos para admins de grupo (inclui whatsapp)"""
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    name: str
+    nickname: str | None
+    role: PlayerRole
+    whatsapp: str
