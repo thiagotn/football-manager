@@ -280,43 +280,62 @@
         <div class="space-y-3">
           {#each matchList as m}
             <div class="card hover:shadow-md transition-shadow">
-              <div class="card-body flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center shrink-0 text-primary-700 font-bold text-sm">
-                  #{m.number}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-medium text-gray-900 capitalize">{fmtDate(m.match_date)}</p>
-                  <p class="text-sm text-gray-500 flex flex-wrap gap-3 mt-0.5">
-                    <span class="flex items-center gap-1"><Clock size={12} />{fmtTimeRange(m.start_time, m.end_time)}</span>
-                    <span class="flex items-center gap-1"><MapPin size={12} />{m.location}</span>
-                  </p>
-                  {#if m.court_type || m.players_per_team || m.max_players}
-                    <p class="text-xs text-gray-400 flex flex-wrap gap-2 mt-1">
-                      {#if m.court_type}<span>{COURT_LABELS[m.court_type]}</span>{/if}
-                      {#if m.court_type && m.players_per_team}<span>·</span>{/if}
-                      {#if m.players_per_team}<span>{m.players_per_team} na linha + goleiro</span>{/if}
-                      {#if m.max_players}<span>· máx. {m.max_players} jogadores</span>{/if}
-                    </p>
-                  {/if}
-                  {#if group && (group.per_match_amount != null || group.monthly_amount != null)}
-                    <p class="text-xs text-amber-700 font-medium mt-1">{fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}</p>
-                  {/if}
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
-                    {m.status === 'open' ? 'Aberta' : 'Encerrada'}
-                  </span>
-                  <a href="/match/{m.hash}" class="btn-secondary btn-sm">
-                    <ChevronRight size={14} />
-                  </a>
-                  {#if isGroupAdmin()}
-                    <button onclick={() => openEditMatch(m)} class="btn-ghost btn-sm" title="Editar partida">
-                      <Pencil size={14} />
-                    </button>
-                    <button onclick={() => deleteMatch(m)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50" title="Excluir partida">
-                      <Trash2 size={14} />
-                    </button>
-                  {/if}
+              <div class="card-body">
+                <div class="flex items-start gap-3">
+                  <!-- Number badge -->
+                  <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center shrink-0 text-primary-700 font-bold text-sm">
+                    #{m.number}
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <!-- Date + status badge on same row -->
+                    <div class="flex items-start gap-2">
+                      <p class="font-semibold text-gray-900 capitalize leading-snug flex-1">{fmtDate(m.match_date)}</p>
+                      <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0 mt-0.5">
+                        {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                      </span>
+                    </div>
+
+                    <!-- Time + Location -->
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm text-gray-500">
+                      <span class="flex items-center gap-1 whitespace-nowrap"><Clock size={12} />{fmtTimeRange(m.start_time, m.end_time)}</span>
+                      <span class="flex items-center gap-1 min-w-0"><MapPin size={12} /><span class="truncate">{m.location}</span></span>
+                    </div>
+
+                    <!-- Court / players details -->
+                    {#if m.court_type || m.players_per_team || m.max_players}
+                      <p class="text-xs text-gray-400 mt-0.5">
+                        {[
+                          m.court_type ? COURT_LABELS[m.court_type] : null,
+                          m.players_per_team ? `${m.players_per_team} na linha + gol` : null,
+                          m.max_players ? `máx. ${m.max_players}` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    {/if}
+
+                    <!-- Footer: pricing (left) + actions (right) -->
+                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                      <span class="text-xs text-amber-700 font-medium">
+                        {#if group && (group.per_match_amount != null || group.monthly_amount != null)}
+                          {fmtPricingParts(group.per_match_amount, group.monthly_amount).join(' · ')}
+                        {/if}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <a href="/match/{m.hash}" class="btn-secondary btn-sm" title="Ver partida">
+                          <ChevronRight size={14} />
+                        </a>
+                        {#if isGroupAdmin()}
+                          <button onclick={() => openEditMatch(m)} class="btn-ghost btn-sm" title="Editar partida">
+                            <Pencil size={14} />
+                          </button>
+                          <button onclick={() => deleteMatch(m)} class="btn-ghost btn-sm text-red-500 hover:bg-red-50" title="Excluir partida">
+                            <Trash2 size={14} />
+                          </button>
+                        {/if}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
