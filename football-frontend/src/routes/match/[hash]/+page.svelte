@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { matches as matchesApi, ApiError } from '$lib/api';
+  import { matches as matchesApi, groups as groupsApi, ApiError } from '$lib/api';
   import type { MatchDetail, Attendance } from '$lib/api';
   import { currentPlayer, isLoggedIn } from '$lib/stores/auth';
 
@@ -16,6 +16,8 @@
   let responding = $state(false);
   let responded = $state(false);
   let lastStatus: 'confirmed' | 'declined' | null = $state(null);
+  let isGroupAdmin = $state(false);
+  let adminResponding = $state<string | null>(null);
 
   let confirmed = $derived(match?.attendances.filter(a => a.status === 'confirmed') ?? []);
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
@@ -33,6 +35,20 @@
       if (!cancelled) loading = false;
     })();
     return () => { cancelled = true; };
+  });
+
+  $effect(() => {
+    const player = $currentPlayer;
+    const m = match;
+    if (!player || !m) { isGroupAdmin = false; return; }
+    if (player.role === 'admin') { isGroupAdmin = true; return; }
+    (async () => {
+      try {
+        const group = await groupsApi.get(m.group_id);
+        const member = group.members.find(mb => mb.player.id === player.id);
+        isGroupAdmin = member?.role === 'admin';
+      } catch { isGroupAdmin = false; }
+    })();
   });
 
   function fmtTimeRange(start: string, end: string | null): string {
@@ -72,6 +88,17 @@
       responded = true;
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     responding = false;
+  }
+
+  async function respondFor(playerId: string, status: 'confirmed' | 'declined') {
+    if (!match) return;
+    adminResponding = playerId;
+    try {
+      await matchesApi.setAttendance(match.group_id, match.id, playerId, status);
+      match = await matchesApi.getByHash(matchHash);
+      toastSuccess(status === 'confirmed' ? '✅ Presença confirmada!' : '❌ Falta registrada');
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
+    adminResponding = null;
   }
 
   function fmtDateShare(d: string) {
@@ -287,7 +314,15 @@
               {#each confirmed as a, i}
                 <li class="px-4 py-2 flex items-center gap-2.5">
                   <span class="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                  <p class="text-sm font-medium text-gray-900">{a.player.nickname || a.player.name}</p>
+                  <p class="text-sm font-medium text-gray-900 flex-1">{a.player.nickname || a.player.name}</p>
+                  {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
+                    <button
+                      class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 shrink-0"
+                      onclick={() => respondFor(a.player.id, 'declined')}
+                      disabled={adminResponding === a.player.id}>
+                      ✕ Falta
+                    </button>
+                  {/if}
                 </li>
               {/each}
             </ul>
@@ -306,7 +341,15 @@
               {#each declined as a}
                 <li class="px-4 py-2 text-sm text-gray-600 flex items-center gap-2.5">
                   <XCircle size={13} class="text-red-400 shrink-0" />
-                  {a.player.nickname || a.player.name}
+                  <span class="flex-1">{a.player.nickname || a.player.name}</span>
+                  {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
+                    <button
+                      class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40 shrink-0"
+                      onclick={() => respondFor(a.player.id, 'confirmed')}
+                      disabled={adminResponding === a.player.id}>
+                      ✓ Confirmar
+                    </button>
+                  {/if}
                 </li>
               {/each}
             </ul>
@@ -325,7 +368,23 @@
               {#each pending as a}
                 <li class="px-4 py-2 text-sm text-gray-500 flex items-center gap-2.5">
                   <Clock3 size={13} class="text-gray-400 shrink-0" />
-                  {a.player.nickname || a.player.name}
+                  <span class="flex-1">{a.player.nickname || a.player.name}</span>
+                  {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
+                    <div class="flex gap-1 shrink-0">
+                      <button
+                        class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40"
+                        onclick={() => respondFor(a.player.id, 'confirmed')}
+                        disabled={adminResponding === a.player.id}>
+                        ✓
+                      </button>
+                      <button
+                        class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40"
+                        onclick={() => respondFor(a.player.id, 'declined')}
+                        disabled={adminResponding === a.player.id}>
+                        ✕
+                      </button>
+                    </div>
+                  {/if}
                 </li>
               {/each}
             </ul>
