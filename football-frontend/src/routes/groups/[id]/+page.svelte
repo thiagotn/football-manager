@@ -379,12 +379,12 @@
           <div class="flex items-center gap-2 px-4 py-3">
             <!-- Info -->
             <div class="flex-1 min-w-0 flex items-center gap-1.5">
-              {#if m.role === 'admin'}
-                <span class="text-base leading-none" title="Presidente">👑</span>
-              {/if}
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
                 {m.player.nickname || m.player.name}
               </p>
+              {#if m.role === 'admin'}
+                <span class="text-base leading-none" title="Presidente">👑</span>
+              {/if}
             </div>
             <!-- Actions -->
             {#if isGroupAdmin() && m.player.id !== $currentPlayer?.id}
