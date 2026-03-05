@@ -37,6 +37,7 @@ class GroupUpdate(BaseModel):
     description: str | None = None
     per_match_amount: Decimal | None = None
     monthly_amount: Decimal | None = None
+    recurrence_enabled: bool | None = None
 
 
 class GroupMemberResponse(BaseModel):
@@ -57,6 +58,7 @@ class GroupResponse(BaseModel):
     slug: str
     per_match_amount: Decimal | None
     monthly_amount: Decimal | None
+    recurrence_enabled: bool
     created_at: datetime
     updated_at: datetime
 

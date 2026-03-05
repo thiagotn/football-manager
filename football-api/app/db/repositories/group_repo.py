@@ -63,6 +63,12 @@ class GroupRepository(BaseRepository[Group]):
         )
         return list(result.scalars().all())
 
+    async def get_groups_with_recurrence(self) -> list[Group]:
+        result = await self.session.execute(
+            select(Group).where(Group.recurrence_enabled == True)  # noqa: E712
+        )
+        return list(result.scalars().all())
+
     async def get_player_groups(self, player_id: UUID) -> list[Group]:
         result = await self.session.execute(
             select(Group)

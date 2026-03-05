@@ -80,6 +80,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         slug=group.slug,
         per_match_amount=group.per_match_amount,
         monthly_amount=group.monthly_amount,
+        recurrence_enabled=group.recurrence_enabled,
         created_at=group.created_at,
         updated_at=group.updated_at,
         members=[GroupMemberResponse.model_validate(m) for m in group.members],

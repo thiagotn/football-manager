@@ -2,12 +2,15 @@ import time
 from contextlib import asynccontextmanager
 
 import structlog
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.services.recurrence import run_recurrence_job
 
 logger = structlog.get_logger()
 
@@ -35,8 +38,15 @@ def setup_logging():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.start_time = time.time()
+
+    scheduler = AsyncIOScheduler(timezone="America/Sao_Paulo")
+    scheduler.add_job(run_recurrence_job, CronTrigger(hour=7, minute=0))
+    scheduler.start()
     logger.info("api_started", version=get_settings().app_version)
+
     yield
+
+    scheduler.shutdown()
     logger.info("api_stopped")
 
 

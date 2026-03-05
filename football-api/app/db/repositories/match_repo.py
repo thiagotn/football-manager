@@ -74,6 +74,30 @@ class MatchRepository(BaseRepository[Match]):
             self.session.add(Attendance(match_id=match_id, player_id=player_id, status=AttendanceStatus.PENDING))
         await self.session.flush()
 
+    async def get_last_match(self, group_id: UUID) -> Match | None:
+        result = await self.session.execute(
+            select(Match)
+            .where(Match.group_id == group_id)
+            .order_by(Match.match_date.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def has_open_match(self, group_id: UUID) -> bool:
+        result = await self.session.execute(
+            select(func.count()).where(
+                Match.group_id == group_id,
+                Match.status == MatchStatus.OPEN,
+            )
+        )
+        return result.scalar_one() > 0
+
+    async def get_attendance_player_ids(self, match_id: UUID) -> list[UUID]:
+        result = await self.session.execute(
+            select(Attendance.player_id).where(Attendance.match_id == match_id)
+        )
+        return list(result.scalars().all())
+
     async def delete_player_attendances_in_open_matches(self, group_id: UUID, player_id: UUID) -> None:
         open_match_ids = select(Match.id).where(
             Match.group_id == group_id,

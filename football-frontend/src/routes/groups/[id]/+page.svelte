@@ -32,7 +32,7 @@
   let allPlayers: Player[] = $state([]);
   let addMemberId = $state('');
 
-  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '' });
+  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false });
 
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
@@ -60,6 +60,7 @@
       description: group.description ?? '',
       per_match_amount: group.per_match_amount != null ? String(group.per_match_amount) : '',
       monthly_amount: group.monthly_amount != null ? String(group.monthly_amount) : '',
+      recurrence_enabled: group.recurrence_enabled,
     };
     showEditGroup = true;
   }
@@ -72,6 +73,7 @@
         description: editForm.description || undefined,
         per_match_amount: editForm.per_match_amount !== '' ? parseFloat(editForm.per_match_amount) : null,
         monthly_amount: editForm.monthly_amount !== '' ? parseFloat(editForm.monthly_amount) : null,
+        recurrence_enabled: editForm.recurrence_enabled,
       });
       group = await groupsApi.get(groupId);
       showEditGroup = false;
@@ -260,6 +262,9 @@
           </div>
         {:else}
           <p class="text-xs text-green-600 mt-1">Partida aberta — sem cobrança</p>
+        {/if}
+        {#if group.recurrence_enabled}
+          <p class="text-xs text-primary-600 mt-1">Recorrência semanal ativa</p>
         {/if}
       </div>
       {#if isGroupAdmin()}
@@ -636,6 +641,19 @@
           bind:value={editForm.monthly_amount} placeholder="Ex: 75,00" />
         <p class="text-xs text-gray-400 mt-0.5">Deixe vazio se não cobrar mensalidade</p>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="flex items-center gap-3 cursor-pointer select-none">
+        <div class="relative">
+          <input type="checkbox" class="sr-only peer" bind:checked={editForm.recurrence_enabled} />
+          <div class="w-10 h-6 bg-gray-200 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+        </div>
+        <span class="text-sm font-medium text-gray-700">Recorrência semanal</span>
+      </label>
+      <p class="text-xs text-gray-400 mt-1">
+        Quando ativa, uma nova partida é criada automaticamente após o encerramento da atual, herdando os convidados com presença pendente.
+      </p>
     </div>
     <div class="flex gap-3 justify-end pt-2">
       <button type="button" class="btn-secondary" onclick={() => showEditGroup = false}>Cancelar</button>
