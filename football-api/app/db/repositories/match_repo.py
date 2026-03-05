@@ -2,7 +2,7 @@ from uuid import UUID
 
 from datetime import date
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -77,10 +77,27 @@ class MatchRepository(BaseRepository[Match]):
         await self.session.flush()
 
     async def close_past_matches(self) -> int:
-        """Fecha todas as partidas abertas cuja data já passou. Retorna o número de partidas fechadas."""
+        """Fecha partidas abertas cuja data já passou ou cujo horário de hoje já encerrou."""
+        today = date.today()
+        current_time = func.current_time()
         result = await self.session.execute(
             update(Match)
-            .where(Match.match_date < date.today(), Match.status == MatchStatus.OPEN)
+            .where(
+                Match.status == MatchStatus.OPEN,
+                or_(
+                    Match.match_date < today,
+                    and_(
+                        Match.match_date == today,
+                        Match.end_time.isnot(None),
+                        Match.end_time <= current_time,
+                    ),
+                    and_(
+                        Match.match_date == today,
+                        Match.end_time.is_(None),
+                        Match.start_time <= current_time,
+                    ),
+                ),
+            )
             .values(status=MatchStatus.CLOSED)
         )
         await self.session.flush()
