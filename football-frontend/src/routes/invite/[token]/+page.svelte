@@ -91,10 +91,10 @@
 <svelte:head><title>Convite — rachao.app</title></svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-700 to-primary-900 flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
     <div class="text-center mb-6">
       <div class="text-4xl mb-2">⚽</div>
-      <h1 class="text-xl font-bold text-gray-900">Convite para Grupo</h1>
+      <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Convite para Grupo</h1>
     </div>
 
     {#if loading}
@@ -112,8 +112,8 @@
     {:else if done}
       <div class="text-center py-4">
         <CheckCircle size={48} class="text-green-500 mx-auto mb-3" />
-        <p class="font-semibold text-gray-900">Você entrou no grupo!</p>
-        <p class="text-sm text-gray-500 mt-1">Redirecionando…</p>
+        <p class="font-semibold text-gray-900 dark:text-gray-100">Você entrou no grupo!</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Redirecionando…</p>
       </div>
 
     {:else if info}
@@ -157,7 +157,7 @@
           </div>
           <div class="form-group">
             <label class="label" for="wa-ro">WhatsApp</label>
-            <input id="wa-ro" class="input bg-gray-50 text-gray-500" value={whatsapp} readonly />
+            <input id="wa-ro" class="input bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" value={whatsapp} readonly />
           </div>
           <div class="form-group">
             <label class="label" for="pw">Senha *</label>
@@ -175,7 +175,7 @@
             {submitting ? 'Entrando…' : 'Entrar no Grupo'}
           </button>
           <button type="button" onclick={back}
-            class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-1">
+            class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 mt-1">
             <ArrowLeft size={13} /> Usar outro número
           </button>
         </form>
@@ -183,7 +183,7 @@
       <!-- ETAPA 2b: Novo usuário — cadastro completo -->
       {:else if step === 'register'}
         <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-3">
-          <p class="text-sm text-gray-500 -mt-1">Preencha seus dados para criar a conta.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 -mt-1">Preencha seus dados para criar a conta.</p>
           <div class="form-group">
             <label class="label" for="name">Nome completo *</label>
             <input id="name" class="input" bind:value={form.name} placeholder="Seu nome" required minlength="2" />
@@ -194,7 +194,7 @@
           </div>
           <div class="form-group">
             <label class="label" for="wa-ro2">WhatsApp</label>
-            <input id="wa-ro2" class="input bg-gray-50 text-gray-500" value={whatsapp} readonly />
+            <input id="wa-ro2" class="input bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" value={whatsapp} readonly />
           </div>
           <div class="form-group">
             <label class="label" for="pw2">Criar senha *</label>
@@ -212,7 +212,7 @@
             {submitting ? 'Criando conta…' : 'Criar conta e entrar'}
           </button>
           <button type="button" onclick={back}
-            class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 hover:text-gray-600">
+            class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
             <ArrowLeft size={13} /> Usar outro número
           </button>
         </form>

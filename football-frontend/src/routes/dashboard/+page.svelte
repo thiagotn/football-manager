@@ -26,15 +26,15 @@
 <main class="max-w-7xl mx-auto px-4 py-8">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-2xl font-bold text-gray-900">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
       Olá, {$currentPlayer?.name?.split(' ')[0]} 👋
     </h1>
-    <p class="text-gray-500 mt-1">Bem-vindo ao Football App</p>
+    <p class="text-gray-500 dark:text-gray-400 mt-1">Bem-vindo ao Football App</p>
   </div>
 
   {#if loading}
     <div class="flex items-center justify-center h-40">
-      <div class="text-gray-400">Carregando...</div>
+      <div class="text-gray-400 dark:text-gray-500">Carregando...</div>
     </div>
   {:else}
     <!-- Stats row -->
@@ -73,8 +73,8 @@
     <div class="grid lg:grid-cols-2 gap-6">
       <!-- My Groups -->
       <div class="card">
-        <div class="px-5 py-4 border-b flex items-center justify-between">
-          <h2 class="font-semibold text-gray-900">Meus Grupos</h2>
+        <div class="px-5 py-4 border-b dark:border-gray-700 flex items-center justify-between">
+          <h2 class="font-semibold text-gray-900 dark:text-gray-100">Meus Grupos</h2>
           <a href="/groups/new" class="btn-primary text-xs px-3 py-1.5">
             <Plus size={14} /> Novo
           </a>
@@ -89,13 +89,13 @@
             {#each myGroups as g}
               <a
                 href="/groups/{g.id}"
-                class="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+                class="flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div>
-                  <p class="font-medium text-gray-900">{g.name}</p>
-                  <p class="text-xs text-gray-500 mt-0.5">{g.member_count} membros</p>
+                  <p class="font-medium text-gray-900 dark:text-gray-100">{g.name}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{g.member_count} membros</p>
                 </div>
-                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
               </a>
@@ -106,8 +106,8 @@
 
       <!-- Recent Matches -->
       <div class="card">
-        <div class="px-5 py-4 border-b">
-          <h2 class="font-semibold text-gray-900">Partidas Recentes</h2>
+        <div class="px-5 py-4 border-b dark:border-gray-700">
+          <h2 class="font-semibold text-gray-900 dark:text-gray-100">Partidas Recentes</h2>
         </div>
         {#if recentMatches.length === 0}
           <div class="px-5 py-10 text-center text-gray-400">

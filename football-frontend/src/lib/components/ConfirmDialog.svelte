@@ -28,8 +28,8 @@
 
   <!-- Bottom sheet on mobile, centered modal on desktop -->
   <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
-    <div class="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto">
-      <p class="text-gray-800 font-medium text-center text-base mb-6 leading-relaxed">{message}</p>
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto">
+      <p class="text-gray-800 dark:text-gray-200 font-medium text-center text-base mb-6 leading-relaxed">{message}</p>
       <div class="flex flex-col gap-2 sm:flex-row-reverse">
         <button
           class="btn justify-center {danger ? 'btn-danger' : 'btn-primary'} flex-1 py-3 sm:py-2"

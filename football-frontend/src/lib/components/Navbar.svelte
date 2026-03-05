@@ -1,8 +1,9 @@
 <script lang="ts">
   import { authStore, isAdmin, currentPlayer } from '$lib/stores/auth';
+  import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon } from 'lucide-svelte';
 
   function logout() {
     authStore.logout();
@@ -62,6 +63,9 @@
         <UserCircle size={15} />
         <span>Conta</span>
       </a>
+      <button onclick={themeStore.toggle} class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600" title="Alternar tema">
+        {#if $themeStore === 'dark'}<Sun size={15} />{:else}<Moon size={15} />{/if}
+      </button>
       <button onclick={logout} class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600">
         <LogOut size={15} />
         <span>Sair</span>
@@ -108,6 +112,10 @@
             {$page.url.pathname === '/profile' ? 'bg-primary-900' : ''}">
           <UserCircle size={16} /> Minha Conta
         </a>
+        <button onclick={themeStore.toggle}
+          class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-600 text-left text-primary-100">
+          {#if $themeStore === 'dark'}<Sun size={16} /> Tema claro{:else}<Moon size={16} /> Tema escuro{/if}
+        </button>
         <button onclick={logout}
           class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-600 text-left text-primary-100">
           <LogOut size={16} /> Sair

@@ -74,10 +74,10 @@
 <main class="max-w-7xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
         <Trophy size={24} class="text-primary-600" /> Grupos
       </h1>
-      <p class="text-sm text-gray-500 mt-0.5">Grupos de futebol que você participa</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Grupos de futebol que você participa</p>
     </div>
     {#if $isAdmin}
       <button class="btn-primary" onclick={() => showCreate = true}>
@@ -94,8 +94,8 @@
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each [1,2,3] as _}
         <div class="card p-6 animate-pulse">
-          <div class="h-5 bg-gray-100 rounded w-2/3 mb-3"></div>
-          <div class="h-3 bg-gray-100 rounded w-full"></div>
+          <div class="h-5 bg-gray-100 dark:bg-gray-700 rounded w-2/3 mb-3"></div>
+          <div class="h-3 bg-gray-100 dark:bg-gray-700 rounded w-full"></div>
         </div>
       {/each}
     </div>
@@ -112,12 +112,12 @@
           <a href="/groups/{g.id}" class="card-body block">
             <div class="flex items-start justify-between">
               <div>
-                <h3 class="font-semibold text-gray-900">{g.name}</h3>
-                {#if g.description}<p class="text-sm text-gray-500 mt-1 line-clamp-2">{g.description}</p>{/if}
+                <h3 class="font-semibold text-gray-900 dark:text-gray-100">{g.name}</h3>
+                {#if g.description}<p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{g.description}</p>{/if}
               </div>
               <ChevronRight size={18} class="text-gray-400 shrink-0 ml-2 mt-0.5" />
             </div>
-            <p class="text-xs text-gray-400 mt-3">/{g.slug}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">/{g.slug}</p>
           </a>
           {#if $isAdmin}
             <div class="px-6 pb-4 flex justify-end">
@@ -145,7 +145,7 @@
     <div class="form-group">
       <label class="label" for="slug">Slug (URL)</label>
       <input id="slug" class="input" bind:value={form.slug} placeholder="futebol-gqc (gerado automaticamente)" />
-      <p class="text-xs text-gray-400 mt-1">Apenas letras, números e hífens</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Apenas letras, números e hífens</p>
     </div>
     <div class="flex gap-3 justify-end pt-2">
       <button type="button" class="btn-secondary" onclick={() => showCreate = false}>Cancelar</button>

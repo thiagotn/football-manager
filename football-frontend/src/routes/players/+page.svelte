@@ -132,10 +132,10 @@
 <main class="max-w-7xl mx-auto px-4 py-8">
   <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
         <Users size={24} class="text-primary-600" /> Jogadores
       </h1>
-      <p class="text-sm text-gray-500 mt-0.5">{playerList.length} jogadores cadastrados</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{playerList.length} jogadores cadastrados</p>
     </div>
     <button class="btn-primary" onclick={() => showCreate = true}>
       <Plus size={16} /> Novo Jogador
@@ -155,8 +155,8 @@
   {#if loading}
     <div class="card overflow-hidden">
       {#each [1,2,3,4,5] as _}
-        <div class="px-6 py-4 border-b border-gray-100 animate-pulse">
-          <div class="h-4 bg-gray-100 rounded w-1/3"></div>
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 animate-pulse">
+          <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3"></div>
         </div>
       {/each}
     </div>
@@ -256,7 +256,7 @@
 <!-- Reset password modal -->
 <Modal bind:open={showReset} title="Resetar Senha — {resetTarget?.name ?? ''}">
   {#if !generatedPassword}
-    <p class="text-sm text-gray-600 mb-4">
+    <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
       Uma senha temporária será gerada para <strong>{resetTarget?.name}</strong>.
       O jogador precisará alterá-la no próximo acesso.
     </p>
@@ -267,9 +267,9 @@
       </button>
     </div>
   {:else}
-    <p class="text-sm text-gray-600 mb-3">Senha temporária gerada. Compartilhe com o jogador:</p>
+    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Senha temporária gerada. Compartilhe com o jogador:</p>
     <div class="flex items-center gap-2 mb-4">
-      <code class="flex-1 bg-gray-100 rounded-lg px-4 py-3 font-mono text-lg tracking-widest text-center text-gray-900 select-all">
+      <code class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3 font-mono text-lg tracking-widest text-center text-gray-900 dark:text-gray-100 select-all">
         {generatedPassword}
       </code>
       <button class="btn btn-secondary shrink-0" onclick={copyPassword}>

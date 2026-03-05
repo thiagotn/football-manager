@@ -2,7 +2,10 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.ico" sizes="any" />
+    <link rel="icon" href="%sveltekit.assets%/favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="%sveltekit.assets%/favicon-16x16.png" type="image/png" sizes="16x16" />
+    <link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
 
@@ -23,6 +26,13 @@
     <meta name="twitter:description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
     <meta name="twitter:image" content="https://rachao.app/banner-lp.jpg" />
 
+    <script>
+      (function() {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

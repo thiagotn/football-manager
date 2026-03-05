@@ -27,13 +27,15 @@
     />
   </picture>
   <div class="absolute inset-0 bg-primary-900/75"></div>
-  <div class="relative max-w-4xl mx-auto px-6 py-20 text-center">
-    <div class="flex items-center justify-center gap-3 mb-4">
-      <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight">
-        rachao.app
-      </h1>
-      <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full self-center">Beta</span>
-    </div>
+  <div class="relative max-w-4xl mx-auto px-6 py-16 text-center">
+    <img
+      src="/logo.png"
+      alt="rachao.app"
+      width="320"
+      height="174"
+      class="w-72 sm:w-96 block mx-auto mb-6"
+      fetchpriority="high"
+    />
     <p class="text-xl text-primary-100 max-w-xl mx-auto mb-3">
       Organize suas partidas de futebol sem complicação.
     </p>

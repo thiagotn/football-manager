@@ -59,8 +59,8 @@
 
 <main class="max-w-lg mx-auto px-4 py-8">
   <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Minha Conta</h1>
-    <p class="text-sm text-gray-500 mt-0.5">Informações do seu perfil e segurança</p>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Minha Conta</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Informações do seu perfil e segurança</p>
   </div>
 
   {#if $currentPlayer?.must_change_password}
@@ -71,17 +71,17 @@
 
   <!-- Dados do perfil (somente leitura) -->
   <div class="card card-body mb-6">
-    <h2 class="font-semibold text-gray-800 mb-4">Perfil</h2>
+    <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Perfil</h2>
     <dl class="space-y-3 text-sm">
       <div class="flex justify-between">
-        <dt class="text-gray-500">Nome</dt>
-        <dd class="font-medium text-gray-900">{$currentPlayer?.name ?? '—'}</dd>
+        <dt class="text-gray-500 dark:text-gray-400">Nome</dt>
+        <dd class="font-medium text-gray-900 dark:text-gray-100">{$currentPlayer?.name ?? '—'}</dd>
       </div>
       <div class="flex justify-between items-center">
-        <dt class="text-gray-500">Apelido</dt>
+        <dt class="text-gray-500 dark:text-gray-400">Apelido</dt>
         {#if !editingNickname}
           <dd class="flex items-center gap-2">
-            <span class="font-medium text-gray-900">{$currentPlayer?.nickname || '—'}</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">{$currentPlayer?.nickname || '—'}</span>
             <button type="button" onclick={() => { nickname = $currentPlayer?.nickname ?? ''; editingNickname = true; }}
               class="text-gray-400 hover:text-primary-600" title="Editar apelido">
               <Pencil size={14} />
@@ -107,11 +107,11 @@
         </form>
       {/if}
       <div class="flex justify-between">
-        <dt class="text-gray-500">WhatsApp</dt>
-        <dd class="font-mono text-gray-700">{$currentPlayer?.whatsapp ?? '—'}</dd>
+        <dt class="text-gray-500 dark:text-gray-400">WhatsApp</dt>
+        <dd class="font-mono text-gray-700 dark:text-gray-300">{$currentPlayer?.whatsapp ?? '—'}</dd>
       </div>
       <div class="flex justify-between">
-        <dt class="text-gray-500">Perfil</dt>
+        <dt class="text-gray-500 dark:text-gray-400">Perfil</dt>
         <dd>
           <span class="badge {$currentPlayer?.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
             {$currentPlayer?.role === 'admin' ? 'Admin' : 'Jogador'}

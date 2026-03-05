@@ -29,17 +29,13 @@
 <svelte:head><title>Login — rachao.app</title></svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-700 to-primary-900 flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
     <div class="text-center mb-8">
-      <div class="text-5xl mb-3">⚽</div>
+      <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-56 block mx-auto mb-1" />
       <div class="flex items-center justify-center gap-2 mb-1">
-        <h1 class="text-2xl font-bold text-gray-900">rachao.app</h1>
         <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
       </div>
-      <p class="text-sm text-gray-500">Gestão de grupos e partidas</p>
-      <p class="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-1.5 mt-3">
-        Versão Beta — dados podem ser resetados sem aviso.
-      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Gestão de grupos e partidas</p>
     </div>
 
     {#if error}
@@ -73,7 +69,7 @@
       </button>
     </form>
 
-    <p class="text-xs text-gray-400 text-center mt-6">
+    <p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
       Não tem conta? Solicite um convite ao administrador.
     </p>
   </div>
