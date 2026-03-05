@@ -1,6 +1,8 @@
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from datetime import date
+
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -73,6 +75,16 @@ class MatchRepository(BaseRepository[Match]):
         for player_id in player_ids:
             self.session.add(Attendance(match_id=match_id, player_id=player_id, status=AttendanceStatus.PENDING))
         await self.session.flush()
+
+    async def close_past_matches(self) -> int:
+        """Fecha todas as partidas abertas cuja data já passou. Retorna o número de partidas fechadas."""
+        result = await self.session.execute(
+            update(Match)
+            .where(Match.match_date < date.today(), Match.status == MatchStatus.OPEN)
+            .values(status=MatchStatus.CLOSED)
+        )
+        await self.session.flush()
+        return result.rowcount
 
     async def get_last_match(self, group_id: UUID) -> Match | None:
         result = await self.session.execute(

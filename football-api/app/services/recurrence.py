@@ -97,6 +97,11 @@ async def run_recurrence_job() -> None:
     session_factory = get_session_factory()
     async with session_factory() as session:
         try:
+            m_repo = MatchRepository(session)
+            closed = await m_repo.close_past_matches()
+            if closed:
+                logger.info("recurrence_auto_closed", matches_closed=closed)
+
             count = await run_recurrence(session)
             await session.commit()
             logger.info("recurrence_job_done", matches_created=count)

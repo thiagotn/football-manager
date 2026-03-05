@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import date
 
 from fastapi import APIRouter
 
@@ -207,6 +208,12 @@ async def set_attendance(
     match = await repo.get(match_id)
     if not match or match.group_id != group_id:
         raise NotFoundError("Partida não encontrada")
+
+    # Fecha automaticamente se a data já passou (fallback caso o job ainda não tenha rodado)
+    if match.match_date < date.today() and match.status == MatchStatus.OPEN:
+        match.status = MatchStatus.CLOSED
+        await db.flush()
+
     if match.status == MatchStatus.CLOSED:
         raise ForbiddenError("Esta partida está encerrada")
 
