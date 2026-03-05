@@ -15,17 +15,21 @@
 
   const today = new Date().toISOString().slice(0, 10);
 
+  function matchSortKey(m: { match_date: string; start_time: string }) {
+    return `${m.match_date}T${m.start_time}`;
+  }
+
   let upcomingMatches = $derived(
     allMatches
       .filter(m => m.status === 'open')
-      .sort((a, b) => a.match_date.localeCompare(b.match_date))
+      .sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b)))
       .slice(0, 8)
   );
 
   let pastMatches = $derived(
     allMatches
       .filter(m => m.status === 'closed' || m.match_date < today)
-      .sort((a, b) => b.match_date.localeCompare(a.match_date))
+      .sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a)))
       .slice(0, 8)
   );
 

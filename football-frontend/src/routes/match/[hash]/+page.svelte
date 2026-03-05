@@ -102,7 +102,9 @@
 
   function fmtDateShare(d: string) {
     const rel = relativeDate(d);
-    const time = match!.start_time.slice(0, 5).replace(':', 'h');
+    const start = match!.start_time.slice(0, 5).replace(':', 'h');
+    const end = match!.end_time ? ` – ${match!.end_time.slice(0, 5).replace(':', 'h')}` : '';
+    const time = `${start}${end}`;
     const isRelativeWord = rel === 'Hoje' || rel === 'Amanhã' || rel === 'Ontem';
     if (isRelativeWord) return `${rel}, ${time}`;
     const dt = new Date(d + 'T00:00');

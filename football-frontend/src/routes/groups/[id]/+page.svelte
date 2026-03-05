@@ -35,12 +35,18 @@
 
   let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false });
 
-  let nonAdminMembers = $derived(group?.members.filter(m => m.player.role !== 'admin') ?? []);
+  let nonAdminMembers = $derived(
+    (group?.members.filter(m => m.player.role !== 'admin') ?? [])
+      .sort((a, b) => (a.player.nickname || a.player.name).localeCompare(b.player.nickname || b.player.name, 'pt-BR', { sensitivity: 'base' }))
+  );
   let roleEditMember = $state<{ id: string; name: string; role: string } | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
-  let upcomingMatches = $derived(matchList.filter(m => m.status === 'open').sort((a, b) => a.match_date.localeCompare(b.match_date)));
-  let pastMatches = $derived(matchList.filter(m => m.status === 'closed' || m.match_date < today).sort((a, b) => b.match_date.localeCompare(a.match_date)));
+  function matchSortKey(m: { match_date: string; start_time: string }) {
+    return `${m.match_date}T${m.start_time}`;
+  }
+  let upcomingMatches = $derived(matchList.filter(m => m.status === 'open').sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b))));
+  let pastMatches = $derived(matchList.filter(m => m.status === 'closed' || m.match_date < today).sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a))));
 
   let confirmOpen = $state(false);
   let confirmMessage = $state('');

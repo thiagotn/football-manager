@@ -35,11 +35,13 @@
   let editForm = $state({ name: '', nickname: '', role: '' });
 
   let filtered = $derived(
-    playerList.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.whatsapp.includes(search) ||
-      (p.nickname ?? '').toLowerCase().includes(search.toLowerCase())
-    )
+    playerList
+      .filter(p =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.whatsapp.includes(search) ||
+        (p.nickname ?? '').toLowerCase().includes(search.toLowerCase())
+      )
+      .sort((a, b) => (a.nickname || a.name).localeCompare(b.nickname || b.name, 'pt-BR', { sensitivity: 'base' }))
   );
 
   $effect(() => {

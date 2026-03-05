@@ -117,7 +117,7 @@
               </div>
               <ChevronRight size={18} class="text-gray-400 shrink-0 ml-2 mt-0.5" />
             </div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">/{g.slug}</p>
+            <span class="inline-block mt-3 text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded">{g.slug}</span>
           </a>
           {#if $isAdmin}
             <div class="px-6 pb-4 flex justify-end">
