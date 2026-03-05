@@ -4,6 +4,7 @@
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { Trophy, Calendar, Clock, MapPin, ChevronRight } from 'lucide-svelte';
+  import { relativeDate } from '$lib/utils.js';
 
   type MatchWithGroup = Match & { group_name: string; group_slug: string; group_id: string };
 
@@ -48,7 +49,7 @@
   });
 
   function fmtDate(d: string) {
-    return new Date(d + 'T00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+    return relativeDate(d, { weekday: 'short', day: '2-digit', month: 'short' });
   }
 </script>
 

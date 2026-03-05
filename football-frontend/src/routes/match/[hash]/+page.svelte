@@ -7,6 +7,7 @@
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users } from 'lucide-svelte';
+  import { relativeDate } from '$lib/utils.js';
 
   const matchHash = $page.params.hash;
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
@@ -65,9 +66,7 @@
   }
 
   function fmtDate(d: string) {
-    return new Date(d + 'T00:00').toLocaleDateString('pt-BR', {
-      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
-    });
+    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
   }
 
   function fmtPricingParts(perMatch: number | string | null, monthly: number | string | null): string[] {
@@ -158,19 +157,19 @@
   {/if}
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
   <main class="max-w-2xl mx-auto px-4 pt-4 pb-8">
     {#if loading}
       <div class="animate-pulse space-y-4">
-        <div class="h-8 bg-gray-200 rounded w-2/3"></div>
-        <div class="h-4 bg-gray-100 rounded w-1/2"></div>
+        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+        <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2"></div>
       </div>
 
     {:else if !match}
       <div class="card p-12 text-center">
         <Calendar size={48} class="text-gray-300 mx-auto mb-4" />
-        <h2 class="text-xl font-semibold text-gray-700">Partida não encontrada</h2>
-        <p class="text-gray-400 mt-2">O link pode estar errado ou a partida foi removida.</p>
+        <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">Rachão não encontrado</h2>
+        <p class="text-gray-400 dark:text-gray-500 mt-2">O link pode estar errado ou o rachão foi removido.</p>
       </div>
 
     {:else}
@@ -238,25 +237,25 @@
         </div><!-- /banner header -->
 
         <!-- Scoreboard summary -->
-        <div class="grid grid-cols-3 divide-x divide-gray-100">
+        <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
           <div class="px-3 py-3 text-center">
             <p class="text-xl font-bold text-green-600">
               {match.confirmed_count}{#if match.max_players}<span class="text-sm text-gray-400">/{match.max_players}</span>{/if}
             </p>
-            <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1">
               <CheckCircle size={11} />
               {match.max_players && match.confirmed_count >= match.max_players ? 'Lotada!' : 'Confirmados'}
             </p>
           </div>
           <div class="px-3 py-3 text-center">
             <p class="text-xl font-bold text-red-500">{match.declined_count}</p>
-            <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1">
               <XCircle size={11} /> Recusaram
             </p>
           </div>
           <div class="px-3 py-3 text-center">
             <p class="text-xl font-bold text-gray-400">{match.pending_count}</p>
-            <p class="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1">
               <Clock3 size={11} /> Pendentes
             </p>
           </div>
@@ -266,7 +265,7 @@
       <!-- My RSVP (only if logged in and in the match) -->
       {#if $isLoggedIn && !$isAdmin && match.status === 'open'}
         <div class="card mb-4 card-body">
-          <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
             <Users size={16} class="text-primary-600" /> Sua Confirmação
           </h3>
           {#if responded}
@@ -274,7 +273,7 @@
               <p class="text-sm font-medium {lastStatus === 'confirmed' ? 'text-green-600' : 'text-red-500'}">
                 {lastStatus === 'confirmed' ? '✅ Presença confirmada! Até lá.' : '❌ Falta registrada.'}
               </p>
-              <button class="text-xs text-gray-400 hover:text-gray-600 mt-2 underline" onclick={() => { responded = false; lastStatus = null; }}>
+              <button class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 mt-2 underline" onclick={() => { responded = false; lastStatus = null; }}>
                 Alterar resposta
               </button>
             </div>
@@ -305,16 +304,16 @@
         <!-- Confirmed -->
         {#if confirmed.length > 0}
           <div class="card overflow-hidden">
-            <div class="px-4 py-2 bg-green-50 border-b border-gray-100">
-              <h3 class="text-sm font-semibold text-green-800 flex items-center gap-1.5">
+            <div class="px-4 py-2 bg-green-50 dark:bg-green-900/20 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-1.5">
                 <CheckCircle size={14} /> Confirmados ({confirmed.length})
               </h3>
             </div>
-            <ul class="divide-y divide-gray-100">
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each confirmed as a, i}
                 <li class="px-4 py-2 flex items-center gap-2.5">
                   <span class="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                  <p class="text-sm font-medium text-gray-900 flex-1">{a.player.nickname || a.player.name}</p>
+                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{a.player.nickname || a.player.name}</p>
                   {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 shrink-0"
@@ -332,14 +331,14 @@
         <!-- Declined -->
         {#if declined.length > 0}
           <div class="card overflow-hidden">
-            <div class="px-4 py-2 bg-red-50 border-b border-gray-100">
-              <h3 class="text-sm font-semibold text-red-700 flex items-center gap-1.5">
+            <div class="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-1.5">
                 <XCircle size={14} /> Recusaram ({declined.length})
               </h3>
             </div>
-            <ul class="divide-y divide-gray-100">
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each declined as a}
-                <li class="px-4 py-2 text-sm text-gray-600 flex items-center gap-2.5">
+                <li class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2.5">
                   <XCircle size={13} class="text-red-400 shrink-0" />
                   <span class="flex-1">{a.player.nickname || a.player.name}</span>
                   {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
@@ -359,14 +358,14 @@
         <!-- Pending -->
         {#if pending.length > 0}
           <div class="card overflow-hidden">
-            <div class="px-4 py-2 border-b border-gray-100">
-              <h3 class="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+            <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                 <Clock3 size={14} /> Aguardando ({pending.length})
               </h3>
             </div>
-            <ul class="divide-y divide-gray-100">
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each pending as a}
-                <li class="px-4 py-2 text-sm text-gray-500 flex items-center gap-2.5">
+                <li class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2.5">
                   <Clock3 size={13} class="text-gray-400 shrink-0" />
                   <span class="flex-1">{a.player.nickname || a.player.name}</span>
                   {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
@@ -393,7 +392,7 @@
       </div>
 
       <!-- Share footer -->
-      <div class="mt-6 pt-5 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
+      <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
         <button onclick={shareWhatsApp} class="flex-1 btn btn-secondary justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -405,7 +404,7 @@
           <Link2 size={16} /> Copiar link
         </button>
       </div>
-      <p class="text-center text-xs text-gray-400 mt-4">⚽ <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 underline underline-offset-2">rachao.app</a> · © 2026</p>
+      <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">⚽ <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-400 underline underline-offset-2">rachao.app</a> · © 2026</p>
     {/if}
   </main>
 </div>

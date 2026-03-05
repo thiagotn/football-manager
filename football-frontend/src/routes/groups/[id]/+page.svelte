@@ -7,6 +7,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
+  import { relativeDate } from '$lib/utils.js';
 
   const groupId = $page.params.id;
 
@@ -189,7 +190,7 @@
   }
 
   function fmtDate(d: string) {
-    return new Date(d + 'T00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long' });
   }
 
   function fmtTimeRange(start: string, end: string | null): string {
@@ -292,11 +293,13 @@
         onclick={() => tab = 'upcoming'}>
         Próximos ({upcomingMatches.length})
       </button>
-      <button
-        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-        onclick={() => tab = 'past'}>
-        Últimos ({pastMatches.length})
-      </button>
+      {#if pastMatches.length > 0}
+        <button
+          class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+          onclick={() => tab = 'past'}>
+          Últimos ({pastMatches.length})
+        </button>
+      {/if}
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'members' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
         onclick={() => tab = 'members'}>
