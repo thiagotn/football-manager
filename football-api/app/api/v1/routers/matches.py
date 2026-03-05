@@ -88,6 +88,7 @@ async def list_group_matches(group_id: uuid.UUID, db: DB, current: CurrentPlayer
             raise ForbiddenError("Você não é membro deste grupo")
 
     repo = MatchRepository(db)
+    await repo.close_past_matches()
     return await repo.get_group_matches(group_id)
 
 
