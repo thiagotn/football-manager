@@ -68,7 +68,7 @@ Implementar um sistema de planos de assinatura com controle de limites de recurs
 ### 3.1 Gestão de Planos e Assinaturas
 
 **RF-01 — Exibição de planos**
-O sistema deve exibir uma página de planos (`/planos`) com comparativo visual dos três planos, preços mensais e anuais, e botões de ação (começar grátis / assinar).
+O sistema deve exibir uma página de planos (`/plans`) com comparativo visual dos três planos, preços mensais e anuais, e botões de ação (começar grátis / assinar).
 
 **RF-02 — Seleção e contratação de plano**
 O usuário deve poder selecionar um plano pago e ser redirecionado para o checkout. O checkout deve suportar cartão de crédito, PIX e boleto bancário.
@@ -112,7 +112,7 @@ Ao regredir para um plano com menos recursos, os dados existentes não devem ser
 ### 3.3 Gestão de Pagamentos
 
 **RF-13 — Histórico de pagamentos**
-O usuário deve poder visualizar o histórico de faturas (data, valor, status, link para nota fiscal) em `/conta/faturas`.
+O usuário deve poder visualizar o histórico de faturas (data, valor, status, link para nota fiscal) em `/account/invoices`.
 
 **RF-14 — Atualização de método de pagamento**
 O usuário deve poder atualizar o cartão de crédito a qualquer momento sem cancelar a assinatura.
@@ -284,7 +284,7 @@ INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_groups, 
     "current_plan": "free",
     "limit": 1,
     "current_usage": 1,
-    "upgrade_url": "/planos"
+    "upgrade_url": "/plans"
   }
 }
 ```
@@ -363,13 +363,13 @@ Na data de vencimento:
 
 ### 8.1 Páginas e Componentes
 
-**Página de Planos (`/planos`)**
+**Página de Planos (`/plans`)**
 - Cards comparativos com os três planos lado a lado.
 - Toggle mensal/anual com destaque da economia anual.
 - CTA primário em cada card.
 - FAQ sobre cobrança, cancelamento e reembolso.
 
-**Painel de Conta (`/conta/assinatura`)**
+**Painel de Conta (`/account/subscription`)**
 - Plano atual com data de renovação.
 - Barra de uso de recursos (grupos e partidas).
 - Botões de upgrade, downgrade e cancelamento.
@@ -497,11 +497,11 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 - Processamento de webhooks.
 
 ### Fase 2 — Frontend (Semanas 3–5)
-- Página de planos (`/planos`) em `football-frontend/src/routes/planos/`.
-- Painel de conta (`/conta/assinatura`) em `football-frontend/src/routes/conta/`.
+- Página de planos (`/plans`) em `football-frontend/src/routes/plans/`.
+- Painel de conta (`/account/subscription`) em `football-frontend/src/routes/account/`.
 - Modal de upsell (seguindo padrão do `ConfirmDialog`).
 - Indicadores de limite no dashboard (`/`).
-- Fluxo de checkout e páginas de retorno (`/conta/checkout/sucesso`, `/conta/checkout/falha`).
+- Fluxo de checkout e páginas de retorno em `football-frontend/src/routes/account/checkout/` (`/account/checkout/success`, `/account/checkout/failure`).
 
 ### Fase 3 — Testes e Validação (Semana 6)
 - Testes E2E em `football-e2e/tests/` cobrindo fluxo de upgrade, falha e regressão.
