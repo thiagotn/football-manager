@@ -532,7 +532,7 @@
         <select id="emplayers" class="input" bind:value={editMatchForm.players_per_team}>
           <option value="">— selecione —</option>
           {#each [4, 5, 6, 7, 8, 9, 10] as n}
-            <option value={n}>{n} na linha</option>
+            <option value="{n}">{n} na linha</option>
           {/each}
         </select>
       </div>

@@ -101,36 +101,41 @@
   }
 
   function fmtDateShare(d: string) {
-    const dt = new Date(d + 'T00:00');
-    const weekday = dt.toLocaleDateString('pt-BR', { weekday: 'long' });
-    const ddmmyyyy = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const rel = relativeDate(d);
     const time = match!.start_time.slice(0, 5).replace(':', 'h');
-    return `${weekday}, ${time} (${ddmmyyyy})`;
+    const isRelativeWord = rel === 'Hoje' || rel === 'Amanhã' || rel === 'Ontem';
+    if (isRelativeWord) return `${rel}, ${time}`;
+    const dt = new Date(d + 'T00:00');
+    const ddmmyyyy = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return `${rel}, ${time} (${ddmmyyyy})`;
   }
 
   function shareWhatsApp() {
     if (!match) return;
-    const confirmedList = confirmed.length > 0
+    const confirmedList = match.confirmed_count > 0
       ? confirmed.map((a, i) => `${i + 1} - ${a.player.nickname || a.player.name}`).join('\n')
       : 'Nenhum confirmado ainda';
-    const declinedList = declined.length > 0
+    const declinedList = match.declined_count > 0
       ? declined.map(a => `- ${a.player.nickname || a.player.name}`).join('\n')
       : 'Nenhum';
-    const pendingList = pending.length > 0
+    const pendingList = match.pending_count > 0
       ? pending.map(a => `- ${a.player.nickname || a.player.name}`).join('\n')
       : 'Nenhum';
+    const confirmedHeader = match.max_players
+      ? `Confirmados (${match.confirmed_count}/${match.max_players}):`
+      : `Confirmados (${match.confirmed_count}):`;
     const lines = [
-      `*${match.group_name}*`,
+      `*Rachão ${match.group_name}*`,
       fmtDateShare(match.match_date),
       `Local: ${match.location}`,
       '',
-      `Confirmados (${confirmed.length}):`,
+      confirmedHeader,
       confirmedList,
       '',
-      `Não vão (${declined.length}):`,
+      `Não vão (${match.declined_count}):`,
       declinedList,
       '',
-      `Pendentes (${pending.length}):`,
+      `Pendentes (${match.pending_count}):`,
       pendingList,
       '',
       window.location.href,
@@ -319,7 +324,7 @@
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 shrink-0"
                       onclick={() => respondFor(a.player.id, 'declined')}
                       disabled={adminResponding === a.player.id}>
-                      ✕ Falta
+                      ✕ Recusar
                     </button>
                   {/if}
                 </li>
@@ -374,13 +379,13 @@
                         class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40"
                         onclick={() => respondFor(a.player.id, 'confirmed')}
                         disabled={adminResponding === a.player.id}>
-                        ✓
+                        ✓ Confirmar
                       </button>
                       <button
                         class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40"
                         onclick={() => respondFor(a.player.id, 'declined')}
                         disabled={adminResponding === a.player.id}>
-                        ✕
+                        ✕ Recusar
                       </button>
                     </div>
                   {/if}
@@ -403,6 +408,17 @@
         <button onclick={copyLink} class="flex-1 btn btn-secondary justify-center gap-2">
           <Link2 size={16} /> Copiar link
         </button>
+      </div>
+      <div class="mt-3 flex justify-center">
+        {#if $isLoggedIn}
+          <button onclick={() => history.back()} class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400">
+            ← Voltar
+          </button>
+        {:else}
+          <a href="/" class="btn btn-ghost btn-sm text-primary-600 dark:text-primary-400">
+            Conheça a plataforma →
+          </a>
+        {/if}
       </div>
       <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">⚽ <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-400 underline underline-offset-2">rachao.app</a> · © 2026</p>
     {/if}
