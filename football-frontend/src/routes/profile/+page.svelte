@@ -79,32 +79,33 @@
       </div>
       <div class="flex justify-between items-center">
         <dt class="text-gray-500">Apelido</dt>
-        <dd class="flex items-center gap-2">
-          {#if editingNickname}
-            <form onsubmit={(e) => { e.preventDefault(); saveNickname(); }} class="flex items-center gap-2">
-              <input
-                class="input text-sm py-1 px-2 w-36"
-                bind:value={nickname}
-                placeholder="Como te chamam?"
-                maxlength="50"
-                disabled={savingNickname}
-                autofocus />
-              <button type="submit" class="btn-primary btn-sm py-1" disabled={savingNickname}>
-                {savingNickname ? 'Salvando…' : 'Salvar'}
-              </button>
-              <button type="button" class="btn btn-sm py-1" onclick={() => { editingNickname = false; nickname = $currentPlayer?.nickname ?? ''; }}>
-                Cancelar
-              </button>
-            </form>
-          {:else}
+        {#if !editingNickname}
+          <dd class="flex items-center gap-2">
             <span class="font-medium text-gray-900">{$currentPlayer?.nickname || '—'}</span>
             <button type="button" onclick={() => { nickname = $currentPlayer?.nickname ?? ''; editingNickname = true; }}
               class="text-gray-400 hover:text-primary-600" title="Editar apelido">
               <Pencil size={14} />
             </button>
-          {/if}
-        </dd>
+          </dd>
+        {/if}
       </div>
+      {#if editingNickname}
+        <form onsubmit={(e) => { e.preventDefault(); saveNickname(); }} class="flex gap-2 -mt-1">
+          <input
+            class="input text-sm flex-1 min-w-0"
+            bind:value={nickname}
+            placeholder="Como te chamam?"
+            maxlength="50"
+            disabled={savingNickname}
+            autofocus />
+          <button type="submit" class="btn-primary btn-sm shrink-0" disabled={savingNickname}>
+            {savingNickname ? 'Salvando…' : 'Salvar'}
+          </button>
+          <button type="button" class="btn-secondary btn-sm shrink-0" onclick={() => { editingNickname = false; nickname = $currentPlayer?.nickname ?? ''; }}>
+            Cancelar
+          </button>
+        </form>
+      {/if}
       <div class="flex justify-between">
         <dt class="text-gray-500">WhatsApp</dt>
         <dd class="font-mono text-gray-700">{$currentPlayer?.whatsapp ?? '—'}</dd>

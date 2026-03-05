@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { matches as matchesApi, groups as groupsApi, ApiError } from '$lib/api';
   import type { MatchDetail, Attendance } from '$lib/api';
-  import { currentPlayer, isLoggedIn } from '$lib/stores/auth';
+  import { currentPlayer, isLoggedIn, isAdmin } from '$lib/stores/auth';
 
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
@@ -264,7 +264,7 @@
       </div>
 
       <!-- My RSVP (only if logged in and in the match) -->
-      {#if $isLoggedIn && match.status === 'open'}
+      {#if $isLoggedIn && !$isAdmin && match.status === 'open'}
         <div class="card mb-4 card-body">
           <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
             <Users size={16} class="text-primary-600" /> Sua Confirmação

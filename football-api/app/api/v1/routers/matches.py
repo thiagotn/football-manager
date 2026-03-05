@@ -196,6 +196,10 @@ async def set_attendance(
     db: DB,
     current: CurrentPlayer,
 ):
+    # Super admins não participam de partidas
+    if current.role == PlayerRole.ADMIN and current.id == body.player_id:
+        raise ForbiddenError("Administradores não participam de partidas")
+
     # Can set own attendance or admin/group-admin can set anyone's
     if current.id != body.player_id:
         g_repo = GroupRepository(db)
