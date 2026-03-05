@@ -13,7 +13,7 @@
   let group: GroupDetail | null = $state(null);
   let matchList: Match[] = $state([]);
   let loading = $state(true);
-  let tab: 'matches' | 'members' = $state('matches');
+  let tab: 'upcoming' | 'past' | 'members' = $state('upcoming');
 
   // Modals
   let showMatch = $state(false);
@@ -36,6 +36,10 @@
 
   let nonAdminMembers = $derived(group?.members.filter(m => m.player.role !== 'admin') ?? []);
   let roleEditMember = $state<{ id: string; name: string; role: string } | null>(null);
+
+  const today = new Date().toISOString().slice(0, 10);
+  let upcomingMatches = $derived(matchList.filter(m => m.status === 'open').sort((a, b) => a.match_date.localeCompare(b.match_date)));
+  let pastMatches = $derived(matchList.filter(m => m.status === 'closed' || m.match_date < today).sort((a, b) => b.match_date.localeCompare(a.match_date)));
 
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
@@ -252,64 +256,73 @@
     </div>
   {:else if group}
     <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{group.name}</h1>
-        {#if group.description}<p class="text-gray-500 dark:text-gray-400 text-sm mt-1">{group.description}</p>{/if}
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{nonAdminMembers.length} jogador{nonAdminMembers.length !== 1 ? 'es' : ''}</p>
-        {#if group.per_match_amount != null || group.monthly_amount != null}
-          <div class="flex flex-col text-xs text-amber-700 mt-1 font-medium leading-snug">
-            {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
-              <span>{part}</span>
-            {/each}
+    <div class="mb-6 space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{group.name}</h1>
+          {#if group.description}<p class="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{group.description}</p>{/if}
+        </div>
+        {#if isGroupAdmin()}
+          <div class="flex gap-2 shrink-0">
+            <button class="btn-secondary btn-sm" onclick={openEditGroup}><Pencil size={14} /> Editar</button>
           </div>
-        {:else}
-          <p class="text-xs text-green-600 mt-1">Rachão aberto — sem cobrança</p>
-        {/if}
-        {#if group.recurrence_enabled}
-          <p class="text-xs text-primary-600 mt-1">Recorrência semanal ativa</p>
         {/if}
       </div>
-      {#if isGroupAdmin()}
-        <div class="flex flex-wrap gap-2">
-          <button class="btn-secondary btn-sm" onclick={openEditGroup}><Pencil size={14} /> Editar</button>
-          <button class="btn-secondary btn-sm" onclick={generateInvite}><Link size={14} /> Convidar</button>
-          {#if tab === 'members'}
-            <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar</button>
-          {:else}
-            <button class="btn-primary btn-sm" onclick={() => showMatch = true}><Plus size={14} /> Novo Rachão</button>
-          {/if}
-        </div>
-      {/if}
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+          <Users size={12} /> {nonAdminMembers.length} jogador{nonAdminMembers.length !== 1 ? 'es' : ''}
+        </span>
+        {#if group.per_match_amount != null || group.monthly_amount != null}
+          {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
+            <span class="text-xs text-amber-700 dark:text-amber-400 font-medium">{part}</span>
+          {/each}
+        {:else}
+          <span class="text-xs text-green-600 dark:text-green-400">Sem cobrança</span>
+        {/if}
+        {#if group.recurrence_enabled}
+          <span class="text-xs text-primary-600 dark:text-primary-400">Recorrência semanal</span>
+        {/if}
+      </div>
     </div>
 
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
       <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {tab === 'matches' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-        onclick={() => tab = 'matches'}>
-        <span class="flex items-center gap-1.5"><Calendar size={14} /> Rachões ({matchList.length})</span>
+        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'upcoming' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+        onclick={() => tab = 'upcoming'}>
+        Próximos ({upcomingMatches.length})
       </button>
       <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {tab === 'members' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+        onclick={() => tab = 'past'}>
+        Últimos ({pastMatches.length})
+      </button>
+      <button
+        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'members' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
         onclick={() => tab = 'members'}>
-        <span class="flex items-center gap-1.5"><Users size={14} /> Jogadores ({nonAdminMembers.length})</span>
+        Jogadores ({nonAdminMembers.length})
       </button>
     </div>
 
-    <!-- Matches tab -->
-    {#if tab === 'matches'}
-      {#if matchList.length === 0}
+    <!-- Próximos / Últimos tabs -->
+    {#if tab === 'upcoming' || tab === 'past'}
+      {#if isGroupAdmin() && tab === 'upcoming'}
+        <div class="flex justify-end mb-4">
+          <button class="btn-primary btn-sm" onclick={() => showMatch = true}><Plus size={14} /> Novo Rachão</button>
+        </div>
+      {/if}
+      {@const subList = tab === 'upcoming' ? upcomingMatches : pastMatches}
+      {#if subList.length === 0}
         <div class="card p-12 text-center">
           <Calendar size={40} class="text-gray-300 mx-auto mb-3" />
-          <p class="text-gray-500">Nenhum rachão agendado.</p>
-          {#if isGroupAdmin()}
+          <p class="text-gray-500">{tab === 'upcoming' ? 'Nenhum rachão agendado.' : 'Nenhum rachão encerrado ainda.'}</p>
+          {#if isGroupAdmin() && tab === 'upcoming'}
             <button class="btn-primary mt-4" onclick={() => showMatch = true}><Plus size={16} /> Criar rachão</button>
           {/if}
         </div>
       {:else}
         <div class="space-y-3">
-          {#each matchList as m}
+          {#each subList as m}
             <div class="card hover:shadow-md transition-shadow">
               <div class="card-body">
                 <!-- Date + status -->
@@ -344,8 +357,8 @@
 
                 <!-- Actions -->
                 <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                  <a href="/match/{m.hash}" class="btn-sm btn-secondary flex-1 justify-center">
-                    Ver partida <ChevronRight size={14} />
+                  <a href="/match/{m.hash}" class="btn-sm btn-secondary shrink-0">
+                    Detalhes <ChevronRight size={14} />
                   </a>
                   {#if isGroupAdmin()}
                     <button onclick={() => openEditMatch(m)} class="btn-sm btn-ghost shrink-0">
@@ -365,6 +378,12 @@
 
     <!-- Members tab -->
     {#if tab === 'members'}
+      {#if isGroupAdmin()}
+        <div class="flex justify-end gap-2 mb-4">
+          <button class="btn-secondary btn-sm" onclick={generateInvite}><Link size={14} /> Convidar</button>
+          <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar</button>
+        </div>
+      {/if}
       <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
         {#if nonAdminMembers.length === 0}
           <div class="px-6 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
@@ -564,21 +583,35 @@
 
 <!-- Add member modal -->
 <Modal bind:open={showAddMember} title="Adicionar Membro">
-  <form onsubmit={(e) => { e.preventDefault(); addMember(); }} class="space-y-4">
-    <div class="form-group">
-      <label class="label" for="pid">Selecionar Jogador</label>
-      <select id="pid" class="input" bind:value={addMemberId} required>
-        <option value="">— selecione —</option>
-        {#each allPlayers.filter(p => !group?.members.some(m => m.player.id === p.id)) as p}
-          <option value={p.id}>{p.name} {p.nickname ? `(${p.nickname})` : ''}</option>
-        {/each}
-      </select>
+  {@const available = allPlayers.filter(p => !group?.members.some(m => m.player.id === p.id))}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+    Selecione um jogador cadastrado no sistema que ainda não faça parte deste grupo.
+  </p>
+  {#if available.length === 0}
+    <div class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
+      <UserPlus size={32} class="mx-auto mb-2 opacity-40" />
+      <p>Todos os jogadores cadastrados já fazem parte deste grupo.</p>
     </div>
-    <div class="flex gap-3 justify-end">
-      <button type="button" class="btn-secondary" onclick={() => showAddMember = false}>Cancelar</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Adicionando…' : 'Adicionar'}</button>
+    <div class="flex justify-end mt-4">
+      <button class="btn-secondary" onclick={() => showAddMember = false}>Fechar</button>
     </div>
-  </form>
+  {:else}
+    <form onsubmit={(e) => { e.preventDefault(); addMember(); }} class="space-y-4">
+      <div class="form-group">
+        <label class="label" for="pid">Jogador</label>
+        <select id="pid" class="input" bind:value={addMemberId} required>
+          <option value="">— selecione —</option>
+          {#each available as p}
+            <option value={p.id}>{p.name}{p.nickname ? ` (${p.nickname})` : ''}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" class="btn-secondary" onclick={() => showAddMember = false}>Cancelar</button>
+        <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Adicionando…' : 'Adicionar'}</button>
+      </div>
+    </form>
+  {/if}
 </Modal>
 
 <!-- Role edit bottom sheet -->
