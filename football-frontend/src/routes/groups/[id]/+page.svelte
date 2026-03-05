@@ -561,6 +561,9 @@
 <!-- Invite modal -->
 <Modal bind:open={showInvite} title="Link de Convite">
   <div class="space-y-4">
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      Envie este link para novos jogadores. Ao acessá-lo, eles poderão criar uma conta e já entrarão automaticamente neste grupo.
+    </p>
     <div class="alert-info">⏱ Este link expira em <strong>30 minutos</strong> e só pode ser usado <strong>uma vez</strong>.</div>
     <div class="flex gap-2">
       <input class="input font-mono text-xs" readonly value={inviteLink} />
@@ -577,7 +580,7 @@
       </svg>
       Enviar pelo WhatsApp
     </a>
-    <button class="btn-secondary w-full" onclick={() => showInvite = false}>Fechar</button>
+    <button class="btn-secondary w-full justify-center" onclick={() => showInvite = false}>Fechar</button>
   </div>
 </Modal>
 
