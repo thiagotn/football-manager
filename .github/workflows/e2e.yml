@@ -1,0 +1,65 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start stack
+        working-directory: football-api
+        run: docker compose up -d --build
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Aguardando API..."
+          timeout 90 bash -c 'until curl -sf http://localhost:8000/health > /dev/null; do sleep 3; done'
+          echo "API pronta ✓"
+
+      - name: Wait for frontend to be ready
+        run: |
+          echo "Aguardando Frontend..."
+          timeout 90 bash -c 'until curl -sf http://localhost:3000 > /dev/null; do sleep 3; done'
+          echo "Frontend pronto ✓"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: football-e2e/pyproject.toml
+
+      - name: Install Python dependencies
+        working-directory: football-e2e
+        run: pip install -e .
+
+      - name: Install Playwright browsers
+        working-directory: football-e2e
+        run: playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        working-directory: football-e2e
+        env:
+          BASE_URL: http://localhost:3000
+          ADMIN_WHATSAPP: "11999990000"
+          ADMIN_PASSWORD: admin123
+        run: |
+          pytest tests/ -v \
+            --screenshot=only-on-failure \
+            --output=test-results/ \
+            --tb=short
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ github.run_id }}
+          path: football-e2e/test-results/
+          retention-days: 7

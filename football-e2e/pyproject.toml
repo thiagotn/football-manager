@@ -1,0 +1,16 @@
+[project]
+name = "football-e2e"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "pytest>=8",
+    "playwright>=1.44",
+    "pytest-playwright>=0.5",
+    "python-dotenv>=1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

@@ -44,6 +44,7 @@ Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
 | **Banco** | PostgreSQL 16 | Armazena jogadores, grupos, partidas, presenças e convites. |
 | **Traefik** | Traefik v3 | Proxy reverso + TLS automático (produção). |
 | **Adminer** | Adminer 4 | Interface web para inspecionar o banco (opcional, via Docker profile). |
+| **E2E** | Playwright + pytest (Python) | Testes end-to-end dos cenários principais. Roda em CI a cada push. |
 
 ---
 
@@ -150,7 +151,8 @@ docker compose build --no-cache   # Rebuild forçado sem cache
 football-manager/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml              # CI/CD: build → GHCR → deploy no VPS (disparo manual)
+│       ├── deploy.yml              # CI/CD: build → GHCR → deploy no VPS (disparo manual)
+│       └── e2e.yml                 # Testes E2E: roda a cada push em main
 ├── scripts/
 │   └── setup-vps.sh                # Prepara o VPS Ubuntu 24.04 para receber o deploy
 ├── football-api/                   # Backend
@@ -168,15 +170,19 @@ football-manager/
 │   ├── .env.prod.example           # Template para produção
 │   ├── Makefile                    # Atalhos para comandos comuns
 │   └── pyproject.toml
-└── football-frontend/              # Frontend
-    ├── src/
-    │   ├── routes/                 # Páginas (SvelteKit file-based routing)
-    │   ├── lib/
-    │   │   ├── api.ts              # Client HTTP para a API
-    │   │   ├── stores/             # Estado global (auth, toast)
-    │   │   └── components/         # Componentes reutilizáveis
-    │   └── app.css                 # Estilos globais (Tailwind)
-    └── Dockerfile                  # Multi-stage: builder e production
+├── football-frontend/              # Frontend
+│   ├── src/
+│   │   ├── routes/                 # Páginas (SvelteKit file-based routing)
+│   │   ├── lib/
+│   │   │   ├── api.ts              # Client HTTP para a API
+│   │   │   ├── stores/             # Estado global (auth, toast)
+│   │   │   └── components/         # Componentes reutilizáveis
+│   │   └── app.css                 # Estilos globais (Tailwind)
+│   └── Dockerfile                  # Multi-stage: builder e production
+└── football-e2e/                   # Testes end-to-end
+    ├── conftest.py                 # Fixtures: login, contextos autenticados
+    ├── pages/                      # Page Object Model
+    └── tests/                      # Suites por domínio (auth, groups, matches…)
 ```
 
 ---
