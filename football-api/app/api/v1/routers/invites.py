@@ -10,6 +10,7 @@ from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, Va
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.invite_repo import InviteRepository
+from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
 from app.models.group import GroupMemberRole
 from app.models.player import PlayerRole
@@ -103,6 +104,7 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
 
     player = await p_repo.get_by_whatsapp(whatsapp)
 
+    just_joined = False
     if player:
         # Usuário existente — valida senha antes de adicionar ao grupo
         if not verify_password(body.password, player.password_hash):
@@ -110,6 +112,7 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
         existing_membership = await g_repo.get_member(invite.group_id, player.id)
         if not existing_membership:
             await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
+            just_joined = True
     else:
         # Novo usuário — name é obrigatório
         if not body.name or not body.name.strip():
@@ -122,6 +125,16 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
             role=PlayerRole.PLAYER,
         )
         await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
+        just_joined = True
+
+    # Adiciona o jogador como pendente nos rachões abertos do grupo
+    if just_joined:
+        m_repo = MatchRepository(db)
+        open_matches = await m_repo.get_open_matches(invite.group_id)
+        for match in open_matches:
+            existing_att = await m_repo.get_attendance(match.id, player.id)
+            if not existing_att:
+                await m_repo.create_pending_attendances(match.id, [player.id])
 
     # Mark invite as used
     invite.used = True

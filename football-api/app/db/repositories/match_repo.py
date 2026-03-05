@@ -112,6 +112,15 @@ class MatchRepository(BaseRepository[Match]):
         )
         return result.scalar_one_or_none()
 
+    async def get_open_matches(self, group_id: UUID) -> list[Match]:
+        result = await self.session.execute(
+            select(Match).where(
+                Match.group_id == group_id,
+                Match.status == MatchStatus.OPEN,
+            )
+        )
+        return list(result.scalars().all())
+
     async def has_open_match(self, group_id: UUID) -> bool:
         result = await self.session.execute(
             select(func.count()).where(
