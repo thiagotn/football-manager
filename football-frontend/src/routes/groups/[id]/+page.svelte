@@ -34,6 +34,9 @@
 
   let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false });
 
+  let nonAdminMembers = $derived(group?.members.filter(m => m.player.role !== 'admin') ?? []);
+  let roleEditMember = $state<{ id: string; name: string; role: string } | null>(null);
+
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
   let confirmLabel = $state('Confirmar');
@@ -109,7 +112,7 @@
       matchList = [m, ...matchList];
       showMatch = false;
       matchForm = { match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' };
-      toastSuccess('Partida criada!');
+      toastSuccess('Rachão criado!');
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     saving = false;
   }
@@ -172,11 +175,11 @@
   }
 
   async function deleteMatch(m: Match) {
-    askConfirm('Excluir esta partida?', 'Excluir', async () => {
+    askConfirm('Excluir este rachão?', 'Excluir', async () => {
       try {
         await matchesApi.delete(groupId, m.id);
         matchList = matchList.filter(x => x.id !== m.id);
-        toastSuccess('Partida excluída');
+        toastSuccess('Rachão excluído');
       } catch (e) { toastError('Erro ao excluir'); }
     });
   }
@@ -233,7 +236,7 @@
       });
       matchList = matchList.map(m => m.id === updated.id ? updated : m);
       showEditMatch = false;
-      toastSuccess('Partida atualizada!');
+      toastSuccess('Rachão atualizado!');
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
     saving = false;
   }
@@ -244,16 +247,16 @@
 <main class="max-w-7xl mx-auto px-4 py-8">
   {#if loading}
     <div class="animate-pulse space-y-4">
-      <div class="h-8 bg-gray-200 rounded w-1/3"></div>
-      <div class="h-4 bg-gray-100 rounded w-1/2"></div>
+      <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+      <div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/2"></div>
     </div>
   {:else if group}
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">{group.name}</h1>
-        {#if group.description}<p class="text-gray-500 text-sm mt-1">{group.description}</p>{/if}
-        <p class="text-xs text-gray-400 mt-1">{group.total_members} membro{group.total_members !== 1 ? 's' : ''}</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{group.name}</h1>
+        {#if group.description}<p class="text-gray-500 dark:text-gray-400 text-sm mt-1">{group.description}</p>{/if}
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{nonAdminMembers.length} jogador{nonAdminMembers.length !== 1 ? 'es' : ''}</p>
         {#if group.per_match_amount != null || group.monthly_amount != null}
           <div class="flex flex-col text-xs text-amber-700 mt-1 font-medium leading-snug">
             {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
@@ -261,7 +264,7 @@
             {/each}
           </div>
         {:else}
-          <p class="text-xs text-green-600 mt-1">Partida aberta — sem cobrança</p>
+          <p class="text-xs text-green-600 mt-1">Rachão aberto — sem cobrança</p>
         {/if}
         {#if group.recurrence_enabled}
           <p class="text-xs text-primary-600 mt-1">Recorrência semanal ativa</p>
@@ -274,23 +277,23 @@
           {#if tab === 'members'}
             <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar</button>
           {:else}
-            <button class="btn-primary btn-sm" onclick={() => showMatch = true}><Plus size={14} /> Nova Partida</button>
+            <button class="btn-primary btn-sm" onclick={() => showMatch = true}><Plus size={14} /> Novo Rachão</button>
           {/if}
         </div>
       {/if}
     </div>
 
     <!-- Tabs -->
-    <div class="flex gap-1 border-b border-gray-200 mb-6">
+    <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
       <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {tab === 'matches' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}"
+        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {tab === 'matches' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
         onclick={() => tab = 'matches'}>
-        <span class="flex items-center gap-1.5"><Calendar size={14} /> Partidas ({matchList.length})</span>
+        <span class="flex items-center gap-1.5"><Calendar size={14} /> Rachões ({matchList.length})</span>
       </button>
       <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {tab === 'members' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}"
+        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {tab === 'members' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
         onclick={() => tab = 'members'}>
-        <span class="flex items-center gap-1.5"><Users size={14} /> Membros ({group.total_members})</span>
+        <span class="flex items-center gap-1.5"><Users size={14} /> Jogadores ({nonAdminMembers.length})</span>
       </button>
     </div>
 
@@ -299,9 +302,9 @@
       {#if matchList.length === 0}
         <div class="card p-12 text-center">
           <Calendar size={40} class="text-gray-300 mx-auto mb-3" />
-          <p class="text-gray-500">Nenhuma partida agendada.</p>
+          <p class="text-gray-500">Nenhum rachão agendado.</p>
           {#if isGroupAdmin()}
-            <button class="btn-primary mt-4" onclick={() => showMatch = true}><Plus size={16} /> Criar partida</button>
+            <button class="btn-primary mt-4" onclick={() => showMatch = true}><Plus size={16} /> Criar rachão</button>
           {/if}
         </div>
       {:else}
@@ -309,61 +312,49 @@
           {#each matchList as m}
             <div class="card hover:shadow-md transition-shadow">
               <div class="card-body">
-                <div class="flex items-start gap-3">
-                  <!-- Number badge -->
-                  <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center shrink-0 text-primary-700 font-bold text-sm">
-                    #{m.number}
-                  </div>
-
-                  <!-- Content -->
+                <!-- Date + status -->
+                <div class="flex items-start gap-2 mb-1">
                   <div class="flex-1 min-w-0">
-                    <!-- Date + status badge on same row -->
-                    <div class="flex items-start gap-2">
-                      <p class="font-semibold text-gray-900 capitalize leading-snug flex-1">{fmtDate(m.match_date)}</p>
-                      <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0 mt-0.5">
-                        {m.status === 'open' ? 'Aberta' : 'Encerrada'}
-                      </span>
-                    </div>
-
-                    <!-- Time + Location -->
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm text-gray-500">
-                      <span class="flex items-center gap-1 whitespace-nowrap"><Clock size={12} />{fmtTimeRange(m.start_time, m.end_time)}</span>
-                      <span class="flex items-center gap-1 min-w-0"><MapPin size={12} /><span class="truncate">{m.location}</span></span>
-                    </div>
-
-                    <!-- Court / players details -->
-                    {#if m.court_type || m.players_per_team || m.max_players}
-                      <p class="text-xs text-gray-400 mt-0.5">
-                        {[
-                          m.court_type ? COURT_LABELS[m.court_type] : null,
-                          m.players_per_team ? `${m.players_per_team} na linha + gol` : null,
-                          m.max_players ? `máx. ${m.max_players}` : null,
-                        ].filter(Boolean).join(' · ')}
-                      </p>
-                    {/if}
-
-                    <!-- Footer: pricing (left) + actions (right) -->
-                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                      <div class="flex flex-col text-xs text-amber-700 font-medium leading-snug">
-                        {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
-                          <span>{part}</span>
-                        {/each}
-                      </div>
-                      <div class="flex items-center gap-1 flex-wrap justify-end">
-                        <a href="/match/{m.hash}" class="btn-sm btn-secondary">
-                          Ver <ChevronRight size={14} />
-                        </a>
-                        {#if isGroupAdmin()}
-                          <button onclick={() => openEditMatch(m)} class="btn-sm btn-ghost">
-                            <Pencil size={14} /> Editar
-                          </button>
-                          <button onclick={() => deleteMatch(m)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50">
-                            <Trash2 size={14} /> Excluir
-                          </button>
-                        {/if}
-                      </div>
-                    </div>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 capitalize leading-snug">
+                      <span class="text-primary-600 dark:text-primary-400 font-bold text-sm mr-1">#{m.number}</span>{fmtDate(m.match_date)}
+                    </p>
                   </div>
+                  <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0">
+                    {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                  </span>
+                </div>
+
+                <!-- Time + Location -->
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <span class="flex items-center gap-1 whitespace-nowrap"><Clock size={12} />{fmtTimeRange(m.start_time, m.end_time)}</span>
+                  <span class="flex items-center gap-1 min-w-0"><MapPin size={12} /><span class="truncate">{m.location}</span></span>
+                </div>
+
+                <!-- Court / players / pricing details -->
+                {#if m.court_type || m.players_per_team || m.max_players || group.per_match_amount != null || group.monthly_amount != null}
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {[
+                      m.court_type ? COURT_LABELS[m.court_type] : null,
+                      m.players_per_team ? `${m.players_per_team} na linha + gol` : null,
+                      m.max_players ? `máx. ${m.max_players}` : null,
+                      ...fmtPricingParts(group.per_match_amount, group.monthly_amount),
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                {/if}
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <a href="/match/{m.hash}" class="btn-sm btn-secondary flex-1 justify-center">
+                    Ver partida <ChevronRight size={14} />
+                  </a>
+                  {#if isGroupAdmin()}
+                    <button onclick={() => openEditMatch(m)} class="btn-sm btn-ghost shrink-0">
+                      <Pencil size={14} /> Editar
+                    </button>
+                    <button onclick={() => deleteMatch(m)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
+                      <Trash2 size={14} /> Excluir
+                    </button>
+                  {/if}
                 </div>
               </div>
             </div>
@@ -374,70 +365,51 @@
 
     <!-- Members tab -->
     {#if tab === 'members'}
-      <div class="card overflow-hidden">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Jogador</th>
-              <th class="hidden sm:table-cell">WhatsApp</th>
-              <th class="hidden sm:table-cell">Papel</th>
-              {#if isGroupAdmin()}<th></th>{/if}
-            </tr>
-          </thead>
-          <tbody>
-            {#each group.members as m}
-              <tr>
-                <td>
-                  <p class="font-medium text-gray-900">
-                    {m.player.name}
-                    <span class="sm:hidden text-xs font-normal text-gray-400 ml-1">
-                      ({m.role === 'admin' ? 'Presidente' : 'Membro'})
-                    </span>
-                  </p>
-                  {#if m.player.nickname}<p class="text-xs text-gray-400">{m.player.nickname}</p>{/if}
-                </td>
-                <td class="text-gray-500 font-mono text-xs hidden sm:table-cell">{m.player.whatsapp}</td>
-                <td class="hidden sm:table-cell">
-                  <span class="badge {m.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
-                    {m.role === 'admin' ? 'Presidente' : 'Membro'}
-                  </span>
-                </td>
-                {#if isGroupAdmin()}
-                  <td>
-                    {#if m.player.id !== $currentPlayer?.id}
-                      <div class="flex gap-1 justify-end flex-wrap">
-                        {#if m.role === 'admin'}
-                          <button
-                            onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
-                            class="btn-sm btn-ghost text-gray-500 hover:bg-gray-100">
-                            <ShieldOff size={14} /> Rebaixar
-                          </button>
-                        {:else}
-                          <button
-                            onclick={() => toggleRole(m.player.id, m.role, m.player.name)}
-                            class="btn-sm btn-ghost text-blue-600 hover:bg-blue-50">
-                            <ShieldCheck size={14} /> Promover
-                          </button>
-                        {/if}
-                        <button onclick={() => removeMember(m.player.id, m.player.name)}
-                          class="btn-sm btn-ghost text-red-500 hover:bg-red-50">
-                          <Trash2 size={14} /> Remover
-                        </button>
-                      </div>
-                    {/if}
-                  </td>
-                {/if}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+      <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+        {#if nonAdminMembers.length === 0}
+          <div class="px-6 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
+            <Users size={32} class="mx-auto mb-2 opacity-40" />
+            <p>Nenhum jogador no grupo ainda.</p>
+            {#if isGroupAdmin()}
+              <button class="btn-primary mt-4 btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar jogador</button>
+            {/if}
+          </div>
+        {/if}
+        {#each nonAdminMembers as m}
+          <div class="flex items-center gap-2 px-4 py-3">
+            <!-- Info -->
+            <div class="flex-1 min-w-0 flex items-center gap-1.5">
+              {#if m.role === 'admin'}
+                <span class="text-base leading-none" title="Presidente">👑</span>
+              {/if}
+              <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                {m.player.nickname || m.player.name}
+              </p>
+            </div>
+            <!-- Actions -->
+            {#if isGroupAdmin() && m.player.id !== $currentPlayer?.id}
+              <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                <button
+                  onclick={() => roleEditMember = { id: m.player.id, name: m.player.name, role: m.role }}
+                  class="btn-sm btn-ghost">
+                  <Pencil size={14} /> Editar
+                </button>
+                <button
+                  onclick={() => removeMember(m.player.id, m.player.name)}
+                  class="btn-sm btn-ghost text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <Trash2 size={14} /> Remover
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/each}
       </div>
     {/if}
   {/if}
 </main>
 
 <!-- Create match modal -->
-<Modal bind:open={showMatch} title="Nova Partida">
+<Modal bind:open={showMatch} title="Novo Rachão">
   <form onsubmit={(e) => { e.preventDefault(); createMatch(); }} class="space-y-4">
     <div class="form-group">
       <label class="label" for="mdate">Data *</label>
@@ -449,7 +421,7 @@
         <input id="mtime" class="input" type="time" bind:value={matchForm.start_time} required />
       </div>
       <div class="form-group">
-        <label class="label" for="mendtime">Término <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <label class="label" for="mendtime">Término <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
         <input id="mendtime" class="input" type="time" bind:value={matchForm.end_time} />
       </div>
     </div>
@@ -498,7 +470,7 @@
 </Modal>
 
 <!-- Edit match modal -->
-<Modal bind:open={showEditMatch} title="Editar Partida">
+<Modal bind:open={showEditMatch} title="Editar Rachão">
   <form onsubmit={(e) => { e.preventDefault(); saveEditMatch(); }} class="space-y-4">
     <div class="form-group">
       <label class="label" for="emdate">Data *</label>
@@ -510,7 +482,7 @@
         <input id="emtime" class="input" type="time" bind:value={editMatchForm.start_time} required />
       </div>
       <div class="form-group">
-        <label class="label" for="emendtime">Término <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <label class="label" for="emendtime">Término <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
         <input id="emendtime" class="input" type="time" bind:value={editMatchForm.end_time} />
       </div>
     </div>
@@ -519,7 +491,7 @@
       <input id="emloc" class="input" bind:value={editMatchForm.location} required />
     </div>
     <div class="form-group">
-      <label class="label" for="emaddr">Endereço <span class="text-gray-400 font-normal">(opcional)</span></label>
+      <label class="label" for="emaddr">Endereço <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
       <input id="emaddr" class="input" bind:value={editMatchForm.address} placeholder="Ex: Rua das Flores, 123" />
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -609,6 +581,30 @@
   </form>
 </Modal>
 
+<!-- Role edit bottom sheet -->
+{#if roleEditMember}
+  <button class="fixed inset-0 z-40 bg-black/40" onclick={() => roleEditMember = null} aria-label="Cancelar" />
+  <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto">
+      <p class="text-gray-800 dark:text-gray-200 font-medium text-center text-base mb-6 leading-relaxed">{roleEditMember.name}</p>
+      <div class="flex flex-col gap-2">
+        <button
+          class="btn btn-secondary justify-center py-3 sm:py-2"
+          onclick={() => { toggleRole(roleEditMember!.id, roleEditMember!.role, roleEditMember!.name); roleEditMember = null; }}>
+          {#if roleEditMember.role === 'admin'}
+            <ShieldOff size={15} /> Remover presidência
+          {:else}
+            <ShieldCheck size={15} /> Tornar Presidente
+          {/if}
+        </button>
+        <button class="btn btn-secondary justify-center py-3 sm:py-2" onclick={() => roleEditMember = null}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <!-- Confirm dialog -->
 <ConfirmDialog
   bind:open={confirmOpen}
@@ -633,25 +629,25 @@
         <label class="label" for="egpermatch">Valor avulso (R$)</label>
         <input id="egpermatch" class="input" type="number" min="0" step="0.01"
           bind:value={editForm.per_match_amount} placeholder="Ex: 25,00" />
-        <p class="text-xs text-gray-400 mt-0.5">Deixe vazio se não cobrar por partida</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Deixe vazio se não cobrar por partida</p>
       </div>
       <div class="form-group">
         <label class="label" for="egmonthly">Mensalidade (R$)</label>
         <input id="egmonthly" class="input" type="number" min="0" step="0.01"
           bind:value={editForm.monthly_amount} placeholder="Ex: 75,00" />
-        <p class="text-xs text-gray-400 mt-0.5">Deixe vazio se não cobrar mensalidade</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Deixe vazio se não cobrar mensalidade</p>
       </div>
     </div>
     <div class="form-group">
       <label class="flex items-center gap-3 cursor-pointer select-none">
         <div class="relative">
           <input type="checkbox" class="sr-only peer" bind:checked={editForm.recurrence_enabled} />
-          <div class="w-10 h-6 bg-gray-200 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
-          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+          <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
         </div>
-        <span class="text-sm font-medium text-gray-700">Recorrência semanal</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Recorrência semanal</span>
       </label>
-      <p class="text-xs text-gray-400 mt-1">
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         Quando ativa, uma nova partida é criada automaticamente após o encerramento da atual, herdando os convidados com presença pendente.
       </p>
     </div>
