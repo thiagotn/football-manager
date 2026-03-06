@@ -200,8 +200,8 @@
             <p class="text-sm font-bold text-white">
               #{match.number} {match.group_name}
             </p>
-            <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
-              {match.status === 'open' ? 'Aberta' : 'Encerrada'}
+            <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : match.status === 'in_progress' ? 'bg-blue-400 text-blue-900' : 'bg-gray-400 text-gray-900'}">
+              {match.status === 'open' ? 'Aberta' : match.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
             </span>
           </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
@@ -270,7 +270,7 @@
       </div>
 
       <!-- My RSVP (only if logged in and in the match) -->
-      {#if $isLoggedIn && !$isAdmin && match.status === 'open'}
+      {#if $isLoggedIn && !$isAdmin && (match.status === 'open' || match.status === 'in_progress')}
         <div class="card mb-4 card-body">
           <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
             <Users size={16} class="text-primary-600" /> Sua Confirmação
@@ -321,7 +321,7 @@
                 <li class="px-4 py-2 flex items-center gap-2.5">
                   <span class="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                   <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{a.player.nickname || a.player.name}</p>
-                  {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
+                  {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 shrink-0"
                       onclick={() => respondFor(a.player.id, 'declined')}
@@ -348,7 +348,7 @@
                 <li class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2.5">
                   <XCircle size={13} class="text-red-400 shrink-0" />
                   <span class="flex-1">{a.player.nickname || a.player.name}</span>
-                  {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
+                  {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40 shrink-0"
                       onclick={() => respondFor(a.player.id, 'confirmed')}
@@ -375,7 +375,7 @@
                 <li class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2.5">
                   <Clock3 size={13} class="text-gray-400 shrink-0" />
                   <span class="flex-1">{a.player.nickname || a.player.name}</span>
-                  {#if isGroupAdmin && match.status === 'open' && a.player.id !== $currentPlayer?.id}
+                  {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
                     <div class="flex gap-1 shrink-0">
                       <button
                         class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40"

@@ -13,6 +13,7 @@ from app.db.session import Base
 
 class MatchStatus(str, PyEnum):
     OPEN = "open"
+    IN_PROGRESS = "in_progress"
     CLOSED = "closed"
 
 

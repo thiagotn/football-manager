@@ -21,14 +21,14 @@
 
   let upcomingMatches = $derived(
     allMatches
-      .filter(m => m.status === 'open')
+      .filter(m => m.status === 'open' || m.status === 'in_progress')
       .sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b)))
       .slice(0, 8)
   );
 
   let pastMatches = $derived(
     allMatches
-      .filter(m => m.status === 'closed' || m.match_date < today)
+      .filter(m => m.status === 'closed')
       .sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a)))
       .slice(0, 8)
   );
@@ -146,8 +146,8 @@
           {:else}
             {#each list as m}
               <a href="/match/{m.hash}" class="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <div class="w-10 h-10 rounded-lg {m.status === 'open' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700'} flex items-center justify-center shrink-0">
-                  <Calendar size={18} class="{m.status === 'open' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}" />
+                <div class="w-10 h-10 rounded-lg {m.status === 'open' ? 'bg-green-100 dark:bg-green-900/30' : m.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'} flex items-center justify-center shrink-0">
+                  <Calendar size={18} class="{m.status === 'open' ? 'text-green-600 dark:text-green-400' : m.status === 'in_progress' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{fmtDate(m.match_date)}
@@ -159,8 +159,8 @@
                   </p>
                   <p class="text-xs text-primary-500 mt-0.5 font-medium">{m.group_name}</p>
                 </div>
-                <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
-                  {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                <span class="badge {m.status === 'open' ? 'badge-green' : m.status === 'in_progress' ? 'badge-blue' : 'badge-gray'}">
+                  {m.status === 'open' ? 'Aberta' : m.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
                 </span>
               </a>
             {/each}

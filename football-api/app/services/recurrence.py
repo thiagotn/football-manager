@@ -42,8 +42,12 @@ async def run_recurrence(session: AsyncSession) -> int:
             logger.info("recurrence_skipped_no_match", group_id=str(group.id))
             continue
 
-        if last_match.match_date >= today:
+        if last_match.match_date > today:
             logger.info("recurrence_skipped_future_match", group_id=str(group.id))
+            continue
+
+        if last_match.match_date == today and last_match.status != MatchStatus.CLOSED:
+            logger.info("recurrence_skipped_today_not_closed", group_id=str(group.id))
             continue
 
         next_date = last_match.match_date + timedelta(days=7)

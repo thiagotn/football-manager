@@ -77,31 +77,51 @@ class MatchRepository(BaseRepository[Match]):
         await self.session.flush()
 
     async def close_past_matches(self) -> int:
-        """Fecha partidas abertas cuja data já passou ou cujo horário de hoje já encerrou."""
+        """
+        Atualiza o status das partidas:
+        - OPEN/IN_PROGRESS → CLOSED: data passada OU end_time de hoje já passou
+        - OPEN → IN_PROGRESS: partida de hoje que já começou mas ainda não terminou
+        """
         today = date.today()
         current_time = func.current_time()
-        result = await self.session.execute(
+
+        # Fecha partidas abertas ou em andamento cuja data passou ou end_time já encerrou
+        close_cond = or_(
+            Match.match_date < today,
+            and_(
+                Match.match_date == today,
+                Match.end_time.isnot(None),
+                Match.end_time <= current_time,
+            ),
+        )
+        r1 = await self.session.execute(
+            update(Match)
+            .where(Match.status == MatchStatus.OPEN, close_cond)
+            .values(status=MatchStatus.CLOSED)
+        )
+        r2 = await self.session.execute(
+            update(Match)
+            .where(Match.status == MatchStatus.IN_PROGRESS, close_cond)
+            .values(status=MatchStatus.CLOSED)
+        )
+
+        # Marca como em andamento: partidas abertas de hoje que já começaram e ainda não terminaram
+        r3 = await self.session.execute(
             update(Match)
             .where(
                 Match.status == MatchStatus.OPEN,
+                Match.match_date == today,
+                Match.start_time <= current_time,
                 or_(
-                    Match.match_date < today,
-                    and_(
-                        Match.match_date == today,
-                        Match.end_time.isnot(None),
-                        Match.end_time <= current_time,
-                    ),
-                    and_(
-                        Match.match_date == today,
-                        Match.end_time.is_(None),
-                        Match.start_time <= current_time,
-                    ),
+                    Match.end_time.is_(None),
+                    Match.end_time > current_time,
                 ),
             )
-            .values(status=MatchStatus.CLOSED)
+            .values(status=MatchStatus.IN_PROGRESS)
         )
+
         await self.session.flush()
-        return result.rowcount
+        return r1.rowcount + r2.rowcount + r3.rowcount
 
     async def get_last_match(self, group_id: UUID) -> Match | None:
         result = await self.session.execute(
@@ -125,7 +145,7 @@ class MatchRepository(BaseRepository[Match]):
         result = await self.session.execute(
             select(func.count()).where(
                 Match.group_id == group_id,
-                Match.status == MatchStatus.OPEN,
+                Match.status.in_([MatchStatus.OPEN, MatchStatus.IN_PROGRESS]),
             )
         )
         return result.scalar_one() > 0

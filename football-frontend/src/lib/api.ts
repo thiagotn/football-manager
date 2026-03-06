@@ -60,7 +60,7 @@ export type Match = {
   court_type: 'campo' | 'sintetico' | 'terrao' | 'quadra' | null;
   players_per_team: number | null;
   max_players: number | null;
-  notes: string | null; hash: string; status: 'open' | 'closed';
+  notes: string | null; hash: string; status: 'open' | 'in_progress' | 'closed';
   created_at: string; updated_at: string;
 };
 export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string };

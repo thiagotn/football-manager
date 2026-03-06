@@ -45,8 +45,8 @@
   function matchSortKey(m: { match_date: string; start_time: string }) {
     return `${m.match_date}T${m.start_time}`;
   }
-  let upcomingMatches = $derived(matchList.filter(m => m.status === 'open').sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b))));
-  let pastMatches = $derived(matchList.filter(m => m.status === 'closed' || m.match_date < today).sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a))));
+  let upcomingMatches = $derived(matchList.filter(m => m.status === 'open' || m.status === 'in_progress').sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b))));
+  let pastMatches = $derived(matchList.filter(m => m.status === 'closed').sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a))));
 
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
@@ -341,8 +341,8 @@
                       <span class="text-primary-600 dark:text-primary-400 font-bold text-sm mr-1">#{m.number}</span>{fmtDate(m.match_date)}
                     </p>
                   </div>
-                  <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0">
-                    {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                  <span class="badge {m.status === 'open' ? 'badge-green' : m.status === 'in_progress' ? 'badge-blue' : 'badge-gray'} shrink-0">
+                    {m.status === 'open' ? 'Aberta' : m.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
                   </span>
                 </div>
 
@@ -552,6 +552,7 @@
         <label class="label" for="emstatus">Status</label>
         <select id="emstatus" class="input" bind:value={editMatchForm.status}>
           <option value="open">Aberta</option>
+          <option value="in_progress">Em andamento</option>
           <option value="closed">Encerrada</option>
         </select>
       </div>

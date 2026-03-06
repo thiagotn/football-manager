@@ -11,6 +11,7 @@ from app.db.repositories.match_repo import MatchRepository
 from app.models.match import AttendanceStatus, Match, MatchStatus
 from app.models.player import PlayerRole
 from app.models.group import GroupMemberRole
+from app.services.recurrence import run_recurrence
 from app.schemas.match import (
     AttendanceResponse,
     MatchCreate,
@@ -88,7 +89,9 @@ async def list_group_matches(group_id: uuid.UUID, db: DB, current: CurrentPlayer
             raise ForbiddenError("Você não é membro deste grupo")
 
     repo = MatchRepository(db)
-    await repo.close_past_matches()
+    closed = await repo.close_past_matches()
+    if closed:
+        await run_recurrence(db)
     return await repo.get_group_matches(group_id)
 
 
@@ -219,7 +222,7 @@ async def set_attendance(
         match.status = MatchStatus.CLOSED
         await db.flush()
 
-    if match.status == MatchStatus.CLOSED:
+    if match.status not in (MatchStatus.OPEN, MatchStatus.IN_PROGRESS):
         raise ForbiddenError("Esta partida está encerrada")
 
     if body.status == AttendanceStatus.CONFIRMED and match.max_players is not None:
