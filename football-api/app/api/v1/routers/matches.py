@@ -165,10 +165,16 @@ async def update_match(
     if not match or match.group_id != group_id:
         raise NotFoundError("Partida não encontrada")
 
+    closing = body.status == MatchStatus.CLOSED and match.status != MatchStatus.CLOSED
+
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(match, field, value)
     await db.flush()
     await db.refresh(match)
+
+    if closing:
+        await run_recurrence(db)
+
     return match
 
 
