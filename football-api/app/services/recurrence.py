@@ -1,5 +1,5 @@
 import secrets
-from datetime import date, timedelta
+from datetime import date, datetime, timezone, timedelta
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +30,7 @@ async def run_recurrence(session: AsyncSession) -> int:
 
     groups = await g_repo.get_groups_with_recurrence()
     created = 0
-    today = date.today()
+    today = datetime.now(timezone(timedelta(hours=-3))).date()
 
     for group in groups:
         if await m_repo.has_open_match(group.id):

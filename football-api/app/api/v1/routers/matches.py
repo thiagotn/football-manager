@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from datetime import date
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter
 
@@ -217,8 +217,9 @@ async def set_attendance(
     if not match or match.group_id != group_id:
         raise NotFoundError("Partida não encontrada")
 
-    # Fecha automaticamente se a data já passou (fallback caso o job ainda não tenha rodado)
-    if match.match_date < date.today() and match.status == MatchStatus.OPEN:
+    # Fecha automaticamente se a data já passou (fallback — usa UTC-3 explícito)
+    today_brazil = datetime.now(timezone(timedelta(hours=-3))).date()
+    if match.match_date < today_brazil and match.status == MatchStatus.OPEN:
         match.status = MatchStatus.CLOSED
         await db.flush()
 
