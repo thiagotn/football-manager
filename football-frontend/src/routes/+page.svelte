@@ -154,7 +154,7 @@
                     <span class="text-xs text-gray-400 dark:text-gray-500 font-normal ml-1">#{m.number}</span>
                   </p>
                   <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
-                    <Clock size={11} />{m.start_time.slice(0,5)}
+                    <Clock size={11} />{m.start_time.slice(0,5)}{m.end_time ? ` – ${m.end_time.slice(0,5)}` : ''}
                     <MapPin size={11} class="ml-1" /><span class="truncate">{m.location}</span>
                   </p>
                   <p class="text-xs text-primary-500 mt-0.5 font-medium">{m.group_name}</p>
