@@ -79,43 +79,34 @@ class MatchRepository(BaseRepository[Match]):
     async def close_past_matches(self) -> int:
         """
         Atualiza o status das partidas:
-        - OPEN/IN_PROGRESS → CLOSED: data passada OU end_time de hoje já passou
-        - OPEN → IN_PROGRESS: partida de hoje que já começou mas ainda não terminou
+        - OPEN/IN_PROGRESS → CLOSED: data anterior a hoje (independe de horário/timezone)
+        - OPEN → IN_PROGRESS: partida de hoje que já passou do horário de início
+
+        Nota: partidas de hoje não são fechadas por horário (risco de bug de timezone),
+        apenas pela virada do dia. Isso as mantém como IN_PROGRESS até amanhã.
         """
         today = date.today()
         current_time = func.current_time()
 
-        # Fecha partidas abertas ou em andamento cuja data passou ou end_time já encerrou
-        close_cond = or_(
-            Match.match_date < today,
-            and_(
-                Match.match_date == today,
-                Match.end_time.isnot(None),
-                Match.end_time <= current_time,
-            ),
-        )
+        # Fecha apenas partidas de dias anteriores (seguro contra timezone)
         r1 = await self.session.execute(
             update(Match)
-            .where(Match.status == MatchStatus.OPEN, close_cond)
+            .where(Match.status == MatchStatus.OPEN, Match.match_date < today)
             .values(status=MatchStatus.CLOSED)
         )
         r2 = await self.session.execute(
             update(Match)
-            .where(Match.status == MatchStatus.IN_PROGRESS, close_cond)
+            .where(Match.status == MatchStatus.IN_PROGRESS, Match.match_date < today)
             .values(status=MatchStatus.CLOSED)
         )
 
-        # Marca como em andamento: partidas abertas de hoje que já começaram e ainda não terminaram
+        # Marca como em andamento: partidas abertas de hoje cujo horário de início já passou
         r3 = await self.session.execute(
             update(Match)
             .where(
                 Match.status == MatchStatus.OPEN,
                 Match.match_date == today,
                 Match.start_time <= current_time,
-                or_(
-                    Match.end_time.is_(None),
-                    Match.end_time > current_time,
-                ),
             )
             .values(status=MatchStatus.IN_PROGRESS)
         )
