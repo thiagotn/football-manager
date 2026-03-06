@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft } from 'lucide-svelte';
 
   function logout() {
     authStore.logout();
@@ -26,16 +26,38 @@
     $page.url.pathname;
     menuOpen = false;
   });
+
+  function getBackHref(pathname: string): string | null {
+    if (pathname.startsWith('/groups/')) return '/groups';
+    if (pathname === '/groups')   return '/';
+    if (pathname === '/players')  return '/';
+    if (pathname === '/profile')  return '/';
+    if (pathname.startsWith('/admin/')) return '/';
+    return null;
+  }
+
+  let backHref = $derived(getBackHref($page.url.pathname));
 </script>
 
 <nav class="bg-primary-700 text-white shadow-md relative z-40">
   <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
 
-    <!-- Logo -->
-    <div class="flex items-center gap-1.5 shrink-0">
-      <span class="text-xl font-bold">⚽</span>
-      <span class="font-semibold text-sm">rachao.app</span>
-      <span class="text-xs font-semibold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
+    <!-- Esquerda: botão voltar (mobile, sub-páginas) + logo -->
+    <div class="flex items-center gap-1 shrink-0">
+      {#if backHref}
+        <a
+          href={backHref}
+          class="min-[940px]:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-primary-600 transition-colors"
+          aria-label="Voltar"
+        >
+          <ChevronLeft size={22} />
+        </a>
+      {/if}
+      <div class="flex items-center gap-1.5">
+        <span class="text-xl font-bold">⚽</span>
+        <span class="font-semibold text-sm">rachao.app</span>
+        <span class="text-xs font-semibold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
+      </div>
     </div>
 
     <!-- Links — desktop -->
