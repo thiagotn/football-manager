@@ -6,7 +6,8 @@
 
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users } from 'lucide-svelte';
+  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen } from 'lucide-svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { relativeDate } from '$lib/utils.js';
 
   const matchHash = $page.params.hash;
@@ -19,6 +20,10 @@
   let lastStatus: 'confirmed' | 'declined' | null = $state(null);
   let isGroupAdmin = $state(false);
   let adminResponding = $state<string | null>(null);
+  let togglingStatus = $state(false);
+  let confirmOpen = $state(false);
+  let confirmMessage = $state('');
+  let confirmAction = $state<() => void>(() => {});
 
   let confirmed = $derived(match?.attendances.filter(a => a.status === 'confirmed') ?? []);
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
@@ -149,6 +154,23 @@
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
     toastSuccess('Link copiado!');
+  }
+
+  async function toggleStatus(newStatus: 'open' | 'closed') {
+    if (!match) return;
+    togglingStatus = true;
+    try {
+      await matchesApi.update(match.group_id, match.id, { status: newStatus });
+      match = await matchesApi.getByHash(matchHash);
+      toastSuccess(newStatus === 'open' ? 'Partida reaberta!' : 'Partida encerrada.');
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao atualizar status'); }
+    togglingStatus = false;
+  }
+
+  function askCloseMatch() {
+    confirmMessage = 'Encerrar esta partida? Os jogadores não poderão mais confirmar presença.';
+    confirmAction = () => toggleStatus('closed');
+    confirmOpen = true;
   }
 </script>
 
@@ -398,6 +420,28 @@
         {/if}
       </div>
 
+      <!-- Admin status toggle -->
+      {#if isGroupAdmin}
+        <div class="card card-body mt-3 flex flex-wrap gap-2 justify-end items-center">
+          <span class="text-xs text-gray-400 dark:text-gray-500 mr-auto">Ações do administrador</span>
+          {#if match.status === 'closed'}
+            <button
+              onclick={() => toggleStatus('open')}
+              disabled={togglingStatus}
+              class="btn-sm btn-secondary gap-1">
+              <LockOpen size={14} /> Reabrir partida
+            </button>
+          {:else}
+            <button
+              onclick={askCloseMatch}
+              disabled={togglingStatus}
+              class="btn-sm btn-ghost text-red-500 hover:bg-red-50 gap-1">
+              <Lock size={14} /> Encerrar partida
+            </button>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Share footer -->
       <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
         <button onclick={shareWhatsApp} class="flex-1 btn btn-secondary justify-center gap-2">
@@ -426,3 +470,11 @@
     {/if}
   </main>
 </div>
+
+<ConfirmDialog
+  bind:open={confirmOpen}
+  message={confirmMessage}
+  confirmLabel="Encerrar"
+  danger={true}
+  onConfirm={confirmAction}
+/>
