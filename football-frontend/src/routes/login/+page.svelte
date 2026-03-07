@@ -28,8 +28,10 @@
 
 <svelte:head><title>Login — rachao.app</title></svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-primary-700 to-primary-900 flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
+<div class="min-h-screen flex items-center justify-center p-4 relative bg-primary-900"
+  style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
+  <div class="absolute inset-0 bg-primary-900/65"></div>
+  <div class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
     <div class="text-center mb-8">
       <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-56 block mx-auto mb-1" />
       <div class="flex items-center justify-center gap-2 mb-1">
@@ -74,3 +76,4 @@
     </p>
   </div>
 </div>
+
