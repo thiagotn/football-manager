@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { groups, matches } from '$lib/api';
+  import { groups, matches, players as playersApi } from '$lib/api';
   import type { Group, Match } from '$lib/api';
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
-  import { Trophy, Calendar, Clock, MapPin, ChevronRight } from 'lucide-svelte';
+  import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users } from 'lucide-svelte';
   import { relativeDate } from '$lib/utils.js';
 
   type MatchWithGroup = Match & { group_name: string; group_slug: string; group_id: string };
@@ -12,6 +12,7 @@
   let allMatches: MatchWithGroup[] = $state([]);
   let loading = $state(true);
   let matchTab: 'past' | 'upcoming' = $state('upcoming');
+  let playerCount = $state(0);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -37,9 +38,12 @@
     let cancelled = false;
     (async () => {
       try {
-        const gs = await groups.list();
+        const fetchGroups = groups.list();
+        const fetchPlayers = $isAdmin ? playersApi.list() : Promise.resolve(null);
+        const [gs, pl] = await Promise.all([fetchGroups, fetchPlayers]);
         if (cancelled) return;
         myGroups = gs;
+        if (pl) playerCount = pl.filter(p => p.id !== $currentPlayer?.id).length;
         const fetched: MatchWithGroup[] = [];
         await Promise.all(gs.map(async g => {
           const ms = await matches.list(g.id);
@@ -59,34 +63,42 @@
 
 <svelte:head><title>Dashboard — rachao.app</title></svelte:head>
 
-<main class="max-w-7xl mx-auto px-4 py-8">
+<div class="min-h-screen relative bg-gray-900"
+  style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
+  <div class="absolute inset-0 bg-gray-900/60 pointer-events-none"></div>
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="mb-8">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+    <h1 class="text-2xl font-bold text-white">
       Olá, {$currentPlayer?.name?.split(' ')[0]} 👋
     </h1>
-    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Veja seus grupos e próximos rachões.</p>
+    <p class="text-gray-300 text-sm mt-1">Veja seus grupos e próximos rachões.</p>
   </div>
 
   <!-- Stats row -->
-  <div class="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-3">
-    <div class="card card-body flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-        <Trophy size={20} class="text-primary-600 dark:text-primary-400" />
+  <div class="grid gap-4 mb-8 {$isAdmin ? 'grid-cols-3' : 'grid-cols-2'}">
+    <div class="card p-4 flex flex-col items-center text-center gap-1.5">
+      <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+        <Trophy size={16} class="text-primary-600 dark:text-primary-400" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{myGroups.length}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Grupos</p>
-      </div>
+      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{myGroups.length}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Grupos</p>
     </div>
-    <div class="card card-body flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-        <Calendar size={20} class="text-blue-600 dark:text-blue-400" />
+    <div class="card p-4 flex flex-col items-center text-center gap-1.5">
+      <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+        <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{upcomingMatches.length}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Próximos rachões</p>
-      </div>
+      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{$isAdmin ? allMatches.length : upcomingMatches.length}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{$isAdmin ? 'Rachões' : 'Próximos'}</p>
     </div>
+    {#if $isAdmin}
+      <div class="card p-4 flex flex-col items-center text-center gap-1.5">
+        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <Users size={16} class="text-green-600 dark:text-green-400" />
+        </div>
+        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{playerCount}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Jogadores</p>
+      </div>
+    {/if}
   </div>
 
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -169,4 +181,5 @@
       </div>
     </div>
   </div>
-</main>
+  </main>
+</div>
