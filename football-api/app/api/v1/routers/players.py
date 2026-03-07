@@ -2,7 +2,7 @@ import secrets
 import uuid
 
 from fastapi import APIRouter, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
@@ -12,6 +12,26 @@ from app.models.player import Player, PlayerRole
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
 
 router = APIRouter(prefix="/players", tags=["players"])
+
+
+@router.get("/me/stats")
+async def get_my_stats(db: DB, current: CurrentPlayer):
+    result = await db.execute(
+        text("""
+            SELECT COALESCE(
+                SUM(GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 3600)),
+                0
+            )::int AS hours_played
+            FROM attendances a
+            JOIN matches m ON m.id = a.match_id
+            WHERE a.player_id = :player_id
+              AND a.status = 'confirmed'
+              AND m.status = 'closed'
+              AND m.end_time IS NOT NULL
+        """),
+        {"player_id": current.id},
+    )
+    return {"hours_played": result.scalar()}
 
 
 @router.get("", response_model=list[PlayerResponse])
