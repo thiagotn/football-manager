@@ -39,8 +39,8 @@
   let backHref = $derived(getBackHref($page.url.pathname));
 </script>
 
-<nav class="bg-primary-700 text-white shadow-md relative z-40">
-  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+<nav class="bg-primary-700 text-white shadow-md relative z-40 overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
 
     <!-- Esquerda: botão voltar (mobile, sub-páginas) + logo -->
     <div class="flex items-center gap-1 shrink-0">
@@ -53,11 +53,13 @@
           <ChevronLeft size={22} />
         </a>
       {/if}
-      <div class="flex items-center gap-1.5">
-        <span class="text-xl font-bold">⚽</span>
-        <span class="font-semibold text-sm">rachao.app</span>
-        <span class="text-xs font-semibold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
-      </div>
+      <a href="/" class="-ml-16 self-stretch flex items-end">
+        <img
+          src="/logo.png"
+          alt="rachao.app"
+          class="h-24 w-auto flex-shrink-0 -translate-y-2"
+        />
+      </a>
     </div>
 
     <!-- Links — desktop -->
