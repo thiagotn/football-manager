@@ -19,9 +19,9 @@ async def get_my_stats(db: DB, current: CurrentPlayer):
     result = await db.execute(
         text("""
             SELECT COALESCE(
-                SUM(GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 3600)),
+                SUM(GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 60)),
                 0
-            )::int AS hours_played
+            )::int AS minutes_played
             FROM attendances a
             JOIN matches m ON m.id = a.match_id
             WHERE a.player_id = :player_id
@@ -31,7 +31,7 @@ async def get_my_stats(db: DB, current: CurrentPlayer):
         """),
         {"player_id": current.id},
     )
-    return {"hours_played": result.scalar()}
+    return {"minutes_played": result.scalar()}
 
 
 @router.get("", response_model=list[PlayerResponse])

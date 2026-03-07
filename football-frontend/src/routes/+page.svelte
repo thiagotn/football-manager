@@ -14,7 +14,14 @@
   let loading = $state(true);
   let matchTab: 'past' | 'upcoming' = $state('upcoming');
   let playerCount = $state(0);
-  let hoursPlayed = $state(0);
+  let minutesPlayed = $state(0);
+
+  function fmtPlaytime(minutes: number): string {
+    if (minutes < 60) return `${minutes}min`;
+    const hours = minutes / 60;
+    const rounded = Math.round(hours * 10) / 10;
+    return rounded.toLocaleString('pt-BR');
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -47,7 +54,7 @@
         if (cancelled) return;
         myGroups = gs;
         if (pl) playerCount = pl.filter(p => p.id !== $currentPlayer?.id).length;
-        hoursPlayed = stats.hours_played;
+        minutesPlayed = stats.minutes_played;
         const fetched: MatchWithGroup[] = [];
         await Promise.all(gs.map(async g => {
           const ms = await matches.list(g.id);
@@ -118,7 +125,7 @@
       <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
         <Clock size={16} class="text-orange-600 dark:text-orange-400" />
       </div>
-      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{hoursPlayed}</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{fmtPlaytime(minutesPlayed)}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">
         <span class="hidden sm:inline">Horas jogadas</span>
         <span class="sm:hidden">Horas</span>
