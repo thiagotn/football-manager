@@ -71,13 +71,16 @@
 
 <svelte:head><title>Grupos — rachao.app</title></svelte:head>
 
-<main class="max-w-7xl mx-auto px-4 py-8">
+<div class="min-h-screen relative bg-gray-900"
+  style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
+  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/55 to-gray-900/40 pointer-events-none"></div>
+<main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-        <Trophy size={24} class="text-primary-600" /> Grupos
+      <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <Trophy size={24} class="text-primary-400" /> Grupos
       </h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Grupos de futebol que você participa</p>
+      <p class="text-sm text-gray-300 mt-0.5">Grupos de futebol que você participa</p>
     </div>
     {#if $isAdmin}
       <button class="btn-primary" onclick={() => showCreate = true}>
@@ -131,6 +134,7 @@
     </div>
   {/if}
 </main>
+</div>
 
 <Modal bind:open={showCreate} title="Novo Grupo">
   <form onsubmit={(e) => { e.preventDefault(); createGroup(); }} class="space-y-4">

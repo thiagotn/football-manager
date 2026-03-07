@@ -131,13 +131,16 @@
 
 <svelte:head><title>Jogadores — rachao.app</title></svelte:head>
 
-<main class="max-w-7xl mx-auto px-4 py-8">
+<div class="min-h-screen relative bg-gray-900"
+  style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
+  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/55 to-gray-900/40 pointer-events-none"></div>
+<main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-        <Users size={24} class="text-primary-600" /> Jogadores
+      <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <Users size={24} class="text-primary-400" /> Jogadores
       </h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{playerList.length} jogadores cadastrados</p>
+      <p class="text-sm text-gray-300 mt-0.5">{playerList.length} jogadores cadastrados</p>
     </div>
     <button class="btn-primary" onclick={() => showCreate = true}>
       <Plus size={16} /> Novo Jogador
@@ -216,6 +219,7 @@
     </div>
   {/if}
 </main>
+</div>
 
 <!-- Create modal -->
 <Modal bind:open={showCreate} title="Novo Jogador">

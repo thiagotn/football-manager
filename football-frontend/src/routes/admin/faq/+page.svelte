@@ -54,7 +54,7 @@
 </svelte:head>
 
 {#if $isAdmin}
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
   <!-- Header -->
   <div class="bg-primary-700 text-white py-8 px-4 text-center">
     <span class="text-3xl">🛡️</span>
@@ -67,14 +67,14 @@
       {#each faqs as faq, i}
         <div class="card overflow-hidden">
           <button
-            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 transition-colors"
+            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             onclick={() => toggle(i)}
           >
-            <span class="font-medium text-gray-800 text-sm">{faq.q}</span>
-            <span class="text-primary-600 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
+            <span class="font-medium text-gray-800 dark:text-gray-100 text-sm">{faq.q}</span>
+            <span class="text-primary-600 dark:text-primary-400 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
           </button>
           {#if openIndex === i}
-            <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+            <div class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-700 pt-3">
               {faq.a}
             </div>
           {/if}
@@ -82,9 +82,9 @@
       {/each}
     </div>
 
-    <div class="mt-8 card card-body bg-primary-50 border border-primary-100">
-      <p class="text-sm text-primary-800 font-medium mb-1">💡 Dica rápida</p>
-      <p class="text-sm text-primary-700">
+    <div class="mt-8 card card-body bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800">
+      <p class="text-sm text-primary-800 dark:text-primary-300 font-medium mb-1">💡 Dica rápida</p>
+      <p class="text-sm text-primary-700 dark:text-primary-400">
         Use o botão "WhatsApp" na página de cada partida para enviar um resumo completo
         (data, local, confirmados e link) diretamente para o grupo de WhatsApp.
       </p>
