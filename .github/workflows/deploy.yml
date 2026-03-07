@@ -106,6 +106,9 @@ jobs:
 
             cd "$DEPLOY_DIR"
 
+            # Exporta variáveis do .env.prod para o shell (necessário para docker compose)
+            set -a; source .env.prod; set +a
+
             echo "==> [1/2] Pull das novas imagens (sha: $SHA)..."
             docker compose -f docker-compose.prod.yml pull
 
