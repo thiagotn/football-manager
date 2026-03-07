@@ -106,38 +106,12 @@ jobs:
 
             cd "$DEPLOY_DIR"
 
-            # Exporta variáveis do .env.prod para o shell
-            # (necessário para usar POSTGRES_USER e POSTGRES_DB nas migrations)
-            set -a; source .env.prod; set +a
-
-            echo "==> [1/4] Pull das novas imagens (sha: $SHA)..."
+            echo "==> [1/2] Pull das novas imagens (sha: $SHA)..."
             docker compose -f docker-compose.prod.yml pull
 
-            echo "==> [2/4] Iniciando postgres para aplicar migrations..."
-            # No primeiro deploy: docker-entrypoint-initdb.d inicializa o banco
-            # automaticamente. Em deploys seguintes: container já está rodando.
-            docker compose -f docker-compose.prod.yml up -d postgres
-
-            echo "     Aguardando postgres ficar pronto..."
-            until docker compose -f docker-compose.prod.yml exec -T postgres \
-              pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q 2>/dev/null; do
-              sleep 2
-            done
-            echo "     Postgres pronto ✓"
-
-            echo "==> [3/4] Aplicando migrations..."
-            # Executa todos os arquivos *.sql em ordem, exceto seeds de dev.
-            # Todos os scripts usam IF NOT EXISTS / EXCEPTION WHEN duplicate_object,
-            # portanto são idempotentes — seguros para re-executar a cada deploy.
-            for f in $(ls migrations/*.sql | grep -v 'seed' | sort); do
-              echo "     → $(basename "$f")"
-              docker compose -f docker-compose.prod.yml exec -T postgres \
-                psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-                -f "/docker-entrypoint-initdb.d/$(basename "$f")"
-            done
-            echo "     Migrations aplicadas ✓"
-
-            echo "==> [4/4] Reiniciando todos os serviços..."
+            echo "==> [2/2] Reiniciando todos os serviços..."
+            # A API aplica migrations automaticamente no startup (via app/db/migrate.py)
+            # antes de começar a servir requisições.
             docker compose -f docker-compose.prod.yml up -d \
               --force-recreate \
               --remove-orphans
