@@ -76,7 +76,7 @@ export const players = {
     patch<Player>(`/players/${id}`, data),
   delete: (id: string) => del(`/players/${id}`),
   resetPassword: (id: string) => post<{ temp_password: string }>(`/players/${id}/reset-password`),
-  myStats: () => get<{ minutes_played: number }>('/players/me/stats'),
+  myStats: () => get<{ minutes_played: number; platform_minutes_played?: number; platform_total_matches?: number }>('/players/me/stats'),
 };
 
 // ── Groups ────────────────────────────────────────────────────

@@ -15,12 +15,21 @@
   let matchTab: 'past' | 'upcoming' = $state('upcoming');
   let playerCount = $state(0);
   let minutesPlayed = $state(0);
+  let platformMinutesPlayed = $state(0);
+  let platformTotalMatches = $state(0);
 
   function fmtPlaytime(minutes: number): string {
     if (minutes < 60) return `${minutes}min`;
     const hours = minutes / 60;
     const rounded = Math.round(hours * 10) / 10;
     return rounded.toLocaleString('pt-BR');
+  }
+
+  function fmtPlaytimeMobile(minutes: number): string {
+    if (minutes < 60) return `${minutes}min`;
+    const hours = minutes / 60;
+    const rounded = Math.round(hours * 10) / 10;
+    return `${rounded.toLocaleString('pt-BR')}h`;
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -55,6 +64,8 @@
         myGroups = gs;
         if (pl) playerCount = pl.filter(p => p.id !== $currentPlayer?.id).length;
         minutesPlayed = stats.minutes_played;
+        platformMinutesPlayed = stats.platform_minutes_played ?? 0;
+        platformTotalMatches = stats.platform_total_matches ?? 0;
         const fetched: MatchWithGroup[] = [];
         await Promise.all(gs.map(async g => {
           const ms = await matches.list(g.id);
@@ -97,11 +108,11 @@
       </p>
     </div>
     <div class="card p-4 flex flex-col items-center text-center gap-1.5"
-      title="{$isAdmin ? 'Total de rachões na plataforma' : 'Próximos rachões agendados'}">
+      title="{$isAdmin ? 'Total de rachões cadastrados na plataforma' : 'Próximos rachões agendados'}">
       <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
         <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
       </div>
-      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{$isAdmin ? allMatches.length : upcomingMatches.length}</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{$isAdmin ? platformTotalMatches : upcomingMatches.length}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">
         <span class="hidden sm:inline">{$isAdmin ? 'Rachões' : 'Próximos'}</span>
         <span class="sm:hidden">{$isAdmin ? 'Rachões' : 'Próximos'}</span>
@@ -121,14 +132,17 @@
       </div>
     {/if}
     <div class="card p-4 flex flex-col items-center text-center gap-1.5"
-      title="Horas jogadas em partidas encerradas com presença confirmada">
+      title="{$isAdmin ? 'Total de horas de partidas encerradas na plataforma' : 'Horas jogadas em partidas encerradas com presença confirmada'}">
       <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
         <Clock size={16} class="text-orange-600 dark:text-orange-400" />
       </div>
-      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{fmtPlaytime(minutesPlayed)}</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">
+        <span class="hidden sm:inline">{fmtPlaytime($isAdmin ? platformMinutesPlayed : minutesPlayed)}</span>
+        <span class="sm:hidden">{fmtPlaytimeMobile($isAdmin ? platformMinutesPlayed : minutesPlayed)}</span>
+      </p>
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        <span class="hidden sm:inline">Horas jogadas</span>
-        <span class="sm:hidden">Horas</span>
+        <span class="hidden sm:inline">{$isAdmin ? 'Horas jogadas' : 'Horas jogadas'}</span>
+        <span class="sm:hidden">Jogadas</span>
       </p>
     </div>
   </div>

@@ -16,12 +16,12 @@ router = APIRouter(prefix="/players", tags=["players"])
 
 @router.get("/me/stats")
 async def get_my_stats(db: DB, current: CurrentPlayer):
-    result = await db.execute(
+    personal = await db.execute(
         text("""
             SELECT COALESCE(
                 SUM(GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 60)),
                 0
-            )::int AS minutes_played
+            )::int
             FROM attendances a
             JOIN matches m ON m.id = a.match_id
             WHERE a.player_id = :player_id
@@ -31,7 +31,27 @@ async def get_my_stats(db: DB, current: CurrentPlayer):
         """),
         {"player_id": current.id},
     )
-    return {"minutes_played": result.scalar()}
+    response: dict = {"minutes_played": personal.scalar()}
+
+    if current.role == PlayerRole.ADMIN:
+        platform = await db.execute(
+            text("""
+                SELECT
+                    COALESCE(SUM(GREATEST(0, EXTRACT(EPOCH FROM (end_time - start_time)) / 60)), 0)::int
+                        AS minutes_played,
+                    COUNT(*)::int AS total_matches
+                FROM matches
+                WHERE status = 'closed'
+                  AND end_time IS NOT NULL
+            """)
+        )
+        row = platform.one()
+        response["platform_minutes_played"] = row.minutes_played
+
+        total = await db.execute(text("SELECT COUNT(*)::int FROM matches"))
+        response["platform_total_matches"] = total.scalar()
+
+    return response
 
 
 @router.get("", response_model=list[PlayerResponse])
