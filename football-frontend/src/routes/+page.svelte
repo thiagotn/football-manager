@@ -65,7 +65,7 @@
 
 <div class="min-h-screen relative bg-gray-900"
   style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
-  <div class="absolute inset-0 bg-gray-900/60 pointer-events-none"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/55 to-gray-900/40 pointer-events-none"></div>
   <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="mb-8">
     <h1 class="text-2xl font-bold text-white">
