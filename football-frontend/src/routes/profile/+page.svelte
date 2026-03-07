@@ -4,6 +4,7 @@
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
   import { Eye, EyeOff, KeyRound, Pencil } from 'lucide-svelte';
+  import PageBackground from '$lib/components/PageBackground.svelte';
 
   // Nickname
   let nickname = $state($currentPlayer?.nickname ?? '');
@@ -57,10 +58,11 @@
   <title>Minha Conta — rachao.app</title>
 </svelte:head>
 
-<main class="max-w-lg mx-auto px-4 py-8">
+<PageBackground>
+<main class="relative z-10 max-w-lg mx-auto px-4 py-8">
   <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Minha Conta</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Informações do seu perfil e segurança</p>
+    <h1 class="text-2xl font-bold text-white">Minha Conta</h1>
+    <p class="text-sm text-gray-300 mt-0.5">Informações do seu perfil e segurança</p>
   </div>
 
   {#if $currentPlayer?.must_change_password}
@@ -175,3 +177,4 @@
     </form>
   </div>
 </main>
+</PageBackground>
