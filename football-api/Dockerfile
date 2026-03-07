@@ -20,6 +20,7 @@ FROM base AS production
 COPY --from=builder /app/requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 COPY app/ ./app/
+COPY migrations/ ./migrations/
 RUN addgroup --system app && adduser --system --ingroup app appuser
 USER appuser
 EXPOSE 8000

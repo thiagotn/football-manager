@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.db.migrate import run_migrations
 from app.services.recurrence import run_recurrence_job
 
 logger = structlog.get_logger()
@@ -38,6 +39,8 @@ def setup_logging():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.start_time = time.time()
+
+    await run_migrations(get_settings().database_url)
 
     scheduler = AsyncIOScheduler(timezone="America/Sao_Paulo")
     scheduler.add_job(run_recurrence_job, CronTrigger(hour=7, minute=0))

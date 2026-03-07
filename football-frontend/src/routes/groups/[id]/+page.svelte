@@ -286,7 +286,7 @@
             <span class="text-xs text-amber-700 dark:text-amber-400 font-medium">{part}</span>
           {/each}
         {:else}
-          <span class="text-xs text-green-600 dark:text-green-400">Sem cobrança</span>
+          <span class="text-xs text-green-600 dark:text-green-400">Gratuito</span>
         {/if}
         {#if group.recurrence_enabled}
           <span class="text-xs text-primary-600 dark:text-primary-400">Recorrência semanal</span>
