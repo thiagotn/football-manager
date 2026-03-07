@@ -112,8 +112,20 @@ class MatchRepository(BaseRepository[Match]):
             .values(status=MatchStatus.IN_PROGRESS)
         )
 
+        # Fecha partidas em andamento de hoje cujo end_time já passou
+        r4 = await self.session.execute(
+            update(Match)
+            .where(
+                Match.status == MatchStatus.IN_PROGRESS,
+                Match.match_date == today,
+                Match.end_time.is_not(None),
+                Match.end_time <= now_time,
+            )
+            .values(status=MatchStatus.CLOSED)
+        )
+
         await self.session.flush()
-        return r1.rowcount + r2.rowcount + r3.rowcount
+        return r1.rowcount + r2.rowcount + r3.rowcount + r4.rowcount
 
     async def get_last_match(self, group_id: UUID) -> Match | None:
         result = await self.session.execute(
