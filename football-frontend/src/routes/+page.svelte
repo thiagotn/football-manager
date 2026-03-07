@@ -4,6 +4,7 @@
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users } from 'lucide-svelte';
+  import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate } from '$lib/utils.js';
 
   type MatchWithGroup = Match & { group_name: string; group_slug: string; group_id: string };
@@ -63,9 +64,7 @@
 
 <svelte:head><title>Dashboard — rachao.app</title></svelte:head>
 
-<div class="min-h-screen relative bg-gray-900"
-  style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
-  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/55 to-gray-900/40 pointer-events-none"></div>
+<PageBackground>
   <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="mb-8">
     <h1 class="text-2xl font-bold text-white">
@@ -182,4 +181,4 @@
     </div>
   </div>
   </main>
-</div>
+</PageBackground>

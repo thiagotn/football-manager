@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { themeStore } from '$lib/stores/theme';
+  import { Sun, Moon } from 'lucide-svelte';
+  import PageBackground from '$lib/components/PageBackground.svelte';
+
   let openIndex = $state<number | null>(null);
 
   function toggle(i: number) {
@@ -45,35 +49,39 @@
   <title>FAQ — rachao.app</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<PageBackground>
   <!-- Beta banner -->
-  <div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-2 px-4">
+  <div class="relative z-10 bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-2 px-4">
     Versão Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
   </div>
+
   <!-- Header -->
-  <div class="bg-primary-700 text-white py-8 px-4 text-center">
-    <div class="flex items-center justify-center gap-2 mb-3">
-      <span class="font-semibold text-lg tracking-tight">rachao.app</span>
-      <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
-    </div>
-    <span class="text-3xl">⚽</span>
-    <h1 class="text-2xl font-bold mt-2">Perguntas Frequentes</h1>
-    <p class="text-primary-200 mt-1 text-sm">Tudo o que você precisa saber para jogar</p>
+  <div class="relative z-10 py-8 px-4 text-center">
+    <button
+      onclick={themeStore.toggle}
+      class="absolute top-3 right-3 p-2 rounded-lg hover:bg-white/10 transition-colors text-white/80"
+      title="Alternar tema"
+    >
+      {#if $themeStore === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
+    </button>
+    <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-44 block mx-auto mb-3" />
+    <h1 class="text-2xl font-bold text-white">Perguntas Frequentes</h1>
+    <p class="text-gray-300 mt-1 text-sm">Tudo o que você precisa saber para jogar</p>
   </div>
 
-  <main class="max-w-2xl mx-auto px-4 py-8">
+  <main class="relative z-10 max-w-2xl mx-auto px-4 pb-8">
     <div class="space-y-2">
       {#each faqs as faq, i}
         <div class="card overflow-hidden">
           <button
-            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 transition-colors"
+            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             onclick={() => toggle(i)}
           >
-            <span class="font-medium text-gray-800 text-sm">{faq.q}</span>
-            <span class="text-primary-600 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
+            <span class="font-medium text-gray-800 dark:text-gray-100 text-sm">{faq.q}</span>
+            <span class="text-primary-600 dark:text-primary-400 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
           </button>
           {#if openIndex === i}
-            <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+            <div class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-700 pt-3">
               {faq.a}
             </div>
           {/if}
@@ -81,8 +89,8 @@
       {/each}
     </div>
 
-    <div class="mt-8 text-center text-sm text-gray-400">
+    <div class="mt-8 text-center text-sm text-gray-300">
       Ainda com dúvidas? Fale com o organizador do seu grupo.
     </div>
   </main>
-</div>
+</PageBackground>

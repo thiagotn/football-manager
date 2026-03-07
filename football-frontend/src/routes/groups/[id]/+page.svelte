@@ -7,6 +7,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
+  import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate } from '$lib/utils.js';
 
   const groupId = $page.params.id;
@@ -255,7 +256,8 @@
 
 <svelte:head><title>{group?.name ?? 'Grupo'} — rachao.app</title></svelte:head>
 
-<main class="max-w-7xl mx-auto px-4 py-8">
+<PageBackground>
+<main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   {#if loading}
     <div class="animate-pulse space-y-4">
       <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
@@ -266,8 +268,8 @@
     <div class="mb-6 space-y-3">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{group.name}</h1>
-          {#if group.description}<p class="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{group.description}</p>{/if}
+          <h1 class="text-2xl font-bold text-white">{group.name}</h1>
+          {#if group.description}<p class="text-gray-300 text-sm mt-0.5">{group.description}</p>{/if}
         </div>
         {#if isGroupAdmin()}
           <div class="flex gap-2 shrink-0">
@@ -276,7 +278,7 @@
         {/if}
       </div>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+        <span class="text-xs text-gray-300 flex items-center gap-1">
           <Users size={12} /> {nonAdminMembers.length} jogador{nonAdminMembers.length !== 1 ? 'es' : ''}
         </span>
         {#if group.per_match_amount != null || group.monthly_amount != null}
@@ -293,21 +295,21 @@
     </div>
 
     <!-- Tabs -->
-    <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
+    <div class="flex gap-1 border-b border-white/20 mb-6">
       <button
-        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'upcoming' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'upcoming' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => tab = 'upcoming'}>
         Próximos ({upcomingMatches.length})
       </button>
       {#if pastMatches.length > 0}
         <button
-          class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+          class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'past' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
           onclick={() => tab = 'past'}>
           Últimos ({pastMatches.length})
         </button>
       {/if}
       <button
-        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'members' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'members' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => tab = 'members'}>
         Jogadores ({nonAdminMembers.length})
       </button>
@@ -435,6 +437,7 @@
     {/if}
   {/if}
 </main>
+</PageBackground>
 
 <!-- Create match modal -->
 <Modal bind:open={showMatch} title="Novo Rachão">

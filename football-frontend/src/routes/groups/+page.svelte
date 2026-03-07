@@ -6,6 +6,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Plus, Trophy, ChevronRight, Trash2 } from 'lucide-svelte';
+  import PageBackground from '$lib/components/PageBackground.svelte';
 
   let groupList: Group[] = $state([]);
   let loading = $state(true);
@@ -71,9 +72,7 @@
 
 <svelte:head><title>Grupos — rachao.app</title></svelte:head>
 
-<div class="min-h-screen relative bg-gray-900"
-  style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
-  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/55 to-gray-900/40 pointer-events-none"></div>
+<PageBackground>
 <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-6">
     <div>
@@ -134,7 +133,7 @@
     </div>
   {/if}
 </main>
-</div>
+</PageBackground>
 
 <Modal bind:open={showCreate} title="Novo Grupo">
   <form onsubmit={(e) => { e.preventDefault(); createGroup(); }} class="space-y-4">
