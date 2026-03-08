@@ -153,34 +153,7 @@
   </div>
 
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <!-- Groups -->
-    <div class="card">
-      <div class="card-header flex items-center justify-between">
-        <h2 class="font-semibold flex items-center gap-2"><Trophy size={16} class="text-primary-600" /> Meus Grupos</h2>
-        <a href="/groups" class="text-xs text-primary-600 hover:underline font-medium">Ver todos</a>
-      </div>
-      <div class="divide-y divide-gray-100 dark:divide-gray-700">
-        {#if loading}
-          {#each [1,2,3] as _}
-            <div class="px-6 py-4 animate-pulse"><div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-3/4"></div></div>
-          {/each}
-        {:else if myGroups.length === 0}
-          <div class="px-6 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">Você não pertence a nenhum grupo ainda.</div>
-        {:else}
-          {#each myGroups.slice(0, 5) as g}
-            <a href="/groups/{g.id}" class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-              <div>
-                <p class="font-medium text-sm text-gray-900 dark:text-gray-100">{g.name}</p>
-                {#if g.description}<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-xs">{g.description}</p>{/if}
-              </div>
-              <ChevronRight size={16} class="text-gray-400 dark:text-gray-500" />
-            </a>
-          {/each}
-        {/if}
-      </div>
-    </div>
-
-    <!-- Matches with tabs -->
+    <!-- Matches with tabs — primeiro no mobile -->
     <div class="card">
       <div class="card-header pb-0">
         <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 -mb-px">
@@ -238,6 +211,33 @@
               </a>
             {/each}
           {/if}
+        {/if}
+      </div>
+    </div>
+
+    <!-- Groups — segundo no mobile -->
+    <div class="card">
+      <div class="card-header flex items-center justify-between">
+        <h2 class="font-semibold flex items-center gap-2"><Trophy size={16} class="text-primary-600" /> Meus Grupos</h2>
+        <a href="/groups" class="text-xs text-primary-600 hover:underline font-medium">Ver todos</a>
+      </div>
+      <div class="divide-y divide-gray-100 dark:divide-gray-700">
+        {#if loading}
+          {#each [1,2,3] as _}
+            <div class="px-6 py-4 animate-pulse"><div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-3/4"></div></div>
+          {/each}
+        {:else if myGroups.length === 0}
+          <div class="px-6 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">Você não pertence a nenhum grupo ainda.</div>
+        {:else}
+          {#each myGroups.slice(0, 5) as g}
+            <a href="/groups/{g.id}" class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <div>
+                <p class="font-medium text-sm text-gray-900 dark:text-gray-100">{g.name}</p>
+                {#if g.description}<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-xs">{g.description}</p>{/if}
+              </div>
+              <ChevronRight size={16} class="text-gray-400 dark:text-gray-500" />
+            </a>
+          {/each}
         {/if}
       </div>
     </div>
