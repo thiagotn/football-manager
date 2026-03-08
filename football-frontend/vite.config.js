@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [
     sveltekit(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'service-worker.ts',
       registerType: 'autoUpdate',
       manifest: {
         name: 'rachao.app',
@@ -22,17 +25,9 @@ export default defineConfig({
           { src: '/logo-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,woff,woff2}'],
         globIgnores: ['**/background-login.png'],
-        navigateFallback: '/offline',
-        navigateFallbackDenylist: [/^\/api/],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api'),
-            handler: 'NetworkOnly',
-          },
-        ],
       },
       devOptions: {
         enabled: false,
