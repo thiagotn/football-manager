@@ -201,10 +201,16 @@
               </td>
               <td>
                 <div class="flex gap-1 justify-end flex-wrap">
-                  <button onclick={() => openEdit(p)} class="btn-sm btn-ghost"><Pencil size={14} /> Editar</button>
-                  <button onclick={() => openReset(p)} class="btn-sm btn-ghost text-amber-600 hover:bg-amber-50"><KeyRound size={14} /> Senha</button>
+                  <button onclick={() => openEdit(p)} class="text-xs px-2 py-0.5 rounded border border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20 flex items-center gap-1">
+                    <Pencil size={12} /> Editar
+                  </button>
+                  <button onclick={() => openReset(p)} class="text-xs px-2 py-0.5 rounded border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/20 flex items-center gap-1">
+                    <KeyRound size={12} /> Senha
+                  </button>
                   {#if p.active}
-                    <button onclick={() => deactivate(p)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50"><Trash2 size={14} /> Desativar</button>
+                    <button onclick={() => deactivate(p)} class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 flex items-center gap-1">
+                      <Trash2 size={12} /> Desativar
+                    </button>
                   {/if}
                 </div>
               </td>
