@@ -58,10 +58,12 @@
       const { public_key } = await pushApi.getVapidPublicKey();
       if (!public_key) { toastError('Servidor não configurado para notificações.'); return; }
 
-      const reg = await navigator.serviceWorker.ready;
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout: o serviço de notificações não respondeu.')), 15000)
+        setTimeout(() => reject(new Error('Timeout: serviço de notificações não respondeu.')), 15000)
       );
+      console.log('[push] aguardando serviceWorker.ready...');
+      const reg = await Promise.race([navigator.serviceWorker.ready, timeout]);
+      console.log('[push] serviceWorker pronto. iniciando subscribe...');
       const sub = await Promise.race([
         reg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -69,6 +71,7 @@
         }),
         timeout,
       ]);
+      console.log('[push] subscrito:', sub.endpoint);
       await pushApi.subscribe(sub.toJSON() as PushSubscriptionJSON, navigator.userAgent);
       pushSubscribed = true;
       toastSuccess('Notificações ativadas!');
