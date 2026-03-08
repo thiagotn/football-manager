@@ -489,7 +489,7 @@
         </button>
       </div>
       <div class="mt-4 rounded-xl bg-gray-900/75 py-4 px-4 flex items-center justify-between">
-        {#if $isLoggedIn}
+        {#if $isLoggedIn && history.length > 1}
           <button onclick={() => history.back()} class="text-base font-semibold text-white/90 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition-colors">
             ← Voltar
           </button>
