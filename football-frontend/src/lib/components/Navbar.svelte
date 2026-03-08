@@ -39,8 +39,8 @@
   let backHref = $derived(getBackHref($page.url.pathname));
 </script>
 
-<nav class="bg-primary-700 text-white shadow-md relative z-40 overflow-hidden">
-  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+<nav class="bg-primary-700 text-white shadow-md relative z-40" style="padding-top: env(safe-area-inset-top);">
+  <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 relative overflow-hidden">
 
     <!-- Esquerda: botão voltar (mobile) + logo desktop -->
     <div class="flex items-center gap-1 shrink-0">
@@ -59,9 +59,9 @@
       </a>
     </div>
 
-    <!-- Logo mobile: centralizado com efeito sangramento -->
-    <a href="/" class="min-[940px]:hidden absolute left-1/2 -translate-x-1/2 top-0 h-16 flex items-end">
-      <img src="/logo.png" alt="rachao.app" class="h-24 w-auto flex-shrink-0 -translate-y-1" />
+    <!-- Logo mobile: centralizado na altura total (status bar + barra) -->
+    <a href="/" class="min-[940px]:hidden absolute left-1/2 -translate-x-1/2 top-0 bottom-0 flex items-center pointer-events-auto">
+      <img src="/logo.png" alt="rachao.app" class="h-14 w-auto flex-shrink-0" />
     </a>
 
     <!-- Links — desktop -->
