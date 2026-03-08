@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: {
         name: 'rachao.app',
-        short_name: 'rachao',
+        short_name: 'rachao.app',
         description: 'Organize grupos de futebol, convide jogadores e controle presenças em um clique.',
         theme_color: '#16a34a',
         background_color: '#111827',
