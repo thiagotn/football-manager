@@ -60,7 +60,7 @@
     </div>
 
     <!-- Logo mobile: centralizado com efeito sangramento -->
-    <a href="/" class="min-[940px]:hidden absolute left-1/2 -translate-x-1/2 top-0 bottom-0 flex items-end">
+    <a href="/" class="min-[940px]:hidden absolute left-1/2 -translate-x-1/2 top-0 h-16 flex items-end">
       <img src="/logo.png" alt="rachao.app" class="h-24 w-auto flex-shrink-0 -translate-y-1" />
     </a>
 
