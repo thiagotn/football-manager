@@ -50,6 +50,7 @@ async def send_push(
     """
     settings = get_settings()
     if not settings.vapid_private_key or not settings.vapid_public_key:
+        logger.warning("push_skipped_no_vapid", player_id=str(player_id), title=title)
         return
 
     result = await db.execute(
@@ -71,4 +72,12 @@ async def send_push(
                 "push_subscription_removed",
                 player_id=str(player_id),
                 endpoint=sub.endpoint[:60],
+            )
+        elif status and status < 300:
+            logger.info(
+                "push_sent",
+                player_id=str(player_id),
+                title=title,
+                url=url,
+                status=status,
             )
