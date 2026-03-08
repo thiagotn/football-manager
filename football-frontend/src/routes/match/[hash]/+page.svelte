@@ -7,6 +7,7 @@
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen } from 'lucide-svelte';
+  import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { relativeDate } from '$lib/utils.js';
 
@@ -186,8 +187,8 @@
   {/if}
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-  <main class="max-w-2xl mx-auto px-4 pt-4 pb-8">
+<PageBackground>
+  <main class="relative z-10 max-w-2xl mx-auto px-4 pt-4 pb-8">
     {#if loading}
       <div class="animate-pulse space-y-4">
         <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
@@ -469,7 +470,7 @@
       <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">⚽ <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-400 underline underline-offset-2">rachao.app</a> · © 2026</p>
     {/if}
   </main>
-</div>
+</PageBackground>
 
 <ConfirmDialog
   bind:open={confirmOpen}
