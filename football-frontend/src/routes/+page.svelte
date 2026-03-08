@@ -208,23 +208,26 @@
             <div class="px-6 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">{empty}</div>
           {:else}
             {#each list as m}
-              <a href="/match/{m.hash}" class="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <div class="w-10 h-10 rounded-lg {m.status === 'open' ? 'bg-green-100 dark:bg-green-900/30' : m.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'} flex items-center justify-center shrink-0">
-                  <Calendar size={18} class="{m.status === 'open' ? 'text-green-600 dark:text-green-400' : m.status === 'in_progress' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}" />
+              <a href="/match/{m.hash}" class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="w-9 h-9 rounded-lg {m.status === 'open' ? 'bg-green-100 dark:bg-green-900/30' : m.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-700'} flex items-center justify-center shrink-0 mt-0.5">
+                  <Calendar size={16} class="{m.status === 'open' ? 'text-green-600 dark:text-green-400' : m.status === 'in_progress' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{fmtDate(m.match_date)}
-                    <span class="text-xs text-gray-400 dark:text-gray-500 font-normal ml-1">#{m.number}</span>
-                  </p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
-                    <Clock size={11} />{m.start_time.slice(0,5)}{m.end_time ? ` – ${m.end_time.slice(0,5)}` : ''}
-                    <MapPin size={11} class="ml-1" /><span class="truncate">{m.location}</span>
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize leading-tight">
+                      {fmtDate(m.match_date)}
+                      <span class="text-xs text-gray-400 dark:text-gray-500 font-normal ml-1">#{m.number}</span>
+                    </p>
+                    <span class="badge shrink-0 {m.status === 'open' ? 'badge-green' : m.status === 'in_progress' ? 'badge-blue' : 'badge-gray'}">
+                      {m.status === 'open' ? 'Aberta' : m.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 flex flex-wrap items-center gap-x-2 mt-0.5">
+                    <span class="flex items-center gap-1"><Clock size={11} />{m.start_time.slice(0,5)}{m.end_time ? ` – ${m.end_time.slice(0,5)}` : ''}</span>
+                    <span class="flex items-center gap-1 min-w-0"><MapPin size={11} /><span class="truncate">{m.location}</span></span>
                   </p>
                   <p class="text-xs text-primary-500 mt-0.5 font-medium">{m.group_name}</p>
                 </div>
-                <span class="badge {m.status === 'open' ? 'badge-green' : m.status === 'in_progress' ? 'badge-blue' : 'badge-gray'}">
-                  {m.status === 'open' ? 'Aberta' : m.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
-                </span>
               </a>
             {/each}
           {/if}
