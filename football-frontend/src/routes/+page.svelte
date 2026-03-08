@@ -96,7 +96,7 @@
     <h1 class="text-2xl font-bold text-white">
       Olá, {$currentPlayer?.name?.split(' ')[0]} 👋
     </h1>
-    <p class="text-gray-300 text-sm mt-1">Veja seus grupos e próximos rachões.</p>
+    <p class="text-gray-300 text-sm mt-1">Veja os próximos rachões e seus grupos.</p>
   </div>
 
   <!-- Stats row -->
