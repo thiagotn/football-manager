@@ -343,9 +343,16 @@
                       <span class="text-primary-600 dark:text-primary-400 font-bold text-sm mr-1">#{m.number}</span>{fmtDate(m.match_date)}
                     </p>
                   </div>
-                  <span class="badge {m.status === 'open' ? 'badge-green' : m.status === 'in_progress' ? 'badge-blue' : 'badge-gray'} shrink-0">
-                    {m.status === 'open' ? 'Aberta' : m.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
-                  </span>
+                  {#if m.status === 'in_progress'}
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+                      <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                      Bola rolando
+                    </span>
+                  {:else}
+                    <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0">
+                      {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                    </span>
+                  {/if}
                 </div>
 
                 <!-- Time + Location -->
@@ -555,7 +562,7 @@
         <label class="label" for="emstatus">Status</label>
         <select id="emstatus" class="input" bind:value={editMatchForm.status}>
           <option value="open">Aberta</option>
-          <option value="in_progress">Em andamento</option>
+          <option value="in_progress">Bola rolando</option>
           <option value="closed">Encerrada</option>
         </select>
       </div>

@@ -223,9 +223,16 @@
             <p class="text-sm font-bold text-white">
               #{match.number} {match.group_name}
             </p>
-            <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : match.status === 'in_progress' ? 'bg-blue-400 text-blue-900' : 'bg-gray-400 text-gray-900'}">
-              {match.status === 'open' ? 'Aberta' : match.status === 'in_progress' ? 'Em andamento' : 'Encerrada'}
-            </span>
+            {#if match.status === 'in_progress'}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                Bola rolando
+              </span>
+            {:else}
+              <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
+                {match.status === 'open' ? 'Aberta' : 'Encerrada'}
+              </span>
+            {/if}
           </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
