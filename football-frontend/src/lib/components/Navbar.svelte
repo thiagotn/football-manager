@@ -42,7 +42,7 @@
 <nav class="bg-primary-700 text-white shadow-md relative z-40 overflow-hidden">
   <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
 
-    <!-- Esquerda: botão voltar (mobile, sub-páginas) + logo -->
+    <!-- Esquerda: botão voltar (mobile) + logo desktop -->
     <div class="flex items-center gap-1 shrink-0">
       {#if backHref}
         <a
@@ -53,14 +53,16 @@
           <ChevronLeft size={22} />
         </a>
       {/if}
-      <a href="/" class="-ml-16 self-stretch flex items-end">
-        <img
-          src="/logo.png"
-          alt="rachao.app"
-          class="h-24 w-auto flex-shrink-0 -translate-y-2"
-        />
+      <!-- Logo desktop: efeito sangramento à esquerda -->
+      <a href="/" class="hidden min-[940px]:flex -ml-16 self-stretch items-end">
+        <img src="/logo.png" alt="rachao.app" class="h-24 w-auto flex-shrink-0 -translate-y-2" />
       </a>
     </div>
+
+    <!-- Logo mobile: centralizado com efeito sangramento -->
+    <a href="/" class="min-[940px]:hidden absolute left-1/2 -translate-x-1/2 top-0 bottom-0 flex items-end">
+      <img src="/logo.png" alt="rachao.app" class="h-24 w-auto flex-shrink-0 -translate-y-1" />
+    </a>
 
     <!-- Links — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-1">
