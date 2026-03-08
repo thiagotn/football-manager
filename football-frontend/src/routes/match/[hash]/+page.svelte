@@ -456,20 +456,18 @@
           <Link2 size={16} /> Copiar link
         </button>
       </div>
-      <div class="mt-4 rounded-xl bg-gray-900/75 py-4 px-4 flex flex-col items-center gap-3">
+      <div class="mt-4 rounded-xl bg-gray-900/75 py-4 px-4 flex items-center justify-between">
         {#if $isLoggedIn}
-          <button onclick={() => history.back()} class="btn btn-ghost btn-sm text-white/80 hover:text-white hover:bg-white/10">
+          <button onclick={() => history.back()} class="text-base font-semibold text-white/90 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition-colors">
             ← Voltar
           </button>
         {:else}
-          <a href="/" class="btn btn-ghost btn-sm text-primary-300 hover:text-primary-200 hover:bg-white/10">
+          <a href="/" class="text-base font-semibold text-primary-300 hover:text-primary-200 px-2 py-1 rounded-lg hover:bg-white/10 transition-colors">
             Conheça a plataforma →
           </a>
         {/if}
-        <div class="flex items-center gap-2">
-          <img src="/logo-192.png" alt="rachao.app" class="h-8 w-8 rounded-lg" />
-          <span class="text-xs text-white/50">© 2026</span>
-        </div>
+        <img src="/logo-192.png" alt="rachao.app" class="h-9 w-9 rounded-lg" />
+        <span class="text-xs text-white/50">© 2026</span>
       </div>
     {/if}
   </main>
