@@ -102,17 +102,6 @@
   <!-- Stats row -->
   <div class="grid gap-4 mb-8 {$isAdmin ? 'grid-cols-4' : 'grid-cols-3'}">
     <div class="card p-4 flex flex-col items-center text-center gap-1.5"
-      title="Grupos que você participa">
-      <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-        <Trophy size={16} class="text-primary-600 dark:text-primary-400" />
-      </div>
-      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{myGroups.length}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">
-        <span class="hidden sm:inline">Grupos</span>
-        <span class="sm:hidden">Grupos</span>
-      </p>
-    </div>
-    <div class="card p-4 flex flex-col items-center text-center gap-1.5"
       title="{$isAdmin ? 'Total de rachões cadastrados na plataforma' : 'Próximos rachões agendados'}">
       <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
         <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
@@ -121,6 +110,17 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">
         <span class="hidden sm:inline">{$isAdmin ? 'Rachões' : 'Próximos'}</span>
         <span class="sm:hidden">{$isAdmin ? 'Rachões' : 'Próximos'}</span>
+      </p>
+    </div>
+    <div class="card p-4 flex flex-col items-center text-center gap-1.5"
+      title="Grupos que você participa">
+      <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+        <Trophy size={16} class="text-primary-600 dark:text-primary-400" />
+      </div>
+      <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{myGroups.length}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        <span class="hidden sm:inline">Grupos</span>
+        <span class="sm:hidden">Grupos</span>
       </p>
     </div>
     {#if $isAdmin}
