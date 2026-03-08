@@ -52,30 +52,35 @@
       .slice(0, 8)
   );
 
+  async function fetchDashboard() {
+    try {
+      const fetchGroups = groups.list();
+      const fetchPlayers = $isAdmin ? playersApi.list() : Promise.resolve(null);
+      const fetchStats = playersApi.myStats();
+      const [gs, pl, stats] = await Promise.all([fetchGroups, fetchPlayers, fetchStats]);
+      myGroups = gs;
+      if (pl) playerCount = pl.filter(p => p.id !== $currentPlayer?.id).length;
+      minutesPlayed = stats.minutes_played;
+      platformMinutesPlayed = stats.platform_minutes_played ?? 0;
+      platformTotalMatches = stats.platform_total_matches ?? 0;
+      const fetched: MatchWithGroup[] = [];
+      await Promise.all(gs.map(async g => {
+        const ms = await matches.list(g.id);
+        fetched.push(...ms.map(m => ({ ...m, group_name: g.name, group_slug: g.slug, group_id: g.id })));
+      }));
+      allMatches = fetched;
+    } catch (e) { console.error('[dashboard] erro:', e); }
+    loading = false;
+  }
+
   $effect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const fetchGroups = groups.list();
-        const fetchPlayers = $isAdmin ? playersApi.list() : Promise.resolve(null);
-        const fetchStats = playersApi.myStats();
-        const [gs, pl, stats] = await Promise.all([fetchGroups, fetchPlayers, fetchStats]);
-        if (cancelled) return;
-        myGroups = gs;
-        if (pl) playerCount = pl.filter(p => p.id !== $currentPlayer?.id).length;
-        minutesPlayed = stats.minutes_played;
-        platformMinutesPlayed = stats.platform_minutes_played ?? 0;
-        platformTotalMatches = stats.platform_total_matches ?? 0;
-        const fetched: MatchWithGroup[] = [];
-        await Promise.all(gs.map(async g => {
-          const ms = await matches.list(g.id);
-          fetched.push(...ms.map(m => ({ ...m, group_name: g.name, group_slug: g.slug, group_id: g.id })));
-        }));
-        if (!cancelled) allMatches = fetched;
-      } catch (e) { console.error('[dashboard] erro:', e); }
-      if (!cancelled) loading = false;
-    })();
-    return () => { cancelled = true; };
+    fetchDashboard();
+
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') fetchDashboard();
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   });
 
   function fmtDate(d: string) {

@@ -11,7 +11,7 @@ export default defineConfig({
         name: 'rachao.app',
         short_name: 'rachao.app',
         description: 'Organize grupos de futebol, convide jogadores e controle presenças em um clique.',
-        theme_color: '#16a34a',
+        theme_color: '#15803d',
         background_color: '#111827',
         display: 'standalone',
         start_url: '/',
