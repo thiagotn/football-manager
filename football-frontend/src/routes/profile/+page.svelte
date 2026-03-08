@@ -68,8 +68,9 @@
       toastSuccess('Notificações ativadas!');
     } catch (e) {
       toastError(e instanceof Error ? e.message : 'Erro ao ativar notificações');
+    } finally {
+      pushLoading = false;
     }
-    pushLoading = false;
   }
 
   async function disablePush() {
@@ -83,8 +84,9 @@
       toastSuccess('Notificações desativadas.');
     } catch (e) {
       toastError(e instanceof Error ? e.message : 'Erro ao desativar notificações');
+    } finally {
+      pushLoading = false;
     }
-    pushLoading = false;
   }
 
   function urlBase64ToUint8Array(base64String: string): Uint8Array {
