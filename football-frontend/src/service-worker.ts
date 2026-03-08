@@ -19,26 +19,31 @@ registerRoute(
 );
 
 // Push notifications
-self.addEventListener('push', (event: PushEvent) => {
-  if (!event.data) return;
-  const data = event.data.json() as { title: string; body: string; url?: string };
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
+self.addEventListener('push', (event) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = event as any;
+  if (!e.data) return;
+  const { title = 'rachao.app', body = '', url = '/' } = e.data.json() ?? {};
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
       icon: '/logo-192.png',
       badge: '/logo-192.png',
-      data: { url: data.url ?? '/' },
+      data: { url },
     })
   );
 });
 
-self.addEventListener('notificationclick', (event: NotificationEvent) => {
-  event.notification.close();
-  const url: string = event.notification.data?.url ?? '/';
-  event.waitUntil(
+self.addEventListener('notificationclick', (event) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = event as any;
+  e.notification.close();
+  const url: string = e.notification.data?.url ?? '/';
+  e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      const existing = clientList.find((c) => c.url.includes(url)) as WindowClient | undefined;
-      if (existing) return existing.focus();
+      for (const client of clientList) {
+        if (client.url.includes(url)) return (client as WindowClient).focus();
+      }
       return self.clients.openWindow(url);
     })
   );
