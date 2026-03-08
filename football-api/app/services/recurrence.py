@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 from datetime import date, datetime, timezone, timedelta
 
@@ -8,6 +9,12 @@ from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.session import get_session_factory
 from app.models.match import Attendance, AttendanceStatus, Match, MatchStatus
+from app.services.push import send_push
+
+_MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
+
+def _fmt_date(d) -> str:
+    return f"{d.day} de {_MONTHS_PT[d.month - 1]}"
 
 logger = structlog.get_logger()
 
@@ -85,6 +92,18 @@ async def run_recurrence(session: AsyncSession) -> int:
             ))
 
         await session.flush()
+
+        match_url = f"https://rachao.app/match/{hash_}"
+        await asyncio.gather(*[
+            send_push(
+                session, pid,
+                title=f"⚽ Novo rachão — {group.name}",
+                body=f"Partida em {_fmt_date(next_date)}. Confirme sua presença!",
+                url=match_url,
+            )
+            for pid in player_ids
+        ], return_exceptions=True)
+
         created += 1
         logger.info(
             "recurrence_match_created",
@@ -102,6 +121,10 @@ async def run_recurrence_job() -> None:
     async with session_factory() as session:
         try:
             m_repo = MatchRepository(session)
+
+            # Pre-fetch matches that will transition to IN_PROGRESS before the bulk UPDATE
+            in_progress_candidates = await m_repo.get_in_progress_candidates()
+
             closed = await m_repo.close_past_matches()
             if closed:
                 logger.info("recurrence_auto_closed", matches_closed=closed)
@@ -109,6 +132,20 @@ async def run_recurrence_job() -> None:
             count = await run_recurrence(session)
             await session.commit()
             logger.info("recurrence_job_done", matches_created=count)
+
+            # Send "Bola rolando" push after commit (session still valid for new queries)
+            for match in in_progress_candidates:
+                confirmed_ids = await m_repo.get_confirmed_player_ids(match.id)
+                await asyncio.gather(*[
+                    send_push(
+                        session, pid,
+                        title=f"⚽ Bola rolando! — {match.group.name}",
+                        body="A partida de hoje já começou! 🎉",
+                        url=f"https://rachao.app/match/{match.hash}",
+                    )
+                    for pid in confirmed_ids
+                ], return_exceptions=True)
+
         except Exception:
             await session.rollback()
             logger.exception("recurrence_job_failed")

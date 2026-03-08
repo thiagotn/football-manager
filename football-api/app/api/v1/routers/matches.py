@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -12,6 +13,12 @@ from app.models.match import AttendanceStatus, Match, MatchStatus
 from app.models.player import PlayerRole
 from app.models.group import GroupMemberRole
 from app.services.recurrence import run_recurrence
+from app.services.push import send_push
+
+_MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
+
+def _fmt_date(d) -> str:
+    return f"{d.day} de {_MONTHS_PT[d.month - 1]}"
 from app.schemas.match import (
     AttendanceResponse,
     MatchCreate,
@@ -89,9 +96,24 @@ async def list_group_matches(group_id: uuid.UUID, db: DB, current: CurrentPlayer
             raise ForbiddenError("Você não é membro deste grupo")
 
     repo = MatchRepository(db)
+    in_progress_candidates = await repo.get_in_progress_candidates()
     closed = await repo.close_past_matches()
     if closed:
         await run_recurrence(db)
+
+    if in_progress_candidates:
+        for m in in_progress_candidates:
+            confirmed_ids = await repo.get_confirmed_player_ids(m.id)
+            await asyncio.gather(*[
+                send_push(
+                    db, pid,
+                    title=f"⚽ Bola rolando! — {m.group.name}",
+                    body="A partida de hoje já começou! 🎉",
+                    url=f"https://rachao.app/match/{m.hash}",
+                )
+                for pid in confirmed_ids
+            ], return_exceptions=True)
+
     return await repo.get_group_matches(group_id)
 
 
@@ -132,6 +154,17 @@ async def create_match(group_id: uuid.UUID, body: MatchCreate, db: DB, current: 
     member_ids = await g_repo.get_non_admin_member_ids(group_id)
     await m_repo.create_pending_attendances(match.id, member_ids)
 
+    match_url = f"https://rachao.app/match/{hash_}"
+    await asyncio.gather(*[
+        send_push(
+            db, pid,
+            title=f"⚽ Novo rachão — {group.name}",
+            body=f"Partida em {_fmt_date(match.match_date)}. Confirme sua presença!",
+            url=match_url,
+        )
+        for pid in member_ids
+    ], return_exceptions=True)
+
     return match
 
 
@@ -166,6 +199,10 @@ async def update_match(
         raise NotFoundError("Partida não encontrada")
 
     closing = body.status == MatchStatus.CLOSED and match.status != MatchStatus.CLOSED
+    going_in_progress = (
+        body.status == MatchStatus.IN_PROGRESS
+        and match.status not in (MatchStatus.IN_PROGRESS, MatchStatus.CLOSED)
+    )
 
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(match, field, value)
@@ -174,6 +211,21 @@ async def update_match(
 
     if closing:
         await run_recurrence(db)
+
+    if going_in_progress:
+        g_repo2 = GroupRepository(db)
+        group = await g_repo2.get(group_id)
+        group_name = group.name if group else ""
+        confirmed_ids = await repo.get_confirmed_player_ids(match_id)
+        await asyncio.gather(*[
+            send_push(
+                db, pid,
+                title=f"⚽ Bola rolando! — {group_name}",
+                body="A partida de hoje já começou! 🎉",
+                url=f"https://rachao.app/match/{match.hash}",
+            )
+            for pid in confirmed_ids
+        ], return_exceptions=True)
 
     return match
 

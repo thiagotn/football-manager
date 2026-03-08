@@ -154,6 +154,32 @@ class MatchRepository(BaseRepository[Match]):
         )
         return result.scalar_one() > 0
 
+    async def get_confirmed_player_ids(self, match_id: UUID) -> list[UUID]:
+        result = await self.session.execute(
+            select(Attendance.player_id).where(
+                Attendance.match_id == match_id,
+                Attendance.status == AttendanceStatus.CONFIRMED,
+            )
+        )
+        return list(result.scalars().all())
+
+    async def get_in_progress_candidates(self) -> list[Match]:
+        """Matches that will transition OPEN → IN_PROGRESS on the next close_past_matches call."""
+        BRAZIL = timezone(timedelta(hours=-3))
+        now = datetime.now(BRAZIL)
+        today = now.date()
+        now_time = now.time().replace(tzinfo=None)
+        result = await self.session.execute(
+            select(Match)
+            .options(selectinload(Match.group))
+            .where(
+                Match.status == MatchStatus.OPEN,
+                Match.match_date == today,
+                Match.start_time <= now_time,
+            )
+        )
+        return list(result.scalars().all())
+
     async def get_attendance_player_ids(self, match_id: UUID) -> list[UUID]:
         result = await self.session.execute(
             select(Attendance.player_id).where(Attendance.match_id == match_id)

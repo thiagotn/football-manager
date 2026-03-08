@@ -17,8 +17,9 @@ Permitir que jogadores recebam notificações em tempo real sobre eventos releva
 
 | Evento | Destinatário | Implementado |
 |--------|-------------|:---:|
+| Nova partida aberta no grupo | Todos os membros do grupo | ✅ |
+| Bola rolando (partida iniciada) | Jogadores confirmados | ✅ |
 | Convite para grupo recebido | Jogador convidado | ⏳ |
-| Nova partida aberta no grupo | Todos os membros do grupo | ⏳ |
 | Lembrete X horas antes da partida | Jogadores confirmados | ⏳ |
 | Partida encerrada / resultado disponível | Jogadores participantes | ⏳ |
 | Remoção do grupo | Jogador removido | ⏳ |
@@ -39,7 +40,8 @@ Permitir que jogadores recebam notificações em tempo real sobre eventos releva
 - [x] `POST /api/v1/push/subscribe` — salva ou atualiza subscrição do jogador autenticado (upsert por endpoint)
 - [x] `DELETE /api/v1/push/subscribe` — remove todas as subscrições do jogador (opt-out)
 - [x] `app/services/push.py` — função `send_push(db, player_id, title, body, url)`: busca subscrições, envia via pywebpush em thread executor, remove automaticamente subscrições expiradas (404/410); no-op se VAPID não configurado
-- [ ] Integrar `send_push` nos eventos: criação de convite, criação de partida, lembrete (via APScheduler)
+- [x] `send_push` integrado em: criação de partida (`create_match`), partida recorrente (`run_recurrence`), transição para `in_progress` via `update_match` (manual) e via `list_group_matches` + `run_recurrence_job` (automático)
+- [ ] `send_push` a integrar: criação de convite, lembrete antes da partida (via APScheduler)
 
 ### Frontend
 
