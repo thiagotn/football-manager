@@ -59,14 +59,21 @@
       if (!public_key) { toastError('Servidor não configurado para notificações.'); return; }
 
       const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(public_key),
-      });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: o serviço de notificações não respondeu.')), 15000)
+      );
+      const sub = await Promise.race([
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(public_key),
+        }),
+        timeout,
+      ]);
       await pushApi.subscribe(sub.toJSON() as PushSubscriptionJSON, navigator.userAgent);
       pushSubscribed = true;
       toastSuccess('Notificações ativadas!');
     } catch (e) {
+      console.error('[push] enablePush error:', e);
       toastError(e instanceof Error ? e.message : 'Erro ao ativar notificações');
     } finally {
       pushLoading = false;
