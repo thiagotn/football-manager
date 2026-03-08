@@ -104,49 +104,70 @@
       onclick={() => menuOpen = !menuOpen}
       aria-label="Menu"
     >
-      {#if menuOpen}
-        <X size={22} />
-      {:else}
-        <Menu size={22} />
-      {/if}
+      <Menu size={22} />
     </button>
   </div>
+</nav>
 
-  <!-- Menu mobile dropdown -->
-  {#if menuOpen}
-    <div class="min-[940px]:hidden bg-primary-800 border-t border-primary-600 px-4 pb-4 pt-2 space-y-1">
-      <!-- Usuário -->
-      <p class="text-xs text-primary-300 px-2 py-1 font-medium">{$currentPlayer?.name}</p>
+<!-- Drawer lateral mobile -->
+{#if menuOpen}
+  <!-- Backdrop -->
+  <button
+    class="min-[940px]:hidden fixed inset-0 z-40 bg-black/50"
+    onclick={closeMenu}
+    aria-label="Fechar menu"
+  ></button>
 
+  <!-- Painel deslizante da direita -->
+  <div class="min-[940px]:hidden fixed top-0 right-0 h-full w-72 max-w-[85vw] z-50 bg-primary-800 shadow-2xl flex flex-col"
+    style="animation: slideInRight 0.22s ease-out;">
+    <!-- Cabeçalho do drawer -->
+    <div class="flex items-center justify-between px-4 h-16 border-b border-primary-700 shrink-0">
+      <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.name}</p>
+      <button onclick={closeMenu} class="p-2 rounded-lg hover:bg-primary-700 transition-colors" aria-label="Fechar">
+        <X size={20} />
+      </button>
+    </div>
+
+    <!-- Links de navegação -->
+    <div class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
       {#each links as l}
         {#if !l.adminOnly || $isAdmin}
           <a
             href={l.href}
             onclick={closeMenu}
-            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-              {$page.url.pathname === l.href ? 'bg-primary-900' : 'hover:bg-primary-600'}"
+            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+              {$page.url.pathname === l.href ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}"
           >
-            <l.icon size={16} />
+            <l.icon size={18} />
             {l.label}
           </a>
         {/if}
       {/each}
-
-      <div class="border-t border-primary-600 mt-2 pt-2 space-y-1">
-        <a href="/profile" onclick={closeMenu}
-          class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-600
-            {$page.url.pathname === '/profile' ? 'bg-primary-900' : ''}">
-          <UserCircle size={16} /> Minha Conta
-        </a>
-        <button onclick={themeStore.toggle}
-          class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-600 text-left text-primary-100">
-          {#if $themeStore === 'dark'}<Sun size={16} /> Tema claro{:else}<Moon size={16} /> Tema escuro{/if}
-        </button>
-        <button onclick={logout}
-          class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-600 text-left text-primary-100">
-          <LogOut size={16} /> Sair
-        </button>
-      </div>
     </div>
-  {/if}
-</nav>
+
+    <!-- Rodapé do drawer -->
+    <div class="px-3 py-3 border-t border-primary-700 space-y-1 shrink-0">
+      <a href="/profile" onclick={closeMenu}
+        class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
+          {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : ''}">
+        <UserCircle size={18} /> Minha Conta
+      </a>
+      <button onclick={themeStore.toggle}
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
+        {#if $themeStore === 'dark'}<Sun size={18} /> Tema claro{:else}<Moon size={18} /> Tema escuro{/if}
+      </button>
+      <button onclick={logout}
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
+        <LogOut size={18} /> Sair
+      </button>
+    </div>
+  </div>
+{/if}
+
+<style>
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+  }
+</style>
