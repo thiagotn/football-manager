@@ -466,7 +466,7 @@
             Conheça a plataforma →
           </a>
         {/if}
-        <img src="/logo-192.png" alt="rachao.app" class="h-9 w-9 rounded-lg" />
+        <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-white/70 hover:text-white transition-colors">rachao.app</a>
         <span class="text-xs text-white/50">© 2026</span>
       </div>
     {/if}
