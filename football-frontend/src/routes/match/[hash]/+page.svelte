@@ -6,7 +6,7 @@
 
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen } from 'lucide-svelte';
+  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { relativeDate } from '$lib/utils.js';
@@ -25,6 +25,7 @@
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
   let confirmAction = $state<() => void>(() => {});
+  let showRsvpBanner = $state(true);
 
   let confirmed = $derived(match?.attendances.filter(a => a.status === 'confirmed') ?? []);
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
@@ -299,44 +300,38 @@
         </div>
       </div>
 
-      <!-- My RSVP (only if logged in and in the match) -->
-      {#if $isLoggedIn && !$isAdmin && (match.status === 'open' || match.status === 'in_progress')}
-        <div class="card mb-4 card-body">
-          <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-            <Users size={16} class="text-primary-600" /> Sua Confirmação
-          </h3>
-          {#if responded}
-            <div class="text-center py-1">
-              <p class="text-sm font-medium {lastStatus === 'confirmed' ? 'text-green-600' : 'text-red-500'}">
-                {lastStatus === 'confirmed' ? '✅ Presença confirmada! Até lá.' : '❌ Falta registrada.'}
-              </p>
-              <button class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 mt-2 underline" onclick={() => { responded = false; lastStatus = null; }}>
-                Alterar resposta
-              </button>
-            </div>
-          {:else}
-            {#if isFull}
-              <p class="text-sm text-red-500 font-medium text-center py-2">
-                ⛔ Partida lotada — {match.max_players} jogadores já confirmados.
-              </p>
-            {/if}
-            <div class="flex gap-3">
-              <button
-                class="flex-1 btn {mine?.status === 'confirmed' ? 'btn-primary' : 'btn-secondary'}"
-                onclick={() => respond('confirmed')} disabled={responding || isFull}>
-                <CheckCircle size={16} /> Vou jogar!
-              </button>
-              <button
-                class="flex-1 btn {mine?.status === 'declined' ? 'btn-danger' : 'btn-secondary'}"
-                onclick={() => respond('declined')} disabled={responding}>
-                <XCircle size={16} /> Não posso
-              </button>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
       <!-- Players lists -->
+      <div class="relative">
+        <!-- RSVP overlay -->
+        {#if showRsvpBanner && $isLoggedIn && !$isAdmin && !responded && mine?.status === 'pending' && (match.status === 'open' || match.status === 'in_progress')}
+          <div class="absolute inset-0 z-10 bg-gray-900/75 rounded-xl flex items-start justify-center pt-6 pb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl mx-4 p-5 w-full max-w-sm">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                  <Users size={16} class="text-primary-600" /> Confirme sua presença
+                </h3>
+                <button
+                  onclick={() => showRsvpBanner = false}
+                  class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  aria-label="Fechar">
+                  <X size={16} />
+                </button>
+              </div>
+              {#if isFull}
+                <p class="text-sm text-red-500 font-medium text-center py-2">⛔ Partida lotada — {match.max_players} jogadores já confirmados.</p>
+              {/if}
+              <div class="flex gap-3">
+                <button class="flex-1 btn btn-primary justify-center" onclick={() => { respond('confirmed'); showRsvpBanner = false; }} disabled={responding || isFull}>
+                  <CheckCircle size={16} /> Vou jogar!
+                </button>
+                <button class="flex-1 btn btn-danger justify-center" onclick={() => { respond('declined'); showRsvpBanner = false; }} disabled={responding}>
+                  <XCircle size={16} /> Não posso
+                </button>
+              </div>
+            </div>
+          </div>
+        {/if}
+
       <div class="space-y-3">
         <!-- Confirmed -->
         {#if confirmed.length > 0}
@@ -405,7 +400,22 @@
                 <li class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2.5">
                   <Clock3 size={13} class="text-gray-400 shrink-0" />
                   <span class="flex-1">{a.player.nickname || a.player.name}</span>
-                  {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
+                  {#if !responded && !showRsvpBanner && a.player.id === $currentPlayer?.id && !$isAdmin && (match.status === 'open' || match.status === 'in_progress')}
+                    <div class="flex gap-1 shrink-0">
+                      <button
+                        class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1"
+                        onclick={() => respond('confirmed')}
+                        disabled={responding || isFull}>
+                        <CheckCircle size={11} /> Confirmar
+                      </button>
+                      <button
+                        class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 flex items-center gap-1"
+                        onclick={() => respond('declined')}
+                        disabled={responding}>
+                        <XCircle size={11} /> Recusar
+                      </button>
+                    </div>
+                  {:else if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
                     <div class="flex gap-1 shrink-0">
                       <button
                         class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40"
@@ -427,6 +437,7 @@
           </div>
         {/if}
       </div>
+      </div><!-- /relative RSVP wrapper -->
 
       <!-- Admin status toggle -->
       {#if isGroupAdmin}
