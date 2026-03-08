@@ -456,18 +456,21 @@
           <Link2 size={16} /> Copiar link
         </button>
       </div>
-      <div class="mt-3 flex justify-center">
+      <div class="mt-4 rounded-xl bg-gray-900/75 py-4 px-4 flex flex-col items-center gap-3">
         {#if $isLoggedIn}
-          <button onclick={() => history.back()} class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400">
+          <button onclick={() => history.back()} class="btn btn-ghost btn-sm text-white/80 hover:text-white hover:bg-white/10">
             ← Voltar
           </button>
         {:else}
-          <a href="/" class="btn btn-ghost btn-sm text-primary-600 dark:text-primary-400">
+          <a href="/" class="btn btn-ghost btn-sm text-primary-300 hover:text-primary-200 hover:bg-white/10">
             Conheça a plataforma →
           </a>
         {/if}
+        <div class="flex items-center gap-2">
+          <img src="/logo-192.png" alt="rachao.app" class="h-8 w-8 rounded-lg" />
+          <span class="text-xs text-white/50">© 2026</span>
+        </div>
       </div>
-      <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">⚽ <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-400 underline underline-offset-2">rachao.app</a> · © 2026</p>
     {/if}
   </main>
 </PageBackground>
