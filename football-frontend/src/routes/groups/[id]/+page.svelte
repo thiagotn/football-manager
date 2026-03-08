@@ -6,6 +6,7 @@
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import DatePicker from '$lib/components/DatePicker.svelte';
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate } from '$lib/utils.js';
@@ -451,7 +452,7 @@
   <form onsubmit={(e) => { e.preventDefault(); createMatch(); }} class="space-y-4">
     <div class="form-group">
       <label class="label" for="mdate">Data *</label>
-      <input id="mdate" class="input" type="date" bind:value={matchForm.match_date} required />
+      <DatePicker id="mdate" bind:value={matchForm.match_date} required />
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div class="form-group">
@@ -512,7 +513,7 @@
   <form onsubmit={(e) => { e.preventDefault(); saveEditMatch(); }} class="space-y-4">
     <div class="form-group">
       <label class="label" for="emdate">Data *</label>
-      <input id="emdate" class="input" type="date" bind:value={editMatchForm.match_date} required />
+      <DatePicker id="emdate" bind:value={editMatchForm.match_date} required />
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div class="form-group">
