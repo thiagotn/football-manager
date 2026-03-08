@@ -10,7 +10,7 @@ import { NetworkOnly } from 'workbox-strategies';
 declare const self: ServiceWorkerGlobalScope;
 
 cleanupOutdatedCaches();
-precacheAndRoute(self.__WB_MANIFEST);
+precacheAndRoute(self.__WB_MANIFEST ?? []);
 
 // API: sempre rede, nunca cache
 registerRoute(
