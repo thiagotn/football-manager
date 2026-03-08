@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { auth as authApi, players as playersApi, ApiError } from '$lib/api';
+  import { auth as authApi, players as playersApi, push as pushApi, ApiError } from '$lib/api';
   import { authStore, currentPlayer } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound, Pencil } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   // Nickname
@@ -23,6 +23,75 @@
       toastError(e instanceof ApiError ? e.message : 'Erro ao salvar apelido');
     }
     savingNickname = false;
+  }
+
+  // Push notifications
+  let pushSupported = $state(false);
+  let pushPermission = $state<NotificationPermission>('default');
+  let pushSubscribed = $state(false);
+  let pushLoading = $state(false);
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    if (pushSupported) pushPermission = Notification.permission;
+
+    (async () => {
+      if (!pushSupported) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        pushSubscribed = !!sub;
+      } catch { /* ignore */ }
+    })();
+  });
+
+  async function enablePush() {
+    pushLoading = true;
+    try {
+      const permission = await Notification.requestPermission();
+      pushPermission = permission;
+      if (permission !== 'granted') {
+        toastError('Permissão de notificação negada.');
+        return;
+      }
+      const { public_key } = await pushApi.getVapidPublicKey();
+      if (!public_key) { toastError('Servidor não configurado para notificações.'); return; }
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(public_key),
+      });
+      await pushApi.subscribe(sub.toJSON() as PushSubscriptionJSON, navigator.userAgent);
+      pushSubscribed = true;
+      toastSuccess('Notificações ativadas!');
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : 'Erro ao ativar notificações');
+    }
+    pushLoading = false;
+  }
+
+  async function disablePush() {
+    pushLoading = true;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe();
+      await pushApi.unsubscribe();
+      pushSubscribed = false;
+      toastSuccess('Notificações desativadas.');
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : 'Erro ao desativar notificações');
+    }
+    pushLoading = false;
+  }
+
+  function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
   }
 
   // Password
@@ -122,6 +191,36 @@
       </div>
     </dl>
   </div>
+
+  <!-- Notificações push -->
+  {#if pushSupported}
+    <div class="card card-body mb-6">
+      <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2">
+        <Bell size={16} class="text-primary-600" /> Notificações
+      </h2>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">
+        Receba avisos de novas partidas, convites e lembretes diretamente no seu dispositivo.
+      </p>
+      {#if pushPermission === 'denied'}
+        <p class="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+          Notificações bloqueadas no navegador. Altere nas configurações do seu dispositivo para habilitá-las.
+        </p>
+      {:else if pushSubscribed}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5">
+            <Bell size={14} /> Ativas
+          </span>
+          <button class="btn-sm btn-secondary flex items-center gap-1" onclick={disablePush} disabled={pushLoading}>
+            <BellOff size={14} /> {pushLoading ? 'Aguarde…' : 'Desativar'}
+          </button>
+        </div>
+      {:else}
+        <button class="btn-primary w-full justify-center" onclick={enablePush} disabled={pushLoading}>
+          <Bell size={15} /> {pushLoading ? 'Ativando…' : 'Ativar notificações'}
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   <!-- Troca de senha -->
   <div class="card card-body">

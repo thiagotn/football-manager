@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.routers import auth, groups, invites, matches, players
+from app.api.v1.routers import auth, groups, invites, matches, players, push
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -9,3 +9,4 @@ api_router.include_router(players.router)
 api_router.include_router(groups.router)
 api_router.include_router(matches.router)
 api_router.include_router(invites.router)
+api_router.include_router(push.router)

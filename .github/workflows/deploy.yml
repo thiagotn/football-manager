@@ -92,12 +92,15 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
           SHA: ${{ github.sha }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_CLAIMS_EMAIL: ${{ secrets.VAPID_CLAIMS_EMAIL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
-          envs: GHCR_TOKEN,ACTOR,SHA,DEPLOY_DIR
+          envs: GHCR_TOKEN,ACTOR,SHA,DEPLOY_DIR,VAPID_PRIVATE_KEY,VAPID_PUBLIC_KEY,VAPID_CLAIMS_EMAIL
           script: |
             set -euo pipefail
 
@@ -105,6 +108,18 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
             cd "$DEPLOY_DIR"
+
+            # Injeta/atualiza vars VAPID no .env.prod
+            for VAR in VAPID_PRIVATE_KEY VAPID_PUBLIC_KEY VAPID_CLAIMS_EMAIL; do
+              VAL="${!VAR}"
+              if [ -n "$VAL" ]; then
+                if grep -q "^${VAR}=" .env.prod 2>/dev/null; then
+                  sed -i "s|^${VAR}=.*|${VAR}=${VAL}|" .env.prod
+                else
+                  echo "${VAR}=${VAL}" >> .env.prod
+                fi
+              fi
+            done
 
             # Exporta variáveis do .env.prod para o shell (necessário para docker compose)
             set -a; source .env.prod; set +a

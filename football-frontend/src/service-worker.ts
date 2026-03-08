@@ -18,6 +18,32 @@ registerRoute(
   new NetworkOnly()
 );
 
+// Push notifications
+self.addEventListener('push', (event: PushEvent) => {
+  if (!event.data) return;
+  const data = event.data.json() as { title: string; body: string; url?: string };
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/logo-192.png',
+      badge: '/logo-192.png',
+      data: { url: data.url ?? '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close();
+  const url: string = event.notification.data?.url ?? '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((c) => c.url.includes(url));
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 // Navegação: tenta rede; em erro de rede OU resposta 5xx → exibe /offline
 registerRoute(
   new NavigationRoute(async ({ request }) => {

@@ -107,6 +107,18 @@ export const matches = {
     post<Attendance>(`/groups/${groupId}/matches/${matchId}/attendance`, { player_id: playerId, status }),
 };
 
+// ── Push notifications ────────────────────────────────────────
+export const push = {
+  getVapidPublicKey: () => get<{ public_key: string }>('/push/vapid-public-key'),
+  subscribe: (subscription: PushSubscriptionJSON, userAgent?: string) =>
+    post<{ status: string }>('/push/subscribe', {
+      endpoint: subscription.endpoint,
+      keys: subscription.keys,
+      user_agent: userAgent,
+    }),
+  unsubscribe: () => del('/push/subscribe'),
+};
+
 // ── Invites ───────────────────────────────────────────────────
 export const invites = {
   create: (groupId: string) => post<{ id: string; token: string; expires_at: string }>('/invites', { group_id: groupId }),

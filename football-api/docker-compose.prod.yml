@@ -57,6 +57,9 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       CORS_ORIGINS: https://rachao.app
       DEBUG: "false"
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_CLAIMS_EMAIL: ${VAPID_CLAIMS_EMAIL}
     depends_on:
       postgres:
         condition: service_healthy
