@@ -6,7 +6,10 @@ from fastapi import APIRouter
 
 from app.core.config import get_settings
 from app.core.dependencies import DB, CurrentPlayer
-from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, PlanLimitError, ValidationError
+from app.db.repositories.subscription_repo import SubscriptionRepository
+
+_FREE_MEMBERS_LIMIT = 30
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.invite_repo import InviteRepository
@@ -111,12 +114,19 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
             raise ForbiddenError("Senha incorreta")
         existing_membership = await g_repo.get_member(invite.group_id, player.id)
         if not existing_membership:
+            member_count = len(await g_repo.get_non_admin_member_ids(invite.group_id))
+            if member_count >= _FREE_MEMBERS_LIMIT:
+                raise PlanLimitError()
             await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
             just_joined = True
     else:
         # Novo usuário — name é obrigatório
         if not body.name or not body.name.strip():
             raise ValidationError("Nome é obrigatório para novo cadastro")
+        # Verifica limite antes de criar o player (evita player órfão em caso de rollback)
+        member_count = len(await g_repo.get_non_admin_member_ids(invite.group_id))
+        if member_count >= _FREE_MEMBERS_LIMIT:
+            raise PlanLimitError()
         player = await p_repo.create(
             name=body.name,
             nickname=body.nickname,
@@ -124,6 +134,9 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
             password_hash=hash_password(body.password),
             role=PlayerRole.PLAYER,
         )
+        # Auto-cria subscription gratuita para o novo player
+        sub_repo = SubscriptionRepository(db)
+        await sub_repo.get_or_create(player.id)
         await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
         just_joined = True
 

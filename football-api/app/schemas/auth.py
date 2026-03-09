@@ -6,6 +6,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    name: str = Field(..., min_length=2)
+    whatsapp: str
+    password: str = Field(..., min_length=6)
+    nickname: str | None = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

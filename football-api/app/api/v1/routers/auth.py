@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import DB, CurrentPlayer
-from app.core.exceptions import UnauthorizedError
+from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.repositories.player_repo import PlayerRepository
-from app.schemas.auth import ChangePasswordRequest, LoginRequest, TokenResponse
+from app.db.repositories.subscription_repo import SubscriptionRepository
+from app.models.player import PlayerRole
+from app.schemas.auth import ChangePasswordRequest, LoginRequest, RegisterRequest, TokenResponse
 from app.schemas.player import PlayerResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -30,6 +32,35 @@ async def login(body: LoginRequest, db: DB):
         name=player.name,
         role=player.role,
         must_change_password=player.must_change_password,
+    )
+
+
+@router.post("/register", response_model=TokenResponse, status_code=201)
+async def register(body: RegisterRequest, db: DB):
+    """Cria uma nova conta de jogador com plano gratuito."""
+    whatsapp = re.sub(r"\D", "", body.whatsapp)
+    repo = PlayerRepository(db)
+    existing = await repo.get_by_whatsapp(whatsapp)
+    if existing:
+        raise ConflictError("WhatsApp já cadastrado")
+
+    player = await repo.create(
+        name=body.name.strip(),
+        nickname=body.nickname,
+        whatsapp=whatsapp,
+        password_hash=hash_password(body.password),
+        role=PlayerRole.PLAYER,
+    )
+    sub_repo = SubscriptionRepository(db)
+    await sub_repo.get_or_create(player.id)
+
+    token = create_access_token(str(player.id))
+    return TokenResponse(
+        access_token=token,
+        player_id=str(player.id),
+        name=player.name,
+        role=player.role,
+        must_change_password=False,
     )
 
 

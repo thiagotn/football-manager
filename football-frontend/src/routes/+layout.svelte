@@ -8,7 +8,7 @@
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
 
-  const PUBLIC_ROUTES = ['/login', '/invite', '/match', '/faq', '/lp'];
+  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match', '/faq', '/lp'];
 
   let betaDismissed = $state(false);
 

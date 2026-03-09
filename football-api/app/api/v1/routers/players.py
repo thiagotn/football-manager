@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Query
 from sqlalchemy import select, text
@@ -83,6 +84,35 @@ async def create_player(body: PlayerCreate, db: DB, _: AdminPlayer):
         role=body.role,
     )
     return player
+
+
+@router.get("/signups/stats", tags=["admin"])
+async def get_signup_stats(db: DB, _: AdminPlayer, limit: int = Query(30, le=100)):
+    """Retorna estatísticas de cadastros e os registros mais recentes. Exclusivo para admins."""
+    repo = PlayerRepository(db)
+    now = datetime.now(timezone.utc)
+    total, last_7, last_30, recent = (
+        await repo.count_total(),
+        await repo.count_since(now - timedelta(days=7)),
+        await repo.count_since(now - timedelta(days=30)),
+        await repo.get_recent(limit=limit),
+    )
+    return {
+        "total": total,
+        "last_7_days": last_7,
+        "last_30_days": last_30,
+        "recent": [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "nickname": p.nickname,
+                "whatsapp": p.whatsapp,
+                "active": p.active,
+                "created_at": p.created_at.isoformat(),
+            }
+            for p in recent
+        ],
+    }
 
 
 @router.get("/{player_id}", response_model=PlayerResponse)

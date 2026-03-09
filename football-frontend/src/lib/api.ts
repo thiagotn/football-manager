@@ -37,6 +37,8 @@ const del = (path: string) => request<void>(path, { method: 'DELETE' });
 export const auth = {
   login: (whatsapp: string, password: string) =>
     post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/login', { whatsapp, password }),
+  register: (data: { name: string; whatsapp: string; password: string; nickname?: string }) =>
+    post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/register', data),
   me: () => get<Player>('/auth/me'),
   changePassword: (current_password: string, new_password: string) =>
     post<void>('/auth/change-password', { current_password, new_password }),
@@ -67,6 +69,13 @@ export type Attendance = { id: string; player: PlayerPublic; status: 'pending' |
 export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null };
 
 // ── Players ───────────────────────────────────────────────────
+export type SignupStats = {
+  total: number;
+  last_7_days: number;
+  last_30_days: number;
+  recent: Array<{ id: string; name: string; nickname: string | null; whatsapp: string; active: boolean; created_at: string }>;
+};
+
 export const players = {
   list: () => get<Player[]>('/players'),
   get: (id: string) => get<Player>(`/players/${id}`),
@@ -77,6 +86,7 @@ export const players = {
   delete: (id: string) => del(`/players/${id}`),
   resetPassword: (id: string) => post<{ temp_password: string }>(`/players/${id}/reset-password`),
   myStats: () => get<{ minutes_played: number; platform_minutes_played?: number; platform_total_matches?: number }>('/players/me/stats'),
+  signupStats: (limit = 30) => get<SignupStats>(`/players/signups/stats?limit=${limit}`),
 };
 
 // ── Groups ────────────────────────────────────────────────────
@@ -117,6 +127,18 @@ export const push = {
       user_agent: userAgent,
     }),
   unsubscribe: () => del('/push/subscribe'),
+};
+
+// ── Subscriptions ─────────────────────────────────────────────
+export type SubscriptionInfo = {
+  plan: string;
+  groups_limit: number | null;
+  groups_used: number;
+  members_limit: number | null;
+};
+
+export const subscriptions = {
+  me: () => get<SubscriptionInfo>('/subscriptions/me'),
 };
 
 // ── Invites ───────────────────────────────────────────────────

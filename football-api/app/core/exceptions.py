@@ -28,3 +28,9 @@ class UnauthorizedError(HTTPException):
 class ValidationError(HTTPException):
     def __init__(self, detail: str):
         super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+
+class PlanLimitError(ForbiddenError):
+    """Lançado quando o player atingiu o limite de recursos do seu plano atual."""
+    def __init__(self) -> None:
+        super().__init__(detail="PLAN_LIMIT_EXCEEDED")

@@ -44,13 +44,13 @@
       tudo direto pelo celular, sem precisar instalar nada.
     </p>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
-      <a href="/login"
+      <a href="/register"
         class="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-primary-50 transition-colors shadow-md">
-        Entrar na plataforma
+        Cadastrar grátis
       </a>
-      <a href="/faq"
+      <a href="/login"
         class="inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary-900/40 text-white rounded-xl font-semibold hover:bg-primary-900/60 transition-colors border border-primary-500">
-        Ver perguntas frequentes
+        Entrar na plataforma
       </a>
     </div>
   </div><!-- /relative content -->

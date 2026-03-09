@@ -72,7 +72,7 @@
     </form>
 
     <p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
-      Não tem conta? Solicite um convite ao administrador.
+      Não tem conta? <a href="/register" class="text-primary-600 hover:underline">Cadastre-se grátis</a>
     </p>
   </div>
 </div>

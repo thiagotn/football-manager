@@ -1,11 +1,11 @@
 <script lang="ts">
   import { groups, matches, players as playersApi } from '$lib/api';
-  import type { Group, Match } from '$lib/api';
+  import type { Group, Match, SignupStats } from '$lib/api';
   import { currentPlayer, isAdmin } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
-  import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users } from 'lucide-svelte';
+  import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users, UserPlus } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
-  import { relativeDate } from '$lib/utils.js';
+  import { relativeDate, formatWhatsapp } from '$lib/utils.js';
 
   type MatchWithGroup = Match & { group_name: string; group_slug: string; group_id: string };
 
@@ -17,6 +17,7 @@
   let minutesPlayed = $state(0);
   let platformMinutesPlayed = $state(0);
   let platformTotalMatches = $state(0);
+  let signupStats: SignupStats | null = $state(null);
 
   function fmtPlaytime(minutes: number): string {
     if (minutes < 60) return `${minutes}min`;
@@ -57,12 +58,14 @@
       const fetchGroups = groups.list();
       const fetchPlayers = $isAdmin ? playersApi.list() : Promise.resolve(null);
       const fetchStats = playersApi.myStats();
-      const [gs, pl, stats] = await Promise.all([fetchGroups, fetchPlayers, fetchStats]);
+      const fetchSignups = $isAdmin ? playersApi.signupStats(30) : Promise.resolve(null);
+      const [gs, pl, stats, signups] = await Promise.all([fetchGroups, fetchPlayers, fetchStats, fetchSignups]);
       myGroups = gs;
       if (pl) playerCount = pl.filter(p => p.id !== $currentPlayer?.id).length;
       minutesPlayed = stats.minutes_played;
       platformMinutesPlayed = stats.platform_minutes_played ?? 0;
       platformTotalMatches = stats.platform_total_matches ?? 0;
+      if (signups) signupStats = signups;
       const fetched: MatchWithGroup[] = [];
       await Promise.all(gs.map(async g => {
         const ms = await matches.list(g.id);
@@ -85,6 +88,13 @@
 
   function fmtDate(d: string) {
     return relativeDate(d, { weekday: 'short', day: '2-digit', month: 'short' });
+  }
+
+  function daysAgo(iso: string): string {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (diff === 0) return 'hoje';
+    if (diff === 1) return 'ontem';
+    return `${diff}d atrás`;
   }
 </script>
 
@@ -242,5 +252,61 @@
       </div>
     </div>
   </div>
+  <!-- ── Admin-only: Novos Cadastros ──────────────────────── -->
+  {#if $isAdmin && signupStats}
+    <div class="mt-6">
+      <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-3">
+        <UserPlus size={16} class="text-primary-400" /> Novos Cadastros
+      </h2>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="card p-4 text-center">
+          <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">{signupStats.total}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total</p>
+        </div>
+        <div class="card p-4 text-center">
+          <p class="text-2xl font-bold text-green-600 dark:text-green-400">{signupStats.last_7_days}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimos 7 dias</p>
+        </div>
+        <div class="card p-4 text-center">
+          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{signupStats.last_30_days}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimos 30 dias</p>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Registros recentes</span>
+          <a href="/players" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">Ver todos →</a>
+        </div>
+        {#if signupStats.recent.length === 0}
+          <div class="px-4 py-8 text-center text-sm text-gray-400">Nenhum cadastro ainda.</div>
+        {:else}
+          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            {#each signupStats.recent as p}
+              <div class="flex items-center justify-between px-4 py-3 gap-3">
+                <div class="min-w-0">
+                  <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                    {p.nickname ? `${p.nickname} (${p.name})` : p.name}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">{formatWhatsapp(p.whatsapp)}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-xs {p.active ? 'text-green-600 dark:text-green-400' : 'text-red-500'} font-medium">
+                    {p.active ? 'Ativo' : 'Inativo'}
+                  </span>
+                  <p class="text-xs text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
+                    <Clock size={10} />
+                    {daysAgo(p.created_at)}
+                  </p>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
   </main>
 </PageBackground>

@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
-from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
+from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError
+from app.db.repositories.subscription_repo import SubscriptionRepository
+
+# Limites do plano gratuito — sincronizar com app/api/v1/routers/subscriptions.py
+_FREE_GROUPS_LIMIT = 1
+_FREE_MEMBERS_LIMIT = 30
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
@@ -44,8 +49,15 @@ async def list_groups(db: DB, current: CurrentPlayer):
 
 
 @router.post("", response_model=GroupResponse, status_code=201)
-async def create_group(body: GroupCreate, db: DB, current: AdminPlayer):
+async def create_group(body: GroupCreate, db: DB, current: CurrentPlayer):
     repo = GroupRepository(db)
+
+    # Verifica limite de grupos do plano (admins globais são isentos)
+    if current.role != PlayerRole.ADMIN:
+        sub_repo = SubscriptionRepository(db)
+        groups_used = await sub_repo.count_admin_groups(current.id)
+        if groups_used >= _FREE_GROUPS_LIMIT:
+            raise PlanLimitError()
 
     slug = body.slug or _auto_slug(body.name)
     existing = await repo.get_by_slug(slug)
@@ -159,6 +171,12 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
     existing = await g_repo.get_member(group_id, body.player_id)
     if existing:
         raise ConflictError("Jogador já é membro deste grupo")
+
+    # Verifica limite de membros do plano (admins globais são isentos)
+    if current.role != PlayerRole.ADMIN:
+        member_count = len(await g_repo.get_non_admin_member_ids(group_id))
+        if member_count >= _FREE_MEMBERS_LIMIT:
+            raise PlanLimitError()
 
     member = await g_repo.add_member(group_id, body.player_id, body.role)
     await db.refresh(member)

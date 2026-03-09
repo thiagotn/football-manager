@@ -1,23 +1,33 @@
 <script lang="ts">
-  import { groups as groupsApi, ApiError } from '$lib/api';
-  import type { Group } from '$lib/api';
+  import { groups as groupsApi, subscriptions as subsApi, ApiError } from '$lib/api';
+  import type { Group, SubscriptionInfo } from '$lib/api';
   import { isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-  import { Plus, Trophy, ChevronRight, Trash2 } from 'lucide-svelte';
+  import UpsellModal from '$lib/components/UpsellModal.svelte';
+  import { Plus, Trophy, ChevronRight, Trash2, Lock } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let groupList: Group[] = $state([]);
+  let sub: SubscriptionInfo | null = $state(null);
   let loading = $state(true);
   let loadError = $state('');
   let showCreate = $state(false);
   let form = $state({ name: '', description: '', slug: '' });
   let saving = $state(false);
 
+  let showUpsell = $state(false);
+  let upsellMessage = $state('');
+
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
   let confirmAction = $state<() => void>(() => {});
+
+  // Limite atingido quando groups_used >= groups_limit (e limit não é null)
+  let atGroupLimit = $derived(
+    !$isAdmin && sub !== null && sub.groups_limit !== null && sub.groups_used >= sub.groups_limit
+  );
 
   function askConfirm(message: string, action: () => void) {
     confirmMessage = message;
@@ -29,8 +39,14 @@
     let cancelled = false;
     (async () => {
       try {
-        const data = await groupsApi.list();
-        if (!cancelled) groupList = data;
+        const [data, subData] = await Promise.all([
+          groupsApi.list(),
+          $isAdmin ? Promise.resolve(null) : subsApi.me(),
+        ]);
+        if (!cancelled) {
+          groupList = data;
+          sub = subData;
+        }
       } catch (e) {
         if (!cancelled) {
           console.error('[groups] erro ao carregar:', e);
@@ -43,16 +59,32 @@
     return () => { cancelled = true; };
   });
 
+  function openCreateOrUpsell() {
+    if (atGroupLimit) {
+      upsellMessage = `Você já possui ${sub!.groups_used} grupo${sub!.groups_used !== 1 ? 's' : ''} ativo${sub!.groups_used !== 1 ? 's' : ''}, o máximo do plano Free. Planos com mais grupos estarão disponíveis em breve.`;
+      showUpsell = true;
+    } else {
+      showCreate = true;
+    }
+  }
+
   async function createGroup() {
     saving = true;
     try {
       const g = await groupsApi.create({ name: form.name, description: form.description || undefined, slug: form.slug || undefined });
       groupList = [g, ...groupList];
+      if (sub) sub = { ...sub, groups_used: sub.groups_used + 1 };
       showCreate = false;
       form = { name: '', description: '', slug: '' };
       toastSuccess('Grupo criado com sucesso!');
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : 'Erro ao criar grupo');
+      if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
+        showCreate = false;
+        upsellMessage = 'Você atingiu o limite de grupos do plano Free.';
+        showUpsell = true;
+      } else {
+        toastError(e instanceof ApiError ? e.message : 'Erro ao criar grupo');
+      }
     }
     saving = false;
   }
@@ -62,6 +94,7 @@
       try {
         await groupsApi.delete(g.id);
         groupList = groupList.filter(x => x.id !== g.id);
+        if (sub) sub = { ...sub, groups_used: Math.max(0, sub.groups_used - 1) };
         toastSuccess('Grupo excluído');
       } catch (e) {
         toastError('Erro ao excluir grupo');
@@ -81,11 +114,20 @@
       </h1>
       <p class="text-sm text-gray-300 mt-0.5">Grupos de futebol que você participa</p>
     </div>
-    {#if $isAdmin}
-      <button class="btn-primary" onclick={() => showCreate = true}>
-        <Plus size={16} /> Novo Grupo
+    <div class="flex flex-col items-end gap-1">
+      {#if !$isAdmin && sub}
+        <p class="text-xs {sub.groups_used >= (sub.groups_limit ?? Infinity) ? 'text-red-300' : sub.groups_used >= (sub.groups_limit ?? Infinity) * 0.8 ? 'text-yellow-300' : 'text-gray-400'}">
+          {sub.groups_used} de {sub.groups_limit} grupo{sub.groups_limit !== 1 ? 's' : ''}
+        </p>
+      {/if}
+      <button class="btn-primary {atGroupLimit ? 'opacity-80' : ''}" onclick={openCreateOrUpsell}>
+        {#if atGroupLimit}
+          <Lock size={15} /> Novo Grupo
+        {:else}
+          <Plus size={16} /> Novo Grupo
+        {/if}
       </button>
-    {/if}
+    </div>
   </div>
 
   {#if loadError}
@@ -105,7 +147,10 @@
     <div class="card p-12 text-center">
       <Trophy size={40} class="text-gray-300 mx-auto mb-3" />
       <p class="text-gray-500">Nenhum grupo encontrado.</p>
-      {#if $isAdmin}<button class="btn-primary mt-4" onclick={() => showCreate = true}><Plus size={16} /> Criar primeiro grupo</button>{/if}
+      <button class="btn-primary mt-4" onclick={openCreateOrUpsell}>
+        {#if atGroupLimit}<Lock size={15} />{:else}<Plus size={16} />{/if}
+        Criar primeiro grupo
+      </button>
     </div>
   {:else}
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -163,3 +208,5 @@
   confirmLabel="Excluir"
   onConfirm={confirmAction}
 />
+
+<UpsellModal bind:open={showUpsell} message={upsellMessage} />
