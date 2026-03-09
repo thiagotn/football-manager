@@ -1,10 +1,35 @@
 <script lang="ts">
-  import { auth as authApi, players as playersApi, push as pushApi, ApiError } from '$lib/api';
-  import { authStore, currentPlayer } from '$lib/stores/auth';
+  import { auth as authApi, players as playersApi, push as pushApi, subscriptions as subsApi, ApiError } from '$lib/api';
+  import type { SubscriptionInfo } from '$lib/api';
+  import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
   import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+
+  // Plan
+  let sub: SubscriptionInfo | null = $state(null);
+
+  $effect(() => {
+    if ($isAdmin) return;
+    subsApi.me().then(data => { sub = data; }).catch(() => {});
+  });
+
+  function usageColor(used: number, limit: number | null): string {
+    if (!limit) return 'bg-primary-500';
+    const pct = used / limit;
+    if (pct >= 1) return 'bg-red-500';
+    if (pct >= 0.8) return 'bg-amber-400';
+    return 'bg-primary-500';
+  }
+
+  function usageTextColor(used: number, limit: number | null): string {
+    if (!limit) return 'text-primary-600 dark:text-primary-400';
+    const pct = used / limit;
+    if (pct >= 1) return 'text-red-600 dark:text-red-400';
+    if (pct >= 0.8) return 'text-amber-600 dark:text-amber-400';
+    return 'text-primary-600 dark:text-primary-400';
+  }
 
   // Nickname
   let nickname = $state($currentPlayer?.nickname ?? '');
@@ -203,6 +228,50 @@
       </div>
     </dl>
   </div>
+
+  <!-- Plano atual (apenas não-admins) -->
+  {#if !$isAdmin && sub}
+    <div class="card card-body mb-6">
+      <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Seu Plano</h2>
+
+      <!-- Badge do plano -->
+      <div class="flex items-center gap-2 mb-4">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+          <span class="w-2 h-2 rounded-full bg-primary-500"></span>
+          {sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)}
+        </span>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Grupos -->
+        {#if sub.groups_limit !== null}
+          {@const pct = Math.min(100, Math.round((sub.groups_used / sub.groups_limit) * 100))}
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Grupos</span>
+              <span class="text-sm font-medium {usageTextColor(sub.groups_used, sub.groups_limit)}">
+                {sub.groups_used} de {sub.groups_limit}
+              </span>
+            </div>
+            <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all {usageColor(sub.groups_used, sub.groups_limit)}"
+                style="width: {pct}%"
+              ></div>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Membros por grupo -->
+        {#if sub.members_limit !== null}
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Membros por grupo</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">até {sub.members_limit}</span>
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
 
   <!-- Notificações push -->
   {#if pushSupported}
