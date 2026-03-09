@@ -3,10 +3,46 @@
 
 | | |
 |---|---|
-| **Versão** | 1.0 |
-| **Status** | Draft |
+| **Versão** | 1.1 |
+| **Status** | Fase 1 Implementada |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
+
+---
+
+## Estado de Implementação
+
+### ✅ Fase 1 — Plano Free (implementada · Março 2026, commit `5b2b1d9`)
+
+#### Backend
+- **Migration `015_player_subscriptions.sql`**: tabela `player_subscriptions` com `player_id UNIQUE`, `plan VARCHAR(20)`. Seed automático para todos os players existentes.
+- **`PlayerSubscription` model** + **`SubscriptionRepository`**: métodos `get_or_create`, `count_admin_groups`.
+- **`PlanLimitError`**: 403 com `detail="PLAN_LIMIT_EXCEEDED"`.
+- **`GET /api/v1/subscriptions/me`**: retorna `plan`, `groups_limit`, `groups_used`, `members_limit`. Admins globais recebem `null` em todos os limites.
+- **`POST /api/v1/auth/register`**: auto-cadastro público. Cria player + subscription gratuita + retorna JWT. Retorna 409 se WhatsApp já cadastrado.
+- **`GET /api/v1/players/signups/stats`** (admin-only): `total`, `last_7_days`, `last_30_days`, `recent` (últimos 30 registros).
+- **Limites enforced no backend:**
+  - `POST /api/v1/groups`: bloqueia se player já é admin de 1+ grupo (`_FREE_GROUPS_LIMIT = 1`)
+  - `POST /api/v1/groups/{id}/members`: bloqueia se grupo tem 30+ membros não-admin (`_FREE_MEMBERS_LIMIT = 30`)
+  - `POST /api/v1/invites/{token}/accept`: mesma checagem antes de criar player (evita player órfão)
+
+> **Nota:** o limite de membros implementado é **30** (não 20 como consta na tabela original). Tabela de planos atualizada abaixo.
+
+#### Frontend
+- **`/register`**: formulário de auto-cadastro público (nome, apelido, WhatsApp, senha + confirmação).
+- **`/lp`**: CTA primário alterado para "Cadastrar grátis" → `/register`.
+- **`/login`**: link "Cadastre-se grátis" → `/register`.
+- **`UpsellModal`** (`src/lib/components/UpsellModal.svelte`): bottom sheet mobile / modal centrado desktop.
+- **Página de grupos (`/groups`)**: indicador de uso "X de Y grupos"; botão com cadeado ao atingir limite; abre `UpsellModal`.
+- **Dashboard (`/`)**: seção "Novos Cadastros" (apenas super-admins) com contadores de total, últimos 7 e 30 dias, e lista dos 30 registros mais recentes.
+
+#### Pendente (Fases 2–4)
+- Planos pagos, checkout e gateway de pagamento
+- Tabelas `plans`, `invoices`, `webhook_events`
+- Limite de partidas abertas por grupo
+- Arquivamento por regressão de plano
+- Páginas `/plans`, `/account/subscription`, `/account/invoices`
+- Upgrade/downgrade/cancelamento/reativação
 
 ---
 
@@ -40,7 +76,7 @@ Implementar um sistema de planos de assinatura com controle de limites de recurs
 |---|:---:|:---:|:---:|
 | Grupos | 1 | 3 | 10 |
 | Partidas por grupo | 3 | Ilimitadas | Ilimitadas |
-| Jogadores por grupo | 20 | 50 | Ilimitados |
+| Jogadores por grupo | 30 | 50 | Ilimitados |
 | Links de convite | ✅ | ✅ | ✅ |
 | Confirmação de presença | ✅ | ✅ | ✅ |
 | URL pública de partida | ✅ | ✅ | ✅ |
@@ -224,7 +260,7 @@ ALTER TABLE matches ADD COLUMN archived_by_plan BOOLEAN NOT NULL DEFAULT FALSE;
 
 ```sql
 INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_groups, max_matches, max_members, history_days) VALUES
-  ('free',  'Free',   0,      0,      1,  3,  20, 30),
+  ('free',  'Free',   0,      0,      1,  3,  30, 30),
   ('basic', 'Básico', 19.90,  191.04, 3, -1,  50, 180),
   ('pro',   'Pro',    49.90,  478.80, 10, -1, -1, -1);
 ```
