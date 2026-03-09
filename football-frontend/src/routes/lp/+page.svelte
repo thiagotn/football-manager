@@ -1,3 +1,7 @@
+<script lang="ts">
+  import { PLAN_ORDER, PLANS, formatPrice } from '$lib/plans';
+</script>
+
 <svelte:head>
   <title>rachao.app — Organize suas partidas de futebol com facilidade</title>
   <meta name="description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
@@ -177,6 +181,66 @@
         <p class="text-4xl font-extrabold text-primary-600 mb-1">0</p>
         <p class="text-sm text-gray-500">planilhas ou contagens manuais</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVISOR -->
+<div class="h-px bg-gray-100"></div>
+
+<!-- PLANOS -->
+<section class="bg-gray-50 py-16 px-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-12">
+      <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Planos</span>
+      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">Simples e transparente</h2>
+      <p class="text-gray-500 mt-2 text-sm">Comece grátis. Faça upgrade quando precisar de mais.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-5">
+      {#each PLAN_ORDER as key}
+        {@const plan = PLANS[key]}
+        <div class="bg-white rounded-2xl border {plan.key === 'free' ? 'border-primary-400 shadow-md ring-1 ring-primary-300' : 'border-gray-200 shadow-sm'} p-6 flex flex-col relative">
+          {#if plan.key === 'free'}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full">Disponível agora</span>
+          {:else if !plan.available}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-300 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">Em breve</span>
+          {/if}
+
+          <div class="mb-4">
+            <h3 class="text-lg font-bold text-gray-900">{plan.name}</h3>
+            <div class="mt-1">
+              {#if plan.price_monthly === null}
+                <span class="text-3xl font-extrabold text-primary-600">Grátis</span>
+              {:else}
+                <span class="text-3xl font-extrabold text-gray-900">R$ {plan.price_monthly.toFixed(2).replace('.', ',')}</span>
+                <span class="text-sm text-gray-400">/mês</span>
+              {/if}
+            </div>
+          </div>
+
+          <ul class="space-y-2 mb-6 flex-1">
+            {#each plan.highlights as item}
+              <li class="flex items-start gap-2 text-sm text-gray-600">
+                <span class="text-primary-500 mt-0.5 shrink-0">✓</span>
+                {item}
+              </li>
+            {/each}
+          </ul>
+
+          {#if plan.key === 'free'}
+            <a href="/register"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors text-sm text-center">
+              Cadastrar grátis
+            </a>
+          {:else}
+            <button disabled
+              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-400 rounded-xl font-semibold text-sm cursor-not-allowed">
+              Em breve
+            </button>
+          {/if}
+        </div>
+      {/each}
     </div>
   </div>
 </section>

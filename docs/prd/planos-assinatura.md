@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.1 |
-| **Status** | Fase 1 Implementada |
+| **Versão** | 1.2 |
+| **Status** | Fase 1 Implementada · Fase 2 parcial |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -35,6 +35,9 @@
 - **`UpsellModal`** (`src/lib/components/UpsellModal.svelte`): bottom sheet mobile / modal centrado desktop.
 - **Página de grupos (`/groups`)**: indicador de uso "X de Y grupos"; botão com cadeado ao atingir limite; abre `UpsellModal`.
 - **Dashboard (`/`)**: seção "Novos Cadastros" (apenas super-admins) com contadores de total, últimos 7 e 30 dias, e lista dos 30 registros mais recentes.
+- **`src/lib/plans.ts`**: arquivo de configuração centralizado de planos no frontend (nomes, preços, limites, highlights). Fonte de verdade enquanto não houver endpoint `GET /api/v1/plans`. Commit `Março 2026`.
+- **`/lp`**: seção "Planos" com cards dos três planos (Free disponível, Básico/Pro com badge "em breve"). Usa `src/lib/plans.ts`.
+- **`/register`**: banner do plano selecionado no topo do formulário, exibindo nome, preço e highlights. Suporta query param `?plan=` para pré-selecionar plano (ex: `/register?plan=free`). Plano padrão: `free`.
 
 #### Pendente (Fases 2–4)
 - Planos pagos, checkout e gateway de pagamento
@@ -127,6 +130,15 @@ O usuário deve poder cancelar a assinatura a qualquer momento. O acesso ao plan
 
 **RF-07 — Reativação**
 Usuários com assinatura cancelada ou expirada devem poder reativar o plano de forma simples, sem perda de dados históricos.
+
+**RF-16 — Exibição de planos na Landing Page**
+A `/lp` deve exibir uma seção "Planos" com cards dos planos disponíveis (Free, Básico, Pro), seus preços e highlights. Planos ainda não disponíveis devem exibir badge "Em breve" e botão desabilitado. O card do plano Free deve ter destaque visual e CTA "Cadastrar grátis" → `/register`.
+
+**RF-17 — Banner de plano no cadastro**
+A página `/register` deve exibir um banner com o plano selecionado (nome, preço, highlights). O plano é determinado pelo query param `?plan=` (ex: `/register?plan=free`). Se omitido, usa `free`. Quando planos pagos estiverem disponíveis, o CTA de planos pagos na `/lp` redirecionará para `/register?plan=basic` ou `/register?plan=pro`.
+
+**RF-18 — Configuração centralizada de planos (`src/lib/plans.ts`)**
+O frontend deve manter um único arquivo de configuração de planos com nomes, preços, limites, highlights e flags de disponibilidade. Este arquivo é a fonte de verdade para todos os componentes que exibem informações de plano enquanto não houver endpoint `GET /api/v1/plans` implementado.
 
 ### 3.2 Controle de Limites de Recursos
 
@@ -329,7 +341,25 @@ INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_groups, 
 
 ## 7. Fluxos Principais
 
-### 7.1 Fluxo de Upgrade de Plano
+### 7.1 Fluxo de Seleção de Plano no Cadastro (novo usuário)
+
+```
+Usuário acessa /lp
+    ↓
+Vê seção "Planos" com Free, Básico, Pro
+    ↓
+Clica em "Cadastrar grátis" → /register?plan=free
+(futuramente: clica em plano pago → /register?plan=basic)
+    ↓
+/register exibe banner com detalhes do plano selecionado
+    ↓
+Usuário preenche formulário e cria conta
+    ↓
+Conta criada com plano Free
+(futuramente: plano pago → redireciona para checkout antes de ativar)
+```
+
+### 7.2 Fluxo de Upgrade de Plano (usuário existente)
 
 ```
 Usuário tenta criar recurso além do limite
@@ -354,7 +384,7 @@ Backend processa webhook:
 Usuário retorna ao app com novo plano ativo
 ```
 
-### 7.2 Fluxo de Falha de Pagamento
+### 7.3 Fluxo de Falha de Pagamento
 
 ```
 Cobrança recorrente falha no gateway
@@ -375,7 +405,7 @@ Se período de graça expirar sem pagamento:
     → Recursos excedentes são arquivados (archived_by_plan = true)
 ```
 
-### 7.3 Fluxo de Downgrade
+### 7.4 Fluxo de Downgrade
 
 ```
 Usuário solicita downgrade (ex: Pro → Básico)
@@ -533,11 +563,17 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 - Processamento de webhooks.
 
 ### Fase 2 — Frontend (Semanas 3–5)
-- Página de planos (`/plans`) em `football-frontend/src/routes/plans/`.
+
+#### ✅ Implementado (Março 2026)
+- `src/lib/plans.ts`: configuração centralizada de planos (fonte de verdade do frontend).
+- Seção "Planos" na `/lp` com cards comparativos (Free ativo, Básico/Pro em breve).
+- Banner de plano selecionado no `/register` com suporte a `?plan=` query param.
+
+#### Pendente
+- Página de planos (`/plans`) em `football-frontend/src/routes/plans/` — cards detalhados com toggle mensal/anual.
 - Painel de conta (`/account/subscription`) em `football-frontend/src/routes/account/`.
-- Modal de upsell (seguindo padrão do `ConfirmDialog`).
-- Indicadores de limite no dashboard (`/`).
 - Fluxo de checkout e páginas de retorno em `football-frontend/src/routes/account/checkout/` (`/account/checkout/success`, `/account/checkout/failure`).
+- CTA de upgrade nos cards Básico/Pro da `/lp` ao ativar planos pagos: redirecionar para `/register?plan=basic` (novo usuário) ou `/account/subscription` (usuário logado).
 
 ### Fase 3 — Testes e Validação (Semana 6)
 - Testes E2E em `football-e2e/tests/` cobrindo fluxo de upgrade, falha e regressão.

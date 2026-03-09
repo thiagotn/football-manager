@@ -2,8 +2,13 @@
   import { auth, ApiError } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { toastError } from '$lib/stores/toast';
   import { Eye, EyeOff, UserPlus } from 'lucide-svelte';
+  import { getPlan } from '$lib/plans';
+
+  const planKey = $derived($page.url.searchParams.get('plan') ?? 'free');
+  const plan = $derived(getPlan(planKey));
 
   let name = $state('');
   let nickname = $state('');
@@ -43,12 +48,26 @@
   style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
   <div class="absolute inset-0 bg-primary-900/65"></div>
   <div class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
-    <div class="text-center mb-8">
-      <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-56 block mx-auto mb-1" />
-      <div class="flex items-center justify-center gap-2 mb-1">
-        <span class="text-xs font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Grátis</span>
+    <div class="text-center mb-6">
+      <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-56 block mx-auto mb-4" />
+
+      <!-- Banner do plano selecionado -->
+      <div class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl px-4 py-3 text-left mb-2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">Plano selecionado</span>
+          <span class="text-sm font-bold text-primary-700 dark:text-primary-300">
+            {plan.price_monthly === null ? 'Grátis' : `R$ ${plan.price_monthly.toFixed(2).replace('.', ',')}/mês`}
+          </span>
+        </div>
+        <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5">{plan.name}</p>
+        <ul class="space-y-0.5">
+          {#each plan.highlights as item}
+            <li class="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+              <span class="text-primary-500 shrink-0">✓</span>{item}
+            </li>
+          {/each}
+        </ul>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Crie sua conta e organize seus rachões</p>
     </div>
 
     {#if error}
