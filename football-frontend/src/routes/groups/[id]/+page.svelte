@@ -27,6 +27,7 @@
   let showEditGroup = $state(false);
 
   let inviteLink = $state('');
+  let inviteQr = $state('');
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
   let matchForm = $state({ match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' });
   let editMatchForm = $state({ match_date: '', start_time: '', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '', status: 'open' });
@@ -136,6 +137,8 @@
       const inv = await invites.create(groupId);
       const base = window.location.origin;
       inviteLink = `${base}/invite/${inv.token}`;
+      const QRCode = (await import('qrcode')).default;
+      inviteQr = await QRCode.toDataURL(inviteLink, { width: 256, margin: 2, color: { dark: '#111827', light: '#ffffff' } });
       showInvite = true;
     } catch (e) { toastError('Erro ao gerar convite'); }
   }
@@ -159,7 +162,13 @@
       showAddMember = false;
       addMemberId = '';
       toastSuccess('Membro adicionado!');
-    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
+        toastError('Limite de membros do plano atingido (máx. 30 membros no plano Free).');
+      } else {
+        toastError(e instanceof ApiError ? e.message : 'Erro');
+      }
+    }
     saving = false;
   }
 
@@ -581,16 +590,30 @@
 </Modal>
 
 <!-- Invite modal -->
-<Modal bind:open={showInvite} title="Link de Convite">
+<Modal bind:open={showInvite} title="Convidar Jogador">
   <div class="space-y-4">
-    <p class="text-sm text-gray-500 dark:text-gray-400">
-      Envie este link para novos jogadores. Ao acessá-lo, eles poderão criar uma conta e já entrarão automaticamente neste grupo.
-    </p>
-    <div class="alert-info">⏱ Este link expira em <strong>30 minutos</strong> e só pode ser usado <strong>uma vez</strong>.</div>
+
+    <!-- QR Code -->
+    {#if inviteQr}
+      <div class="flex flex-col items-center gap-2">
+        <div class="bg-white rounded-2xl p-3 shadow-inner border border-gray-100 dark:border-gray-700 inline-block">
+          <img src={inviteQr} alt="QR Code de convite" width="220" height="220" class="block" />
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+          Aponte a câmera do celular para escanear
+        </p>
+      </div>
+    {/if}
+
+    <div class="alert-info text-xs">⏱ Este link expira em <strong>30 minutos</strong> e só pode ser usado <strong>uma vez</strong>.</div>
+
+    <!-- Link + copy -->
     <div class="flex gap-2">
       <input class="input font-mono text-xs" readonly value={inviteLink} />
-      <button class="btn-primary shrink-0" onclick={copyLink}><Copy size={16} /></button>
+      <button class="btn-primary shrink-0" onclick={copyLink} title="Copiar link"><Copy size={16} /></button>
     </div>
+
+    <!-- WhatsApp -->
     <a
       href="https://wa.me/?text={encodeURIComponent(`Você foi convidado para o grupo *${group?.name}* no rachao.app!\n\nClique no link abaixo para criar sua conta e entrar no grupo:\n${inviteLink}`)}"
       target="_blank"
@@ -602,6 +625,7 @@
       </svg>
       Enviar pelo WhatsApp
     </a>
+
     <button class="btn-secondary w-full justify-center" onclick={() => showInvite = false}>Fechar</button>
   </div>
 </Modal>
