@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <!-- Soccer ball: outer circle -->
+  <circle cx="48" cy="48" r="44" fill="none" stroke="white" stroke-width="5"/>
+  <!-- Central pentagon -->
+  <polygon points="48,26 62,36 57,53 39,53 34,36" fill="white"/>
+  <!-- Surrounding pentagons (partial) -->
+  <polygon points="48,26 34,36 20,28 22,12 36,8" fill="white"/>
+  <polygon points="48,26 62,36 76,28 74,12 60,8" fill="white"/>
+  <polygon points="57,53 62,36 76,28 88,40 82,56" fill="white"/>
+  <polygon points="39,53 34,36 20,28 8,40 14,56" fill="white"/>
+  <polygon points="48,70 57,53 82,56 80,72 62,82" fill="white"/>
+  <polygon points="48,70 39,53 14,56 16,72 34,82" fill="white"/>
+</svg>
