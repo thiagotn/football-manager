@@ -7,6 +7,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
+  import TimePicker from '$lib/components/TimePicker.svelte';
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate } from '$lib/utils.js';
@@ -457,11 +458,11 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
         <label class="label" for="mtime">Início *</label>
-        <input id="mtime" class="input" type="time" bind:value={matchForm.start_time} required />
+        <TimePicker id="mtime" bind:value={matchForm.start_time} required />
       </div>
       <div class="form-group">
         <label class="label" for="mendtime">Término <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
-        <input id="mendtime" class="input" type="time" bind:value={matchForm.end_time} />
+        <TimePicker id="mendtime" bind:value={matchForm.end_time} />
       </div>
     </div>
     <div class="form-group">
@@ -518,11 +519,11 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
         <label class="label" for="emtime">Início *</label>
-        <input id="emtime" class="input" type="time" bind:value={editMatchForm.start_time} required />
+        <TimePicker id="emtime" bind:value={editMatchForm.start_time} required />
       </div>
       <div class="form-group">
         <label class="label" for="emendtime">Término <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
-        <input id="emendtime" class="input" type="time" bind:value={editMatchForm.end_time} />
+        <TimePicker id="emendtime" bind:value={editMatchForm.end_time} />
       </div>
     </div>
     <div class="form-group">
