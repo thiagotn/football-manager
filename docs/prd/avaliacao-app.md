@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.0 |
-| **Status** | Draft |
+| **Versão** | 1.1 |
+| **Status** | Pronto para implementar |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -35,21 +35,22 @@ Permitir que usuários logados (exceto super-admins) avaliem o app com 1 a 5 est
 ## 3. Requisitos Funcionais
 
 **RF-01 — Acesso via menu**
-Adicionar item "Avaliar o App" no menu principal da área logada, visível apenas para não super-admins.
+Adicionar item "Avaliar o App" no menu principal da área logada, visível apenas para não super-admins. No `Navbar.svelte`, usar a flag `playerOnly: true` no array `links` (análoga à `adminOnly` já existente) para ocultar o item de super-admins.
 
 **RF-02 — Formulário de avaliação**
-Ao acessar, exibir formulário com:
-- Seletor de 1 a 5 estrelas (obrigatório)
-- Campo de texto para comentário (opcional, máx. 500 caracteres)
+Ao acessar `/review`, exibir formulário com:
+- Botão X (fechar) no canto superior direito do card — navega de volta para `/`
+- Seletor de 1 a 5 estrelas via `StarRating.svelte` (obrigatório)
+- Campo de texto para comentário (opcional, máx. 500 caracteres) com contador visível
 - Botão "Enviar avaliação"
 
 Se o player já avaliou anteriormente, o formulário deve vir preenchido com a avaliação existente e o botão deve indicar "Atualizar avaliação".
 
 **RF-03 — Submissão e atualização**
-A avaliação é salva (insert ou update) ao confirmar. O player pode retornar e atualizar a qualquer momento.
+A avaliação é salva (upsert via `INSERT ... ON CONFLICT DO UPDATE`) ao confirmar. O player pode retornar e atualizar a qualquer momento.
 
 **RF-04 — Painel administrativo**
-Adicionar item "Avaliações" no menu do super-admin. A página deve exibir:
+Adicionar item "Avaliações" no menu do super-admin (`adminOnly: true`). A página `/admin/reviews` deve exibir:
 - Nota média geral (1 casa decimal) com representação em estrelas
 - Total de avaliações recebidas
 - Distribuição por estrela (1★ a 5★) com percentual e barra visual
@@ -62,8 +63,10 @@ Permitir filtrar a lista por nota (ex: mostrar apenas avaliações de 1 e 2 estr
 
 ## 4. Requisitos Não Funcionais
 
-**RNF-01** — A validação de elegibilidade (não super-admin) deve ocorrer no backend.  
-**RNF-02** — Comentários devem ser sanitizados no backend antes de persistir (evitar XSS).  
+**RNF-01** — A validação de elegibilidade (não super-admin) deve ocorrer no backend via dependency `AdminPlayer` para endpoints admin-only e verificação de `current.role` para o endpoint de submissão.
+
+**RNF-02** — Comentários são texto puro (sem HTML). O backend deve rejeitar qualquer conteúdo com tags HTML usando uma verificação simples (ex: `bleach.clean` com `tags=[]` ou rejeitar se `<` estiver presente). Não é necessária nenhuma lib adicional — basta strip ou rejeição de `<` no campo.
+
 **RNF-03** — A página do super-admin deve suportar paginação para não degradar com o crescimento da base.
 
 ---
@@ -71,7 +74,8 @@ Permitir filtrar a lista por nota (ex: mostrar apenas avaliações de 1 e 2 estr
 ## 5. Modelagem de Dados
 
 ```sql
--- Migration: 017_app_reviews.sql
+-- Migration: 016_app_reviews.sql
+-- (ou 017 se 016_otp_verifications.sql for implementado antes — usar o próximo número disponível)
 
 CREATE TABLE app_reviews (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -150,17 +154,19 @@ Suporta query params: `?rating=1,2&order_by=created_at&page=1&page_size=20`
 
 ### 7.1 Menu da área logada (não super-admin)
 
-Adicionar item no menu existente:
+Adicionar no array `links` do `Navbar.svelte` com flag `playerOnly: true`:
 
 ```
-⭐  Avaliar o App
+⭐  Avaliar o App   →  /review
 ```
+
+O link só é renderizado quando `!$isAdmin`. Tanto no menu desktop quanto no drawer mobile.
 
 ### 7.2 Página de avaliação (`/review`)
 
 ```
 ┌──────────────────────────────────────────┐
-│  Como você avalia o Rachao?              │
+│  Como você avalia o Rachao?          [✕] │
 │──────────────────────────────────────────│
 │                                          │
 │        ★  ★  ★  ★  ☆                    │
@@ -185,10 +191,10 @@ Se o player já avaliou:
 
 ### 7.3 Menu do super-admin
 
-Adicionar item no menu administrativo:
+Adicionar no array `links` do `Navbar.svelte` com flag `adminOnly: true`:
 
 ```
-📊  Avaliações
+📊  Avaliações   →  /admin/reviews
 ```
 
 ### 7.4 Painel de avaliações (`/admin/reviews`)
@@ -229,22 +235,33 @@ Adicionar item no menu administrativo:
 
 | Arquivo | Ação | Descrição |
 |---|---|---|
-| `football-api/migrations/017_app_reviews.sql` | Criar | Tabela `app_reviews` |
-| `football-api/app/models/app_review.py` | Criar | Model SQLAlchemy |
-| `football-api/app/db/repositories/review_repo.py` | Criar | Repositório com upsert, listagem e agregação |
-| `football-api/app/api/v1/routers/reviews.py` | Criar | Endpoints `me`, listagem e summary |
-| `football-api/app/main.py` | Modificar | Registrar router de reviews |
+| `football-api/migrations/016_app_reviews.sql` | Criar | Tabela `app_reviews` (ajustar número se 016 já estiver ocupado) |
+| `football-api/app/models/app_review.py` | Criar | Model SQLAlchemy para `app_reviews` |
+| `football-api/app/schemas/review.py` | Criar | Schemas Pydantic: `ReviewUpsertRequest`, `ReviewResponse`, `ReviewSummaryResponse`, `ReviewListResponse` |
+| `football-api/app/db/repositories/review_repo.py` | Criar | Repositório: `upsert`, `get_by_player`, `list_all` (paginado + filtro), `get_summary` |
+| `football-api/app/api/v1/routers/reviews.py` | Criar | Endpoints `/me` (GET/PUT) e admin (GET lista + summary). Usar `CurrentPlayer` e `AdminPlayer` de `app.core.dependencies` |
+| `football-api/app/api/v1/router.py` | Modificar | Importar e registrar `reviews.router` (não `main.py`) |
 | `football-frontend/src/routes/review/+page.svelte` | Criar | Página de avaliação do usuário |
 | `football-frontend/src/routes/admin/reviews/+page.svelte` | Criar | Painel admin de avaliações |
-| `football-frontend/src/lib/api.ts` | Modificar | Adicionar chamadas `reviews.*` |
-| `football-frontend/src/lib/components/StarRating.svelte` | Criar | Componente reutilizável de seleção/exibição de estrelas |
-| Menu principal (componente existente) | Modificar | Adicionar "Avaliar o App" para não super-admins |
-| Menu admin (componente existente) | Modificar | Adicionar "Avaliações" para super-admins |
+| `football-frontend/src/lib/api.ts` | Modificar | Adicionar chamadas `reviews.getMe()`, `reviews.upsert()`, `reviews.list()`, `reviews.summary()` |
+| `football-frontend/src/lib/components/StarRating.svelte` | Criar | Componente reutilizável de seleção/exibição de estrelas. Props: `rating` (bind), `readonly` (bool), `size` |
+| `football-frontend/src/lib/components/Navbar.svelte` | Modificar | Adicionar flag `playerOnly` no array `links`; adicionar link "Avaliar o App" (`playerOnly`) e "Avaliações" (`adminOnly`); adicionar casos `/review` e `/admin/reviews` em `getBackHref` |
 
 ---
 
-## 9. Critérios de Aceitação
+## 9. Decisões de Arquitetura
 
+- **`router.py`, não `main.py`**: routers são registrados em `football-api/app/api/v1/router.py`. O `main.py` apenas inclui o `api_router` já montado.
+- **`playerOnly` flag no Navbar**: analogia à `adminOnly` existente. Renderizar o link apenas quando `!$isAdmin`.
+- **Sanitização de comentários**: rejeitar campo `comment` que contenha o caractere `<` no backend (validação Pydantic com `validator` ou `field_validator`). O campo é texto puro — sem suporte a markdown ou HTML.
+- **Número da migration**: usar `016` se o PRD de OTP (`016_otp_verifications.sql`) ainda não tiver sido implementado; usar `017` caso contrário. Verificar a última migration em `football-api/migrations/` antes de criar o arquivo.
+- **Fetch de dados**: via `$effect` no componente, seguindo o padrão de todas as outras páginas (token em `localStorage`, sem `+page.ts`).
+
+---
+
+## 10. Critérios de Aceitação
+
+- [ ] Botão X no card de avaliação fecha e volta para `/`
 - [ ] Item "Avaliar o App" aparece no menu apenas para não super-admins
 - [ ] Super-admin não consegue submeter avaliação (erro 403 no backend)
 - [ ] Nota de 1 a 5 estrelas é obrigatória — formulário não submete sem ela
@@ -255,17 +272,19 @@ Adicionar item no menu administrativo:
 - [ ] Painel admin exibe média, total e distribuição corretamente
 - [ ] Lista de avaliações é paginada e ordenada da mais recente para a mais antiga
 - [ ] Filtro por nota funciona corretamente no painel admin
+- [ ] Comentário com HTML (`<script>`, `<b>` etc.) é rejeitado com erro de validação
 
 ---
 
-## 10. Dependências
+## 11. Dependências
 
 - Tabela `players` — para validar `role` e exibir nome no painel admin
-- Componente de menu existente — para adicionar os novos itens
+- `app/core/dependencies.py` — `CurrentPlayer` e `AdminPlayer`
+- `Navbar.svelte` — para adicionar os novos links
 
 ---
 
-## 11. Fora de Escopo (desta versão)
+## 12. Fora de Escopo (desta versão)
 
 - Resposta do super-admin a uma avaliação
 - Notificação ao super-admin quando uma avaliação negativa (1–2 estrelas) for recebida

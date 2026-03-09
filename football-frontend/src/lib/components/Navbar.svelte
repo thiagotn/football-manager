@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star } from 'lucide-svelte';
 
   function logout() {
     authStore.logout();
@@ -11,10 +11,12 @@
   }
 
   const links = [
-    { href: '/',          icon: Home,     label: 'Dashboard' },
-    { href: '/groups',    icon: Trophy,   label: 'Grupos' },
-    { href: '/players',   icon: Users,    label: 'Jogadores',  adminOnly: true },
-    { href: '/admin/faq', icon: BookOpen, label: 'Guia Admin', adminOnly: true },
+    { href: '/',              icon: Home,     label: 'Dashboard' },
+    { href: '/groups',        icon: Trophy,   label: 'Grupos' },
+    { href: '/review',        icon: Star,     label: 'Avaliar o App', playerOnly: true },
+    { href: '/players',       icon: Users,    label: 'Jogadores',     adminOnly: true },
+    { href: '/admin/reviews', icon: Star,     label: 'Avaliações',    adminOnly: true },
+    { href: '/admin/faq',     icon: BookOpen, label: 'Guia Admin',    adminOnly: true },
   ];
 
   let menuOpen = $state(false);
@@ -32,6 +34,7 @@
     if (pathname === '/groups')   return '/';
     if (pathname === '/players')  return '/';
     if (pathname === '/profile')  return '/';
+    if (pathname === '/review')   return '/';
     if (pathname.startsWith('/admin/')) return '/';
     return null;
   }
@@ -67,7 +70,7 @@
     <!-- Links — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-1">
       {#each links as l}
-        {#if !l.adminOnly || $isAdmin}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin)}
           <a
             href={l.href}
             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
@@ -132,7 +135,7 @@
     <!-- Links de navegação -->
     <div class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
       {#each links as l}
-        {#if !l.adminOnly || $isAdmin}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin)}
           <a
             href={l.href}
             onclick={closeMenu}

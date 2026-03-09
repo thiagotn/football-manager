@@ -141,6 +141,57 @@ export const subscriptions = {
   me: () => get<SubscriptionInfo>('/subscriptions/me'),
 };
 
+// ── Reviews ───────────────────────────────────────────────────
+export type ReviewResponse = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewSummaryResponse = {
+  average: number;
+  total: number;
+  distribution: Record<string, { count: number; percent: number }>;
+};
+
+export type ReviewAdminItem = {
+  id: string;
+  player_id: string;
+  player_name: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewListResponse = {
+  items: ReviewAdminItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+};
+
+const put = <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) });
+
+export const reviews = {
+  getMe: () => get<ReviewResponse>('/reviews/me'),
+  upsert: (rating: number, comment?: string | null) =>
+    put<ReviewResponse>('/reviews/me', { rating, comment }),
+  summary: () => get<ReviewSummaryResponse>('/reviews/summary'),
+  list: (params?: { rating?: string; order_by?: string; page?: number; page_size?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.rating)    q.set('rating', params.rating);
+    if (params?.order_by)  q.set('order_by', params.order_by);
+    if (params?.page)      q.set('page', String(params.page));
+    if (params?.page_size) q.set('page_size', String(params.page_size));
+    const qs = q.toString();
+    return get<ReviewListResponse>(`/reviews${qs ? '?' + qs : ''}`);
+  },
+};
+
 // ── Invites ───────────────────────────────────────────────────
 export const invites = {
   create: (groupId: string) => post<{ id: string; token: string; expires_at: string }>('/invites', { group_id: groupId }),
