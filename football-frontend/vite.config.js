@@ -11,8 +11,8 @@ export default defineConfig({
       filename: 'service-worker.ts',
       registerType: 'autoUpdate',
       manifest: {
-        name: 'rachao.app',
-        short_name: 'rachao.app',
+        name: 'Rachão',
+        short_name: 'Rachão',
         description: 'Organize grupos de futebol, convide jogadores e controle presenças em um clique.',
         theme_color: '#15803d',
         background_color: '#111827',
