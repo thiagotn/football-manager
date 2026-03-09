@@ -454,7 +454,7 @@
       <label class="label" for="mdate">Data *</label>
       <DatePicker id="mdate" bind:value={matchForm.match_date} required />
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
         <label class="label" for="mtime">Início *</label>
         <input id="mtime" class="input" type="time" bind:value={matchForm.start_time} required />
@@ -515,7 +515,7 @@
       <label class="label" for="emdate">Data *</label>
       <DatePicker id="emdate" bind:value={editMatchForm.match_date} required />
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
         <label class="label" for="emtime">Início *</label>
         <input id="emtime" class="input" type="time" bind:value={editMatchForm.start_time} required />
