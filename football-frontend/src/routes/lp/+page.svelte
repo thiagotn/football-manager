@@ -228,11 +228,11 @@
         </div>
         <div class="space-y-2 mb-4">
           {#each [
-            { pos: '🥇', name: 'Marquinhos', pts: 67 },
-            { pos: '🥈', name: 'Jorginho', pts: 51 },
-            { pos: '🥉', name: 'Betão', pts: 44 },
-            { pos: '4º', name: 'Junin', pts: 29 },
-            { pos: '5º', name: 'Cabeludo', pts: 18 },
+            { pos: '🥇', name: 'Zidanilo', pts: 67 },
+            { pos: '🥈', name: 'Lê', pts: 51 },
+            { pos: '🥉', name: 'Dudu', pts: 44 },
+            { pos: '4º', name: 'Claudinho30', pts: 29 },
+            { pos: '5º', name: 'Kafa', pts: 18 },
           ] as item}
             <div class="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-gray-100">
               <span class="text-base w-6 text-center">{item.pos}</span>
@@ -243,7 +243,7 @@
         </div>
         <div class="bg-red-50 rounded-xl px-3 py-2 border border-red-100 flex items-center gap-2">
           <span class="text-base">😬</span>
-          <span class="text-sm text-gray-700 flex-1">Decepção: <strong>Tigrão</strong></span>
+          <span class="text-sm text-gray-700 flex-1">Decepção: <strong>Jo Letra</strong></span>
           <span class="text-xs text-red-500 font-semibold">9 votos</span>
         </div>
         <p class="text-xs text-gray-400 text-center mt-3">Exemplo ilustrativo</p>
