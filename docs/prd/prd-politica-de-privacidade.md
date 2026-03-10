@@ -18,7 +18,7 @@ O rachao.app trata dados pessoais de seus usuários: número de WhatsApp, nome, 
 
 ### 1.2 Objetivo
 
-Publicar uma Política de Privacidade mínima e honesta em `/privacidade`, que:
+Publicar uma Política de Privacidade mínima e honesta em `/privacy`, que:
 - Descreve exatamente o que a plataforma coleta e para quê
 - Informa com quem os dados são compartilhados
 - Declara os direitos dos titulares e como exercê-los
@@ -43,7 +43,7 @@ Preencher os `[PLACEHOLDERS]` no texto da seção 3 antes de publicar.
 
 ## 3. Texto da Política de Privacidade
 
-> Este é o texto a ser publicado em `/privacidade`. Copiar tal qual para o componente Svelte, substituindo os placeholders.
+> Este é o texto a ser publicado em `/privacy`. Copiar tal qual para o componente Svelte, substituindo os placeholders.
 
 ---
 
@@ -153,11 +153,11 @@ Quando realizarmos alterações relevantes nesta política, atualizaremos a data
 ## 4. Escopo de implementação
 
 - [ ] Preencher todos os `[PLACEHOLDERS]` da seção 3 com dados reais
-- [ ] Criar rota pública `/privacidade` em `football-frontend/src/routes/privacidade/+page.svelte`
+- [ ] Criar rota pública `/privacy` em `football-frontend/src/routes/privacidade/+page.svelte`
 - [ ] Adicionar link "Política de Privacidade" no rodapé da landing page (`/lp`)
 - [ ] Adicionar link "Política de Privacidade" no rodapé do layout logado
 - [ ] Atualizar `/register` — mencionar a Política junto ao texto de aceite dos Termos
-- [ ] Atualizar `/termos` — adicionar link para `/privacidade`
+- [ ] Atualizar `/terms` — adicionar link para `/privacy`
 - [ ] Garantir que o e-mail de privacidade está ativo e monitorado antes de publicar
 
 ---
@@ -170,7 +170,7 @@ Quando realizarmos alterações relevantes nesta política, atualizaremos a data
 | Layout da LP | Modificar — link no rodapé |
 | Layout logado | Modificar — link no rodapé |
 | `football-frontend/src/routes/register/+page.svelte` | Modificar — referência à Política no aceite |
-| `football-frontend/src/routes/termos/+page.svelte` | Modificar — link para `/privacidade` |
+| `football-frontend/src/routes/termos/+page.svelte` | Modificar — link para `/privacy` |
 
 Nenhuma alteração de backend é necessária.
 

@@ -18,7 +18,7 @@ O rachao.app já possui usuários ativos na fase Beta. Não há Termos de Uso pu
 
 ### 1.2 Objetivo
 
-Publicar os Termos de Uso em `/termos` e integrar o aceite ao fluxo de cadastro e, retroativamente, aos usuários já cadastrados. Não requer revisão jurídica prévia para entrar no ar — um texto honesto e preciso já atende o espírito da lei.
+Publicar os Termos de Uso em `/terms` e integrar o aceite ao fluxo de cadastro e, retroativamente, aos usuários já cadastrados. Não requer revisão jurídica prévia para entrar no ar — um texto honesto e preciso já atende o espírito da lei.
 
 > **Nota:** revisão jurídica por advogado especializado antes do lançamento dos planos pagos é recomendada, mas não é pré-requisito para a fase Beta.
 
@@ -38,7 +38,7 @@ Preencher os `[PLACEHOLDERS]` no texto da seção 3 antes de publicar.
 
 ## 3. Texto dos Termos de Uso
 
-> Este é o texto a ser publicado em `/termos`. Copiar para o componente Svelte substituindo os placeholders.
+> Este é o texto a ser publicado em `/terms`. Copiar para o componente Svelte substituindo os placeholders.
 
 ---
 
@@ -158,12 +158,12 @@ Estes Termos são regidos pela legislação brasileira. Fica eleito o foro da co
 
 ## 4. Requisitos Funcionais
 
-**RF-01 — Rota pública `/termos`**
+**RF-01 — Rota pública `/terms`**
 Página estática com o texto da seção 3. Acessível sem login.
 
 **RF-02 — Aceite obrigatório no cadastro**
 Em `/register`, antes do botão de envio:
-- Checkbox: *"Li e aceito os [Termos de Uso]"* (link para `/termos` abre em nova aba).
+- Checkbox: *"Li e aceito os [Termos de Uso]"* (link para `/terms` abre em nova aba).
 - Botão "Criar conta" permanece desabilitado enquanto o checkbox não estiver marcado.
 
 **RF-03 — Aceite retroativo**
@@ -325,8 +325,8 @@ Não há botão de fechar. O modal cobre a tela inteira (backdrop sem clique par
 ## 10. Critérios de Aceitação
 
 - [ ] Preencher todos os `[PLACEHOLDERS]` antes de publicar
-- [ ] Página `/termos` acessível sem login, texto formatado para leitura
-- [ ] Link para `/termos` no rodapé da LP, rodapé logado, cadastro e login
+- [ ] Página `/terms` acessível sem login, texto formatado para leitura
+- [ ] Link para `/terms` no rodapé da LP, rodapé logado, cadastro e login
 - [ ] Checkbox de aceite obrigatório no cadastro — botão desabilitado sem marcação
 - [ ] Usuários sem aceite veem modal bloqueante na próxima sessão
 - [ ] Aceite salvo com `player_id`, `terms_version`, `accepted_at` e IP

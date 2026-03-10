@@ -75,8 +75,8 @@
       Não tem conta? <a href="/register" class="text-primary-600 hover:underline">Cadastre-se grátis</a>
     </p>
     <div class="flex justify-center gap-4 mt-4 text-xs text-gray-300 dark:text-gray-600">
-      <a href="/termos" class="hover:text-gray-500 transition-colors">Termos de Uso</a>
-      <a href="/privacidade" class="hover:text-gray-500 transition-colors">Privacidade</a>
+      <a href="/terms" class="hover:text-gray-500 transition-colors">Termos de Uso</a>
+      <a href="/privacy" class="hover:text-gray-500 transition-colors">Privacidade</a>
     </div>
   </div>
 </div>

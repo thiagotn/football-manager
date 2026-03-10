@@ -129,9 +129,9 @@
         <input type="checkbox" bind:checked={termsAccepted} class="mt-0.5 shrink-0 accent-primary-600" />
         <span class="text-xs text-gray-500 dark:text-gray-400">
           Li e aceito os
-          <a href="/termos" target="_blank" class="text-primary-600 hover:underline">Termos de Uso</a>
+          <a href="/terms" target="_blank" class="text-primary-600 hover:underline">Termos de Uso</a>
           e a
-          <a href="/privacidade" target="_blank" class="text-primary-600 hover:underline">Política de Privacidade</a>
+          <a href="/privacy" target="_blank" class="text-primary-600 hover:underline">Política de Privacidade</a>
         </span>
       </label>
 

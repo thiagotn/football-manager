@@ -92,7 +92,7 @@
 
       <section>
         <h2 class="text-base font-semibold mb-2">8. Cancelamento e encerramento</h2>
-        <p>Você pode solicitar a exclusão da sua conta a qualquer momento pelo canal <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>. A conta e seus dados serão removidos conforme os prazos descritos na <a href="/privacidade" class="text-primary-600 hover:underline">Política de Privacidade</a>.</p>
+        <p>Você pode solicitar a exclusão da sua conta a qualquer momento pelo canal <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>. A conta e seus dados serão removidos conforme os prazos descritos na <a href="/privacy" class="text-primary-600 hover:underline">Política de Privacidade</a>.</p>
         <p class="mt-2">Podemos suspender ou encerrar sua conta caso haja violação destes Termos, com ou sem aviso prévio dependendo da gravidade da infração.</p>
       </section>
 
@@ -116,7 +116,7 @@
     </div>
 
     <div class="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 flex flex-wrap gap-4">
-      <a href="/privacidade" class="hover:text-gray-600 dark:hover:text-gray-300">Política de Privacidade</a>
+      <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300">Política de Privacidade</a>
       <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300">FAQ</a>
       <a href="/lp" class="hover:text-gray-600 dark:hover:text-gray-300">rachao.app</a>
     </div>

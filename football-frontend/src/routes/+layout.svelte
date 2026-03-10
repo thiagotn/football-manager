@@ -8,7 +8,7 @@
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
 
-  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match', '/faq', '/lp', '/termos', '/privacidade'];
+  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match', '/faq', '/lp', '/terms', '/privacy'];
 
   let betaDismissed = $state(false);
 
@@ -56,8 +56,8 @@
 <slot />
 {#if isAppPage}
   <footer class="border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-xs text-gray-400 dark:text-gray-500 flex flex-wrap items-center justify-center gap-4">
-    <a href="/termos" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Termos de Uso</a>
-    <a href="/privacidade" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Política de Privacidade</a>
+    <a href="/terms" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Termos de Uso</a>
+    <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Política de Privacidade</a>
     <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">FAQ</a>
   </footer>
 {/if}

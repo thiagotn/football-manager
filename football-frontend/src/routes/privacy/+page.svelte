@@ -170,7 +170,7 @@
     </div>
 
     <div class="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 flex flex-wrap gap-4">
-      <a href="/termos" class="hover:text-gray-600 dark:hover:text-gray-300">Termos de Uso</a>
+      <a href="/terms" class="hover:text-gray-600 dark:hover:text-gray-300">Termos de Uso</a>
       <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300">FAQ</a>
       <a href="/lp" class="hover:text-gray-600 dark:hover:text-gray-300">rachao.app</a>
     </div>
