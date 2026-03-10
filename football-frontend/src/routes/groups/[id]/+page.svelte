@@ -515,7 +515,7 @@
             </tbody>
           </table>
         </div>
-        <p class="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center">
+        <p class="mt-2 text-xs text-gray-300 text-center">
           Pontos acumulados nas votações · Horas apenas em partidas com horário de término registrado
         </p>
       {/if}
