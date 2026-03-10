@@ -363,7 +363,7 @@
     {/if}
 
     <!-- Tabs -->
-    <div class="flex gap-1 border-b border-white/20 mb-6 overflow-x-auto scrollbar-none">
+    <div class="flex gap-1 border-b border-white/20 mb-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'upcoming' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => tab = 'upcoming'}>
