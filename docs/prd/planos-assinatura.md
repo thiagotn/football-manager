@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| **Versão** | 1.3 |
+| **Versão** | 1.4 |
 | **Status** | Fase 1 Implementada · Fase 2 parcial |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
@@ -476,26 +476,121 @@ Na data de vencimento:
 
 ## 9. Gateway de Pagamento
 
-### 9.1 Recomendação
+### 9.1 Decisão: Stripe (v1)
 
-Recomenda-se o uso do **Stripe** (com suporte via [Stripe Brazil](https://stripe.com/br)) ou **Pagar.me** para processamento local em BRL com suporte nativo a PIX e boleto.
+**Gateway escolhido para a primeira versão: Stripe** ([Stripe Brazil](https://stripe.com/br)).
 
-| Critério | Stripe | Pagar.me |
-|---|:---:|:---:|
-| PIX nativo | ✅ | ✅ |
-| Boleto | ✅ | ✅ |
-| Cartão recorrente | ✅ | ✅ |
-| SDK bem documentado | ✅ | ✅ |
-| Webhook confiável | ✅ | ✅ |
-| Suporte em PT-BR | ⚠️ | ✅ |
-| Taxa por transação | ~4,99% | ~2,49% + fixo |
+O Stripe Billing resolve nativamente os pontos mais complexos do PRD sem implementação adicional:
+- Pro-rata automático em upgrades
+- Dunning management (retentativas configuráveis)
+- Customer Portal hosted (`/account/subscription` pode ser redirect para o portal do Stripe, sem UI própria)
+- Gestão de `past_due` / graça / expiração
+- SDK Python oficial, bem mantido
 
-### 9.2 Estratégia de Webhooks
+**Custos Stripe (referência 2025):**
 
-- Validar assinatura do webhook (HMAC) antes de processar.
+| Método | Taxa |
+|---|---|
+| Cartão nacional | 3,4% + R$0,50 |
+| Cartão internacional | 4,9% + R$0,50 |
+| PIX | 1,5% |
+| Boleto | 1,5% + R$1,50 fixo |
+| Stripe Billing | +0,7% sobre processado (gratuito até ~R$11k/mês) |
+
+**Tempo de integração estimado com Stripe:** ~1 semana (checkout hosted + webhook lifecycle).
+
+---
+
+### 9.2 Arquitetura de Abstração do Gateway (obrigatório)
+
+O código de negócio **nunca deve chamar a SDK do Stripe diretamente** nos routers ou repositórios. Toda interação com o gateway deve passar por uma interface de serviço em:
+
+```
+football-api/app/services/billing.py
+```
+
+Essa camada expõe métodos agnósticos de gateway:
+
+```python
+# Exemplos de contrato (independente do gateway)
+async def create_checkout_session(player_id, plan_name, billing_cycle) -> str  # URL
+async def create_customer(player_id, email, name) -> str                        # customer_id
+async def cancel_subscription(gateway_sub_id) -> None
+async def get_subscription_status(gateway_sub_id) -> dict
+async def create_billing_portal_session(gateway_customer_id) -> str            # URL
+```
+
+A implementação concreta fica em `app/services/billing_stripe.py` (ou `billing_pagarme.py` futuramente). O `billing.py` importa e delega para a implementação ativa, controlada por variável de ambiente:
+
+```python
+# app/services/billing.py
+import os
+if os.getenv("BILLING_PROVIDER", "stripe") == "stripe":
+    from app.services.billing_stripe import *
+```
+
+**Benefício:** trocar de Stripe para Pagar.me (ou outro gateway) exige apenas criar `billing_pagarme.py` e mudar a variável de ambiente, sem tocar em routers, repositórios ou lógica de negócio.
+
+---
+
+### 9.3 Análise Comparativa de Gateways (referência para migração futura)
+
+> Esta seção mantém o comparativo completo para subsidiar uma eventual migração de gateway quando o volume processado justificar a troca.
+
+**Requisitos determinantes do PRD para comparação:**
+- Assinaturas recorrentes com ciclos mensal e anual
+- Upgrade imediato com cálculo pro-rata
+- Gestão de ciclo de vida (`active → past_due → expired`) com período de graça de 7 dias
+- PIX + Boleto + Cartão
+- Webhooks confiáveis para ativação automática em ≤ 30 segundos
+
+#### Stripe vs. Pagar.me vs. Asaas
+
+| Critério | **Stripe** | **Pagar.me** | **Asaas** |
+|---|:---:|:---:|:---:|
+| Assinaturas nativas completas | ✅ | ⚠️ | ⚠️ |
+| Pro-rata automático | ✅ | ❌ manual | ❌ manual |
+| Período de graça gerenciado | ✅ | ❌ manual | ❌ manual |
+| Customer portal hosted | ✅ | ❌ | ❌ |
+| SDK Python oficial | ✅ | ⚠️ parcial | ❌ |
+| Dunning (retentativas) | ✅ configurável | ⚠️ básico | ⚠️ básico |
+| PIX | ✅ | ✅ | ✅ |
+| Boleto | ✅ | ✅ | ✅ |
+| Custo cartão | ~3,4% + R$0,50 | ~2,49% + R$0,39 | ~2,99% |
+| Custo PIX | 1,5% | ~0,99% | ~0,99% |
+| Custo boleto | 1,5% + R$1,50 | ~R$2,50 fixo | ~R$1,99 fixo |
+| Suporte PT-BR | ⚠️ | ✅ | ✅ |
+| Tempo dev estimado | **~1 semana** | **~2–3 semanas** | **~2–3 semanas** |
+| Maturidade para SaaS | ★★★★★ | ★★★☆☆ | ★★☆☆☆ |
+
+**Notas por gateway:**
+
+**Pagar.me (Stone Co.):** Pro-rata, período de graça e customer portal exigem implementação manual no backend. Sem customer portal hosted, toda a UI de gerenciamento de assinatura (`/account/subscription`) precisaria ser construída do zero. A diferença de taxa (~1% no cartão, ~0,5% no PIX) começa a compensar o custo de migração a partir de ~R$30k/mês processados.
+
+**Asaas:** Bom para cobranças simples e PMEs brasileiras. Sem SDK Python oficial. Não recomendado para o ciclo de vida complexo deste PRD.
+
+**Iugu:** Historicamente focado em recorrência no Brasil, mas com instabilidades relatadas e documentação defasada. Não recomendado para novo projeto.
+
+**Quando migrar de Stripe para Pagar.me:** volume mensal acima de ~R$30k processados E necessidade de suporte técnico com SLA em PT-BR. A abstração via `billing.py` (seção 9.2) garante que essa migração não exija reescrita de lógica de negócio.
+
+---
+
+### 9.4 Estratégia de Webhooks
+
+- Validar assinatura do webhook (HMAC-SHA256 via `stripe.Webhook.construct_event`) antes de processar.
 - Registrar todos os eventos recebidos em tabela `webhook_events` com idempotency key (`event_id UNIQUE`).
-- Processar eventos de forma assíncrona via FastAPI Background Tasks ou Celery.
+- Processar eventos de forma assíncrona via FastAPI Background Tasks.
 - Retornar `200 OK` imediatamente ao gateway para evitar retentativas desnecessárias.
+
+**Eventos Stripe a tratar:**
+
+| Evento Stripe | Ação |
+|---|---|
+| `checkout.session.completed` | Ativa assinatura, atualiza `player_subscriptions` |
+| `invoice.paid` | Registra fatura, renova `current_period_end` |
+| `invoice.payment_failed` | Status → `past_due`, define `grace_period_end = NOW() + 7d` |
+| `customer.subscription.deleted` | Status → `canceled` ou `expired`, arquiva recursos excedentes |
+| `customer.subscription.updated` | Atualiza plano após upgrade/downgrade |
 
 ---
 
@@ -548,20 +643,148 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 | Integração com gateway de pagamento | Dependência externa | Alto | Iniciar integração cedo; usar sandbox para testes |
 | Migração de players existentes para plano Free | Técnico | Médio | Script de migração com rollback; comunicar usuários antecipadamente |
 | Regressão de recursos ao fazer downgrade | UX | Alto | Avisos claros, dados nunca excluídos automaticamente |
-| Fraude em pagamentos | Segurança | Médio | Delegar anti-fraude ao gateway (Stripe Radar / Pagar.me) |
-| Indisponibilidade do gateway | Confiabilidade | Alto | Implementar retry com backoff exponencial para webhooks |
+| Fraude em pagamentos | Segurança | Médio | Delegar anti-fraude ao Stripe Radar |
+| Indisponibilidade do gateway | Confiabilidade | Alto | Retry com backoff exponencial para webhooks; `webhook_events` garante idempotência |
+| Migração de gateway futura | Técnico | Médio | Abstração via `app/services/billing.py` isola o código de negócio do gateway concreto |
 
 ---
 
-## 14. Plano de Lançamento
+## 14. Configuração Manual da Conta Stripe
+
+> Checklist de ações que devem ser realizadas manualmente no dashboard do Stripe **antes** de iniciar o desenvolvimento da integração. Marque cada item conforme concluído.
+
+### 14.1 Criação e Verificação da Conta
+
+- [ ] Acessar [dashboard.stripe.com](https://dashboard.stripe.com) e criar conta com e-mail do negócio
+- [ ] Confirmar e-mail
+- [ ] Em **Settings → Business details**: preencher nome do negócio ("Rachao.app" ou razão social)
+- [ ] Selecionar tipo de entidade: **Pessoa Física (CPF)** ou **Empresa (CNPJ)** conforme o caso
+- [ ] Informar endereço e telefone brasileiros
+- [ ] Em **Settings → Bank accounts and scheduling**: adicionar conta bancária brasileira para recebimento de saques
+- [ ] Completar verificação de identidade (envio de documento + selfie — processo guiado pelo próprio Stripe)
+- [ ] Aguardar aprovação da conta para pagamentos reais (geralmente automático em minutos para PF)
+
+> **Atenção:** sem a verificação completa, os pagamentos ficam em modo restrito e os saques ficam bloqueados.
+
+---
+
+### 14.2 Ativar Métodos de Pagamento
+
+- [ ] Em **Settings → Payment methods**:
+  - [ ] Confirmar que **Cartão de crédito/débito** está ativo (padrão)
+  - [ ] Ativar **PIX** (pode exigir verificação adicional da conta)
+  - [ ] Ativar **Boleto bancário** (pode exigir verificação adicional da conta)
+- [ ] Definir prazo de vencimento do boleto (recomendado: **3 dias**)
+
+---
+
+### 14.3 Criar Produtos e Preços
+
+> Um **Product** representa cada plano; cada Product tem um ou mais **Prices** (mensal, anual).
+
+- [ ] Em **Product catalog → Add product**: criar produto **"Plano Básico"**
+  - [ ] Adicionar Price recorrente **mensal** em BRL (valor a definir)
+  - [ ] Adicionar Price recorrente **anual** em BRL (valor a definir)
+  - [ ] Copiar os **Price IDs** (`price_xxx`) e guardar — serão usados no código
+- [ ] Em **Product catalog → Add product**: criar produto **"Plano Pro"**
+  - [ ] Adicionar Price recorrente **mensal** em BRL (valor a definir)
+  - [ ] Adicionar Price recorrente **anual** em BRL (valor a definir)
+  - [ ] Copiar os **Price IDs** e guardar
+- [ ] Repetir os itens acima no modo **Test** antes de fazer em produção (os IDs são diferentes entre ambientes)
+
+---
+
+### 14.4 Configurar o Customer Portal
+
+> O Customer Portal é a UI hosted do Stripe que substitui a necessidade de construir `/account/subscription` do zero.
+
+- [ ] Em **Settings → Customer portal**:
+  - [ ] Habilitar **Cancel subscriptions**
+  - [ ] Habilitar **Update subscriptions** (upgrade/downgrade entre planos)
+  - [ ] Habilitar **Update payment methods**
+  - [ ] Habilitar **View invoice history**
+  - [ ] Em "Business information": adicionar logo e cores do Rachao.app
+  - [ ] Em "Cancellation reasons": habilitar coleta de motivo de cancelamento
+  - [ ] Salvar configuração
+  - [ ] Copiar a **URL do portal** gerada (usada pelo `billing.py` para redirect)
+
+---
+
+### 14.5 Configurar Webhook
+
+- [ ] Em **Developers → Webhooks → Add endpoint**:
+  - [ ] URL: `https://rachao.app/api/v1/webhooks/payment` (produção)
+  - [ ] URL alternativa para testes: usar **Stripe CLI** localmente (`stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`)
+  - [ ] Selecionar os eventos (mínimo necessário):
+    - [ ] `checkout.session.completed`
+    - [ ] `invoice.paid`
+    - [ ] `invoice.payment_failed`
+    - [ ] `customer.subscription.updated`
+    - [ ] `customer.subscription.deleted`
+  - [ ] Salvar e copiar o **Webhook Signing Secret** (`whsec_xxx`) — usado para validar autenticidade dos eventos
+
+---
+
+### 14.6 Obter Chaves de API
+
+- [ ] Em **Developers → API keys**:
+  - [ ] Copiar **Publishable key** de teste (`pk_test_xxx`)
+  - [ ] Copiar **Secret key** de teste (`sk_test_xxx`)
+  - [ ] Copiar **Publishable key** de produção (`pk_live_xxx`)
+  - [ ] Copiar **Secret key** de produção (`sk_live_xxx`)
+- [ ] Adicionar ao `.env` do projeto:
+  ```
+  STRIPE_SECRET_KEY=sk_test_xxx        # trocar para sk_live_xxx em produção
+  STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+  STRIPE_WEBHOOK_SECRET=whsec_xxx
+  BILLING_PROVIDER=stripe
+  ```
+- [ ] Confirmar que `.env` está no `.gitignore` e **nunca** versionar as chaves
+
+---
+
+### 14.7 Instalar Stripe CLI (desenvolvimento local)
+
+- [ ] Instalar Stripe CLI: `brew install stripe/stripe-cli/stripe` (macOS) ou [instruções Linux](https://stripe.com/docs/stripe-cli)
+- [ ] Autenticar: `stripe login`
+- [ ] Para testar webhooks localmente: `stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`
+- [ ] Para disparar eventos manualmente durante o desenvolvimento: `stripe trigger invoice.paid`
+
+---
+
+### 14.8 Configurar Dunning (retentativas automáticas)
+
+- [ ] Em **Settings → Subscriptions and emails → Manage failed payments**:
+  - [ ] Habilitar retentativas automáticas (recomendado: 3, 5 e 7 dias após falha)
+  - [ ] Habilitar envio de e-mail automático do Stripe ao cliente em caso de falha
+  - [ ] Definir ação após esgotar retentativas: **"Cancel the subscription"** (o backend trata o webhook `customer.subscription.deleted`)
+
+---
+
+### 14.9 Validação Final (antes de ir a produção)
+
+- [ ] Realizar um checkout completo com cartão de teste `4242 4242 4242 4242`
+- [ ] Verificar que o webhook `checkout.session.completed` chegou e foi processado
+- [ ] Verificar que a assinatura foi criada e o plano atualizado no banco
+- [ ] Testar falha de pagamento com cartão `4000 0000 0000 0341`
+- [ ] Verificar que `past_due` e `grace_period_end` foram definidos corretamente
+- [ ] Testar cancelamento via Customer Portal e verificar webhook
+- [ ] Testar PIX em modo sandbox (Stripe disponibiliza simulador)
+- [ ] Revisar todos os Price IDs no código — confirmar que apontam para os IDs de **produção** antes do deploy
+
+---
+
+## 15. Plano de Lançamento
 
 ### Fase 1 — Backend (Semanas 1–3)
 - Migrations `013` e `014` (tabelas `plans`, `subscriptions`, `invoices`, `webhook_events`, colunas `archived_by_plan`).
 - Seed dos planos iniciais.
+- `app/services/billing.py` — interface de abstração do gateway (seção 9.2).
+- `app/services/billing_stripe.py` — implementação concreta via Stripe SDK.
 - Endpoints de planos e assinaturas em `football-api/app/api/v1/routers/`.
 - Repositórios em `football-api/app/db/repositories/` para `plans` e `subscriptions`.
 - Lógica de verificação de limites nos routers de `groups` e `matches`.
-- Processamento de webhooks.
+- Processamento de webhooks Stripe (seção 9.4) via `POST /api/v1/webhooks/payment`.
 
 ### Fase 2 — Frontend (Semanas 3–5)
 
