@@ -175,6 +175,86 @@
 <!-- DIVISOR -->
 <div class="h-px bg-gray-100"></div>
 
+<!-- VOTAÇÃO PÓS-PARTIDA SPOTLIGHT -->
+<section class="bg-white py-16 px-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-10">
+      <span class="text-xs font-semibold text-amber-600 uppercase tracking-widest">Novidade</span>
+      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">Votação pós-partida 🏆</h2>
+      <p class="text-gray-500 mt-2 text-sm max-w-lg mx-auto">
+        Depois de cada rachão, os jogadores elegem o melhor de campo — e a decepção do dia. Tudo automático, sem precisar organizar nada.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-8 items-center">
+      <!-- Explicação -->
+      <div class="space-y-5">
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0">⏱️</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Abre automaticamente</h3>
+            <p class="text-sm text-gray-500 mt-0.5">20 minutos após o horário de início da partida, a votação abre sozinha para todos que confirmaram presença.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-xl shrink-0">🗳️</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Top 5 da pelada</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Cada jogador vota nos 5 melhores do jogo, atribuindo 5, 4, 3, 2 e 1 ponto por posição. Sem votar em si mesmo.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-xl shrink-0">😬</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Decepção do jogo</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Quando há jogadores suficientes, cada um também aponta a maior decepção da partida. Levado na esportiva — faz parte!</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-xl shrink-0">📊</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Ranking acumulado no grupo</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Os pontos somam ao longo das partidas. A aba Estatísticas do grupo exibe o ranking completo com pontos, decepções e horas jogadas.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mock ranking preview -->
+      <div class="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-lg">🏆</span>
+          <span class="font-bold text-gray-900 text-sm">Resultado · Rachão #42</span>
+          <span class="ml-auto text-xs text-gray-400">18 votaram</span>
+        </div>
+        <div class="space-y-2 mb-4">
+          {#each [
+            { pos: '🥇', name: 'Marquinhos', pts: 67 },
+            { pos: '🥈', name: 'Jorginho', pts: 51 },
+            { pos: '🥉', name: 'Betão', pts: 44 },
+            { pos: '4º', name: 'Junin', pts: 29 },
+            { pos: '5º', name: 'Cabeludo', pts: 18 },
+          ] as item}
+            <div class="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-gray-100">
+              <span class="text-base w-6 text-center">{item.pos}</span>
+              <span class="flex-1 text-sm font-medium text-gray-800">{item.name}</span>
+              <span class="text-xs font-bold text-amber-600">{item.pts} pts</span>
+            </div>
+          {/each}
+        </div>
+        <div class="bg-red-50 rounded-xl px-3 py-2 border border-red-100 flex items-center gap-2">
+          <span class="text-base">😬</span>
+          <span class="text-sm text-gray-700 flex-1">Decepção: <strong>Tigrão</strong></span>
+          <span class="text-xs text-red-500 font-semibold">9 votos</span>
+        </div>
+        <p class="text-xs text-gray-400 text-center mt-3">Exemplo ilustrativo</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVISOR -->
+<div class="h-px bg-gray-100"></div>
+
 <!-- DESTAQUES RÁPIDOS -->
 <section class="bg-white py-14 px-6">
   <div class="max-w-3xl mx-auto">
