@@ -235,7 +235,7 @@
             { pos: '5º', name: 'Kafa', pts: 18 },
           ] as item}
             <div class="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-gray-100">
-              <span class="text-base w-6 text-center">{item.pos}</span>
+              <span class="text-base w-6 text-center text-gray-500 font-semibold">{item.pos}</span>
               <span class="flex-1 text-sm font-medium text-gray-800">{item.name}</span>
               <span class="text-xs font-bold text-amber-600">{item.pts} pts</span>
             </div>
