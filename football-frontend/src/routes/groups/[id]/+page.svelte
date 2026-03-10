@@ -43,14 +43,35 @@
   // Stats tab
   let stats = $state<PlayerStatItem[] | null>(null);
   let statsLoading = $state(false);
+  let statsPeriod = $state<'annual' | 'monthly'>('annual');
+  let statsMonth = $state<string>(new Date().toISOString().slice(0, 7));
+  let statsPeriodLabel = $state('');
 
-  async function loadStats() {
-    if (stats !== null) return;
+  // Meses do ano corrente até o mês atual (para o seletor)
+  const _now = new Date();
+  const _year = _now.getFullYear();
+  const _curMonth = _now.toISOString().slice(0, 7);
+  const _monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const availableMonths = Array.from({ length: 12 }, (_, i) => {
+    const m = String(i + 1).padStart(2, '0');
+    return { value: `${_year}-${m}`, label: `${_monthNames[i]} ${_year}` };
+  }).filter(m => m.value <= _curMonth);
+
+  $effect(() => {
+    if (tab !== 'stats') return;
+    void statsPeriod;
+    void statsMonth;
+    let cancelled = false;
+    stats = null;
     statsLoading = true;
-    try { stats = (await groupsApi.getStats(groupId)).players; }
-    catch { stats = []; }
-    statsLoading = false;
-  }
+    const period = statsPeriod;
+    const month = period === 'monthly' ? statsMonth : undefined;
+    groupsApi.getStats(groupId, { period, month })
+      .then(res => { if (!cancelled) { stats = res.players; statsPeriodLabel = res.period_label; } })
+      .catch(() => { if (!cancelled) { stats = []; statsPeriodLabel = ''; } })
+      .finally(() => { if (!cancelled) statsLoading = false; });
+    return () => { cancelled = true; };
+  });
 
   function fmtMinutes(m: number): string {
     if (m === 0) return '—';
@@ -386,7 +407,7 @@
       {#if pastMatches.length > 0}
         <button
           class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'stats' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
-          onclick={() => { tab = 'stats'; loadStats(); }}>
+          onclick={() => { tab = 'stats'; }}>
           Estatísticas
         </button>
       {/if}
@@ -473,6 +494,31 @@
 
     <!-- Stats tab -->
     {#if tab === 'stats'}
+      <!-- Seletor de período -->
+      <div class="flex flex-wrap items-center gap-2 mb-4">
+        <div class="flex gap-1">
+          <button
+            class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {statsPeriod === 'annual' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
+            onclick={() => { statsPeriod = 'annual'; }}>
+            Anual
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {statsPeriod === 'monthly' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
+            onclick={() => { statsPeriod = 'monthly'; }}>
+            Mensal
+          </button>
+        </div>
+        {#if statsPeriod === 'monthly'}
+          <select
+            bind:value={statsMonth}
+            class="bg-white/10 text-gray-200 text-xs rounded-full px-3 py-1.5 border border-white/20 focus:outline-none focus:ring-1 focus:ring-primary-400">
+            {#each availableMonths as m}
+              <option value={m.value}>{m.label}</option>
+            {/each}
+          </select>
+        {/if}
+      </div>
+
       {#if statsLoading}
         <div class="animate-pulse space-y-2">
           {#each [1,2,3,4,5] as _}
@@ -481,7 +527,7 @@
         </div>
       {:else if !stats || stats.length === 0}
         <div class="card p-12 text-center">
-          <p class="text-gray-400 dark:text-gray-500 text-sm">Nenhuma estatística disponível ainda.<br>As estatísticas aparecem após o encerramento das partidas.</p>
+          <p class="text-gray-400 dark:text-gray-500 text-sm">Nenhuma estatística disponível ainda.<br>As estatísticas aparecem após o encerramento das votações.</p>
         </div>
       {:else}
         <div class="card overflow-hidden">
@@ -518,7 +564,7 @@
           </table>
         </div>
         <p class="mt-2 text-xs text-gray-300 text-center">
-          Pontos acumulados nas votações · Horas apenas em partidas com horário de término registrado
+          {statsPeriodLabel} · Pontos acumulados nas votações encerradas · Horas apenas em partidas com término registrado
         </p>
       {/if}
     {/if}

@@ -13,3 +13,4 @@ class PlayerStatItem(BaseModel):
 
 class GroupStatsResponse(BaseModel):
     players: list[PlayerStatItem]
+    period_label: str

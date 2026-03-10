@@ -97,7 +97,7 @@ export type PlayerStatItem = {
   flop_votes: number;
   minutes_played: number;
 };
-export type GroupStatsResponse = { players: PlayerStatItem[] };
+export type GroupStatsResponse = { players: PlayerStatItem[]; period_label: string };
 
 export const groups = {
   list: () => get<Group[]>('/groups'),
@@ -110,7 +110,13 @@ export const groups = {
   removeMember: (groupId: string, playerId: string) => del(`/groups/${groupId}/members/${playerId}`),
   updateMemberRole: (groupId: string, playerId: string, role: string) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, { role }),
-  getStats: (id: string) => get<GroupStatsResponse>(`/groups/${id}/stats`),
+  getStats: (id: string, params?: { period?: string; month?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.period) q.set('period', params.period);
+    if (params?.month)  q.set('month',  params.month);
+    const qs = q.toString();
+    return get<GroupStatsResponse>(`/groups/${id}/stats${qs ? '?' + qs : ''}`);
+  },
 };
 
 // ── Matches ───────────────────────────────────────────────────
@@ -160,6 +166,7 @@ export type VoteStatusResponse = {
   eligible_count: number;
   current_player_voted: boolean;
   time_label: string;
+  voted_player_ids: string[];
 };
 
 export type VoteTop5ResultItem = { position: number; player_id: string; name: string; points: number };
@@ -171,11 +178,22 @@ export type VoteResultsResponse = {
   eligible_voters: number;
 };
 
+export type VotePendingItem = {
+  match_id: string;
+  match_hash: string;
+  match_number: number;
+  group_name: string;
+  time_label: string;
+  voter_count: number;
+  eligible_count: number;
+};
+
 export const votes = {
   getStatus:  (matchId: string) => get<VoteStatusResponse>(`/matches/${matchId}/votes/status`),
   getResults: (matchId: string) => get<VoteResultsResponse>(`/matches/${matchId}/votes/results`),
   submit: (matchId: string, top5: { player_id: string; position: number }[], flop_player_id?: string | null) =>
     post<{ message: string }>(`/matches/${matchId}/votes`, { top5, flop_player_id }),
+  getPending: () => get<{ items: VotePendingItem[] }>('/votes/pending'),
 };
 
 // ── Reviews ───────────────────────────────────────────────────

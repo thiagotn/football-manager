@@ -27,6 +27,12 @@ class VoteRepository:
         )
         return result.scalar_one()
 
+    async def voter_ids(self, match_id: UUID) -> list[UUID]:
+        result = await self.session.execute(
+            select(MatchVote.voter_id).where(MatchVote.match_id == match_id)
+        )
+        return list(result.scalars().all())
+
     async def submit(
         self,
         match_id: UUID,

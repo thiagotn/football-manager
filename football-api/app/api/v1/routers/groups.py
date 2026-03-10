@@ -1,7 +1,7 @@
 import re
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
@@ -233,7 +233,13 @@ async def remove_member(
 # ── Stats ──────────────────────────────────────────────────────────────────────
 
 @router.get("/{group_id}/stats", response_model=GroupStatsResponse)
-async def get_group_stats(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
+async def get_group_stats(
+    group_id: uuid.UUID,
+    db: DB,
+    current: CurrentPlayer,
+    period: str = Query("annual"),
+    month: str | None = Query(None),
+):
     repo = GroupRepository(db)
     group = await repo.get(group_id)
     if not group:
@@ -242,6 +248,11 @@ async def get_group_stats(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         member = await repo.get_member(group_id, current.id)
         if not member:
             raise ForbiddenError("Você não é membro deste grupo")
+
+    # Valida formato do mês (YYYY-MM)
+    if month and not re.match(r"^\d{4}-\d{2}$", month):
+        month = None
+
     stats_repo = GroupStatsRepository(db)
-    players = await stats_repo.get_group_stats(group_id)
-    return GroupStatsResponse(players=players)
+    players, period_label = await stats_repo.get_group_stats(group_id, period=period, month=month)
+    return GroupStatsResponse(players=players, period_label=period_label)

@@ -2,14 +2,24 @@ import asyncio
 import uuid
 
 from fastapi import APIRouter
+from sqlalchemy import text
+from zoneinfo import ZoneInfo
 
 from app.core.dependencies import CurrentPlayer, DB
+
+_BRT = ZoneInfo("America/Sao_Paulo")
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.vote_repo import VoteRepository
 from app.models.match import AttendanceStatus, MatchStatus
 from app.models.player import PlayerRole
-from app.schemas.vote import VoteResultsResponse, VoteStatusResponse, VoteSubmitRequest
+from app.schemas.vote import (
+    VotePendingItem,
+    VotePendingResponse,
+    VoteResultsResponse,
+    VoteStatusResponse,
+    VoteSubmitRequest,
+)
 from app.services.push import send_push
 from app.services.voting import time_until, voting_status, voting_window
 
@@ -46,6 +56,11 @@ async def get_vote_status(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     voter_count = await vote_repo.voter_count(match_id)
     current_voted = await vote_repo.has_voted(match_id, current.id)
 
+    # voted_player_ids — só retorna quando a votação está aberta ou encerrada
+    voted_ids: list[uuid.UUID] = []
+    if status in ("open", "closed"):
+        voted_ids = await vote_repo.voter_ids(match_id)
+
     # Dispara push notification na primeira chamada com status 'open'
     if status == "open" and not match.vote_notified:
         match.vote_notified = True
@@ -75,6 +90,7 @@ async def get_vote_status(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
         eligible_count=eligible_count,
         current_player_voted=current_voted,
         time_label=label,
+        voted_player_ids=voted_ids,
     )
 
 
@@ -113,6 +129,66 @@ async def submit_vote(match_id: uuid.UUID, body: VoteSubmitRequest, db: DB, curr
     )
 
     return {"message": "Voto registrado com sucesso."}
+
+
+@router.get("/votes/pending", response_model=VotePendingResponse)
+async def get_pending_votes(db: DB, current: CurrentPlayer):
+    """Votações abertas e pendentes para o jogador logado. Não retorna nada para admins."""
+    if current.role == PlayerRole.ADMIN:
+        return VotePendingResponse(items=[])
+
+    result = await db.execute(
+        text("""
+            SELECT
+                m.id         AS match_id,
+                m.hash       AS match_hash,
+                m.number     AS match_number,
+                g.name       AS group_name,
+                (SELECT COUNT(*)::int FROM match_votes mv2 WHERE mv2.match_id = m.id) AS voter_count,
+                (SELECT COUNT(*)::int FROM attendances a2
+                 WHERE a2.match_id = m.id AND a2.status = 'confirmed') AS eligible_count,
+                (
+                  (m.match_date + COALESCE(m.end_time, '23:59:00'::time))::timestamp
+                  AT TIME ZONE 'America/Sao_Paulo' + interval '24 hours 20 minutes'
+                ) AS closes_at
+            FROM matches m
+            JOIN groups g ON g.id = m.group_id
+            JOIN attendances a ON a.match_id = m.id
+                AND a.player_id = :player_id
+                AND a.status = 'confirmed'
+            WHERE m.status = 'closed'
+              AND NOT EXISTS (
+                SELECT 1 FROM match_votes mv
+                WHERE mv.match_id = m.id AND mv.voter_id = :player_id
+              )
+              AND (
+                (m.match_date + COALESCE(m.end_time, '23:59:00'::time))::timestamp
+                AT TIME ZONE 'America/Sao_Paulo' + interval '20 minutes'
+              ) <= NOW()
+              AND (
+                (m.match_date + COALESCE(m.end_time, '23:59:00'::time))::timestamp
+                AT TIME ZONE 'America/Sao_Paulo' + interval '24 hours 20 minutes'
+              ) >= NOW()
+            ORDER BY m.match_date DESC, m.start_time DESC
+        """),
+        {"player_id": current.id},
+    )
+    rows = result.mappings().all()
+    items = []
+    for row in rows:
+        closes_at = row["closes_at"]
+        if closes_at.tzinfo is None:
+            closes_at = closes_at.replace(tzinfo=_BRT)
+        items.append(VotePendingItem(
+            match_id=row["match_id"],
+            match_hash=row["match_hash"],
+            match_number=row["match_number"],
+            group_name=row["group_name"],
+            time_label=f"Fecha em {time_until(closes_at)}",
+            voter_count=row["voter_count"],
+            eligible_count=row["eligible_count"],
+        ))
+    return VotePendingResponse(items=items)
 
 
 @router.get("/matches/{match_id}/votes/results", response_model=VoteResultsResponse)

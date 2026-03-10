@@ -417,6 +417,11 @@
                 <li class="px-4 py-2 flex items-center gap-2.5">
                   <span class="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
                   <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{a.player.nickname || a.player.name}</p>
+                  {#if voteStatus && voteStatus.status !== 'not_open'}
+                    <span class="text-sm shrink-0" title="{voteStatus.voted_player_ids.includes(a.player.id) ? 'Votou' : 'Não votou ainda'}">
+                      {voteStatus.voted_player_ids.includes(a.player.id) ? '✅' : '⏳'}
+                    </span>
+                  {/if}
                   {#if !$isAdmin && a.player.id === $currentPlayer?.id && (match.status === 'open' || match.status === 'in_progress')}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 flex items-center gap-1 shrink-0"

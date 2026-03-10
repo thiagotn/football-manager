@@ -56,6 +56,7 @@ class VoteStatusResponse(BaseModel):
     eligible_count: int
     current_player_voted: bool
     time_label: str       # ex: "Abre em 0h 45min" ou "Fecha em 18h 20min"
+    voted_player_ids: list[UUID] = []  # vazio quando status = 'not_open'
 
 
 class Top5ResultItem(BaseModel):
@@ -76,3 +77,17 @@ class VoteResultsResponse(BaseModel):
     flop: list[FlopResultItem]
     total_voters: int
     eligible_voters: int
+
+
+class VotePendingItem(BaseModel):
+    match_id: UUID
+    match_hash: str
+    match_number: int
+    group_name: str
+    time_label: str
+    voter_count: int
+    eligible_count: int
+
+
+class VotePendingResponse(BaseModel):
+    items: list[VotePendingItem]

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { groups, matches, players as playersApi } from '$lib/api';
-  import type { Group, Match, SignupStats } from '$lib/api';
-  import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
+  import { groups, matches, players as playersApi, votes as votesApi } from '$lib/api';
+  import type { Group, Match, SignupStats, VotePendingItem } from '$lib/api';
+  import { authStore, currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users, UserPlus } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
@@ -18,6 +18,7 @@
   let platformMinutesPlayed = $state(0);
   let platformTotalMatches = $state(0);
   let signupStats: SignupStats | null = $state(null);
+  let pendingVotes: VotePendingItem[] = $state([]);
 
   function fmtPlaytime(minutes: number): string {
     if (minutes < 60) return `${minutes}min`;
@@ -81,6 +82,14 @@
     if (!$authStore.loading && $isAdmin) {
       goto('/admin', { replaceState: true });
     }
+  });
+
+  // Carrega votações pendentes para jogadores não-admin
+  $effect(() => {
+    if ($authStore.loading || $isAdmin || !$isLoggedIn) return;
+    votesApi.getPending()
+      .then(r => { pendingVotes = r.items; })
+      .catch(() => {});
   });
 
   $effect(() => {
@@ -168,6 +177,24 @@
       </p>
     </div>
   </div>
+
+  <!-- Banner de votações pendentes -->
+  {#if pendingVotes.length > 0}
+    <div class="mb-6 space-y-2">
+      {#each pendingVotes as pv}
+        <a
+          href="/match/{pv.match_hash}"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+          <span class="text-xl shrink-0">🏆</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Vote nos melhores do Rachão #{pv.match_number}</p>
+            <p class="text-xs text-amber-600 dark:text-amber-400">{pv.group_name} · {pv.time_label} · {pv.voter_count} de {pv.eligible_count} já votaram</p>
+          </div>
+          <span class="text-amber-600 dark:text-amber-400 text-sm font-bold shrink-0">→</span>
+        </a>
+      {/each}
+    </div>
+  {/if}
 
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Matches with tabs — primeiro no mobile -->
