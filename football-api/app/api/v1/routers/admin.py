@@ -30,7 +30,8 @@ async def get_admin_stats(db: DB, _: AdminPlayer):
                 ) AS platform_minutes_played,
                 (SELECT COUNT(*)::int FROM players)  AS signups_total,
                 (SELECT COUNT(*)::int FROM players WHERE created_at >= :since_7)  AS signups_last_7_days,
-                (SELECT COUNT(*)::int FROM players WHERE created_at >= :since_30) AS signups_last_30_days
+                (SELECT COUNT(*)::int FROM players WHERE created_at >= :since_30) AS signups_last_30_days,
+                (SELECT COUNT(*)::int FROM app_reviews)                          AS total_reviews
         """),
         {
             "since_7": now - timedelta(days=7),
@@ -46,6 +47,7 @@ async def get_admin_stats(db: DB, _: AdminPlayer):
         signups_total=row.signups_total,
         signups_last_7_days=row.signups_last_7_days,
         signups_last_30_days=row.signups_last_30_days,
+        total_reviews=row.total_reviews,
     )
 
 

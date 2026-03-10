@@ -3,7 +3,7 @@
   import { authStore, isAdmin } from '$lib/stores/auth';
   import { admin as adminApi } from '$lib/api';
   import type { AdminStatsResponse } from '$lib/api';
-  import { Users, Calendar, Clock, UserPlus, ChevronRight } from 'lucide-svelte';
+  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let stats = $state<AdminStatsResponse | null>(null);
@@ -43,8 +43,8 @@
   </div>
 
   {#if loading}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      {#each [1,2,3,4] as _}
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+      {#each [1,2,3,4,5] as _}
         <div class="card p-5 animate-pulse text-center">
           <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto mb-2"></div>
           <div class="h-3 bg-gray-100 dark:bg-gray-700 rounded w-2/3 mx-auto"></div>
@@ -58,7 +58,7 @@
     <!-- Big numbers — plataforma -->
     <div>
       <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">Plataforma</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
 
         <a href="/admin/matches" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer">
           <div class="flex items-center justify-center gap-1 mb-1">
@@ -97,6 +97,16 @@
           <p class="text-3xl font-bold text-purple-400">{fmtHours(stats.platform_minutes_played)}</p>
           <p class="text-xs text-gray-400 mt-1">Horas jogadas</p>
         </div>
+
+        <a href="/admin/reviews" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer col-span-2 sm:col-span-1">
+          <div class="flex items-center justify-center gap-1 mb-1">
+            <Star size={14} class="text-yellow-400 opacity-70" />
+          </div>
+          <p class="text-3xl font-bold text-yellow-400">{stats.total_reviews}</p>
+          <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
+            Avaliações <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+          </p>
+        </a>
 
       </div>
     </div>

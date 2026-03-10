@@ -238,6 +238,7 @@ export type AdminStatsResponse = {
   signups_total: number;
   signups_last_7_days: number;
   signups_last_30_days: number;
+  total_reviews: number;
 };
 
 export type AdminMatchItem = {

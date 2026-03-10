@@ -12,6 +12,7 @@ class AdminStatsResponse(BaseModel):
     signups_total: int
     signups_last_7_days: int
     signups_last_30_days: int
+    total_reviews: int
 
 
 class AdminMatchItem(BaseModel):

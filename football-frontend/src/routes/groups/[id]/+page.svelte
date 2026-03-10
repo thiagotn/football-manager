@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, ApiError } from '$lib/api';
   import type { GroupDetail, Match, Player, VoteStatusResponse, PlayerStatItem } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
@@ -350,6 +351,7 @@
         {#each pendingVotes as { match: m, status: vs }}
           <a
             href="/match/{m.hash}"
+            onclick={(e) => { e.preventDefault(); goto('/match/' + m.hash); }}
             class="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
             <span class="text-xl shrink-0">🏆</span>
             <div class="flex-1 min-w-0">
