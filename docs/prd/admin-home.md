@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| **Versão** | 1.0 |
+| **Versão** | 1.1 |
 | **Status** | Planejado |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
@@ -44,7 +44,7 @@ No `/dashboard`, quando o usuário autenticado for super admin, redirecionar ime
 Usuários não-admin que acessarem `/admin` diretamente devem ser redirecionados para `/dashboard`.
 
 **RF-03 — Big numbers de plataforma**
-A página exibe 4 cards de métricas, cada um com um número em destaque e label:
+A página exibe 5 cards de métricas, cada um com um número em destaque e label:
 
 | Card | Métrica | Destino ao clicar |
 |---|---|---|
@@ -52,6 +52,7 @@ A página exibe 4 cards de métricas, cada um com um número em destaque e label
 | Grupos | Total de grupos ativos (`COUNT(groups)`) | `/admin/groups` |
 | Jogadores | Total de jogadores cadastrados (`COUNT(players)`) | `/players` |
 | Horas | Total de horas jogadas na plataforma (partidas encerradas com `end_time`) | — (não clicável) |
+| Avaliações | Total de avaliações do app (`COUNT(app_reviews)`) | `/admin/reviews` |
 
 **RF-04 — Big numbers de novos cadastros**
 Abaixo dos cards de plataforma, exibir os contadores de cadastros (igual ao atual, sem a lista de registros recentes):
@@ -102,11 +103,12 @@ Novo endpoint. Requer `players.role = 'admin'`. Retorna todas as métricas neces
   "platform_minutes_played": 18750,
   "signups_total": 203,
   "signups_last_7_days": 8,
-  "signups_last_30_days": 31
+  "signups_last_30_days": 31,
+  "total_reviews": 47
 }
 ```
 
-> **Nota:** O endpoint `/players/me/stats` atual já retorna `platform_minutes_played` e `platform_total_matches` para admins, e `/players/signups/stats` retorna os dados de cadastro. O novo endpoint `/admin/stats` unifica tudo — inclusive `total_groups` e `total_players` — em uma única chamada, eliminando múltiplas requisições paralelas do frontend.
+> **Nota:** O endpoint `/players/me/stats` atual já retorna `platform_minutes_played` e `platform_total_matches` para admins, e `/players/signups/stats` retorna os dados de cadastro. O novo endpoint `/admin/stats` unifica tudo — inclusive `total_groups`, `total_players` e `total_reviews` — em uma única chamada, eliminando múltiplas requisições paralelas do frontend.
 
 ### 4.2 `GET /api/v1/admin/matches`
 
@@ -176,10 +178,10 @@ Novo endpoint de listagem global de grupos. Requer `players.role = 'admin'`.
 │  rachao.app                                      │
 ├─────────────────────────────────────────────────┤
 │                                                  │
-│  ┌──────────┐ ┌──────────┐ ┌──────┐ ┌───────┐  │
-│  │ 148      │ │ 12       │ │ 203  │ │ 312h  │  │
-│  │ Rachões→ │ │ Grupos → │ │ Jog→ │ │ Horas │  │
-│  └──────────┘ └──────────┘ └──────┘ └───────┘  │
+│  ┌────────┐ ┌────────┐ ┌──────┐ ┌───────┐ ┌──────┐  │
+│  │ 148    │ │ 12     │ │ 203  │ │ 312h  │ │ 47   │  │
+│  │ Rach.→ │ │ Grup.→ │ │ Jog→ │ │ Horas │ │ Aval→│  │
+│  └────────┘ └────────┘ └──────┘ └───────┘ └──────┘  │
 │                                                  │
 │  Novos Cadastros                                 │
 │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │
@@ -189,7 +191,7 @@ Novo endpoint de listagem global de grupos. Requer `players.role = 'admin'`.
 └─────────────────────────────────────────────────┘
 ```
 
-- Grid 2×2 em mobile, 4 colunas em `sm:` para os cards de plataforma.
+- Grid 2×2 em mobile (5º card ocupa linha inteira ou quebra para segunda linha), 5 colunas em `sm:` para os cards de plataforma.
 - Cards clicáveis têm seta `→` no label ou ícone `ChevronRight`.
 - Card "Horas" não é clicável — sem cursor pointer / sem link.
 - Seção "Novos Cadastros" em grid 3 colunas (igual ao atual).
@@ -238,10 +240,10 @@ Novo endpoint de listagem global de grupos. Requer `players.role = 'admin'`.
 
 | Arquivo | Ação | Descrição |
 |---|---|---|
-| `football-api/app/api/v1/routers/admin.py` | Criar | Endpoints `GET /admin/stats`, `GET /admin/matches`, `GET /admin/groups` |
-| `football-api/app/api/v1/router.py` | Modificar | Registrar `admin.router` com prefix `/admin` |
-| `football-api/app/schemas/admin.py` | Criar | Schemas `AdminStatsResponse`, `AdminMatchItem`, `AdminMatchListResponse`, `AdminGroupItem`, `AdminGroupListResponse` |
-| `football-frontend/src/lib/api.ts` | Modificar | Adicionar `admin.getStats()`, `admin.getMatches(params)`, `admin.getGroups(params)` e tipos correspondentes |
+| `football-api/app/api/v1/routers/admin.py` | Modificar | Adicionar `total_reviews` ao endpoint `GET /admin/stats` |
+| `football-api/app/schemas/admin.py` | Modificar | Adicionar campo `total_reviews: int` em `AdminStatsResponse` |
+| `football-frontend/src/lib/api.ts` | Modificar | Adicionar campo `total_reviews` em `AdminStatsResponse` |
+| `football-frontend/src/routes/admin/+page.svelte` | Modificar | Adicionar card "Avaliações" clicável para `/admin/reviews` |
 | `football-frontend/src/routes/admin/+page.svelte` | Criar | Nova home do super admin com big numbers |
 | `football-frontend/src/routes/admin/matches/+page.svelte` | Criar | Listagem global de rachões |
 | `football-frontend/src/routes/admin/groups/+page.svelte` | Criar | Listagem global de grupos |
@@ -253,8 +255,9 @@ Novo endpoint de listagem global de grupos. Requer `players.role = 'admin'`.
 
 - [ ] Acesso a `/admin` por usuário não-admin redireciona para `/dashboard`
 - [ ] Acesso a `/dashboard` por super admin redireciona para `/admin`
-- [ ] Os 4 big numbers de plataforma são carregados em uma única requisição (`/admin/stats`)
-- [ ] Cards de Rachões, Grupos e Jogadores são clicáveis e navegam para as listagens corretas
+- [ ] Os 5 big numbers de plataforma são carregados em uma única requisição (`/admin/stats`)
+- [ ] Cards de Rachões, Grupos, Jogadores e Avaliações são clicáveis e navegam para as listagens corretas
+- [ ] Card "Avaliações" navega para `/admin/reviews`
 - [ ] Card de Horas não é clicável
 - [ ] Horas exibidas no formato `Xh Ymin`; zero exibe "—"
 - [ ] "Meus Grupos" não aparece em `/admin`
