@@ -1,7 +1,7 @@
 <script lang="ts">
   import { groups, matches, players as playersApi } from '$lib/api';
   import type { Group, Match, SignupStats } from '$lib/api';
-  import { currentPlayer, isAdmin } from '$lib/stores/auth';
+  import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users, UserPlus } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
@@ -75,6 +75,13 @@
     } catch (e) { console.error('[dashboard] erro:', e); }
     loading = false;
   }
+
+  // Redireciona super admins para o painel dedicado
+  $effect(() => {
+    if (!$authStore.loading && $isAdmin) {
+      goto('/admin', { replaceState: true });
+    }
+  });
 
   $effect(() => {
     fetchDashboard();
