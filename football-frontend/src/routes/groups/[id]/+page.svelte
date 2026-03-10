@@ -425,9 +425,6 @@
         <div class="card p-12 text-center">
           <Calendar size={40} class="text-gray-300 mx-auto mb-3" />
           <p class="text-gray-500">{tab === 'upcoming' ? 'Nenhum rachão agendado.' : 'Nenhum rachão encerrado ainda.'}</p>
-          {#if isGroupAdmin() && tab === 'upcoming'}
-            <button class="btn-primary mt-4" onclick={() => showMatch = true}><Plus size={16} /> Criar rachão</button>
-          {/if}
         </div>
       {:else}
         <div class="space-y-3">
