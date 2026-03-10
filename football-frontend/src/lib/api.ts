@@ -229,6 +229,63 @@ export const reviews = {
   },
 };
 
+// ── Admin ─────────────────────────────────────────────────────
+export type AdminStatsResponse = {
+  total_matches: number;
+  total_groups: number;
+  total_players: number;
+  platform_minutes_played: number;
+  signups_total: number;
+  signups_last_7_days: number;
+  signups_last_30_days: number;
+};
+
+export type AdminMatchItem = {
+  id: string;
+  hash: string;
+  number: number;
+  group_id: string;
+  group_name: string;
+  match_date: string;
+  start_time: string;
+  end_time: string | null;
+  location: string;
+  status: 'open' | 'in_progress' | 'closed';
+};
+
+export type AdminMatchListResponse = { total: number; items: AdminMatchItem[] };
+
+export type AdminGroupItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  total_members: number;
+  total_matches: number;
+  created_at: string;
+};
+
+export type AdminGroupListResponse = { total: number; items: AdminGroupItem[] };
+
+export const admin = {
+  getStats: () => get<AdminStatsResponse>('/admin/stats'),
+  getMatches: (params?: { status?: string; limit?: number; offset?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.limit)  q.set('limit',  String(params.limit));
+    if (params?.offset) q.set('offset', String(params.offset));
+    const qs = q.toString();
+    return get<AdminMatchListResponse>(`/admin/matches${qs ? '?' + qs : ''}`);
+  },
+  getGroups: (params?: { limit?: number; offset?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.limit)  q.set('limit',  String(params.limit));
+    if (params?.offset) q.set('offset', String(params.offset));
+    const qs = q.toString();
+    return get<AdminGroupListResponse>(`/admin/groups${qs ? '?' + qs : ''}`);
+  },
+};
+
 // ── Invites ───────────────────────────────────────────────────
 export const invites = {
   create: (groupId: string) => post<{ id: string; token: string; expires_at: string }>('/invites', { group_id: groupId }),

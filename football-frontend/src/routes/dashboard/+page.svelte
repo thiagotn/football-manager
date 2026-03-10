@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { groups, players as playersApi } from '$lib/api';
   import type { SignupStats } from '$lib/api';
@@ -18,6 +19,13 @@
       myGroups = await groups.list();
     } finally {
       loading = false;
+    }
+  });
+
+  // Redireciona super admins para o painel dedicado
+  $effect(() => {
+    if (!$authStore.loading && $isAdmin) {
+      goto('/admin', { replaceState: true });
     }
   });
 
