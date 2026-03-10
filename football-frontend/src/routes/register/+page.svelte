@@ -18,6 +18,7 @@
   let loading = $state(false);
   let showPw = $state(false);
   let error = $state('');
+  let termsAccepted = $state(false);
 
   async function handleRegister() {
     error = '';
@@ -124,7 +125,17 @@
           autocomplete="new-password" />
       </div>
 
-      <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={loading}>
+      <label class="flex items-start gap-2 cursor-pointer">
+        <input type="checkbox" bind:checked={termsAccepted} class="mt-0.5 shrink-0 accent-primary-600" />
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          Li e aceito os
+          <a href="/termos" target="_blank" class="text-primary-600 hover:underline">Termos de Uso</a>
+          e a
+          <a href="/privacidade" target="_blank" class="text-primary-600 hover:underline">Política de Privacidade</a>
+        </span>
+      </label>
+
+      <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={loading || !termsAccepted}>
         <UserPlus size={16} />
         {loading ? 'Criando conta…' : 'Criar conta grátis'}
       </button>

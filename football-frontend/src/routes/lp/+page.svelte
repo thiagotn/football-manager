@@ -365,7 +365,9 @@
   <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
     <span class="text-white font-semibold">⚽ rachao.app</span>
     <span class="text-gray-500 text-xs">© 2026</span>
-    <div class="flex gap-5">
+    <div class="flex flex-wrap gap-5">
+      <a href="/termos" class="hover:text-white transition-colors">Termos de Uso</a>
+      <a href="/privacidade" class="hover:text-white transition-colors">Privacidade</a>
       <a href="/faq" class="hover:text-white transition-colors">FAQ</a>
       <a href="/login" class="hover:text-white transition-colors">Entrar</a>
     </div>
