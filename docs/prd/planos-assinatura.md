@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| **Versão** | 1.2 |
+| **Versão** | 1.3 |
 | **Status** | Fase 1 Implementada · Fase 2 parcial |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
@@ -85,10 +85,10 @@ Implementar um sistema de planos de assinatura com controle de limites de recurs
 | URL pública de partida | ✅ | ✅ | ✅ |
 | Histórico de partidas | 30 dias | 6 meses | Ilimitado |
 | Suporte | Comunidade | E-mail | Prioritário |
-| **Preço mensal** | **Grátis** | **R$ 19,90** | **R$ 49,90** |
-| **Preço anual** | **Grátis** | **R$ 191,04** (-20%) | **R$ 478,80** (-20%) |
+| **Preço mensal** | **Grátis** | A definir | A definir |
+| **Preço anual** | **Grátis** | A definir | A definir |
 
-> **Nota:** Os valores acima são sugestões iniciais e devem ser validados com pesquisa de precificação antes do lançamento.
+> **Nota:** Os preços dos planos pagos (Básico e Pro) ainda não foram definidos. Um estudo de precificação deve ser realizado antes do lançamento. Os valores em `src/lib/plans.ts` foram zerados (`price_monthly: null`) até que os preços sejam confirmados.
 
 ### 2.2 Definição de Limites
 
@@ -132,7 +132,7 @@ O usuário deve poder cancelar a assinatura a qualquer momento. O acesso ao plan
 Usuários com assinatura cancelada ou expirada devem poder reativar o plano de forma simples, sem perda de dados históricos.
 
 **RF-16 — Exibição de planos na Landing Page**
-A `/lp` deve exibir uma seção "Planos" com cards dos planos disponíveis (Free, Básico, Pro), seus preços e highlights. Planos ainda não disponíveis devem exibir badge "Em breve" e botão desabilitado. O card do plano Free deve ter destaque visual e CTA "Cadastrar grátis" → `/register`.
+A `/lp` deve exibir uma seção "Planos" com cards dos planos disponíveis (Free, Básico, Pro), seus preços e highlights. Planos ainda não disponíveis devem exibir badge "Em breve", botão desabilitado e **não exibir preço** (mostrar "Preço a definir" até que os valores sejam confirmados). O card do plano Free deve ter destaque visual e CTA "Cadastrar grátis" → `/register`.
 
 **RF-17 — Banner de plano no cadastro**
 A página `/register` deve exibir um banner com o plano selecionado (nome, preço, highlights). O plano é determinado pelo query param `?plan=` (ex: `/register?plan=free`). Se omitido, usa `free`. Quando planos pagos estiverem disponíveis, o CTA de planos pagos na `/lp` redirecionará para `/register?plan=basic` ou `/register?plan=pro`.
@@ -271,10 +271,11 @@ ALTER TABLE matches ADD COLUMN archived_by_plan BOOLEAN NOT NULL DEFAULT FALSE;
 ### 5.2 Seed de planos iniciais
 
 ```sql
+-- Nota: preços de Básico e Pro a definir após estudo de precificação
 INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_groups, max_matches, max_members, history_days) VALUES
-  ('free',  'Free',   0,      0,      1,  3,  30, 30),
-  ('basic', 'Básico', 19.90,  191.04, 3, -1,  50, 180),
-  ('pro',   'Pro',    49.90,  478.80, 10, -1, -1, -1);
+  ('free',  'Free',   0,    0,    1,  3,  30, 30),
+  ('basic', 'Básico', 0,    0,    3, -1,  50, 180),  -- preço a definir
+  ('pro',   'Pro',    0,    0,   10, -1,  -1, -1);   -- preço a definir
 ```
 
 ---

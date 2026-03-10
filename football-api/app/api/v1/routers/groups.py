@@ -12,6 +12,7 @@ from app.db.repositories.subscription_repo import SubscriptionRepository
 _FREE_GROUPS_LIMIT = 1
 _FREE_MEMBERS_LIMIT = 30
 from app.db.repositories.group_repo import GroupRepository
+from app.db.repositories.group_stats_repo import GroupStatsRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
 from app.models.group import GroupMemberRole
@@ -25,6 +26,7 @@ from app.schemas.group import (
     GroupUpdate,
     UpdateMemberRoleRequest,
 )
+from app.schemas.group_stats import GroupStatsResponse
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -226,3 +228,20 @@ async def remove_member(
     m_repo = MatchRepository(db)
     await m_repo.delete_player_attendances_in_open_matches(group_id, player_id)
     await repo.delete(member)
+
+
+# ── Stats ──────────────────────────────────────────────────────────────────────
+
+@router.get("/{group_id}/stats", response_model=GroupStatsResponse)
+async def get_group_stats(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
+    repo = GroupRepository(db)
+    group = await repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+    if current.role != PlayerRole.ADMIN:
+        member = await repo.get_member(group_id, current.id)
+        if not member:
+            raise ForbiddenError("Você não é membro deste grupo")
+    stats_repo = GroupStatsRepository(db)
+    players = await stats_repo.get_group_stats(group_id)
+    return GroupStatsResponse(players=players)

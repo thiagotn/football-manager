@@ -158,6 +158,16 @@
           </p>
         </div>
       </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex gap-4">
+        <div class="text-3xl shrink-0">🏆</div>
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-1">Votação pós-partida</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Após cada partida, os jogadores elegem o Top 5 da pelada e a decepção do jogo. Engajamento garantido mesmo depois do apito final.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -210,7 +220,9 @@
           <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">{plan.name}</h3>
             <div class="mt-1">
-              {#if plan.price_monthly === null}
+              {#if !plan.available}
+                <span class="text-sm text-gray-400 italic">Preço a definir</span>
+              {:else if plan.price_monthly === null}
                 <span class="text-3xl font-extrabold text-primary-600">Grátis</span>
               {:else}
                 <span class="text-3xl font-extrabold text-gray-900">R$ {plan.price_monthly.toFixed(2).replace('.', ',')}</span>

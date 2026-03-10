@@ -74,6 +74,7 @@ class Match(Base, UUIDMixin, TimestampMixin):
     status: Mapped[MatchStatus] = mapped_column(
         _match_status_col, nullable=False, default=MatchStatus.OPEN
     )
+    vote_notified: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id", ondelete="SET NULL"), nullable=True
     )

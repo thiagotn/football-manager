@@ -90,6 +90,15 @@ export const players = {
 };
 
 // ── Groups ────────────────────────────────────────────────────
+export type PlayerStatItem = {
+  player_id: string;
+  display_name: string;
+  vote_points: number;
+  flop_votes: number;
+  minutes_played: number;
+};
+export type GroupStatsResponse = { players: PlayerStatItem[] };
+
 export const groups = {
   list: () => get<Group[]>('/groups'),
   get: (id: string) => get<GroupDetail>(`/groups/${id}`),
@@ -101,6 +110,7 @@ export const groups = {
   removeMember: (groupId: string, playerId: string) => del(`/groups/${groupId}/members/${playerId}`),
   updateMemberRole: (groupId: string, playerId: string, role: string) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, { role }),
+  getStats: (id: string) => get<GroupStatsResponse>(`/groups/${id}/stats`),
 };
 
 // ── Matches ───────────────────────────────────────────────────
@@ -139,6 +149,33 @@ export type SubscriptionInfo = {
 
 export const subscriptions = {
   me: () => get<SubscriptionInfo>('/subscriptions/me'),
+};
+
+// ── Votes ─────────────────────────────────────────────────────
+export type VoteStatusResponse = {
+  status: 'not_open' | 'open' | 'closed';
+  opens_at: string;
+  closes_at: string;
+  voter_count: number;
+  eligible_count: number;
+  current_player_voted: boolean;
+  time_label: string;
+};
+
+export type VoteTop5ResultItem = { position: number; player_id: string; name: string; points: number };
+export type VoteFlopResultItem = { player_id: string; name: string; votes: number };
+export type VoteResultsResponse = {
+  top5: VoteTop5ResultItem[];
+  flop: VoteFlopResultItem[];
+  total_voters: number;
+  eligible_voters: number;
+};
+
+export const votes = {
+  getStatus:  (matchId: string) => get<VoteStatusResponse>(`/matches/${matchId}/votes/status`),
+  getResults: (matchId: string) => get<VoteResultsResponse>(`/matches/${matchId}/votes/results`),
+  submit: (matchId: string, top5: { player_id: string; position: number }[], flop_player_id?: string | null) =>
+    post<{ message: string }>(`/matches/${matchId}/votes`, { top5, flop_player_id }),
 };
 
 // ── Reviews ───────────────────────────────────────────────────

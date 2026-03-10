@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, ApiError } from '$lib/api';
-  import type { GroupDetail, Match, Player } from '$lib/api';
-  import { currentPlayer, isAdmin } from '$lib/stores/auth';
+  import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, ApiError } from '$lib/api';
+  import type { GroupDetail, Match, Player, VoteStatusResponse, PlayerStatItem } from '$lib/api';
+  import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -17,7 +17,7 @@
   let group: GroupDetail | null = $state(null);
   let matchList: Match[] = $state([]);
   let loading = $state(true);
-  let tab: 'upcoming' | 'past' | 'members' = $state('upcoming');
+  let tab: 'upcoming' | 'past' | 'members' | 'stats' = $state('upcoming');
 
   // Modals
   let showMatch = $state(false);
@@ -39,6 +39,29 @@
 
   let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false });
 
+  // Stats tab
+  let stats = $state<PlayerStatItem[] | null>(null);
+  let statsLoading = $state(false);
+
+  async function loadStats() {
+    if (stats !== null) return;
+    statsLoading = true;
+    try { stats = (await groupsApi.getStats(groupId)).players; }
+    catch { stats = []; }
+    statsLoading = false;
+  }
+
+  function fmtMinutes(m: number): string {
+    if (m === 0) return '—';
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    if (h === 0) return `${min}min`;
+    if (min === 0) return `${h}h`;
+    return `${h}h ${min}min`;
+  }
+
+  const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
   let nonAdminMembers = $derived(
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
       .sort((a, b) => (a.player.nickname || a.player.name).localeCompare(b.player.nickname || b.player.name, 'pt-BR', { sensitivity: 'base' }))
@@ -56,6 +79,22 @@
   let confirmMessage = $state('');
   let confirmLabel = $state('Confirmar');
   let confirmAction = $state<() => void>(() => {});
+
+  // Partidas encerradas com votação aberta e pendente para o jogador atual
+  let pendingVotes = $state<{ match: Match; status: VoteStatusResponse }[]>([]);
+  $effect(() => {
+    if (!$isLoggedIn || $isAdmin) { pendingVotes = []; return; }
+    const closed = matchList.filter(m => m.status === 'closed').slice(0, 3);
+    if (closed.length === 0) { pendingVotes = []; return; }
+    Promise.all(
+      closed.map(m => votesApi.getStatus(m.id).then(s => ({ match: m, status: s })).catch(() => null))
+    ).then(results => {
+      pendingVotes = results.filter(
+        (r): r is { match: Match; status: VoteStatusResponse } =>
+          r !== null && r.status.status === 'open' && !r.status.current_player_voted
+      );
+    });
+  });
 
   function askConfirm(message: string, label: string, action: () => void) {
     confirmMessage = message;
@@ -305,6 +344,24 @@
       </div>
     </div>
 
+    <!-- Votação pendente -->
+    {#if pendingVotes.length > 0}
+      <div class="mb-5 space-y-2">
+        {#each pendingVotes as { match: m, status: vs }}
+          <a
+            href="/match/{m.hash}"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+            <span class="text-xl shrink-0">🏆</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Vote nos melhores do Rachão #{m.number}</p>
+              <p class="text-xs text-amber-600 dark:text-amber-400">{vs.time_label} · {vs.voter_count} de {vs.eligible_count} já votaram</p>
+            </div>
+            <ChevronRight size={16} class="text-amber-600 dark:text-amber-400 shrink-0" />
+          </a>
+        {/each}
+      </div>
+    {/if}
+
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-white/20 mb-6">
       <button
@@ -324,6 +381,13 @@
         onclick={() => tab = 'members'}>
         Jogadores ({nonAdminMembers.length})
       </button>
+      {#if pastMatches.length > 0}
+        <button
+          class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'stats' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
+          onclick={() => { tab = 'stats'; loadStats(); }}>
+          Estatísticas
+        </button>
+      {/if}
     </div>
 
     <!-- Próximos / Últimos tabs -->
@@ -402,6 +466,58 @@
             </div>
           {/each}
         </div>
+      {/if}
+    {/if}
+
+    <!-- Stats tab -->
+    {#if tab === 'stats'}
+      {#if statsLoading}
+        <div class="animate-pulse space-y-2">
+          {#each [1,2,3,4,5] as _}
+            <div class="h-10 bg-white/10 rounded-lg"></div>
+          {/each}
+        </div>
+      {:else if !stats || stats.length === 0}
+        <div class="card p-12 text-center">
+          <p class="text-gray-400 dark:text-gray-500 text-sm">Nenhuma estatística disponível ainda.<br>As estatísticas aparecem após o encerramento das partidas.</p>
+        </div>
+      {:else}
+        <div class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                <th class="px-4 py-2 text-left w-8">#</th>
+                <th class="px-4 py-2 text-left">Jogador</th>
+                <th class="px-4 py-2 text-right">Pts</th>
+                <th class="px-4 py-2 text-right hidden sm:table-cell">Decepções</th>
+                <th class="px-4 py-2 text-right hidden sm:table-cell">Horas</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+              {#each stats as player, i}
+                {@const rank = i + 1}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                  <td class="px-4 py-2.5 text-center">
+                    {#if MEDALS[rank]}
+                      <span class="text-base">{MEDALS[rank]}</span>
+                    {:else}
+                      <span class="text-xs text-gray-400">{rank}</span>
+                    {/if}
+                  </td>
+                  <td class="px-4 py-2.5 font-medium text-gray-900 dark:text-gray-100">{player.display_name}</td>
+                  <td class="px-4 py-2.5 text-right font-bold text-primary-600 dark:text-primary-400">{player.vote_points}</td>
+                  <td class="px-4 py-2.5 text-right hidden sm:table-cell {player.flop_votes > 0 ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}">
+                    {player.flop_votes > 0 ? player.flop_votes : '—'}
+                  </td>
+                  <td class="px-4 py-2.5 text-right hidden sm:table-cell text-gray-600 dark:text-gray-400">{fmtMinutes(player.minutes_played)}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center">
+          Pontos acumulados nas votações · Horas apenas em partidas com horário de término registrado
+        </p>
       {/if}
     {/if}
 

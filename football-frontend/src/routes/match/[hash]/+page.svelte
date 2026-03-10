@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { matches as matchesApi, groups as groupsApi, ApiError } from '$lib/api';
-  import type { MatchDetail, Attendance } from '$lib/api';
+  import { matches as matchesApi, groups as groupsApi, votes as votesApi, ApiError } from '$lib/api';
+  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse } from '$lib/api';
   import { currentPlayer, isLoggedIn, isAdmin } from '$lib/stores/auth';
 
   let { data } = $props();
@@ -9,6 +9,8 @@
   import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import VoteForm from '$lib/components/VoteForm.svelte';
+  import VoteResults from '$lib/components/VoteResults.svelte';
   import { relativeDate } from '$lib/utils.js';
 
   const matchHash = $page.params.hash;
@@ -23,6 +25,49 @@
   let adminResponding = $state<string | null>(null);
   let togglingStatus = $state(false);
   let confirmOpen = $state(false);
+
+  // Voting
+  let voteStatus = $state<VoteStatusResponse | null>(null);
+  let voteResults = $state<VoteResultsResponse | null>(null);
+  let voteSaving = $state(false);
+  let voteSubmitted = $state(false);
+  let showVoteModal = $state(true);
+
+  $effect(() => {
+    const m = match;
+    if (!m || !$isLoggedIn || $isAdmin) return;
+    if (m.status !== 'closed') return;
+    votesApi.getStatus(m.id)
+      .then(s => {
+        voteStatus = s;
+        if (s.status === 'closed') {
+          votesApi.getResults(m.id).then(r => { voteResults = r; }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  });
+
+  async function submitVote(top5: { player_id: string; position: number }[], flop_player_id: string | null) {
+    if (!match) return;
+    voteSaving = true;
+    try {
+      await votesApi.submit(match.id, top5, flop_player_id);
+      voteSubmitted = true;
+      const s = await votesApi.getStatus(match.id);
+      voteStatus = s;
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao enviar voto');
+    } finally {
+      voteSaving = false;
+    }
+  }
+
+  // Jogadores elegíveis para votação (confirmados, exceto o próprio)
+  let voteEligible = $derived(
+    (match?.attendances ?? []).filter(
+      a => a.status === 'confirmed' && a.player.id !== $currentPlayer?.id
+    )
+  );
   let confirmMessage = $state('');
   let confirmAction = $state<() => void>(() => {});
   let showRsvpBanner = $state(true);
@@ -190,6 +235,14 @@
 
 <PageBackground>
   <main class="relative z-10 max-w-2xl mx-auto px-4 pt-4 pb-8">
+    {#if $isLoggedIn && history.length > 1}
+      <button
+        onclick={() => history.back()}
+        class="mb-3 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+        ← Voltar
+      </button>
+    {/if}
+
     {#if loading}
       <div class="animate-pulse space-y-4">
         <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
@@ -299,6 +352,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Voting chip (before player list) -->
+      {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && !showVoteModal}
+        <button
+          onclick={() => showVoteModal = true}
+          class="mb-3 w-full card px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors text-left">
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+            🏆 Votação pós-partida
+            <span class="text-xs font-normal px-2 py-0.5 rounded-full
+              {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+               voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
+               'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
+              {voteStatus.status === 'open' ? 'Aberta' : voteStatus.status === 'closed' ? 'Encerrada' : 'Em breve'}
+            </span>
+          </span>
+          <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">Ver →</span>
+        </button>
+      {/if}
 
       <!-- Players lists -->
       <div class="relative">
@@ -475,35 +546,94 @@
         </div>
       {/if}
 
-      <!-- Share footer -->
-      <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
+      <!-- Share -->
+      <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
         <button onclick={shareWhatsApp} class="flex-1 btn btn-secondary justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.558 4.121 1.533 5.853L.036 23.964l6.252-1.639A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-4.998-1.366l-.358-.213-3.712.974 1.014-3.598-.233-.371A9.818 9.818 0 1 1 12 21.818z"/>
           </svg>
-          Compartilhar no WhatsApp
+          WhatsApp
         </button>
         <button onclick={copyLink} class="flex-1 btn btn-secondary justify-center gap-2">
           <Link2 size={16} /> Copiar link
         </button>
       </div>
-      <div class="mt-4 rounded-xl bg-gray-900/75 py-4 px-4 flex items-center justify-between">
-        {#if $isLoggedIn && history.length > 1}
-          <button onclick={() => history.back()} class="text-base font-semibold text-white/90 hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 transition-colors">
-            ← Voltar
-          </button>
-        {:else}
-          <a href="/" class="text-base font-semibold text-primary-300 hover:text-primary-200 px-2 py-1 rounded-lg hover:bg-white/10 transition-colors">
-            Conheça a plataforma →
-          </a>
-        {/if}
-        <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-white/70 hover:text-white transition-colors">rachao.app</a>
-        <span class="text-xs text-white/50">© 2026</span>
+      <div class="mt-4 text-center">
+        <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">rachao.app © 2026</a>
       </div>
     {/if}
   </main>
 </PageBackground>
+
+<!-- Voting Modal (fixed overlay, bottom sheet on mobile / centered on desktop) -->
+{#if voteStatus && match && match.status === 'closed' && $isLoggedIn && !$isAdmin && showVoteModal}
+  <!-- Backdrop -->
+  <div
+    class="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center"
+    role="dialog"
+    aria-modal="true"
+    onclick={(e) => { if (e.target === e.currentTarget) showVoteModal = false; }}>
+
+    <!-- Card -->
+    <div class="bg-white dark:bg-gray-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
+
+      <!-- Header (sticky) -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+        <p class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          🏆 Votação pós-partida
+          <span class="text-xs font-normal px-2 py-0.5 rounded-full
+            {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+             voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
+             'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
+            {voteStatus.status === 'open' ? 'Aberta' : voteStatus.status === 'closed' ? 'Encerrada' : 'Em breve'}
+          </span>
+        </p>
+        <button
+          onclick={() => showVoteModal = false}
+          class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          aria-label="Fechar">
+          <X size={18} />
+        </button>
+      </div>
+
+      <!-- Body (scrollable) -->
+      <div class="overflow-y-auto p-5">
+        {#if voteStatus.status === 'not_open'}
+          <div class="text-center py-6">
+            <p class="text-4xl mb-3">⏳</p>
+            <p class="text-base font-semibold text-gray-700 dark:text-gray-200">{voteStatus.time_label}</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">20 min após o término da partida</p>
+          </div>
+
+        {:else if voteStatus.status === 'open'}
+          {#if voteStatus.current_player_voted || voteSubmitted}
+            <div class="text-center py-6">
+              <p class="text-4xl mb-3">✅</p>
+              <p class="text-base font-semibold text-gray-700 dark:text-gray-200">Voto registrado!</p>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                {voteStatus.voter_count} de {voteStatus.eligible_count} jogador{voteStatus.eligible_count !== 1 ? 'es' : ''} votaram
+              </p>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Resultados: {voteStatus.time_label}</p>
+            </div>
+          {:else if voteEligible.length === 0}
+            <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">Nenhum jogador elegível para votar.</p>
+          {:else}
+            <VoteForm eligiblePlayers={voteEligible} onsubmit={submitVote} saving={voteSaving} />
+          {/if}
+
+        {:else if voteStatus.status === 'closed'}
+          {#if voteResults}
+            <VoteResults results={voteResults} />
+          {:else}
+            <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">Carregando resultados…</p>
+          {/if}
+        {/if}
+      </div>
+
+    </div>
+  </div>
+{/if}
 
 <ConfirmDialog
   bind:open={confirmOpen}
