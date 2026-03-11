@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { matches as matchesApi, teams as teamsApi, groups as groupsApi, ApiError } from '$lib/api';
   import type { MatchDetail, TeamsResponse } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
@@ -81,7 +82,7 @@
 
     <!-- Header -->
     <div class="flex items-center gap-2 mb-5">
-      <button onclick={() => history.back()} class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors">
+      <button onclick={() => goto(`/match/${matchHash}`, { replaceState: true })} class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors">
         <ChevronLeft size={22} />
       </button>
       <div class="flex-1 min-w-0">
