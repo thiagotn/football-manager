@@ -615,35 +615,33 @@
           <div class="flex items-center gap-2 px-4 py-3">
             <!-- Info -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                  {m.player.nickname || m.player.name}
-                </p>
+              <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                {m.player.nickname || m.player.name}
+              </p>
+              <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {#if m.role === 'admin'}
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">Presidente</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Presidente</span>
                 {/if}
                 {#if isGroupAdmin() && m.is_goalkeeper}
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">GK</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">GK</span>
+                {/if}
+                {#if isGroupAdmin() && m.skill_stars != null}
+                  <StarRating rating={m.skill_stars} readonly size={14} />
                 {/if}
               </div>
-              {#if isGroupAdmin() && m.skill_stars != null}
-                <div class="mt-0.5">
-                  <StarRating rating={m.skill_stars} readonly size={14} />
-                </div>
-              {/if}
             </div>
             <!-- Actions -->
             {#if isGroupAdmin() && m.player.id !== $currentPlayer?.id}
-              <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+              <div class="flex items-center gap-1 shrink-0">
                 <button
                   onclick={() => roleEditMember = { id: m.player.id, name: m.player.name, role: m.role, skill_stars: m.skill_stars ?? 2, is_goalkeeper: m.is_goalkeeper ?? false }}
-                  class="btn-sm btn-ghost">
-                  <Pencil size={14} /> Editar
+                  class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
+                  <Pencil size={11} /> Editar
                 </button>
                 <button
                   onclick={() => removeMember(m.player.id, m.player.name)}
-                  class="btn-sm btn-ghost text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                  <Trash2 size={14} /> Remover
+                  class="text-xs px-2 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 flex items-center gap-1 shrink-0">
+                  <Trash2 size={11} /> Remover
                 </button>
               </div>
             {/if}
