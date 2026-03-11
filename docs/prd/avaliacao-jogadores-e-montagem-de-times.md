@@ -117,6 +117,7 @@ Os times gerados são exibidos em uma página pública (sem autenticação obrig
 ```
 
 A página exibe:
+- **Card "Primeiro jogo do rachão"** (acima dos times): destaque com os nomes e cores dos dois primeiros times sorteados (posição 1 × posição 2), indicando qual será a primeira partida. Visível para todos.
 - Nome de cada time e sua lista de jogadores (nome/apelido + indicador de goleiro).
 - Soma de estrelas de cada time (visível apenas para o admin do grupo).
 - Lista de reservas (se houver).
@@ -399,6 +400,7 @@ def montar_times(confirmados, players_per_team):
 - [ ] Página `/match/[hash]/teams` é acessível sem login.
 - [ ] Admin consegue remontar os times, sobrescrevendo o sorteio anterior (com confirmação via `ConfirmDialog`).
 - [ ] Link para `/match/[hash]/teams` aparece na página da partida após a geração dos times.
+- [ ] Card "Primeiro jogo do rachão" é exibido no topo da página de times, mostrando o confronto entre o time de posição 1 e o de posição 2.
 - [ ] Grupos existentes não são afetados — membros atuais recebem `skill_stars = 2` via valor padrão da migration.
 
 ---

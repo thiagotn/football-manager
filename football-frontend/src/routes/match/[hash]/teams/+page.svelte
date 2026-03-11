@@ -131,6 +131,28 @@
         </div>
       {/if}
 
+      <!-- Primeiro confronto -->
+      {#if teamsData.teams.length >= 2}
+        {@const t1 = teamsData.teams[0]}
+        {@const t2 = teamsData.teams[1]}
+        <div class="card overflow-hidden mb-5">
+          <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">⚽ Primeiro jogo do rachão</p>
+          </div>
+          <div class="px-4 py-4 flex items-center justify-center gap-3">
+            <div class="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+              <div class="w-4 h-4 rounded-full shrink-0" style="background-color: {t1.color ?? '#6b7280'};"></div>
+              <span class="font-bold text-sm text-gray-900 dark:text-gray-100 text-center leading-snug">{t1.name}</span>
+            </div>
+            <span class="text-xl font-black text-gray-400 dark:text-gray-500 shrink-0">×</span>
+            <div class="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+              <div class="w-4 h-4 rounded-full shrink-0" style="background-color: {t2.color ?? '#6b7280'};"></div>
+              <span class="font-bold text-sm text-gray-900 dark:text-gray-100 text-center leading-snug">{t2.name}</span>
+            </div>
+          </div>
+        </div>
+      {/if}
+
       <!-- Teams grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {#each teamsData.teams as team}
