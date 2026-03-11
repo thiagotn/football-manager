@@ -193,7 +193,7 @@
           <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0">⏱️</div>
           <div>
             <h3 class="font-semibold text-gray-900 text-sm">Abre automaticamente</h3>
-            <p class="text-sm text-gray-500 mt-0.5">20 minutos após o término da partida, a votação abre sozinha para todos que confirmaram presença.</p>
+            <p class="text-sm text-gray-500 mt-0.5">A votação abre automaticamente após o término da partida — você define quando. Todos os confirmados são notificados.</p>
           </div>
         </div>
         <div class="flex gap-4">

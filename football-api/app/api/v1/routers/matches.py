@@ -149,6 +149,8 @@ async def create_match(group_id: uuid.UUID, body: MatchCreate, db: DB, current: 
         notes=body.notes,
         hash=hash_,
         created_by_id=current.id,
+        vote_open_delay_minutes=group.vote_open_delay_minutes,
+        vote_duration_hours=group.vote_duration_hours,
     )
 
     member_ids = await g_repo.get_non_admin_member_ids(group_id)

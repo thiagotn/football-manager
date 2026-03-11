@@ -608,7 +608,11 @@
           <div class="text-center py-6">
             <p class="text-4xl mb-3">⏳</p>
             <p class="text-base font-semibold text-gray-700 dark:text-gray-200">{voteStatus.time_label}</p>
-            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">20 min após o término da partida</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+              {voteStatus.vote_open_delay_minutes === 0
+                ? 'Imediatamente após o término da partida'
+                : `${voteStatus.vote_open_delay_minutes} min após o término da partida`}
+            </p>
           </div>
 
         {:else if voteStatus.status === 'open'}

@@ -66,7 +66,13 @@ async def create_group(body: GroupCreate, db: DB, current: CurrentPlayer):
     if existing:
         raise ConflictError(f"Slug '{slug}' já está em uso")
 
-    group = await repo.create(name=body.name, description=body.description, slug=slug)
+    group = await repo.create(
+        name=body.name,
+        description=body.description,
+        slug=slug,
+        vote_open_delay_minutes=body.vote_open_delay_minutes,
+        vote_duration_hours=body.vote_duration_hours,
+    )
 
     # Creator becomes group admin
     await repo.add_member(group.id, current.id, GroupMemberRole.ADMIN)
@@ -95,6 +101,8 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         per_match_amount=group.per_match_amount,
         monthly_amount=group.monthly_amount,
         recurrence_enabled=group.recurrence_enabled,
+        vote_open_delay_minutes=group.vote_open_delay_minutes,
+        vote_duration_hours=group.vote_duration_hours,
         created_at=group.created_at,
         updated_at=group.updated_at,
         members=[GroupMemberResponse.model_validate(m) for m in group.members],

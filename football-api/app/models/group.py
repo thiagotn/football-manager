@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 from enum import Enum as PyEnum
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,6 +32,8 @@ class Group(Base, UUIDMixin, TimestampMixin):
     per_match_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     monthly_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     recurrence_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    vote_open_delay_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
+    vote_duration_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=24)
 
     # Relationships
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")

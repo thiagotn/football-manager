@@ -5,6 +5,8 @@
 
   let name = $state('');
   let description = $state('');
+  let voteOpenDelay = $state(20);
+  let voteDuration = $state(24);
   let loading = $state(false);
   let error = $state('');
 
@@ -12,7 +14,12 @@
     error = '';
     loading = true;
     try {
-      const g = await groupsApi.create({ name, description: description || undefined });
+      const g = await groupsApi.create({
+        name,
+        description: description || undefined,
+        vote_open_delay_minutes: voteOpenDelay,
+        vote_duration_hours: voteDuration,
+      });
       toastSuccess('Grupo criado com sucesso!');
       goto(`/groups/${g.id}`);
     } catch (e: any) {
@@ -53,6 +60,34 @@
           placeholder="Descrição opcional do grupo"
           maxlength="500"
         ></textarea>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4">
+        <p class="text-sm font-medium text-gray-700 mb-3">Configurações de votação</p>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Abertura da votação após o término da partida</label>
+            <select bind:value={voteOpenDelay} class="input">
+              <option value={0}>Imediato (sem atraso)</option>
+              <option value={10}>10 minutos</option>
+              <option value={20}>20 minutos (padrão)</option>
+              <option value={30}>30 minutos</option>
+              <option value={60}>1 hora</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Duração da votação</label>
+            <select bind:value={voteDuration} class="input">
+              <option value={2}>2 horas</option>
+              <option value={4}>4 horas</option>
+              <option value={6}>6 horas</option>
+              <option value={12}>12 horas</option>
+              <option value={24}>24 horas (padrão)</option>
+              <option value={48}>48 horas</option>
+              <option value={72}>72 horas</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {#if error}

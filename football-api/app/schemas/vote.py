@@ -57,6 +57,7 @@ class VoteStatusResponse(BaseModel):
     current_player_voted: bool
     time_label: str       # ex: "Abre em 0h 45min" ou "Fecha em 18h 20min"
     voted_player_ids: list[UUID] = []  # vazio quando status = 'not_open'
+    vote_open_delay_minutes: int = 20
 
 
 class Top5ResultItem(BaseModel):

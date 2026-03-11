@@ -38,7 +38,7 @@
   let allPlayers: Player[] = $state([]);
   let addMemberId = $state('');
 
-  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false });
+  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, vote_open_delay_minutes: 20, vote_duration_hours: 24 });
 
   // Stats tab
   let stats = $state<PlayerStatItem[] | null>(null);
@@ -140,6 +140,8 @@
       per_match_amount: group.per_match_amount != null ? String(group.per_match_amount) : '',
       monthly_amount: group.monthly_amount != null ? String(group.monthly_amount) : '',
       recurrence_enabled: group.recurrence_enabled,
+      vote_open_delay_minutes: group.vote_open_delay_minutes ?? 20,
+      vote_duration_hours: group.vote_duration_hours ?? 24,
     };
     showEditGroup = true;
   }
@@ -153,6 +155,8 @@
         per_match_amount: editForm.per_match_amount !== '' ? parseFloat(editForm.per_match_amount) : null,
         monthly_amount: editForm.monthly_amount !== '' ? parseFloat(editForm.monthly_amount) : null,
         recurrence_enabled: editForm.recurrence_enabled,
+        vote_open_delay_minutes: editForm.vote_open_delay_minutes,
+        vote_duration_hours: editForm.vote_duration_hours,
       });
       group = await groupsApi.get(groupId);
       showEditGroup = false;
@@ -362,6 +366,18 @@
         {/if}
         {#if group.recurrence_enabled}
           <span class="text-xs text-primary-600 dark:text-primary-400">Recorrência semanal</span>
+        {/if}
+        {#if isGroupAdmin()}
+          <div class="flex items-center gap-1.5 text-xs text-gray-300 bg-white/10 rounded-lg px-2.5 py-1 w-full sm:w-auto">
+            <span>🗳️</span>
+            <span class="text-gray-400">Votação</span>
+            <span class="text-white/30">·</span>
+            <span>
+              {group.vote_open_delay_minutes === 0 ? 'inicia imediatamente' : `inicia em ${group.vote_open_delay_minutes}min`}
+            </span>
+            <span class="text-white/30">·</span>
+            <span>encerra em {group.vote_duration_hours}h</span>
+          </div>
         {/if}
       </div>
     </div>
@@ -893,6 +909,33 @@
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         Quando ativa, uma nova partida é criada automaticamente após o encerramento da atual, herdando os convidados com presença pendente.
       </p>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Configurações de votação</p>
+      <div class="space-y-3">
+        <div class="form-group">
+          <label class="label" for="egvotedelay">Abertura da votação após o término</label>
+          <select id="egvotedelay" class="input" bind:value={editForm.vote_open_delay_minutes}>
+            <option value={0}>Imediato (sem atraso)</option>
+            <option value={10}>10 minutos</option>
+            <option value={20}>20 minutos (padrão)</option>
+            <option value={30}>30 minutos</option>
+            <option value={60}>1 hora</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label" for="egvotedur">Duração da votação</label>
+          <select id="egvotedur" class="input" bind:value={editForm.vote_duration_hours}>
+            <option value={2}>2 horas</option>
+            <option value={4}>4 horas</option>
+            <option value={6}>6 horas</option>
+            <option value={12}>12 horas</option>
+            <option value={24}>24 horas (padrão)</option>
+            <option value={48}>48 horas</option>
+            <option value={72}>72 horas</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="flex gap-3 justify-end pt-2">
       <button type="button" class="btn-secondary" onclick={() => showEditGroup = false}>Cancelar</button>

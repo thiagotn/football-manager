@@ -6,16 +6,15 @@ BRT = ZoneInfo("America/Sao_Paulo")
 # Pontos por posição
 POINTS: dict[int, int] = {1: 10, 2: 8, 3: 6, 4: 4, 5: 2}
 
-VOTING_OPEN_DELAY = timedelta(minutes=20)
-VOTING_DURATION   = timedelta(hours=24)
-
 
 def voting_window(match) -> tuple[datetime, datetime]:
-    """Retorna (opens_at, closes_at) em BRT."""
+    """Retorna (opens_at, closes_at) em BRT usando as configurações da própria partida."""
     end_t = match.end_time if match.end_time else dt_time(23, 59)
     end_dt = datetime.combine(match.match_date, end_t).replace(tzinfo=BRT)
-    opens_at  = end_dt + VOTING_OPEN_DELAY
-    closes_at = opens_at + VOTING_DURATION
+    delay    = timedelta(minutes=getattr(match, "vote_open_delay_minutes", 20))
+    duration = timedelta(hours=getattr(match, "vote_duration_hours", 24))
+    opens_at  = end_dt + delay
+    closes_at = opens_at + duration
     return opens_at, closes_at
 
 

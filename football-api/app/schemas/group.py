@@ -23,6 +23,8 @@ class GroupCreate(BaseModel):
     slug: str | None = Field(None, max_length=60, description="Deixe vazio para gerar automaticamente")
     per_match_amount: Decimal | None = None
     monthly_amount: Decimal | None = None
+    vote_open_delay_minutes: int = Field(20, ge=0, le=120)
+    vote_duration_hours: int = Field(24, ge=2, le=72)
 
     @field_validator("slug", mode="before")
     @classmethod
@@ -38,6 +40,8 @@ class GroupUpdate(BaseModel):
     per_match_amount: Decimal | None = None
     monthly_amount: Decimal | None = None
     recurrence_enabled: bool | None = None
+    vote_open_delay_minutes: int | None = Field(None, ge=0, le=120)
+    vote_duration_hours: int | None = Field(None, ge=2, le=72)
 
 
 class GroupMemberResponse(BaseModel):
@@ -59,6 +63,8 @@ class GroupResponse(BaseModel):
     per_match_amount: Decimal | None
     monthly_amount: Decimal | None
     recurrence_enabled: bool
+    vote_open_delay_minutes: int
+    vote_duration_hours: int
     created_at: datetime
     updated_at: datetime
 

@@ -91,6 +91,7 @@ async def get_vote_status(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
         current_player_voted=current_voted,
         time_label=label,
         voted_player_ids=voted_ids,
+        vote_open_delay_minutes=match.vote_open_delay_minutes,
     )
 
 
@@ -149,7 +150,9 @@ async def get_pending_votes(db: DB, current: CurrentPlayer):
                  WHERE a2.match_id = m.id AND a2.status = 'confirmed') AS eligible_count,
                 (
                   (m.match_date + COALESCE(m.end_time, '23:59:00'::time))::timestamp
-                  AT TIME ZONE 'America/Sao_Paulo' + interval '24 hours 20 minutes'
+                  AT TIME ZONE 'America/Sao_Paulo'
+                  + (m.vote_open_delay_minutes || ' minutes')::interval
+                  + (m.vote_duration_hours || ' hours')::interval
                 ) AS closes_at
             FROM matches m
             JOIN groups g ON g.id = m.group_id
@@ -163,11 +166,14 @@ async def get_pending_votes(db: DB, current: CurrentPlayer):
               )
               AND (
                 (m.match_date + COALESCE(m.end_time, '23:59:00'::time))::timestamp
-                AT TIME ZONE 'America/Sao_Paulo' + interval '20 minutes'
+                AT TIME ZONE 'America/Sao_Paulo'
+                + (m.vote_open_delay_minutes || ' minutes')::interval
               ) <= NOW()
               AND (
                 (m.match_date + COALESCE(m.end_time, '23:59:00'::time))::timestamp
-                AT TIME ZONE 'America/Sao_Paulo' + interval '24 hours 20 minutes'
+                AT TIME ZONE 'America/Sao_Paulo'
+                + (m.vote_open_delay_minutes || ' minutes')::interval
+                + (m.vote_duration_hours || ' hours')::interval
               ) >= NOW()
             ORDER BY m.match_date DESC, m.start_time DESC
         """),
