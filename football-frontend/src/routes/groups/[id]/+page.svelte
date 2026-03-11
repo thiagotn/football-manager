@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, ApiError } from '$lib/api';
-  import type { GroupDetail, Match, Player, VoteStatusResponse, PlayerStatItem } from '$lib/api';
+  import type { GroupDetail, GroupMember, Match, Player, VoteStatusResponse, PlayerStatItem } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
@@ -11,6 +11,7 @@
   import TimePicker from '$lib/components/TimePicker.svelte';
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import StarRating from '$lib/components/StarRating.svelte';
   import { relativeDate } from '$lib/utils.js';
 
   const groupId = $page.params.id;
@@ -88,7 +89,8 @@
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
       .sort((a, b) => (a.player.nickname || a.player.name).localeCompare(b.player.nickname || b.player.name, 'pt-BR', { sensitivity: 'base' }))
   );
-  let roleEditMember = $state<{ id: string; name: string; role: string } | null>(null);
+  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; is_goalkeeper: boolean } | null>(null);
+  let skillSaving = $state(false);
 
   const today = new Date().toISOString().slice(0, 10);
   function matchSortKey(m: { match_date: string; start_time: string }) {
@@ -250,6 +252,15 @@
         toastSuccess(newRole === 'admin' ? `${name} agora é presidente do grupo` : `${name} voltou a ser membro`);
       } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao alterar papel'); }
     });
+  }
+
+  async function saveSkill(playerId: string, skill_stars: number, is_goalkeeper: boolean) {
+    skillSaving = true;
+    try {
+      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, is_goalkeeper });
+      group = await groupsApi.get(groupId);
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
+    skillSaving = false;
   }
 
   async function removeMember(playerId: string, name: string) {
@@ -603,19 +614,29 @@
         {#each nonAdminMembers as m}
           <div class="flex items-center gap-2 px-4 py-3">
             <!-- Info -->
-            <div class="flex-1 min-w-0 flex items-center gap-1.5">
-              <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                {m.player.nickname || m.player.name}
-              </p>
-              {#if m.role === 'admin'}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">Presidente</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                  {m.player.nickname || m.player.name}
+                </p>
+                {#if m.role === 'admin'}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">Presidente</span>
+                {/if}
+                {#if isGroupAdmin() && m.is_goalkeeper}
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">GK</span>
+                {/if}
+              </div>
+              {#if isGroupAdmin() && m.skill_stars != null}
+                <div class="mt-0.5">
+                  <StarRating rating={m.skill_stars} readonly size={14} />
+                </div>
               {/if}
             </div>
             <!-- Actions -->
             {#if isGroupAdmin() && m.player.id !== $currentPlayer?.id}
               <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                 <button
-                  onclick={() => roleEditMember = { id: m.player.id, name: m.player.name, role: m.role }}
+                  onclick={() => roleEditMember = { id: m.player.id, name: m.player.name, role: m.role, skill_stars: m.skill_stars ?? 2, is_goalkeeper: m.is_goalkeeper ?? false }}
                   class="btn-sm btn-ghost">
                   <Pencil size={14} /> Editar
                 </button>
@@ -840,15 +861,48 @@
   {/if}
 </Modal>
 
-<!-- Role edit bottom sheet -->
+<!-- Member edit bottom sheet -->
 {#if roleEditMember}
   <button class="fixed inset-0 z-40 bg-black/40" onclick={() => roleEditMember = null} aria-label="Cancelar" />
   <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
-    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto">
-      <p class="text-gray-800 dark:text-gray-200 font-medium text-center text-base mb-6 leading-relaxed">{roleEditMember.name}</p>
-      <div class="flex flex-col gap-2">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto space-y-5">
+      <p class="text-gray-800 dark:text-gray-200 font-semibold text-center text-base">{roleEditMember.name}</p>
+
+      <!-- Skill stars -->
+      <div>
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Nível de habilidade</p>
+        <div class="flex justify-center">
+          <StarRating
+            bind:rating={roleEditMember.skill_stars}
+            size={32}
+          />
+        </div>
+      </div>
+
+      <!-- Goalkeeper toggle -->
+      <label class="flex items-center justify-between cursor-pointer select-none">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Goleiro (GK)</span>
+        <div class="relative">
+          <input type="checkbox" class="sr-only peer" bind:checked={roleEditMember.is_goalkeeper} />
+          <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+        </div>
+      </label>
+
+      <!-- Save skill button -->
+      <button
+        class="btn btn-primary w-full justify-center"
+        disabled={skillSaving}
+        onclick={async () => {
+          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.is_goalkeeper);
+          roleEditMember = null;
+        }}>
+        {skillSaving ? 'Salvando…' : 'Salvar habilidade'}
+      </button>
+
+      <div class="border-t border-gray-100 dark:border-gray-700 pt-3 flex flex-col gap-2">
         <button
-          class="btn btn-secondary justify-center py-3 sm:py-2"
+          class="btn btn-secondary justify-center py-2.5"
           onclick={() => { toggleRole(roleEditMember!.id, roleEditMember!.role, roleEditMember!.name); roleEditMember = null; }}>
           {#if roleEditMember.role === 'admin'}
             <ShieldOff size={15} /> Remover presidência
@@ -856,7 +910,7 @@
             <ShieldCheck size={15} /> Tornar Presidente
           {/if}
         </button>
-        <button class="btn btn-secondary justify-center py-3 sm:py-2" onclick={() => roleEditMember = null}>
+        <button class="btn btn-secondary justify-center py-2.5" onclick={() => roleEditMember = null}>
           Cancelar
         </button>
       </div>

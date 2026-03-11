@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { matches as matchesApi, groups as groupsApi, votes as votesApi, ApiError } from '$lib/api';
-  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse } from '$lib/api';
+  import { matches as matchesApi, groups as groupsApi, votes as votesApi, teams as teamsApi, ApiError } from '$lib/api';
+  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse } from '$lib/api';
   import { currentPlayer, isLoggedIn, isAdmin } from '$lib/stores/auth';
 
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X } from 'lucide-svelte';
+  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X, Shuffle, ExternalLink } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import VoteForm from '$lib/components/VoteForm.svelte';
@@ -25,6 +25,12 @@
   let adminResponding = $state<string | null>(null);
   let togglingStatus = $state(false);
   let confirmOpen = $state(false);
+
+  // Teams
+  let teamsData = $state<TeamsResponse | null>(null);
+  let teamsLoading = $state(false);
+  let generatingTeams = $state(false);
+  let confirmTeamsOpen = $state(false);
 
   // Voting
   let voteStatus = $state<VoteStatusResponse | null>(null);
@@ -89,6 +95,31 @@
     })();
     return () => { cancelled = true; };
   });
+
+  // Carrega times existentes quando a partida é carregada
+  $effect(() => {
+    const m = match;
+    if (!m) return;
+    teamsLoading = true;
+    teamsApi.get(m.id)
+      .then(t => { teamsData = t.teams.length > 0 ? t : null; })
+      .catch(() => { teamsData = null; })
+      .finally(() => { teamsLoading = false; });
+  });
+
+  async function generateTeams() {
+    if (!match) return;
+    generatingTeams = true;
+    try {
+      const result = await teamsApi.generate(match.id);
+      teamsData = result;
+      toastSuccess('Times sorteados!');
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao montar times');
+    } finally {
+      generatingTeams = false;
+    }
+  }
 
   $effect(() => {
     const player = $currentPlayer;
@@ -529,6 +560,19 @@
       </div>
       </div><!-- /relative RSVP wrapper -->
 
+      <!-- Teams card (visible for all if teams exist) -->
+      {#if teamsData && teamsData.teams.length > 0}
+        <a href="/match/{matchHash}/teams"
+          class="card card-body mt-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer no-underline">
+          <span class="text-2xl">⚽</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Times sorteados</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{teamsData.teams.length} times · Ver escalação completa</p>
+          </div>
+          <ExternalLink size={16} class="text-gray-400 shrink-0" />
+        </a>
+      {/if}
+
       <!-- Admin status toggle -->
       {#if isGroupAdmin}
         <div class="card card-body mt-3 flex flex-wrap gap-2 justify-end items-center">
@@ -547,6 +591,20 @@
               class="btn-sm btn-ghost text-red-500 hover:bg-red-50 gap-1">
               <Lock size={14} /> Encerrar partida
             </button>
+          {/if}
+          {#if match.status === 'open' || match.status === 'in_progress'}
+            {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
+              <button class="btn-sm btn-secondary gap-1" disabled title="Defina jogadores por time e tenha confirmados suficientes para 2 times completos">
+                <Shuffle size={14} /> {teamsData ? 'Remontar times' : 'Montar times'}
+              </button>
+            {:else}
+              <button
+                onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
+                disabled={generatingTeams}
+                class="btn-sm btn-primary gap-1">
+                <Shuffle size={14} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar times' : 'Montar times'}
+              </button>
+            {/if}
           {/if}
         </div>
       {/if}
@@ -650,4 +708,12 @@
   confirmLabel="Encerrar"
   danger={true}
   onConfirm={confirmAction}
+/>
+
+<ConfirmDialog
+  bind:open={confirmTeamsOpen}
+  message="Remontar os times vai substituir o sorteio atual. Continuar?"
+  confirmLabel="Remontar"
+  danger={false}
+  onConfirm={generateTeams}
 />

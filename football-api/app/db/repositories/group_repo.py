@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db.repositories.base import BaseRepository
 from app.models.group import Group, GroupMember, GroupMemberRole
+from app.models.match import Attendance, AttendanceStatus
 from app.models.player import Player, PlayerRole
 
 
@@ -68,6 +69,55 @@ class GroupRepository(BaseRepository[Group]):
             select(Group).where(Group.recurrence_enabled == True)  # noqa: E712
         )
         return list(result.scalars().all())
+
+    async def get_confirmed_players_with_skills(self, match_id: UUID, group_id: UUID) -> list[dict]:
+        """Retorna confirmados da partida com skill_stars e is_goalkeeper de group_members."""
+        result = await self.session.execute(
+            select(
+                Attendance.player_id,
+                Player.name,
+                Player.nickname,
+                GroupMember.skill_stars,
+                GroupMember.is_goalkeeper,
+            )
+            .join(Player, Player.id == Attendance.player_id)
+            .join(
+                GroupMember,
+                (GroupMember.player_id == Attendance.player_id)
+                & (GroupMember.group_id == group_id),
+            )
+            .where(
+                Attendance.match_id == match_id,
+                Attendance.status == AttendanceStatus.CONFIRMED,
+                Player.role != PlayerRole.ADMIN,
+            )
+        )
+        return [
+            {
+                "player_id": row.player_id,
+                "name": row.name,
+                "nickname": row.nickname,
+                "skill_stars": row.skill_stars,
+                "is_goalkeeper": row.is_goalkeeper,
+            }
+            for row in result.all()
+        ]
+
+    async def get_member_skills(self, group_id: UUID, player_ids: list[UUID]) -> dict[UUID, dict]:
+        """Retorna skill_stars e is_goalkeeper de membros específicos do grupo."""
+        if not player_ids:
+            return {}
+        result = await self.session.execute(
+            select(GroupMember.player_id, GroupMember.skill_stars, GroupMember.is_goalkeeper)
+            .where(
+                GroupMember.group_id == group_id,
+                GroupMember.player_id.in_(player_ids),
+            )
+        )
+        return {
+            row.player_id: {"skill_stars": row.skill_stars, "is_goalkeeper": row.is_goalkeeper}
+            for row in result.all()
+        }
 
     async def get_player_groups(self, player_id: UUID) -> list[Group]:
         result = await self.session.execute(

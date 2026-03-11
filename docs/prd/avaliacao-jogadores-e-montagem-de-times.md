@@ -77,7 +77,7 @@ Na página da partida (`/match/[hash]`), na seção de jogadores confirmados, o 
 
 O botão só fica ativo quando:
 - A partida tem `status = 'open'` ou `'in_progress'`.
-- Há pelo menos 4 jogadores confirmados.
+- Há pelo menos `(players_per_team + 1) * 2` jogadores confirmados (mínimo para 2 times completos).
 - O campo `players_per_team` está definido na partida.
 
 #### RF-06 — Algoritmo de montagem de times equilibrados
@@ -86,8 +86,9 @@ Ao clicar em "Montar times", o backend executa o sorteio com base nos jogadores 
 
 **Inputs do algoritmo:**
 - Lista de jogadores confirmados com `skill_stars` e `is_goalkeeper` (lidos de `group_members`).
-- `players_per_team` da partida (tamanho de cada time).
-- Número de times = `floor(total_confirmados / players_per_team)`. Jogadores excedentes ficam como "reservas".
+- `players_per_team` da partida = número de **jogadores de linha** por time (exclui goleiro).
+- **Tamanho real de cada time** = `players_per_team + 1` (linha + 1 goleiro ou substituto).
+- Número de times = `floor(total_confirmados / (players_per_team + 1))`. Jogadores excedentes ficam como "reservas".
 
 **Lógica de balanceamento:**
 1. Separar goleiros dos demais jogadores.
@@ -97,7 +98,7 @@ Ao clicar em "Montar times", o backend executa o sorteio com base nos jogadores 
    - Distribuir em "serpentina" (snake draft): time 1 → time 2 → ... → time N → time N → ... → time 1, repetindo até distribuir todos.
    - Essa abordagem garante que as somas de estrelas de cada time sejam as mais próximas possíveis.
 4. Jogadores sem nota configurada tratados como `skill_stars = 2` (padrão).
-5. Jogadores excedentes (quando `total % players_per_team != 0`) ficam como lista de **reservas**, sem time atribuído.
+5. Jogadores excedentes (quando `total % (players_per_team + 1) != 0`) ficam como lista de **reservas**, sem time atribuído.
 
 #### RF-07 — Persistência dos times gerados
 
@@ -329,10 +330,12 @@ Se não há times gerados:
 def montar_times(confirmados, players_per_team):
     """
     confirmados: list[{ player_id, skill_stars, is_goalkeeper }]
-    players_per_team: int
+    players_per_team: int  -- jogadores de LINHA (exclui goleiro)
+    Tamanho real de cada time = players_per_team + 1 (linha + goleiro/substituto)
     """
-    n_times = len(confirmados) // players_per_team
-    reservas = confirmados[n_times * players_per_team:]  # excedentes
+    team_size = players_per_team + 1
+    n_times = len(confirmados) // team_size
+    reservas = confirmados[n_times * team_size:]  # excedentes
 
     goleiros = [p for p in confirmados if p.is_goalkeeper]
     nao_goleiros = [p for p in confirmados if not p.is_goalkeeper]

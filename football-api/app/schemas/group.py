@@ -50,6 +50,8 @@ class GroupMemberResponse(BaseModel):
     id: uuid.UUID
     player: PlayerMemberView
     role: GroupMemberRole
+    skill_stars: int | None = None
+    is_goalkeeper: bool | None = None
     created_at: datetime
 
 
@@ -81,3 +83,9 @@ class AddMemberRequest(BaseModel):
 
 class UpdateMemberRoleRequest(BaseModel):
     role: GroupMemberRole
+
+
+class UpdateMemberRequest(BaseModel):
+    role: GroupMemberRole | None = None
+    skill_stars: int | None = Field(None, ge=1, le=5)
+    is_goalkeeper: bool | None = None

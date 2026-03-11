@@ -25,6 +25,7 @@ from app.schemas.group import (
     GroupResponse,
     GroupUpdate,
     UpdateMemberRoleRequest,
+    UpdateMemberRequest,
 )
 from app.schemas.group_stats import GroupStatsResponse
 
@@ -93,6 +94,18 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         if not member:
             raise ForbiddenError("Você não é membro deste grupo")
 
+    caller_is_admin = current.role == PlayerRole.ADMIN
+    if not caller_is_admin:
+        caller_member = await repo.get_member(group_id, current.id)
+        caller_is_admin = caller_member is not None and caller_member.role == GroupMemberRole.ADMIN
+
+    def _member_response(m, include_skill: bool) -> GroupMemberResponse:
+        r = GroupMemberResponse.model_validate(m)
+        if include_skill:
+            r.skill_stars = m.skill_stars
+            r.is_goalkeeper = m.is_goalkeeper
+        return r
+
     return GroupDetailResponse(
         id=group.id,
         name=group.name,
@@ -105,7 +118,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         vote_duration_hours=group.vote_duration_hours,
         created_at=group.created_at,
         updated_at=group.updated_at,
-        members=[GroupMemberResponse.model_validate(m) for m in group.members],
+        members=[_member_response(m, caller_is_admin) for m in group.members],
         total_members=len(group.members),
     )
 
@@ -153,11 +166,22 @@ async def list_members(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
     group = await repo.get_with_members(group_id)
     if not group:
         raise NotFoundError("Grupo não encontrado")
-    if current.role != PlayerRole.ADMIN:
+
+    caller_is_admin = current.role == PlayerRole.ADMIN
+    if not caller_is_admin:
         member = await repo.get_member(group_id, current.id)
         if not member:
             raise ForbiddenError()
-    return [GroupMemberResponse.model_validate(m) for m in group.members]
+        caller_is_admin = member.role == GroupMemberRole.ADMIN
+
+    def _member_response(m, include_skill: bool) -> GroupMemberResponse:
+        r = GroupMemberResponse.model_validate(m)
+        if include_skill:
+            r.skill_stars = m.skill_stars
+            r.is_goalkeeper = m.is_goalkeeper
+        return r
+
+    return [_member_response(m, caller_is_admin) for m in group.members]
 
 
 @router.post("/{group_id}/members", response_model=GroupMemberResponse, status_code=201)
@@ -196,10 +220,10 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
 
 
 @router.patch("/{group_id}/members/{player_id}", response_model=GroupMemberResponse)
-async def update_member_role(
+async def update_member(
     group_id: uuid.UUID,
     player_id: uuid.UUID,
-    body: UpdateMemberRoleRequest,
+    body: UpdateMemberRequest,
     db: DB,
     current: CurrentPlayer,
 ):
@@ -213,10 +237,19 @@ async def update_member_role(
     if not member:
         raise NotFoundError("Membro não encontrado")
 
-    member.role = body.role
+    if body.role is not None:
+        member.role = body.role
+    if body.skill_stars is not None:
+        member.skill_stars = body.skill_stars
+    if body.is_goalkeeper is not None:
+        member.is_goalkeeper = body.is_goalkeeper
+
     await db.flush()
     await db.refresh(member, ["player"])
-    return GroupMemberResponse.model_validate(member)
+    r = GroupMemberResponse.model_validate(member)
+    r.skill_stars = member.skill_stars
+    r.is_goalkeeper = member.is_goalkeeper
+    return r
 
 
 @router.delete("/{group_id}/members/{player_id}", status_code=204)

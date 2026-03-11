@@ -54,7 +54,7 @@ export type Player = {
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string };
 export type PlayerMemberView = PlayerPublic & { whatsapp: string };
 export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; created_at: string; updated_at: string };
-export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; created_at: string };
+export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; is_goalkeeper: boolean | null; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type Match = {
   id: string; number: number; group_id: string; match_date: string; start_time: string; end_time: string | null;
@@ -110,6 +110,8 @@ export const groups = {
   removeMember: (groupId: string, playerId: string) => del(`/groups/${groupId}/members/${playerId}`),
   updateMemberRole: (groupId: string, playerId: string, role: string) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, { role }),
+  updateMemberSkill: (groupId: string, playerId: string, data: { skill_stars?: number; is_goalkeeper?: boolean }) =>
+    patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, data),
   getStats: (id: string, params?: { period?: string; month?: string }) => {
     const q = new URLSearchParams();
     if (params?.period) q.set('period', params.period);
@@ -304,6 +306,36 @@ export const admin = {
     const qs = q.toString();
     return get<AdminGroupListResponse>(`/admin/groups${qs ? '?' + qs : ''}`);
   },
+};
+
+// ── Teams ─────────────────────────────────────────────────────
+export type TeamPlayerItem = {
+  player_id: string;
+  name: string;
+  nickname: string | null;
+  skill_stars: number;
+  is_goalkeeper: boolean;
+};
+
+export type TeamItem = {
+  id: string;
+  name: string;
+  color: string | null;
+  position: number;
+  skill_total: number;
+  players: TeamPlayerItem[];
+};
+
+export type TeamsResponse = {
+  teams: TeamItem[];
+  reserves: TeamPlayerItem[];
+};
+
+export const teams = {
+  generate: (matchId: string) =>
+    post<TeamsResponse>(`/matches/${matchId}/teams`),
+  get: (matchId: string) =>
+    get<TeamsResponse>(`/matches/${matchId}/teams`),
 };
 
 // ── Invites ───────────────────────────────────────────────────

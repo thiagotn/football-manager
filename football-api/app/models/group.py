@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 from enum import Enum as PyEnum
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,6 +54,8 @@ class GroupMember(Base, UUIDMixin, TimestampMixin):
     role: Mapped[GroupMemberRole] = mapped_column(
         _group_member_role_col, nullable=False, default=GroupMemberRole.MEMBER
     )
+    skill_stars: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=2)
+    is_goalkeeper: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     group = relationship("Group", back_populates="members")
