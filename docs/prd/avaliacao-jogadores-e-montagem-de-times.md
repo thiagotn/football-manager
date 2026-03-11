@@ -134,7 +134,7 @@ Na página da partida (`/match/[hash]`), após os times serem gerados pela prime
 
 Os nomes são sorteados aleatoriamente no momento da geração. O conjunto deve cobrir pelo menos 30 opções para evitar repetição frequente em grupos ativos.
 
-**Conjunto de nomes sugeridos — estilo várzea brasileira:**
+**Conjunto de nomes sugeridos — estilo várzea brasileira com humor:**
 
 ```
 Corinthians da Várzea, Flamengo do Asfalto, Palmeiras de Chinelo,
@@ -151,7 +151,21 @@ Dragões do Racha, Lobos da Pelada,
 Garotos do Campo, Guerreiros do Baldão,
 Alvinegros do Pé-Sujo, Tricolores da Esquina,
 Rubro-Negros do Campinho, Azulões da Galera,
-Vermelhão do Fim de Semana, Bicho Solto FC
+Vermelhão do Fim de Semana, Bicho Solto FC,
+Real Madruga, Barcelusa, Bahia de Munique, Real da Resenha,
+Atlético da Pelada, União do Chopp, Estrela do Bar, Sporting da Galera,
+Inter de Buteco, Porto da Pelada, Ajax da Laje, Chelsea do Churrasco,
+Borussia da Vila, River da Resenha, Boca da Vila, Milan de Minas,
+Juventus da Quebrada, Bayer de Buteco, Dinamo da Laje, Racing da Resenha,
+Estudiantes da Pelada, Galácticos da Vila, União da Bola Quadrada,
+Atlético Pé de Rato, Real Cansados, Atlético Sem Fôlego, Deportivo Ressaca,
+Sporting Chinelinho, União dos Últimos, Real Varzeanos,
+Atlético GPS Perdido, Real Amigos do Bar, Estrela da Pelada,
+Atlético da Ladeira, Real da Quebrada, Sporting da Várzea,
+Dinamo da Resenha, União da Laje, Real do Churrasco, Atlético da Gelada,
+Deportivo da Laje, Barcemengo, Flamchester, Corinthester,
+Santchester, Palmilan, Vaslona, Gremadrid, Flamadrid,
+Galácticos da Saideira
 ```
 
 > O sorteio deve garantir que dois times na mesma partida **não recebam o mesmo nome**. Se o número de times for maior que o conjunto, repetir com sufixo numérico (ex: "Leões do Asfalto 2").
