@@ -66,7 +66,7 @@
         <p class="text-sm font-medium text-gray-700 mb-3">Configurações de votação</p>
         <div class="space-y-3">
           <div>
-            <label class="block text-sm text-gray-600 mb-1">Abertura da votação após o término da partida</label>
+            <label class="block text-sm text-gray-600 mb-1">Após o termino da partida, será aberta em</label>
             <select bind:value={voteOpenDelay} class="input">
               <option value={0}>Imediato (sem atraso)</option>
               <option value={10}>10 minutos</option>
