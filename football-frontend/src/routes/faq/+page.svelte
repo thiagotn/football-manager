@@ -50,11 +50,6 @@
 </svelte:head>
 
 <PageBackground>
-  <!-- Beta banner -->
-  <div class="relative z-10 bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-2 px-4">
-    Versão Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
-  </div>
-
   <!-- Header -->
   <div class="relative z-10 py-8 px-4 text-center">
     <button
