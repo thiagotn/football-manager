@@ -164,6 +164,13 @@
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
         <LogOut size={18} /> Sair
       </button>
+      <div class="flex gap-3 px-3 pt-2 pb-1 border-t border-primary-700/60">
+        <a href="/faq" onclick={closeMenu} class="text-xs text-primary-400 hover:text-primary-200 transition-colors">FAQ</a>
+        <span class="text-primary-600 text-xs">·</span>
+        <a href="/terms" onclick={closeMenu} class="text-xs text-primary-400 hover:text-primary-200 transition-colors">Termos de Uso</a>
+        <span class="text-primary-600 text-xs">·</span>
+        <a href="/privacy" onclick={closeMenu} class="text-xs text-primary-400 hover:text-primary-200 transition-colors">Privacidade</a>
+      </div>
     </div>
   </div>
 {/if}
