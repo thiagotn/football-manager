@@ -573,39 +573,43 @@
         </a>
       {/if}
 
-      <!-- Admin status toggle -->
+      <!-- Admin actions -->
       {#if isGroupAdmin}
-        <div class="card card-body mt-3 flex flex-wrap gap-2 justify-end items-center">
-          <span class="text-xs text-gray-400 dark:text-gray-500 mr-auto">Ações do administrador</span>
-          {#if match.status === 'closed'}
-            <button
-              onclick={() => toggleStatus('open')}
-              disabled={togglingStatus}
-              class="btn-sm btn-secondary gap-1">
-              <LockOpen size={14} /> Reabrir partida
-            </button>
-          {:else}
-            <button
-              onclick={askCloseMatch}
-              disabled={togglingStatus}
-              class="btn-sm btn-ghost text-red-500 hover:bg-red-50 gap-1">
-              <Lock size={14} /> Encerrar partida
-            </button>
-          {/if}
-          {#if match.status === 'open' || match.status === 'in_progress'}
-            {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
-              <button class="btn-sm btn-secondary gap-1" disabled title="Defina jogadores por time e tenha confirmados suficientes para 2 times completos">
-                <Shuffle size={14} /> {teamsData ? 'Remontar times' : 'Montar times'}
+        <div class="card mt-3 overflow-hidden">
+          <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">Ações do administrador</p>
+          </div>
+          <div class="p-3 flex flex-col sm:flex-row gap-2">
+            {#if match.status === 'closed'}
+              <button
+                onclick={() => toggleStatus('open')}
+                disabled={togglingStatus}
+                class="btn-sm btn-secondary gap-1.5 flex-1 justify-center">
+                <LockOpen size={14} /> Reabrir partida
               </button>
             {:else}
               <button
-                onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
-                disabled={generatingTeams}
-                class="btn-sm btn-primary gap-1">
-                <Shuffle size={14} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar times' : 'Montar times'}
+                onclick={askCloseMatch}
+                disabled={togglingStatus}
+                class="btn-sm btn-secondary gap-1.5 flex-1 justify-center text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20">
+                <Lock size={14} /> Encerrar partida
               </button>
             {/if}
-          {/if}
+            {#if match.status === 'open' || match.status === 'in_progress'}
+              {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
+                <button class="btn-sm btn-secondary gap-1.5 flex-1 justify-center" disabled>
+                  <Shuffle size={14} /> {teamsData ? 'Remontar times' : 'Montar times'}
+                </button>
+              {:else}
+                <button
+                  onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
+                  disabled={generatingTeams}
+                  class="btn-sm btn-primary gap-1.5 flex-1 justify-center">
+                  <Shuffle size={14} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar times' : 'Montar times'}
+                </button>
+              {/if}
+            {/if}
+          </div>
         </div>
       {/if}
 

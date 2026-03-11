@@ -24,7 +24,10 @@
 </script>
 
 {#if open}
-  <button class="fixed inset-0 z-40 bg-black/40" onclick={handleCancel} aria-label="Cancelar" />
+  <!-- Mobile: overlay visual não clicável (fecha só pelo botão Cancelar) -->
+  <div class="fixed inset-0 z-40 bg-black/40 sm:hidden"></div>
+  <!-- Desktop: overlay clicável para fechar ao clicar fora -->
+  <button class="fixed inset-0 z-40 bg-black/40 hidden sm:block" onclick={handleCancel} aria-label="Cancelar" />
 
   <!-- Bottom sheet on mobile, centered modal on desktop -->
   <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
