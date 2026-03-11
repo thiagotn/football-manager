@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield } from 'lucide-svelte';
 
   function logout() {
     authStore.logout();
@@ -35,6 +35,9 @@
     if (pathname === '/players')  return '/';
     if (pathname === '/profile')  return '/';
     if (pathname === '/review')   return '/';
+    if (pathname === '/faq')      return '/';
+    if (pathname === '/terms')    return '/';
+    if (pathname === '/privacy')  return '/';
     if (pathname.startsWith('/admin/')) return '/';
     return null;
   }
@@ -147,6 +150,24 @@
           </a>
         {/if}
       {/each}
+
+      <div class="border-t border-primary-700/60 pt-1 mt-1 space-y-1">
+        <a href="/faq" onclick={closeMenu}
+          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+            {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+          <HelpCircle size={18} /> FAQ
+        </a>
+        <a href="/terms" onclick={closeMenu}
+          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+            {$page.url.pathname === '/terms' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+          <FileText size={18} /> Termos de Uso
+        </a>
+        <a href="/privacy" onclick={closeMenu}
+          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+            {$page.url.pathname === '/privacy' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+          <Shield size={18} /> Privacidade
+        </a>
+      </div>
     </div>
 
     <!-- Rodapé do drawer -->
@@ -164,13 +185,6 @@
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
         <LogOut size={18} /> Sair
       </button>
-      <div class="flex gap-3 px-3 pt-2 pb-1 border-t border-primary-700/60">
-        <a href="/faq" onclick={closeMenu} class="text-xs text-primary-400 hover:text-primary-200 transition-colors">FAQ</a>
-        <span class="text-primary-600 text-xs">·</span>
-        <a href="/terms" onclick={closeMenu} class="text-xs text-primary-400 hover:text-primary-200 transition-colors">Termos de Uso</a>
-        <span class="text-primary-600 text-xs">·</span>
-        <a href="/privacy" onclick={closeMenu} class="text-xs text-primary-400 hover:text-primary-200 transition-colors">Privacidade</a>
-      </div>
     </div>
   </div>
 {/if}

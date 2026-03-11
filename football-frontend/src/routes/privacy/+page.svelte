@@ -1,5 +1,8 @@
 <script lang="ts">
   import { PUBLIC_LEGAL_CONTROLLER_NAME, PUBLIC_LEGAL_CONTROLLER_DOC, PUBLIC_LEGAL_CONTACT_EMAIL } from '$env/static/public';
+  import { isLoggedIn } from '$lib/stores/auth';
+
+  let backHref = $derived($isLoggedIn ? '/' : '/lp');
 </script>
 
 <svelte:head><title>Política de Privacidade — rachao.app</title></svelte:head>
@@ -8,7 +11,7 @@
   <div class="max-w-3xl mx-auto px-6 py-10">
 
     <div class="mb-8">
-      <a href="/lp" class="text-sm text-primary-600 hover:underline">← rachao.app</a>
+      <a href={backHref} class="text-sm text-primary-600 hover:underline">← rachao.app</a>
     </div>
 
     <h1 class="text-2xl font-bold mb-1">Política de Privacidade</h1>
@@ -172,7 +175,7 @@
     <div class="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 flex flex-wrap gap-4">
       <a href="/terms" class="hover:text-gray-600 dark:hover:text-gray-300">Termos de Uso</a>
       <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300">FAQ</a>
-      <a href="/lp" class="hover:text-gray-600 dark:hover:text-gray-300">rachao.app</a>
+      <a href={backHref} class="hover:text-gray-600 dark:hover:text-gray-300">rachao.app</a>
     </div>
 
   </div>
