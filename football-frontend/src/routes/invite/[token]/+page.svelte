@@ -184,6 +184,13 @@
       {:else if step === 'register'}
         <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-3">
           <p class="text-sm text-gray-500 dark:text-gray-400 -mt-1">Preencha seus dados para criar a conta.</p>
+          <div class="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-3 text-xs text-primary-700 dark:text-primary-300 space-y-1">
+            <p class="font-semibold text-primary-800 dark:text-primary-200 mb-1.5">Com o rachao.app você tem:</p>
+            <p>✅ Confirmação de presença com um clique</p>
+            <p>🏆 Votação de destaque pós-partida</p>
+            <p>🎲 Sorteio equilibrado de times por habilidade</p>
+            <p>📲 Compartilhamento fácil via WhatsApp</p>
+          </div>
           <div class="form-group">
             <label class="label" for="name">Nome completo *</label>
             <input id="name" class="input" bind:value={form.name} placeholder="Seu nome" required minlength="2" />

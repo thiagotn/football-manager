@@ -168,6 +168,16 @@
           </p>
         </div>
       </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex gap-4">
+        <div class="text-3xl shrink-0">🎲</div>
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-1">Sorteio equilibrado de times</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Com base nas notas de habilidade dos jogadores, o sistema monta times equilibrados automaticamente — com um goleiro por time quando disponível.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </section>

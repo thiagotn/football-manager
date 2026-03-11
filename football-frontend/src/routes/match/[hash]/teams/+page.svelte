@@ -81,9 +81,9 @@
 
     <!-- Header -->
     <div class="flex items-center gap-2 mb-5">
-      <a href="/match/{matchHash}" class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors">
+      <button onclick={() => history.back()} class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors">
         <ChevronLeft size={22} />
-      </a>
+      </button>
       <div class="flex-1 min-w-0">
         {#if match}
           <p class="text-white font-semibold truncate">{match.group_name}</p>
