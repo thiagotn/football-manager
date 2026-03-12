@@ -69,6 +69,24 @@ export type Attendance = { id: string; player: PlayerPublic; status: 'pending' |
 export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null };
 
 // ── Players ───────────────────────────────────────────────────
+export type MonthlyStatItem = { month: string; matches_confirmed: number; minutes_played: number };
+export type RecentMatchItem = { match_date: string; group_name: string; status: 'confirmed' | 'declined' };
+export type GroupStatItem = { group_id: string; group_name: string; skill_stars: number; is_goalkeeper: boolean; role: 'admin' | 'member'; matches_confirmed: number };
+export type PlayerFullStats = {
+  total_matches_confirmed: number;
+  total_minutes_played: number;
+  total_vote_points: number;
+  total_flop_votes: number;
+  top1_count: number;
+  top5_count: number;
+  current_streak: number;
+  best_streak: number;
+  attendance_rate: number;
+  monthly_stats: MonthlyStatItem[];
+  recent_matches: RecentMatchItem[];
+  groups: GroupStatItem[];
+};
+
 export type SignupStats = {
   total: number;
   last_7_days: number;
@@ -86,6 +104,7 @@ export const players = {
   delete: (id: string) => del(`/players/${id}`),
   resetPassword: (id: string) => post<{ temp_password: string }>(`/players/${id}/reset-password`),
   myStats: () => get<{ minutes_played: number; platform_minutes_played?: number; platform_total_matches?: number }>('/players/me/stats'),
+  myFullStats: () => get<PlayerFullStats>('/players/me/stats/full'),
   signupStats: (limit = 30) => get<SignupStats>(`/players/signups/stats?limit=${limit}`),
 };
 

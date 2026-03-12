@@ -9,10 +9,18 @@ from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
 from app.core.security import hash_password
 from app.db.repositories.player_repo import PlayerRepository
+from app.db.repositories.player_stats_repo import PlayerStatsRepository
 from app.models.player import Player, PlayerRole
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
+from app.schemas.player_stats import PlayerFullStats
 
 router = APIRouter(prefix="/players", tags=["players"])
+
+
+@router.get("/me/stats/full", response_model=PlayerFullStats)
+async def get_my_full_stats(db: DB, current: CurrentPlayer):
+    repo = PlayerStatsRepository(db)
+    return await repo.get_full_stats(current.id)
 
 
 @router.get("/me/stats")

@@ -4,7 +4,7 @@
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   // Plan
@@ -175,6 +175,20 @@
     <div class="bg-amber-50 border border-amber-300 text-amber-800 rounded-lg px-4 py-3 mb-6 text-sm font-medium">
       ⚠️ Sua senha foi redefinida pelo administrador. Por favor, defina uma nova senha abaixo antes de continuar.
     </div>
+  {/if}
+
+  <!-- Atalho para estatísticas -->
+  {#if !$isAdmin}
+    <a href="/profile/stats" class="card card-body mb-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors group">
+      <div class="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
+        <BarChart2 size={20} class="text-primary-600 dark:text-primary-400" />
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Minhas Estatísticas</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Partidas, presença, reputação e mais</p>
+      </div>
+      <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0 group-hover:translate-x-0.5 transition-transform">→</span>
+    </a>
   {/if}
 
   <!-- Dados do perfil (somente leitura) -->

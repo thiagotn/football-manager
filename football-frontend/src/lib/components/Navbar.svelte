@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2 } from 'lucide-svelte';
 
   function logout() {
     authStore.logout();
@@ -11,12 +11,13 @@
   }
 
   const links = [
-    { href: '/',              icon: Home,     label: 'Dashboard' },
-    { href: '/groups',        icon: Trophy,   label: 'Grupos' },
-    { href: '/review',        icon: Star,     label: 'Avaliar o App', playerOnly: true },
-    { href: '/players',       icon: Users,    label: 'Jogadores',     adminOnly: true },
-    { href: '/admin/reviews', icon: Star,     label: 'Avaliações',    adminOnly: true },
-    { href: '/admin/faq',     icon: BookOpen, label: 'Guia Admin',    adminOnly: true },
+    { href: '/',               icon: Home,       label: 'Dashboard' },
+    { href: '/groups',         icon: Trophy,     label: 'Grupos' },
+    { href: '/profile/stats',  icon: BarChart2,  label: 'Estatísticas',  playerOnly: true },
+    { href: '/review',         icon: Star,       label: 'Avaliar o App', playerOnly: true },
+    { href: '/players',        icon: Users,      label: 'Jogadores',     adminOnly: true },
+    { href: '/admin/reviews',  icon: Star,       label: 'Avaliações',    adminOnly: true },
+    { href: '/admin/faq',      icon: BookOpen,   label: 'Guia Admin',    adminOnly: true },
   ];
 
   let menuOpen = $state(false);
@@ -33,7 +34,8 @@
     if (pathname.startsWith('/groups/')) return '/groups';
     if (pathname === '/groups')   return '/';
     if (pathname === '/players')  return '/';
-    if (pathname === '/profile')  return '/';
+    if (pathname === '/profile')        return '/';
+    if (pathname === '/profile/stats') return '/profile';
     if (pathname === '/review')   return '/';
     if (pathname === '/faq')      return '/';
     if (pathname === '/terms')    return '/';
