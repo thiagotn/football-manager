@@ -441,25 +441,27 @@
                 </p>
               {/if}
             </div>
-            {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')}
-              {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
-                <button class="btn-sm btn-secondary gap-1 opacity-50" disabled>
-                  <Shuffle size={12} /> {teamsData ? 'Remontar' : 'Montar'}
-                </button>
-              {:else}
-                <button
-                  onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
-                  disabled={generatingTeams}
-                  class="btn-sm btn-primary gap-1">
-                  <Shuffle size={12} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar' : 'Montar'}
-                </button>
+            <div class="flex items-center gap-2 shrink-0">
+              {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')}
+                {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
+                  <button class="btn-sm btn-secondary gap-1 opacity-50" disabled>
+                    <Shuffle size={12} /> {teamsData ? 'Remontar' : 'Montar'}
+                  </button>
+                {:else}
+                  <button
+                    onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
+                    disabled={generatingTeams}
+                    class="btn-sm btn-primary gap-1">
+                    <Shuffle size={12} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar' : 'Montar'}
+                  </button>
+                {/if}
               {/if}
-            {/if}
-            {#if teamsData && teamsData.teams.length > 0}
-              <a href="/match/{matchHash}/teams" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <ExternalLink size={15} />
-              </a>
-            {/if}
+              {#if teamsData && teamsData.teams.length > 0}
+                <a href="/match/{matchHash}/teams" class="btn-sm btn-secondary gap-1">
+                  <ExternalLink size={12} /> Ver Times
+                </a>
+              {/if}
+            </div>
           </div>
         </div>
       {/if}
