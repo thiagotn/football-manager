@@ -89,16 +89,27 @@
 
   function shareResults() {
     if (!results || !match) return;
-    const top = results.top5.slice(0, 3).map((p, i) => `${MEDALS[p.position] ?? `#${p.position}`} ${p.name}`).join('\n');
-    const text = [
+    const top3 = results.top5.filter(p => p.position <= 3).map(p => `${MEDALS[p.position]} ${p.name} (${p.points} pts)`).join('\n');
+    const rest = results.top5.filter(p => p.position > 3).map(p => `#${p.position} ${p.name} (${p.points} pts)`).join('\n');
+    const flop = results.flop.length > 0
+      ? results.flop.map(p => `😬 ${p.name} (${p.votes} voto${p.votes !== 1 ? 's' : ''})`).join('\n')
+      : null;
+    const time = match.start_time.slice(0, 5) + (match.end_time ? ` – ${match.end_time.slice(0, 5)}` : '');
+    const lines = [
       `🏆 Resultado do Rachão ${match.group_name}`,
+      `📅 ${fmtDate(match.match_date)} · ${time}`,
+      `📍 ${match.location}`,
       '',
-      top,
+      '*Melhores da Partida*',
+      top3,
+      ...(rest ? ['', rest] : []),
+      ...(flop ? ['', '*Decepção do Jogo*', flop] : []),
       '',
       `${results.total_voters} de ${results.eligible_voters} jogadores votaram`,
       '',
       `https://rachao.app/match/${matchHash}/results`,
-    ].join('\n');
+    ];
+    const text = lines.join('\n');
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
