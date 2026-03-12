@@ -37,7 +37,7 @@
     if (pathname === '/players')  return '/';
     if (pathname === '/profile')        return '/';
     if (pathname === '/matches')        return '/';
-    if (pathname === '/profile/stats') return '/profile';
+    if (pathname === '/profile/stats')  return '/';
     if (pathname === '/review')   return '/';
     if (pathname === '/faq')      return '/';
     if (pathname === '/terms')    return '/';

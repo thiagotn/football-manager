@@ -121,28 +121,23 @@
 
   <!-- Stats row -->
   <div class="grid gap-4 mb-8 {$isAdmin ? 'grid-cols-4' : 'grid-cols-3'}">
-    <div class="card p-4 flex flex-col items-center text-center gap-1.5"
+    <svelte:element this={$isAdmin ? 'div' : 'a'} href={$isAdmin ? undefined : '/matches'}
+      class="card p-4 flex flex-col items-center text-center gap-1.5 {$isAdmin ? '' : 'hover:shadow-md transition-shadow cursor-pointer'}"
       title="{$isAdmin ? 'Total de rachões cadastrados na plataforma' : 'Próximos rachões agendados'}">
       <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
         <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
       </div>
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{$isAdmin ? platformTotalMatches : upcomingMatches.length}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">
-        <span class="hidden sm:inline">{$isAdmin ? 'Rachões' : 'Próximos'}</span>
-        <span class="sm:hidden">{$isAdmin ? 'Rachões' : 'Próximos'}</span>
-      </p>
-    </div>
-    <div class="card p-4 flex flex-col items-center text-center gap-1.5"
+      <p class="text-xs text-gray-500 dark:text-gray-400">{$isAdmin ? 'Rachões' : 'Próximos'}</p>
+    </svelte:element>
+    <a href="/groups" class="card p-4 flex flex-col items-center text-center gap-1.5 hover:shadow-md transition-shadow"
       title="Grupos que você participa">
       <div class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
         <Trophy size={16} class="text-primary-600 dark:text-primary-400" />
       </div>
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{myGroups.length}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">
-        <span class="hidden sm:inline">Grupos</span>
-        <span class="sm:hidden">Grupos</span>
-      </p>
-    </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{myGroups.length === 1 ? 'Grupo' : 'Grupos'}</p>
+    </a>
     {#if $isAdmin}
       <div class="card p-4 flex flex-col items-center text-center gap-1.5"
         title="Jogadores ativos cadastrados">
@@ -156,7 +151,8 @@
         </p>
       </div>
     {/if}
-    <div class="card p-4 flex flex-col items-center text-center gap-1.5"
+    <svelte:element this={$isAdmin ? 'div' : 'a'} href={$isAdmin ? undefined : '/profile/stats'}
+      class="card p-4 flex flex-col items-center text-center gap-1.5 {$isAdmin ? '' : 'hover:shadow-md transition-shadow cursor-pointer'}"
       title="{$isAdmin ? 'Total de horas de partidas encerradas na plataforma' : 'Horas jogadas em partidas encerradas com presença confirmada'}">
       <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
         <Clock size={16} class="text-orange-600 dark:text-orange-400" />
@@ -164,11 +160,8 @@
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">
         {fmtPlaytime($isAdmin ? platformMinutesPlayed : minutesPlayed)}
       </p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">
-        <span class="hidden sm:inline">{$isAdmin ? 'Horas jogadas' : 'Horas jogadas'}</span>
-        <span class="sm:hidden">Jogadas</span>
-      </p>
-    </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Jogadas</p>
+    </svelte:element>
   </div>
 
   <!-- Banner de votações pendentes -->
