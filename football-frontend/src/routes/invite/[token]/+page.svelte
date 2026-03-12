@@ -10,7 +10,7 @@
   type Step = 'whatsapp' | 'login' | 'register';
 
   let info: { group_name: string; expires_at: string } | null = $state(null);
-  let expired = $state(false);
+  let errorReason = $state<'expired' | 'used' | 'not_found' | null>(null);
   let loading = $state(true);
 
   let step = $state<Step>('whatsapp');
@@ -30,8 +30,16 @@
       try {
         const i = await invites.getInfo(token);
         if (!cancelled) info = i;
-      } catch {
-        if (!cancelled) expired = true;
+      } catch (e) {
+        if (!cancelled) {
+          if (e instanceof ApiError) {
+            if (e.message === 'Convite expirado') errorReason = 'expired';
+            else if (e.message === 'Convite já utilizado') errorReason = 'used';
+            else errorReason = 'not_found';
+          } else {
+            errorReason = 'not_found';
+          }
+        }
       }
       if (!cancelled) loading = false;
     })();
@@ -103,10 +111,22 @@
         <div class="h-4 bg-gray-200 rounded w-2/3"></div>
       </div>
 
-    {:else if expired}
+    {:else if errorReason === 'expired'}
       <div class="alert-error text-center">
-        <p class="font-semibold">Convite inválido ou expirado</p>
-        <p class="mt-1 text-xs">Solicite um novo convite ao administrador.</p>
+        <p class="font-semibold">Convite expirado</p>
+        <p class="mt-1 text-xs">Os convites são válidos por 30 minutos. Peça um novo link ao administrador.</p>
+      </div>
+
+    {:else if errorReason === 'used'}
+      <div class="alert-error text-center">
+        <p class="font-semibold">Convite já utilizado</p>
+        <p class="mt-1 text-xs">Este link já foi usado por outra pessoa. Peça um novo convite ao administrador.</p>
+      </div>
+
+    {:else if errorReason === 'not_found'}
+      <div class="alert-error text-center">
+        <p class="font-semibold">Convite inválido</p>
+        <p class="mt-1 text-xs">Este link não é válido. Verifique se copiou corretamente ou solicite um novo convite.</p>
       </div>
 
     {:else if done}

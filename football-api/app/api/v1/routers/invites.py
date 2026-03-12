@@ -57,9 +57,13 @@ async def create_invite(body: InviteCreateRequest, db: DB, current: CurrentPlaye
 async def get_invite_info(token: str, db: DB):
     """Retorna informações do convite (grupo destino) sem autenticação."""
     repo = InviteRepository(db)
-    invite = await repo.get_valid_token(token)
+    invite = await repo.get_by_token(token)
     if not invite:
-        raise NotFoundError("Convite inválido ou expirado")
+        raise NotFoundError("Convite não encontrado")
+    if invite.used:
+        raise ForbiddenError("Convite já utilizado")
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise ForbiddenError("Convite expirado")
 
     g_repo = GroupRepository(db)
     group = await g_repo.get(invite.group_id)
