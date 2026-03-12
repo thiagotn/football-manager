@@ -1,83 +1,163 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { isLoggedIn } from '$lib/stores/auth';
+  import { Home, Trophy, BarChart2, AlertTriangle } from 'lucide-svelte';
+
+  let is404 = $derived($page.status === 404);
+  let title = $derived(is404 ? 'A bola saiu pela linha de fundo.' : 'O jogo parou inesperadamente.');
+  let subtitle = $derived(is404
+    ? 'Essa página foi para o vestiário mais cedo que o esperado.'
+    : 'Algo deu errado no meio do campo. Tente novamente.'
+  );
 </script>
 
 <svelte:head>
   <title>Erro {$page.status} — rachao.app</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen relative bg-gray-900"
+  style="background-image: url('/error-404.jpg'); background-size: cover; background-position: center;">
+  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/88 via-gray-900/60 to-gray-900/45 pointer-events-none"></div>
 
-  <!-- Beta banner -->
-  <div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-1.5 px-4">
-    Versão Beta — produto em desenvolvimento.
-  </div>
-
-  <!-- Header (idêntico ao da página de partida e FAQ) -->
-  <div class="bg-primary-700 text-white py-4 px-4">
-    <div class="flex items-center justify-center gap-2">
-      <span class="text-xl">⚽</span>
-      <span class="font-semibold text-lg tracking-tight">rachao.app</span>
-      <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
-    </div>
-  </div>
-
-  <!-- Banner de erro -->
-  {#if $page.status === 404}
-    <div class="overflow-hidden h-32 sm:h-44">
-      <picture>
-        <source srcset="/error-404.webp" type="image/webp" />
-        <img
-          src="/error-404.jpg"
-          alt=""
-          aria-hidden="true"
-          width="1920"
-          height="600"
-          class="w-full h-full object-cover"
-          style="object-position: 25% 55%"
-        />
-      </picture>
-    </div>
-    <div class="bg-primary-800 px-6 py-8 text-white text-center">
-      <span class="inline-block text-xs font-bold bg-red-500 text-white px-2.5 py-0.5 rounded-full mb-3">
-        Erro 404
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-bold leading-snug">
-        A bola saiu pela linha de fundo.
-      </h1>
-      <p class="text-primary-200 mt-2 text-sm">
-        Essa página foi para o vestiário mais cedo que o esperado.
-      </p>
-    </div>
-
-  {:else}
-    <div class="bg-primary-800 px-6 py-12 text-white text-center">
-      <span class="inline-block text-xs font-bold bg-red-500 text-white px-2.5 py-0.5 rounded-full mb-4">
-        Erro {$page.status}
-      </span>
-      <h1 class="text-3xl font-bold">O jogo parou.</h1>
-      <p class="text-primary-200 mt-3 text-sm">Algo deu errado no meio do campo.</p>
+  <!-- Mini header — apenas quando não há Navbar (usuário não logado) -->
+  {#if !$isLoggedIn}
+    <div class="relative z-10 bg-primary-700/80 backdrop-blur-sm text-white py-3 px-4 flex items-center justify-center gap-2">
+      <a href="/lp" class="flex items-center gap-2 font-semibold text-base tracking-tight hover:opacity-80 transition-opacity">
+        <span class="text-lg">⚽</span>
+        rachao.app
+      </a>
     </div>
   {/if}
 
-  <!-- Card com detalhe e CTA -->
-  <main class="max-w-md mx-auto px-4 py-8">
-    <div class="card card-body text-center">
-      {#if $page.status === 404}
-        <p class="text-gray-600 text-sm leading-relaxed">
-          A página que você tentou acessar não existe ou foi removida do jogo.<br>
-          Confira o endereço ou volte para o início.
-        </p>
-      {:else}
-        <p class="text-gray-600 text-sm leading-relaxed">
-          {$page.error?.message ?? 'Ocorreu um erro inesperado. Tente novamente mais tarde.'}
-        </p>
-      {/if}
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
-      <a href="/lp" class="btn btn-primary mt-5 w-full justify-center">
-        Voltar ao início
-      </a>
+    <!-- Page heading -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-white">
+        {title}
+      </h1>
+      <p class="text-gray-300 text-sm mt-1">{subtitle}</p>
+    </div>
+
+    <!-- Stats row — igual ao dashboard -->
+    <div class="grid gap-4 mb-8 grid-cols-3">
+      <div class="card p-4 flex flex-col items-center text-center gap-1.5">
+        <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <AlertTriangle size={16} class="text-red-600 dark:text-red-400" />
+        </div>
+        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{$page.status}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="hidden sm:inline">Código do erro</span>
+          <span class="sm:hidden">Código</span>
+        </p>
+      </div>
+
+      <div class="card p-4 flex flex-col items-center text-center gap-1.5">
+        <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-lg leading-none">
+          ⚽
+        </div>
+        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">1</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="hidden sm:inline">Bola perdida</span>
+          <span class="sm:hidden">Perdida</span>
+        </p>
+      </div>
+
+      <div class="card p-4 flex flex-col items-center text-center gap-1.5">
+        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <Home size={16} class="text-green-600 dark:text-green-400" />
+        </div>
+        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">∞</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="hidden sm:inline">Saídas disponíveis</span>
+          <span class="sm:hidden">Saídas</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Main grid — 2 colunas no desktop, igual ao dashboard -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+      <!-- Card com detalhe do erro e CTA -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            {#if is404}🔍 Página não encontrada{:else}⚠️ Erro inesperado{/if}
+          </h2>
+        </div>
+        <div class="card-body pt-0">
+          {#if is404}
+            <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6">
+              A página que você tentou acessar não existe ou foi removida do jogo.<br>
+              Confira o endereço ou use os atalhos abaixo para voltar à pelada.
+            </p>
+          {:else}
+            <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6">
+              {$page.error?.message ?? 'Ocorreu um erro inesperado. Tente recarregar a página ou voltar ao início.'}
+            </p>
+          {/if}
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a href="/" class="btn btn-primary flex-1 justify-center gap-1.5">
+              <Home size={15} /> Ir para o início
+            </a>
+            {#if !is404}
+              <button onclick={() => window.location.reload()} class="btn btn-secondary flex-1 justify-center gap-1.5">
+                Recarregar página
+              </button>
+            {:else}
+              <a href="/groups" class="btn btn-secondary flex-1 justify-center gap-1.5">
+                <Trophy size={15} /> Ver meus grupos
+              </a>
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de atalhos rápidos (como a lista de grupos no dashboard) -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Onde você quer ir?</h2>
+        </div>
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <a href="/"
+            class="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <div class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
+              <Home size={18} class="text-primary-600 dark:text-primary-400" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Dashboard</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Seus próximos rachões e grupos</p>
+            </div>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">→</span>
+          </a>
+
+          <a href="/groups"
+            class="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <div class="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+              <Trophy size={18} class="text-amber-600 dark:text-amber-400" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Grupos</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Veja seus grupos e partidas</p>
+            </div>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">→</span>
+          </a>
+
+          <a href="/profile/stats"
+            class="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <div class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+              <BarChart2 size={18} class="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Estatísticas</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Seu histórico e reputação</p>
+            </div>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">→</span>
+          </a>
+        </div>
+      </div>
+
     </div>
   </main>
-
 </div>
