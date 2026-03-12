@@ -21,17 +21,11 @@
   let pendingVotes: VotePendingItem[] = $state([]);
 
   function fmtPlaytime(minutes: number): string {
+    if (minutes === 0) return '0min';
     if (minutes < 60) return `${minutes}min`;
-    const hours = minutes / 60;
-    const rounded = Math.round(hours * 10) / 10;
-    return rounded.toLocaleString('pt-BR');
-  }
-
-  function fmtPlaytimeMobile(minutes: number): string {
-    if (minutes < 60) return `${minutes}min`;
-    const hours = minutes / 60;
-    const rounded = Math.round(hours * 10) / 10;
-    return `${rounded.toLocaleString('pt-BR')}h`;
+    const h = Math.floor(minutes / 60);
+    const min = minutes % 60;
+    return min > 0 ? `${h}h${String(min).padStart(2, '0')}` : `${h}h`;
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -168,8 +162,7 @@
         <Clock size={16} class="text-orange-600 dark:text-orange-400" />
       </div>
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">
-        <span class="hidden sm:inline">{fmtPlaytime($isAdmin ? platformMinutesPlayed : minutesPlayed)}</span>
-        <span class="sm:hidden">{fmtPlaytimeMobile($isAdmin ? platformMinutesPlayed : minutesPlayed)}</span>
+        {fmtPlaytime($isAdmin ? platformMinutesPlayed : minutesPlayed)}
       </p>
       <p class="text-xs text-gray-500 dark:text-gray-400">
         <span class="hidden sm:inline">{$isAdmin ? 'Horas jogadas' : 'Horas jogadas'}</span>

@@ -129,9 +129,9 @@
               </span>
             </div>
           </div>
-          <div class="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-            <span class="text-xs text-green-200">💰 Valor de mercado:</span>
-            <span class="text-xs font-bold text-white">{marketValue(stats, $currentPlayer?.id ?? $currentPlayer?.name ?? '')}</span>
+          <div class="mt-3 pt-3 border-t border-white/20 flex items-center gap-2 min-w-0">
+            <span class="text-xs text-green-200 shrink-0">💰 Valor de mercado:</span>
+            <span class="text-xs font-bold text-white truncate min-w-0">{marketValue(stats, $currentPlayer?.id ?? $currentPlayer?.name ?? '')}</span>
           </div>
         </div>
       </div>
@@ -250,7 +250,7 @@
           {#if stats.monthly_stats.some(m => m.matches_confirmed > 0)}
             {@const maxVal = Math.max(1, ...stats.monthly_stats.map(m => m.matches_confirmed))}
             <div class="card card-body">
-              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Últimos 6 meses</h2>
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Frequência nos últimos 6 meses</h2>
               <div class="flex items-end gap-1 h-24">
                 {#each stats.monthly_stats as m}
                   <div class="flex-1 flex flex-col items-center gap-1">
