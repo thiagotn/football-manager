@@ -265,6 +265,108 @@
 <!-- DIVISOR -->
 <div class="h-px bg-gray-100"></div>
 
+<!-- ESTATÍSTICAS PESSOAIS SPOTLIGHT -->
+<section class="bg-gray-50 py-16 px-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-10">
+      <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Para jogadores</span>
+      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">Suas estatísticas pessoais 📊</h2>
+      <p class="text-gray-500 mt-2 text-sm max-w-lg mx-auto">
+        Cada jogador tem uma página com seu histórico completo — presença, reputação, sequências e evolução ao longo do tempo.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-8 items-center">
+      <!-- Explicação -->
+      <div class="space-y-5">
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-xl shrink-0">📅</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Histórico de presenças</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Veja suas últimas partidas em um relance — quem foi e quem faltou — com taxa de presença e donut chart visual.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0">🔥</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Sequência de presenças</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Acompanhe sua sequência atual e seu recorde pessoal. O streak cria um incentivo natural para não faltar no próximo rachão.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-xl shrink-0">⭐</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Reputação nas votações</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Pontos acumulados, vezes no Top 5 e 1º lugar — sua reputação no grupo construída partida a partida.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-xl shrink-0">📈</div>
+          <div>
+            <h3 class="font-semibold text-gray-900 text-sm">Evolução nos últimos 6 meses</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Um gráfico dos seus meses mais ativos mostra como sua participação evoluiu — motivação para manter o ritmo.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mock stats card -->
+      <div class="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+        <!-- Identity card -->
+        <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl p-4 text-white">
+          <p class="font-bold text-base">Dudu</p>
+          <p class="text-xs text-primary-200 mt-0.5">Membro desde Jan 2025</p>
+          <div class="flex gap-4 mt-3">
+            <div class="text-center">
+              <p class="text-xl font-extrabold">42</p>
+              <p class="text-xs text-primary-300">partidas</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xl font-extrabold">87%</p>
+              <p class="text-xs text-primary-300">presença</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xl font-extrabold">🔥 7</p>
+              <p class="text-xs text-primary-300">sequência</p>
+            </div>
+            <div class="text-center">
+              <p class="text-xl font-extrabold">127</p>
+              <p class="text-xs text-primary-300">pontos</p>
+            </div>
+          </div>
+        </div>
+        <!-- Recent history dots -->
+        <div>
+          <p class="text-xs font-semibold text-gray-500 mb-2">Últimas partidas</p>
+          <div class="flex gap-1.5 flex-wrap">
+            {#each ['c','c','c','c','c','c','c','d','c','c','c','c','d','c','c','c','c','c','d','c'] as s}
+              <span class="w-3 h-3 rounded-full {s === 'c' ? 'bg-green-400' : 'bg-red-400'}"></span>
+            {/each}
+          </div>
+        </div>
+        <!-- Reputation chips -->
+        <div class="flex gap-2">
+          <div class="flex-1 bg-amber-50 border border-amber-100 rounded-xl p-2 text-center">
+            <p class="text-base font-bold text-amber-700">🥇 5</p>
+            <p class="text-xs text-gray-400">1º lugar</p>
+          </div>
+          <div class="flex-1 bg-green-50 border border-green-100 rounded-xl p-2 text-center">
+            <p class="text-base font-bold text-green-700">18</p>
+            <p class="text-xs text-gray-400">Top 5</p>
+          </div>
+          <div class="flex-1 bg-primary-50 border border-primary-100 rounded-xl p-2 text-center">
+            <p class="text-base font-bold text-primary-700">127</p>
+            <p class="text-xs text-gray-400">pontos</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 text-center">Exemplo ilustrativo</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVISOR -->
+<div class="h-px bg-gray-100"></div>
+
 <!-- DESTAQUES RÁPIDOS -->
 <section class="bg-white py-14 px-6">
   <div class="max-w-3xl mx-auto">
