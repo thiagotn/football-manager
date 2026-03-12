@@ -52,7 +52,8 @@
           votesApi.getResults(m.id).then(r => {
             voteResults = r;
             if (r.total_voters > 0) {
-              showResultsPromo = true;
+              const seen = sessionStorage.getItem(`results-seen-${matchHash}`);
+              if (!seen) showResultsPromo = true;
               showVoteModal = false;
             }
           }).catch(() => {});
@@ -673,11 +674,12 @@
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Confira quem foram os melhores desta partida.</p>
       <a
         href="/match/{matchHash}/results"
+        onclick={() => sessionStorage.setItem(`results-seen-${matchHash}`, '1')}
         class="btn btn-primary w-full justify-center mb-3">
         Ver resultado completo
       </a>
       <button
-        onclick={() => showResultsPromo = false}
+        onclick={() => { showResultsPromo = false; sessionStorage.setItem(`results-seen-${matchHash}`, '1'); }}
         class="btn btn-secondary w-full justify-center">
         <X size={15} /> Fechar
       </button>
