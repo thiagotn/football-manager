@@ -71,6 +71,67 @@ Para membros comuns, **não exibir** a nota nem o flag de goleiro — essa infor
 
 ### Bloco B — Montagem de Times
 
+> *(especificações originais mantidas — ver abaixo)*
+
+---
+
+### Bloco C — Página Pública de Resultados de Votação
+
+#### RF-10 — Link de acesso aos resultados na página da partida
+
+Na página da partida (`/match/[hash]`), quando o status de votação for `closed` (período encerrado) **e** houver pelo menos um voto registrado, exibir um card/botão de destaque com link para `/match/[hash]/results`.
+
+- Visível para todos (logados e não logados).
+- Texto sugerido: **"🏆 Ver os melhores do Rachão"**.
+- O link usa o mesmo `hash` da partida — não é necessário nenhum token adicional.
+
+#### RF-11 — Página pública de resultados (`/match/[hash]/results`)
+
+Nova rota pública acessível sem autenticação, com URL compartilhável via WhatsApp ou qualquer canal.
+
+**Conteúdo obrigatório:**
+
+1. **Header da partida**: nome do grupo, número da partida (`#N`), data e local — mesmo estilo visual do header de `/match/[hash]`.
+2. **Pódio dos top 3**: apresentação visual em destaque para os três primeiros colocados. Layout clássico de pódio (2º à esquerda, 1º ao centro elevado, 3º à direita). Cada posição exibe: medalha/emoji de posição (🥇🥈🥉), apelido ou nome do jogador, pontuação de votos.
+3. **Ranking completo**: lista ordenada por pontuação (maior → menor) exibindo todos os jogadores que receberam votos. Cada linha: posição numérica, nome/apelido, barra de progresso proporcional ao líder, pontuação.
+4. **Rodapé de contexto**: quantidade de votantes (`X de Y jogadores votaram`).
+5. **Botão "Compartilhar"**: copia URL para clipboard, disponível para todos.
+6. **Link "← Voltar para a partida"**: retorna para `/match/[hash]`.
+
+**Estados da página:**
+
+| Condição | Comportamento |
+|---|---|
+| Votação ainda aberta (`status = 'open'`) | Exibe mensagem *"A votação ainda está em andamento."* com link para a partida |
+| Votação encerrada, sem votos | Exibe mensagem *"Nenhum voto foi registrado nesta partida."* |
+| Votação encerrada, com votos | Exibe pódio + ranking completo |
+| Partida não encontrada | Redireciona para página de erro |
+
+#### RF-12 — Layout responsivo da página de resultados
+
+**Mobile (< 640px):**
+- Header da partida em largura total.
+- Pódio ocupa largura total: três colunas de tamanho fixo centralizadas, com o 1º lugar visualmente mais alto (via `padding-top` ou `height` maior).
+- Cada coluna do pódio: medalha emoji (grande, ~2rem), nome truncado em 1 linha, pontuação em destaque.
+- Ranking: lista vertical de cards compactos com barra de progresso.
+- Botão "Compartilhar" fixo ou em destaque abaixo do ranking.
+
+**Desktop (≥ 640px):**
+- Max-width `max-w-2xl` centralizado.
+- Pódio com colunas mais largas, espaçamento generoso, fontes maiores.
+- Ranking em tabela ou lista com hover state.
+- Layout de duas colunas é fora de escopo para v1 — foco em hierarquia vertical clara.
+
+#### RF-13 — Open Graph / preview no WhatsApp
+
+A página deve ter meta tags `og:title`, `og:description` e `og:image` (ou fallback para a imagem padrão do site) para que ao compartilhar o link no WhatsApp apareça uma preview informativa.
+
+- `og:title`: `"🏆 Resultados do Rachão #N — [Nome do Grupo]"`
+- `og:description`: `"[Apelido do 1º colocado] foi o melhor do rachão! Veja o ranking completo."`
+- A rota deve usar `+page.server.ts` (com SSR) para renderizar essas meta tags no servidor.
+
+---
+
 #### RF-05 — Botão "Montar times" na lista de confirmados da partida
 
 Na página da partida (`/match/[hash]`), na seção de jogadores confirmados, o administrador do grupo deve ver um botão **"Montar times"**. Jogadores comuns não veem essa opção.
@@ -256,7 +317,19 @@ Response:
 - Público (sem autenticação obrigatória, igual ao endpoint de status da partida).
 - Retorna os times atuais ou `{ "teams": [], "reserves": [] }` se nenhum time foi gerado.
 
-### 6.4 Listagem de membros do grupo (campo novo na resposta)
+### 6.4 Resultados de votação (endpoint existente — sem alteração)
+
+**`GET /api/v1/matches/{match_id}/votes/results`**
+
+- Já implementado. Público (sem autenticação obrigatória).
+- Retorna ranking de jogadores por pontuação, contagem de votantes e elegíveis.
+- A página `/match/[hash]/results` usa `match_id` obtido a partir do hash via `GET /matches/public/{hash}`.
+
+**`GET /api/v1/matches/{match_id}/votes/status`**
+
+- Já implementado. Usado para determinar o estado da votação (`open`, `closed`, `not_started`).
+
+### 6.5 Listagem de membros do grupo (campo novo na resposta)
 
 **`GET /api/v1/groups/{group_id}/members`**
 
@@ -281,7 +354,64 @@ Response:
 - Após geração bem-sucedida, exibir card com link para `/match/[hash]/teams`.
 - Se times já existem, botão vira **"Remontar times"** com ícone de refresh.
 
-### 7.3 `/match/[hash]/teams` — página pública de times
+### 7.3 `/match/[hash]/results` — página pública de resultados de votação
+
+Nova rota: `football-frontend/src/routes/match/[hash]/results/+page.svelte` + `+page.server.ts`
+
+**Fluxo de dados:**
+1. `+page.server.ts` carrega via SSR: dados da partida (`GET /matches/public/{hash}`), status da votação e resultados.
+2. Meta tags Open Graph renderizadas no servidor para preview no WhatsApp.
+3. Dados passados como `props` para o componente Svelte.
+
+**Estrutura visual (mobile-first):**
+
+```
+┌─────────────────────────────────┐
+│  ← Voltar    Rachão #N          │  ← header
+│  [Grupo] · [Data] · [Local]     │
+├─────────────────────────────────┤
+│  🏆 Melhores do Rachão          │  ← título da seção
+│                                 │
+│    🥈         🥇        🥉      │
+│   [2º]      [1º]      [3º]      │  ← pódio
+│  Nome      NOME      Nome       │
+│   Xpts     Xpts      Xpts       │
+│  ▓▓▓▓▓   ▓▓▓▓▓▓▓   ▓▓▓         │  ← altura proporcional
+├─────────────────────────────────┤
+│  Ranking completo               │
+│  1. Nome ████████████ 12 pts    │
+│  2. Nome ████████     9 pts     │
+│  3. Nome ██████        7 pts    │
+│  ...                            │
+├─────────────────────────────────┤
+│  X de Y jogadores votaram       │
+│  [📋 Compartilhar resultado]    │
+└─────────────────────────────────┘
+```
+
+**Detalhes de implementação:**
+
+- **Pódio**: `display: flex`, colunas com `align-items: flex-end` para efeito de altura variável.
+  - 1º lugar: coluna mais alta (~120px), fonte maior, fundo dourado/âmbar.
+  - 2º lugar: coluna média (~90px), fundo cinza-prata.
+  - 3º lugar: coluna menor (~70px), fundo bronze.
+  - Se menos de 3 jogadores votados: exibir apenas as posições disponíveis, sem lacunas.
+- **Barra de progresso no ranking**: `width` proporcional ao líder (líder = 100%, demais = `pts/pts_lider * 100%`). Usar `bg-primary-500` com transição CSS.
+- **Nomes**: usar `nickname` se disponível, senão `name`. Truncar com `truncate` em mobile.
+- **Botão Compartilhar**: `navigator.clipboard.writeText(window.location.href)` com feedback toast.
+- **SSR obrigatório** para meta tags — não usar `export const ssr = false`.
+
+**Acessibilidade:**
+- Pódio deve ter `aria-label` descrevendo a posição (ex: `aria-label="1º lugar: Joãozinho, 12 pontos"`).
+
+### 7.4 `/match/[hash]` — link de entrada para resultados
+
+Na página existente da partida, adicionar após a seção de confirmados:
+
+- Quando `vote_status === 'closed'` **e** `results.length > 0`: exibir card com fundo âmbar/dourado sutil e botão "🏆 Ver os melhores do Rachão" apontando para `/match/[hash]/results`.
+- O card deve ser visível para todos (logados e não logados).
+
+### 7.5 `/match/[hash]/teams` — página pública de times
 
 Nova rota: `football-frontend/src/routes/match/[hash]/teams/+page.svelte`
 
@@ -357,8 +487,9 @@ def montar_times(confirmados, players_per_team):
 | **Backend router** | Novo `app/api/v1/routers/teams.py` | `POST` e `GET /matches/{id}/teams` |
 | **Backend invite** | `app/api/v1/routers/invites.py` | Garantir `skill_stars=2` ao criar `GroupMember` |
 | **Frontend** | `src/routes/groups/[id]/+page.svelte` | Edição inline de estrelas e goleiro |
-| **Frontend** | `src/routes/match/[hash]/+page.svelte` | Botão "Montar times" + link para times |
+| **Frontend** | `src/routes/match/[hash]/+page.svelte` | Botão "Montar times" + link para times + card de resultados |
 | **Frontend** | Nova `src/routes/match/[hash]/teams/+page.svelte` | Página pública de times |
+| **Frontend** | Nova `src/routes/match/[hash]/results/+page.svelte` + `+page.server.ts` | Página pública de resultados com pódio e ranking |
 
 ---
 
@@ -377,6 +508,15 @@ def montar_times(confirmados, players_per_team):
 - [ ] Link para `/match/[hash]/teams` aparece na página da partida após a geração dos times.
 - [ ] Card "Primeiro jogo do rachão" é exibido no topo da página de times, mostrando o confronto entre o time de posição 1 e o de posição 2.
 - [ ] Grupos existentes não são afetados — membros atuais recebem `skill_stars = 2` via valor padrão da migration.
+- [ ] Após encerramento da votação, card "🏆 Ver os melhores do Rachão" aparece em `/match/[hash]` para todos os visitantes.
+- [ ] Página `/match/[hash]/results` é acessível sem login.
+- [ ] Pódio exibe corretamente os 3 primeiros colocados com altura visual proporcional à posição.
+- [ ] Se menos de 3 jogadores receberam votos, pódio exibe apenas as posições disponíveis.
+- [ ] Ranking completo lista todos os jogadores votados em ordem decrescente com barra de progresso.
+- [ ] Rodapé exibe contagem de votantes (`X de Y jogadores votaram`).
+- [ ] Botão "Compartilhar" copia a URL para clipboard com feedback toast.
+- [ ] Meta tags Open Graph renderizadas no servidor para preview correto no WhatsApp.
+- [ ] Se votação ainda aberta, página exibe mensagem informativa sem revelar o ranking parcial.
 
 ---
 

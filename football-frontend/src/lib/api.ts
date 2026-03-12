@@ -215,6 +215,7 @@ export type VotePendingItem = {
 export const votes = {
   getStatus:  (matchId: string) => get<VoteStatusResponse>(`/matches/${matchId}/votes/status`),
   getResults: (matchId: string) => get<VoteResultsResponse>(`/matches/${matchId}/votes/results`),
+  getPublicResults: (hash: string) => get<VoteResultsResponse>(`/matches/public/${hash}/votes/results`),
   submit: (matchId: string, top5: { player_id: string; position: number }[], flop_player_id?: string | null) =>
     post<{ message: string }>(`/matches/${matchId}/votes`, { top5, flop_player_id }),
   getPending: () => get<{ items: VotePendingItem[] }>('/votes/pending'),

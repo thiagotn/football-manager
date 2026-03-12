@@ -197,6 +197,26 @@ async def get_pending_votes(db: DB, current: CurrentPlayer):
     return VotePendingResponse(items=items)
 
 
+@router.get("/matches/public/{match_hash}/votes/results", response_model=VoteResultsResponse, tags=["public"])
+async def get_public_vote_results(match_hash: str, db: DB):
+    """Resultados de votação públicos — disponíveis somente após o encerramento da votação."""
+    m_repo = MatchRepository(db)
+    match = await m_repo.get_by_hash_with_attendances(match_hash)
+    if not match:
+        raise NotFoundError("Partida não encontrada")
+    if voting_status(match) != "closed":
+        raise NotFoundError("Resultados não disponíveis")
+    vote_repo = VoteRepository(db)
+    data = await vote_repo.get_results(match.id)
+    confirmed_ids = _confirmed_ids(match)
+    return VoteResultsResponse(
+        top5=data["top5"],
+        flop=data["flop"],
+        total_voters=data["total_voters"],
+        eligible_voters=len(confirmed_ids),
+    )
+
+
 @router.get("/matches/{match_id}/votes/results", response_model=VoteResultsResponse)
 async def get_vote_results(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     match = await _get_match_or_404(match_id, db)

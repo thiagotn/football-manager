@@ -12,6 +12,7 @@
   import VoteForm from '$lib/components/VoteForm.svelte';
   import VoteResults from '$lib/components/VoteResults.svelte';
   import { relativeDate } from '$lib/utils.js';
+  import { goto } from '$app/navigation';
 
   const matchHash = $page.params.hash;
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
@@ -38,6 +39,7 @@
   let voteSaving = $state(false);
   let voteSubmitted = $state(false);
   let showVoteModal = $state(true);
+  let showResultsPromo = $state(false);
 
   $effect(() => {
     const m = match;
@@ -47,7 +49,13 @@
       .then(s => {
         voteStatus = s;
         if (s.status === 'closed') {
-          votesApi.getResults(m.id).then(r => { voteResults = r; }).catch(() => {});
+          votesApi.getResults(m.id).then(r => {
+            voteResults = r;
+            if (r.total_voters > 0) {
+              showResultsPromo = true;
+              showVoteModal = false;
+            }
+          }).catch(() => {});
         }
       })
       .catch(() => {});
@@ -245,6 +253,17 @@
     togglingStatus = false;
   }
 
+  function goBack() {
+    const referrer = typeof document !== 'undefined' ? document.referrer : '';
+    if (referrer.includes(`/match/${matchHash}/results`)) {
+      goto('/');
+    } else if (history.length > 1) {
+      history.back();
+    } else {
+      goto('/');
+    }
+  }
+
   function askCloseMatch() {
     confirmMessage = 'Encerrar esta partida? Os jogadores não poderão mais confirmar presença.';
     confirmAction = () => toggleStatus('closed');
@@ -266,9 +285,9 @@
 
 <PageBackground>
   <main class="relative z-10 max-w-2xl mx-auto px-4 pt-4 pb-8">
-    {#if $isLoggedIn && history.length > 1}
+    {#if $isLoggedIn}
       <button
-        onclick={() => history.back()}
+        onclick={goBack}
         class="mb-3 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
         ← Voltar
       </button>
@@ -645,6 +664,27 @@
   </main>
 </PageBackground>
 
+<!-- Results promo overlay (blur) -->
+{#if showResultsPromo}
+  <div class="fixed inset-0 z-50 backdrop-blur-sm bg-black/40 flex items-center justify-center px-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <p class="text-4xl mb-3">🏆</p>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Votação encerrada!</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Confira quem foram os melhores desta partida.</p>
+      <a
+        href="/match/{matchHash}/results"
+        class="btn btn-primary w-full justify-center mb-3">
+        Ver resultado completo
+      </a>
+      <button
+        onclick={() => showResultsPromo = false}
+        class="btn btn-secondary w-full justify-center">
+        <X size={15} /> Fechar
+      </button>
+    </div>
+  </div>
+{/if}
+
 <!-- Voting Modal (fixed overlay, bottom sheet on mobile / centered on desktop) -->
 {#if voteStatus && match && match.status === 'closed' && $isLoggedIn && !$isAdmin && showVoteModal}
   <!-- Backdrop -->
@@ -707,7 +747,15 @@
 
         {:else if voteStatus.status === 'closed'}
           {#if voteResults}
-            <VoteResults results={voteResults} />
+            {#if voteResults.total_voters === 0}
+              <div class="text-center py-6">
+                <p class="text-3xl mb-3">😶</p>
+                <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">Ninguém votou nesta partida</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">A votação encerrou sem votos registrados.</p>
+              </div>
+            {:else}
+              <VoteResults results={voteResults} />
+            {/if}
           {:else}
             <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">Carregando resultados…</p>
           {/if}
