@@ -308,16 +308,37 @@
             <p class="text-sm font-bold text-white">
               #{match.number} {match.group_name}
             </p>
-            {#if match.status === 'in_progress'}
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
-                <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                Bola rolando
-              </span>
-            {:else}
-              <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
-                {match.status === 'open' ? 'Aberta' : 'Encerrada'}
-              </span>
-            {/if}
+            <div class="flex items-center gap-1.5">
+              {#if match.status === 'in_progress'}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                  Bola rolando
+                </span>
+              {:else}
+                <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
+                  {match.status === 'open' ? 'Aberta' : 'Encerrada'}
+                </span>
+              {/if}
+              {#if isGroupAdmin}
+                {#if match.status === 'closed'}
+                  <button
+                    onclick={() => toggleStatus('open')}
+                    disabled={togglingStatus}
+                    class="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                    title="Reabrir partida">
+                    <LockOpen size={14} />
+                  </button>
+                {:else}
+                  <button
+                    onclick={askCloseMatch}
+                    disabled={togglingStatus}
+                    class="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                    title="Encerrar partida">
+                    <Lock size={14} />
+                  </button>
+                {/if}
+              {/if}
+            </div>
           </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
@@ -400,6 +421,47 @@
           </span>
           <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">Ver →</span>
         </button>
+      {/if}
+
+      <!-- Teams card — above player lists -->
+      {#if (teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress'))}
+        <div class="card mb-3 overflow-hidden">
+          <div class="flex items-center gap-3 px-4 py-3">
+            <span class="text-xl">⚽</span>
+            <div class="flex-1 min-w-0">
+              {#if teamsData && teamsData.teams.length > 0}
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Times sorteados</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{teamsData.teams.length} times</p>
+              {:else}
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Sorteio de times</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {!match.players_per_team ? 'Configure jogadores por time no grupo' :
+                   match.confirmed_count < (match.players_per_team + 1) * 2 ? 'Aguardando confirmações suficientes' :
+                   'Pronto para sortear'}
+                </p>
+              {/if}
+            </div>
+            {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')}
+              {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
+                <button class="btn-sm btn-secondary gap-1 opacity-50" disabled>
+                  <Shuffle size={12} /> {teamsData ? 'Remontar' : 'Montar'}
+                </button>
+              {:else}
+                <button
+                  onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
+                  disabled={generatingTeams}
+                  class="btn-sm btn-primary gap-1">
+                  <Shuffle size={12} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar' : 'Montar'}
+                </button>
+              {/if}
+            {/if}
+            {#if teamsData && teamsData.teams.length > 0}
+              <a href="/match/{matchHash}/teams" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <ExternalLink size={15} />
+              </a>
+            {/if}
+          </div>
+        </div>
       {/if}
 
       <!-- Players lists -->
@@ -560,58 +622,6 @@
       </div>
       </div><!-- /relative RSVP wrapper -->
 
-      <!-- Teams card (visible for all if teams exist) -->
-      {#if teamsData && teamsData.teams.length > 0}
-        <a href="/match/{matchHash}/teams"
-          class="card card-body mt-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer no-underline">
-          <span class="text-2xl">⚽</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Times sorteados</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{teamsData.teams.length} times · Ver escalação completa</p>
-          </div>
-          <ExternalLink size={16} class="text-gray-400 shrink-0" />
-        </a>
-      {/if}
-
-      <!-- Admin actions -->
-      {#if isGroupAdmin}
-        <div class="card mt-3 overflow-hidden">
-          <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">Ações do administrador</p>
-          </div>
-          <div class="p-3 flex flex-col sm:flex-row gap-2">
-            {#if match.status === 'closed'}
-              <button
-                onclick={() => toggleStatus('open')}
-                disabled={togglingStatus}
-                class="btn-sm btn-secondary gap-1.5 flex-1 justify-center">
-                <LockOpen size={14} /> Reabrir partida
-              </button>
-            {:else}
-              <button
-                onclick={askCloseMatch}
-                disabled={togglingStatus}
-                class="btn-sm btn-secondary gap-1.5 flex-1 justify-center text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20">
-                <Lock size={14} /> Encerrar partida
-              </button>
-            {/if}
-            {#if match.status === 'open' || match.status === 'in_progress'}
-              {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
-                <button class="btn-sm btn-secondary gap-1.5 flex-1 justify-center" disabled>
-                  <Shuffle size={14} /> {teamsData ? 'Remontar times' : 'Montar times'}
-                </button>
-              {:else}
-                <button
-                  onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
-                  disabled={generatingTeams}
-                  class="btn-sm btn-primary gap-1.5 flex-1 justify-center">
-                  <Shuffle size={14} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar times' : 'Montar times'}
-                </button>
-              {/if}
-            {/if}
-          </div>
-        </div>
-      {/if}
 
       <!-- Share -->
       <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
