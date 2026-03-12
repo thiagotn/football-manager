@@ -136,14 +136,18 @@
         {@const t1 = teamsData.teams[0]}
         {@const t2 = teamsData.teams[1]}
         <div class="card overflow-hidden mb-3">
-          <div class="px-3 py-2 flex items-center gap-2">
-            <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">1º jogo</span>
-            <div class="flex flex-1 items-center justify-center gap-1.5 min-w-0 overflow-hidden">
-              <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t1.color ?? '#6b7280'};"></div>
-              <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t1.name}</span>
+          <div class="px-3 py-2 text-center">
+            <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">1º jogo do rachão</p>
+            <div class="flex items-center justify-center gap-2 min-w-0">
+              <div class="flex items-center gap-1 min-w-0 justify-end flex-1">
+                <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t1.name}</span>
+                <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t1.color ?? '#6b7280'};"></div>
+              </div>
               <span class="text-xs font-black text-gray-400 shrink-0">×</span>
-              <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t2.name}</span>
-              <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t2.color ?? '#6b7280'};"></div>
+              <div class="flex items-center gap-1 min-w-0 flex-1">
+                <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t2.color ?? '#6b7280'};"></div>
+                <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t2.name}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -152,7 +156,7 @@
       <!-- Teams grid — 2 colunas sempre -->
       <div class="grid grid-cols-2 gap-2 mb-3">
         {#each teamsData.teams as team}
-          <div class="card overflow-hidden">
+          <div class="card overflow-hidden" style="border-left: 3px solid {team.color ?? '#6b7280'}; border-top: 2px solid {team.color ?? '#6b7280'}40;">
             <!-- Team header -->
             <div class="px-2 py-1.5 flex items-center gap-1.5"
               style="background-color: {team.color ?? '#374151'}1a; border-bottom: 2px solid {team.color ?? '#6b7280'};">

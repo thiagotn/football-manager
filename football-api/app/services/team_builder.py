@@ -9,8 +9,16 @@ TEAM_NAMES = [
 ]
 
 TEAM_COLORS = [
-    "#e63946", "#2a9d8f", "#e9c46a", "#264653", "#f4a261",
-    "#457b9d", "#6a4c93", "#1982c4", "#8ac926", "#ff595e",
+    "#e53e3e",  # vermelho
+    "#3b82f6",  # azul
+    "#f59e0b",  # amarelo
+    "#22c55e",  # verde
+    "#f97316",  # laranja
+    "#a855f7",  # roxo
+    "#ec4899",  # rosa
+    "#06b6d4",  # ciano
+    "#84cc16",  # limão
+    "#14b8a6",  # verde-azulado
 ]
 
 
@@ -75,13 +83,21 @@ def build_teams(
         reverse=True,
     )
 
-    # 2. Snake draft nos restantes
-    indices = list(range(n_times)) + list(range(n_times - 1, -1, -1))
-    i = 0
-    for jogador in pool:
-        time_idx = indices[i % len(indices)]
-        times[time_idx].append(jogador)
-        i += 1
+    # 2. Snake draft respeitando a capacidade restante de cada time
+    # Cada time precisa de exatamente (team_size - jogadores já atribuídos) picks
+    needs = [team_size - len(t) for t in times]
+    pick_order: list[int] = []
+    round_num = 0
+    while any(n > 0 for n in needs):
+        team_range = range(n_times) if round_num % 2 == 0 else range(n_times - 1, -1, -1)
+        for t in team_range:
+            if needs[t] > 0:
+                pick_order.append(t)
+                needs[t] -= 1
+        round_num += 1
+
+    for t_idx, jogador in zip(pick_order, pool):
+        times[t_idx].append(jogador)
 
     names = _pick_names(n_times)
     colors = TEAM_COLORS * ((n_times // len(TEAM_COLORS)) + 1)
