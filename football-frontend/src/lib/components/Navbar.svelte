@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2 } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar } from 'lucide-svelte';
 
   function logout() {
     authStore.logout();
@@ -13,6 +13,7 @@
   const links = [
     { href: '/',               icon: Home,       label: 'Dashboard' },
     { href: '/groups',         icon: Trophy,     label: 'Grupos' },
+    { href: '/matches',        icon: Calendar,   label: 'Rachões',       playerOnly: true },
     { href: '/profile/stats',  icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
     { href: '/review',         icon: Star,       label: 'Avaliar o App', playerOnly: true },
     { href: '/players',        icon: Users,      label: 'Jogadores',     adminOnly: true },
@@ -35,6 +36,7 @@
     if (pathname === '/groups')   return '/';
     if (pathname === '/players')  return '/';
     if (pathname === '/profile')        return '/';
+    if (pathname === '/matches')        return '/';
     if (pathname === '/profile/stats') return '/profile';
     if (pathname === '/review')   return '/';
     if (pathname === '/faq')      return '/';

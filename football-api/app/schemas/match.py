@@ -73,6 +73,11 @@ class MatchDetailResponse(MatchResponse):
     group_monthly_amount: Decimal | None = None
 
 
+class PlayerMatchItem(MatchResponse):
+    group_name: str
+    my_attendance: AttendanceStatus | None = None
+
+
 class SetAttendanceRequest(BaseModel):
     player_id: uuid.UUID
     status: AttendanceStatus

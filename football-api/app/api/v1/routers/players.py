@@ -8,13 +8,29 @@ from sqlalchemy import select, text
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
 from app.core.security import hash_password
+from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
 from app.db.repositories.player_stats_repo import PlayerStatsRepository
 from app.models.player import Player, PlayerRole
+from app.schemas.match import MatchResponse, PlayerMatchItem
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
 from app.schemas.player_stats import PlayerFullStats
 
 router = APIRouter(prefix="/players", tags=["players"])
+
+
+@router.get("/me/matches", response_model=list[PlayerMatchItem])
+async def get_my_matches(db: DB, current: CurrentPlayer):
+    repo = MatchRepository(db)
+    rows = await repo.get_player_matches(current.id)
+    return [
+        PlayerMatchItem(
+            **MatchResponse.model_validate(match).model_dump(),
+            group_name=group_name,
+            my_attendance=my_attendance,
+        )
+        for match, group_name, my_attendance in rows
+    ]
 
 
 @router.get("/me/stats/full", response_model=PlayerFullStats)
