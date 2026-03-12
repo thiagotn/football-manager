@@ -618,17 +618,21 @@
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
                 {m.player.nickname || m.player.name}
               </p>
-              <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                {#if m.role === 'admin'}
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Presidente</span>
-                {/if}
-                {#if isGroupAdmin() && m.is_goalkeeper}
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">GK</span>
-                {/if}
-                {#if isGroupAdmin() && m.skill_stars != null}
-                  <StarRating rating={m.skill_stars} readonly size={14} />
-                {/if}
-              </div>
+              {#if isGroupAdmin() && m.skill_stars != null}
+                <div class="mt-0.5">
+                  <StarRating rating={m.skill_stars} readonly size={13} />
+                </div>
+              {/if}
+              {#if m.role === 'admin' || (isGroupAdmin() && m.is_goalkeeper)}
+                <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+                  {#if m.role === 'admin'}
+                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Presidente</span>
+                  {/if}
+                  {#if isGroupAdmin() && m.is_goalkeeper}
+                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Goleiro</span>
+                  {/if}
+                </div>
+              {/if}
             </div>
             <!-- Actions -->
             {#if isGroupAdmin() && m.player.id !== $currentPlayer?.id}
