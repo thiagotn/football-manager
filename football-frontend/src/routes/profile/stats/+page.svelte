@@ -56,16 +56,28 @@
 </svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-lg mx-auto px-4 pt-4 pb-8">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
 
     <!-- Header -->
     <h1 class="text-white text-lg font-bold mb-4">Minhas Estatísticas</h1>
 
     {#if loading}
-      <div class="space-y-3">
-        {#each [1, 2, 3] as _}
-          <div class="card animate-pulse h-24 bg-gray-100 dark:bg-gray-800"></div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        {#each [1, 2, 3, 4] as _}
+          <div class="card animate-pulse h-20 bg-gray-100 dark:bg-gray-800"></div>
         {/each}
+      </div>
+      <div class="grid lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2 space-y-4">
+          {#each [1, 2] as _}
+            <div class="card animate-pulse h-32 bg-gray-100 dark:bg-gray-800"></div>
+          {/each}
+        </div>
+        <div class="space-y-4">
+          {#each [1, 2] as _}
+            <div class="card animate-pulse h-32 bg-gray-100 dark:bg-gray-800"></div>
+          {/each}
+        </div>
       </div>
 
     {:else if error}
@@ -73,11 +85,10 @@
 
     {:else if stats}
 
-      <!-- Bloco 1: Cartão de identidade -->
-      <div class="card overflow-hidden mb-3">
+      <!-- Bloco 1: Cartão de identidade (full width) -->
+      <div class="card overflow-hidden mb-4">
         <div class="relative px-4 py-4 text-white overflow-hidden"
           style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);">
-          <!-- Decoração de fundo -->
           <div class="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white"></div>
           <div class="absolute -right-2 top-10 w-16 h-16 rounded-full opacity-10 bg-white"></div>
           <div class="relative flex items-start justify-between gap-3">
@@ -96,9 +107,7 @@
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0">
               {#if hasGoalkeeper(stats.groups)}
-                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900">
-                  Goleiro
-                </span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900">Goleiro</span>
               {/if}
               <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
                 ⚽ {stats.total_matches_confirmed} partidas
@@ -108,8 +117,8 @@
         </div>
       </div>
 
-      <!-- Bloco 2: Métricas rápidas (2×2) -->
-      <div class="grid grid-cols-2 gap-2 mb-3">
+      <!-- Bloco 2: Métricas rápidas — 2 cols mobile, 4 cols desktop -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
         <div class="card card-body flex items-center gap-3 py-3">
           <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
             <Users size={18} class="text-blue-600 dark:text-blue-400" />
@@ -151,148 +160,153 @@
         </div>
       </div>
 
-      <!-- Bloco 3: Taxa de presença + sequência -->
-      <div class="card card-body mb-3">
-        <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Presença</h2>
-        <div class="flex items-center gap-5">
-          <!-- Donut via conic-gradient -->
-          <div class="relative w-20 h-20 rounded-full shrink-0"
-            style="background: conic-gradient(#22c55e {stats.attendance_rate}%, #e5e7eb 0%);">
-            <div class="absolute inset-[16%] rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-              <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{stats.attendance_rate}%</span>
+      <!-- Blocos 3-7: single column mobile / two-column desktop -->
+      <div class="grid lg:grid-cols-3 gap-4">
+
+        <!-- Coluna principal (2/3 no desktop) -->
+        <div class="lg:col-span-2 space-y-4">
+
+          <!-- Bloco 3: Presença -->
+          <div class="card card-body">
+            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Presença</h2>
+            <div class="flex items-center gap-5">
+              <div class="relative w-20 h-20 rounded-full shrink-0"
+                style="background: conic-gradient(#22c55e {stats.attendance_rate}%, #e5e7eb 0%);">
+                <div class="absolute inset-[16%] rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                  <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{stats.attendance_rate}%</span>
+                </div>
+              </div>
+              <div class="flex-1 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Sequência atual</span>
+                  <span class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                    {#if stats.current_streak >= 3}<Flame size={13} class="text-orange-500" />{/if}
+                    {stats.current_streak} seguidas
+                  </span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Maior sequência</span>
+                  <span class="text-sm font-bold text-primary-600 dark:text-primary-400">{stats.best_streak}</span>
+                </div>
+                <div class="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full bg-green-500 rounded-full" style="width: {stats.attendance_rate}%;"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <!-- Info lateral -->
-          <div class="flex-1 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500 dark:text-gray-400">Sequência atual</span>
-              <span class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1">
-                {#if stats.current_streak >= 3}
-                  <Flame size={13} class="text-orange-500" />
-                {/if}
-                {stats.current_streak} seguidas
-              </span>
+
+          <!-- Bloco 5: Reputação -->
+          {#if stats.total_matches_confirmed > 0}
+            {@const approvalPct = Math.min(100, Math.round((stats.top5_count / Math.max(1, stats.total_matches_confirmed)) * 100))}
+            <div class="card card-body">
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Reputação</h2>
+              <div class="grid grid-cols-3 gap-2 mb-3">
+                <div class="text-center p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
+                  <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{stats.top1_count}</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">🥇 Melhor<br>da partida</p>
+                </div>
+                <div class="text-center p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                  <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.top5_count}</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">🏅 Vezes<br>no Top 5</p>
+                </div>
+                <div class="text-center p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20">
+                  <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{stats.total_vote_points}</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">⭐ Total<br>de pontos</p>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Aprovação (Top 5 / partidas)</span>
+                  <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{approvalPct}%</span>
+                </div>
+                <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all"
+                    style="width: {approvalPct}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500 dark:text-gray-400">Maior sequência</span>
-              <span class="text-sm font-bold text-primary-600 dark:text-primary-400">{stats.best_streak}</span>
+          {/if}
+
+          <!-- Bloco 6: Gráfico de barras mensal -->
+          {#if stats.monthly_stats.some(m => m.matches_confirmed > 0)}
+            {@const maxVal = Math.max(1, ...stats.monthly_stats.map(m => m.matches_confirmed))}
+            <div class="card card-body">
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Últimos 6 meses</h2>
+              <div class="flex items-end gap-1 h-24">
+                {#each stats.monthly_stats as m}
+                  <div class="flex-1 flex flex-col items-center gap-1">
+                    <span class="text-[9px] text-gray-400 h-3 flex items-center">
+                      {m.matches_confirmed > 0 ? m.matches_confirmed : ''}
+                    </span>
+                    <div class="w-full rounded-t transition-all"
+                      style="height: {Math.max(3, (m.matches_confirmed / maxVal) * 52)}px; background-color: {m.matches_confirmed > 0 ? '#3b82f6' : '#e5e7eb'};"></div>
+                    <span class="text-[9px] text-gray-400">{monthLabel(m.month)}</span>
+                  </div>
+                {/each}
+              </div>
             </div>
-            <div class="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div class="h-full bg-green-500 rounded-full" style="width: {stats.attendance_rate}%;"></div>
+          {/if}
+
+        </div>
+
+        <!-- Coluna lateral (1/3 no desktop) -->
+        <div class="space-y-4">
+
+          <!-- Bloco 4: Histórico recente -->
+          {#if stats.recent_matches.length > 0}
+            <div class="card card-body">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Histórico recente</h2>
+                <span class="text-xs text-gray-400">{stats.recent_matches.length} partidas</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                {#each stats.recent_matches as m}
+                  <div
+                    class="w-3.5 h-3.5 rounded-full shrink-0 {m.status === 'confirmed' ? 'bg-green-500' : 'bg-red-400'}"
+                    title="{m.match_date} — {m.group_name} — {m.status === 'confirmed' ? 'Confirmado' : 'Faltou'}"
+                  ></div>
+                {/each}
+              </div>
+              <div class="flex items-center gap-4 mt-2.5">
+                <span class="flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> Confirmado
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> Faltou
+                </span>
+              </div>
             </div>
-          </div>
+          {/if}
+
+          <!-- Bloco 7: Meus grupos -->
+          {#if stats.groups.length > 0}
+            <div class="card overflow-hidden">
+              <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Meus Grupos</h2>
+              </div>
+              <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                {#each stats.groups as g}
+                  <li class="px-4 py-2.5 flex items-center gap-2.5">
+                    <Shield size={14} class="text-primary-500 shrink-0" fill="currentColor" />
+                    <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{g.group_name}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                      {#if g.is_goalkeeper}
+                        <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">GK</span>
+                      {/if}
+                      {#if g.role === 'admin'}
+                        <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>
+                      {/if}
+                      <span class="text-xs text-gray-400">{g.matches_confirmed} jogos</span>
+                      <span class="text-xs text-amber-500 tracking-tighter">{'★'.repeat(g.skill_stars)}</span>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+
         </div>
       </div>
-
-      <!-- Bloco 4: Histórico recente (pontos coloridos) -->
-      {#if stats.recent_matches.length > 0}
-        <div class="card card-body mb-3">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Histórico recente</h2>
-            <span class="text-xs text-gray-400">{stats.recent_matches.length} partidas</span>
-          </div>
-          <!-- Pontos da mais recente (esquerda) para a mais antiga (direita) -->
-          <div class="flex flex-wrap gap-1.5">
-            {#each stats.recent_matches as m}
-              <div
-                class="w-3.5 h-3.5 rounded-full shrink-0 {m.status === 'confirmed' ? 'bg-green-500' : 'bg-red-400'}"
-                title="{m.match_date} — {m.group_name} — {m.status === 'confirmed' ? 'Confirmado' : 'Faltou'}"
-              ></div>
-            {/each}
-          </div>
-          <div class="flex items-center gap-4 mt-2.5">
-            <span class="flex items-center gap-1.5 text-[10px] text-gray-400">
-              <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> Confirmado
-            </span>
-            <span class="flex items-center gap-1.5 text-[10px] text-gray-400">
-              <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> Faltou
-            </span>
-          </div>
-        </div>
-      {/if}
-
-      <!-- Bloco 5: Reputação -->
-      {#if stats.total_matches_confirmed > 0}
-        {@const approvalPct = Math.min(100, Math.round((stats.top5_count / Math.max(1, stats.total_matches_confirmed)) * 100))}
-        <div class="card card-body mb-3">
-          <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Reputação</h2>
-          <div class="grid grid-cols-3 gap-2 mb-3">
-            <div class="text-center p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-              <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{stats.top1_count}</p>
-              <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">🥇 Melhor<br>da partida</p>
-            </div>
-            <div class="text-center p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-              <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.top5_count}</p>
-              <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">🏅 Vezes<br>no Top 5</p>
-            </div>
-            <div class="text-center p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20">
-              <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{stats.total_vote_points}</p>
-              <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">⭐ Total<br>de pontos</p>
-            </div>
-          </div>
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs text-gray-500 dark:text-gray-400">Aprovação (Top 5 / partidas)</span>
-              <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{approvalPct}%</span>
-            </div>
-            <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all"
-                style="width: {approvalPct}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"
-              ></div>
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      <!-- Bloco 6: Gráfico de barras mensal -->
-      {#if stats.monthly_stats.some(m => m.matches_confirmed > 0)}
-        {@const maxVal = Math.max(1, ...stats.monthly_stats.map(m => m.matches_confirmed))}
-        <div class="card card-body mb-3">
-          <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Últimos 6 meses</h2>
-          <div class="flex items-end gap-1 h-24">
-            {#each stats.monthly_stats as m}
-              <div class="flex-1 flex flex-col items-center gap-1">
-                <span class="text-[9px] text-gray-400 h-3 flex items-center">
-                  {m.matches_confirmed > 0 ? m.matches_confirmed : ''}
-                </span>
-                <div
-                  class="w-full rounded-t transition-all"
-                  style="height: {Math.max(3, (m.matches_confirmed / maxVal) * 52)}px; background-color: {m.matches_confirmed > 0 ? '#3b82f6' : '#e5e7eb'};"
-                ></div>
-                <span class="text-[9px] text-gray-400">{monthLabel(m.month)}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Bloco 7: Meus grupos -->
-      {#if stats.groups.length > 0}
-        <div class="card overflow-hidden">
-          <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Meus Grupos</h2>
-          </div>
-          <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-            {#each stats.groups as g}
-              <li class="px-4 py-2.5 flex items-center gap-2.5">
-                <Shield size={14} class="text-primary-500 shrink-0" fill="currentColor" />
-                <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{g.group_name}</span>
-                <div class="flex items-center gap-2 shrink-0">
-                  {#if g.is_goalkeeper}
-                    <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">GK</span>
-                  {/if}
-                  {#if g.role === 'admin'}
-                    <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>
-                  {/if}
-                  <span class="text-xs text-gray-400">{g.matches_confirmed} jogos</span>
-                  <span class="text-xs text-amber-500 tracking-tighter">{'★'.repeat(g.skill_stars)}</span>
-                </div>
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
 
     {/if}
   </main>
