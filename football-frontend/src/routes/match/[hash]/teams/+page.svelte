@@ -7,7 +7,7 @@
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-  import { ChevronLeft, Copy, RefreshCw } from 'lucide-svelte';
+  import { ChevronLeft, Copy, RefreshCw, Shield } from 'lucide-svelte';
 
   const matchHash = $page.params.hash;
 
@@ -141,11 +141,11 @@
             <div class="flex items-center justify-center gap-2 min-w-0">
               <div class="flex items-center gap-1 min-w-0 justify-end flex-1">
                 <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t1.name}</span>
-                <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t1.color ?? '#6b7280'};"></div>
+                <Shield size={12} class="shrink-0" style="color: {t1.color ?? '#6b7280'};" fill={t1.color ?? '#6b7280'} />
               </div>
               <span class="text-xs font-black text-gray-400 shrink-0">×</span>
               <div class="flex items-center gap-1 min-w-0 flex-1">
-                <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t2.color ?? '#6b7280'};"></div>
+                <Shield size={12} class="shrink-0" style="color: {t2.color ?? '#6b7280'};" fill={t2.color ?? '#6b7280'} />
                 <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t2.name}</span>
               </div>
             </div>
@@ -160,7 +160,7 @@
             <!-- Team header -->
             <div class="px-2 py-1.5 flex items-center gap-1.5"
               style="background-color: {team.color ?? '#374151'}1a; border-bottom: 2px solid {team.color ?? '#6b7280'};">
-              <div class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {team.color ?? '#6b7280'};"></div>
+              <Shield size={13} class="shrink-0" style="color: {team.color ?? '#6b7280'};" fill={team.color ?? '#6b7280'} />
               <h2 class="font-bold text-xs text-gray-900 dark:text-gray-100 truncate flex-1">{team.name}</h2>
               {#if isGroupAdmin}
                 <span class="text-[10px] text-gray-400 shrink-0 leading-none">{team.skill_total}★</span>
