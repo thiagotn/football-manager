@@ -46,7 +46,8 @@
   );
 
   function fmtDate(d: string) {
-    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long' });
+    const s = relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long' });
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   function fmtTimeRange(start: string, end: string | null): string {
@@ -111,8 +112,8 @@
                 <!-- Date + status -->
                 <div class="flex items-start gap-2 mb-1">
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-900 dark:text-gray-100 capitalize leading-snug">
-                      <span class="text-primary-600 dark:text-primary-400 font-bold text-sm mr-1">#{m.number}</span>{fmtDate(m.match_date)}
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 leading-snug">
+                      <span class="text-primary-600 dark:text-primary-400 font-bold text-base mr-1">#{m.number}</span>{fmtDate(m.match_date)}
                     </p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{m.group_name}</p>
                   </div>

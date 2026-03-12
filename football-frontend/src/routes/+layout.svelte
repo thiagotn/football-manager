@@ -8,7 +8,7 @@
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
 
-  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match', '/faq', '/lp', '/terms', '/privacy'];
+  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy'];
 
   let betaDismissed = $state(false);
 
@@ -27,7 +27,7 @@
     $isLoggedIn
     && !$page.url.pathname.startsWith('/login')
     && !$page.url.pathname.startsWith('/invite')
-    && !$page.url.pathname.startsWith('/match')
+    && !$page.url.pathname.startsWith('/match/')
     && !$page.url.pathname.startsWith('/lp')
     && !$page.url.pathname.startsWith('/terms')
     && !$page.url.pathname.startsWith('/privacy')
