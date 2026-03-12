@@ -52,14 +52,15 @@
 </script>
 
 <svelte:head>
-  <title>Minhas Estatísticas — rachao.app</title>
+  <title>Rachão Score — rachao.app</title>
 </svelte:head>
 
 <PageBackground>
   <main class="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
 
     <!-- Header -->
-    <h1 class="text-white text-lg font-bold mb-4">Minhas Estatísticas</h1>
+    <h1 class="text-white text-lg font-bold">Rachão Score</h1>
+    <p class="text-white/60 text-xs mb-4">Seus dados, de acordo com a plataforma de dados Rachão Score.</p>
 
     {#if loading}
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
@@ -88,7 +89,7 @@
       <!-- Bloco 1: Cartão de identidade (full width) -->
       <div class="card overflow-hidden mb-4">
         <div class="relative px-4 py-4 text-white overflow-hidden"
-          style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);">
+          style="background: linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%);">
           <div class="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white"></div>
           <div class="absolute -right-2 top-10 w-16 h-16 rounded-full opacity-10 bg-white"></div>
           <div class="relative flex items-start justify-between gap-3">
@@ -97,10 +98,10 @@
                 {$currentPlayer?.nickname || $currentPlayer?.name}
               </p>
               {#if $currentPlayer?.nickname}
-                <p class="text-sm text-blue-200 truncate">{$currentPlayer.name}</p>
+                <p class="text-sm text-green-200 truncate">{$currentPlayer.name}</p>
               {/if}
               {#if memberSince($currentPlayer?.created_at)}
-                <p class="text-xs text-blue-300 mt-1.5">
+                <p class="text-xs text-green-300 mt-1.5">
                   Membro desde {memberSince($currentPlayer?.created_at)}
                 </p>
               {/if}

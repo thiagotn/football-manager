@@ -184,7 +184,7 @@
         <BarChart2 size={20} class="text-primary-600 dark:text-primary-400" />
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Minhas Estatísticas</p>
+        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Rachão Score</p>
         <p class="text-xs text-gray-500 dark:text-gray-400">Partidas, presença, reputação e mais</p>
       </div>
       <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0 group-hover:translate-x-0.5 transition-transform">→</span>

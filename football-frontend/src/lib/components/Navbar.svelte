@@ -13,7 +13,7 @@
   const links = [
     { href: '/',               icon: Home,       label: 'Dashboard' },
     { href: '/groups',         icon: Trophy,     label: 'Grupos' },
-    { href: '/profile/stats',  icon: BarChart2,  label: 'Estatísticas',  playerOnly: true },
+    { href: '/profile/stats',  icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
     { href: '/review',         icon: Star,       label: 'Avaliar o App', playerOnly: true },
     { href: '/players',        icon: Users,      label: 'Jogadores',     adminOnly: true },
     { href: '/admin/reviews',  icon: Star,       label: 'Avaliações',    adminOnly: true },
