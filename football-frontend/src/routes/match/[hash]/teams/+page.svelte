@@ -78,10 +78,10 @@
 </svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-2xl mx-auto px-4 pb-10 pt-4">
+  <main class="relative z-10 max-w-2xl mx-auto px-3 pb-6 pt-3">
 
     <!-- Header -->
-    <div class="flex items-center gap-2 mb-5">
+    <div class="flex items-center gap-2 mb-3">
       <button onclick={() => goto(`/match/${matchHash}`, { replaceState: true })} class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors">
         <ChevronLeft size={22} />
       </button>
@@ -100,7 +100,19 @@
       </button>
     </div>
 
-    <h1 class="text-white text-xl font-bold mb-1">⚽ Times do Rachão</h1>
+    <!-- Title + admin action -->
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-white text-base font-bold">⚽ Times do Rachão</h1>
+      {#if !loading && teamsData && isGroupAdmin}
+        <button
+          onclick={() => confirmOpen = true}
+          disabled={regenerating}
+          class="btn-secondary btn-sm gap-1 text-xs py-1">
+          <RefreshCw size={12} class={regenerating ? 'animate-spin' : ''} />
+          {regenerating ? 'Remontando…' : 'Remontar'}
+        </button>
+      {/if}
+    </div>
 
     {#if loading}
       <div class="text-center py-16 text-white/50">Carregando…</div>
@@ -119,75 +131,51 @@
       </div>
 
     {:else}
-      <!-- Admin actions -->
-      {#if isGroupAdmin}
-        <div class="flex justify-end mb-4">
-          <button
-            onclick={() => confirmOpen = true}
-            disabled={regenerating}
-            class="btn-secondary btn-sm gap-1.5">
-            <RefreshCw size={14} class={regenerating ? 'animate-spin' : ''} />
-            {regenerating ? 'Remontando…' : 'Remontar times'}
-          </button>
-        </div>
-      {/if}
-
       <!-- Primeiro confronto -->
       {#if teamsData.teams.length >= 2}
         {@const t1 = teamsData.teams[0]}
         {@const t2 = teamsData.teams[1]}
-        <div class="card overflow-hidden mb-5">
-          <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">⚽ Primeiro jogo do rachão</p>
-          </div>
-          <div class="px-4 py-4 flex items-center justify-center gap-3">
-            <div class="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-              <div class="w-4 h-4 rounded-full shrink-0" style="background-color: {t1.color ?? '#6b7280'};"></div>
-              <span class="font-bold text-sm text-gray-900 dark:text-gray-100 text-center leading-snug">{t1.name}</span>
-            </div>
-            <span class="text-xl font-black text-gray-400 dark:text-gray-500 shrink-0">×</span>
-            <div class="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-              <div class="w-4 h-4 rounded-full shrink-0" style="background-color: {t2.color ?? '#6b7280'};"></div>
-              <span class="font-bold text-sm text-gray-900 dark:text-gray-100 text-center leading-snug">{t2.name}</span>
+        <div class="card overflow-hidden mb-3">
+          <div class="px-3 py-2 flex items-center gap-2">
+            <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide shrink-0">1º jogo</span>
+            <div class="flex flex-1 items-center justify-center gap-1.5 min-w-0 overflow-hidden">
+              <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t1.color ?? '#6b7280'};"></div>
+              <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t1.name}</span>
+              <span class="text-xs font-black text-gray-400 shrink-0">×</span>
+              <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t2.name}</span>
+              <div class="w-2 h-2 rounded-full shrink-0" style="background-color: {t2.color ?? '#6b7280'};"></div>
             </div>
           </div>
         </div>
       {/if}
 
-      <!-- Teams grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <!-- Teams grid — 2 colunas sempre -->
+      <div class="grid grid-cols-2 gap-2 mb-3">
         {#each teamsData.teams as team}
           <div class="card overflow-hidden">
             <!-- Team header -->
-            <div class="px-4 py-3 flex items-center gap-2"
+            <div class="px-2 py-1.5 flex items-center gap-1.5"
               style="background-color: {team.color ?? '#374151'}1a; border-bottom: 2px solid {team.color ?? '#6b7280'};">
-              <div class="w-3 h-3 rounded-full shrink-0" style="background-color: {team.color ?? '#6b7280'};"></div>
-              <h2 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate flex-1">{team.name}</h2>
+              <div class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {team.color ?? '#6b7280'};"></div>
+              <h2 class="font-bold text-xs text-gray-900 dark:text-gray-100 truncate flex-1">{team.name}</h2>
               {#if isGroupAdmin}
-                <span class="text-xs text-gray-400 shrink-0">{'★'.repeat(Math.round(team.skill_total / (team.players.length || 1)))}</span>
+                <span class="text-[10px] text-gray-400 shrink-0 leading-none">{team.skill_total}★</span>
               {/if}
             </div>
             <!-- Players -->
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each team.players as p}
-                <li class="px-4 py-2 flex items-center gap-2">
-                  <span class="flex-1 text-sm text-gray-800 dark:text-gray-200">
-                    {p.nickname || p.name}
-                  </span>
+                <li class="px-2 py-1 flex items-center gap-1">
+                  <span class="flex-1 text-xs text-gray-800 dark:text-gray-200 truncate">{p.nickname || p.name}</span>
                   {#if p.is_goalkeeper}
-                    <span class="text-xs px-1.5 py-0.5 rounded font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">GK</span>
-                  {/if}
-                  {#if isGroupAdmin}
-                    <span class="text-xs text-amber-400 shrink-0">{'★'.repeat(p.skill_stars)}</span>
+                    <span class="text-[9px] px-1 leading-tight rounded font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">GK</span>
                   {/if}
                 </li>
               {/each}
             </ul>
             {#if isGroupAdmin}
-              <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
-                <p class="text-xs text-gray-400 dark:text-gray-500">
-                  Total: {team.skill_total} ★ · {team.players.length} jogador{team.players.length !== 1 ? 'es' : ''}
-                </p>
+              <div class="px-2 py-1 border-t border-gray-100 dark:border-gray-700">
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">{team.players.length} jog.</p>
               </div>
             {/if}
           </div>
@@ -196,20 +184,17 @@
 
       <!-- Reserves -->
       {#if teamsData.reserves.length > 0}
-        <div class="card overflow-hidden mb-6">
-          <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Reservas ({teamsData.reserves.length})</h3>
+        <div class="card overflow-hidden mb-3">
+          <div class="px-3 py-1.5 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400">Reservas ({teamsData.reserves.length})</h3>
           </div>
-          <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div class="px-3 py-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
             {#each teamsData.reserves as p}
-              <li class="px-4 py-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span class="flex-1">{p.nickname || p.name}</span>
-                {#if p.is_goalkeeper}
-                  <span class="text-xs px-1.5 py-0.5 rounded font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">GK</span>
-                {/if}
-              </li>
+              <span class="text-xs text-gray-600 dark:text-gray-400">
+                {p.nickname || p.name}{p.is_goalkeeper ? ' (GK)' : ''}
+              </span>
             {/each}
-          </ul>
+          </div>
         </div>
       {/if}
 
