@@ -255,10 +255,7 @@
   }
 
   function goBack() {
-    const referrer = typeof document !== 'undefined' ? document.referrer : '';
-    if (referrer.includes(`/match/${matchHash}/results`)) {
-      goto('/');
-    } else if (history.length > 1) {
+    if (history.length > 1) {
       history.back();
     } else {
       goto('/');
