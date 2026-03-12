@@ -53,8 +53,8 @@
   const MARKET_VALUE_TIERS = [
     ['1 camisa do Brasil made in thailand', '1 meião furado', '1 litrão de guaraná genérico', '1 bombom Sonho de Valsa'],
     ['3 litrão de Heineken', '1 par de Kichute novo', '1 frango assado + refri', '1 chuteira de couro legítimo'],
-    ['1 Uninho turbo', '1 kit completo da Nike', '1 PlayStation 4 usado', 'Titular garantido no rachão'],
-    ['1 Fiat Uno 94 conservado', 'Contrato na Portuguesa B', '1 taça do Brasileirão falsificada', 'Reservado no time dos craques'],
+    ['1 Monza 1986', '1 kit completo da Nike', '1 PlayStation 4 usado', '1 espetinho de carne'],
+    ['1 Fiat Uno 94 conservado', 'Contrato na Portuguesa B', '1 taça do Brasileirão falsificada', 'Cobiçado pelo Al-Nassr (fila de espera)'],
   ];
 
   function marketValue(s: PlayerFullStats, seed: string): string {
