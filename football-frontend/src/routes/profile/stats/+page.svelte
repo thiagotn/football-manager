@@ -49,6 +49,20 @@
   function hasGoalkeeper(groups: PlayerFullStats['groups']): boolean {
     return groups.some(g => g.is_goalkeeper);
   }
+
+  const MARKET_VALUE_TIERS = [
+    ['1 camisa do Brasil made in thailand', '1 meião furado', '1 litrão de guaraná genérico', '1 bombom Sonho de Valsa'],
+    ['3 litrão de Heineken', '1 par de Kichute novo', '1 frango assado + refri', '1 chuteira de couro legítimo'],
+    ['1 Uninho turbo', '1 kit completo da Nike', '1 PlayStation 4 usado', 'Titular garantido no rachão'],
+    ['1 Fiat Uno 94 conservado', 'Contrato na Portuguesa B', '1 taça do Brasileirão falsificada', 'Reservado no time dos craques'],
+  ];
+
+  function marketValue(s: PlayerFullStats, seed: string): string {
+    const score = s.total_matches_confirmed * 2 + s.attendance_rate + s.total_vote_points * 3;
+    const tier = score <= 30 ? 0 : score <= 70 ? 1 : score <= 120 ? 2 : 3;
+    const idx = seed.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 4;
+    return MARKET_VALUE_TIERS[tier][idx];
+  }
 </script>
 
 <svelte:head>
@@ -114,6 +128,10 @@
                 ⚽ {stats.total_matches_confirmed} partidas
               </span>
             </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+            <span class="text-xs text-green-200">💰 Valor de mercado:</span>
+            <span class="text-xs font-bold text-white">{marketValue(stats, $currentPlayer?.id ?? $currentPlayer?.name ?? '')}</span>
           </div>
         </div>
       </div>
