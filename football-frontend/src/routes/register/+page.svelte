@@ -5,7 +5,7 @@
   import { page } from '$app/stores';
   import { toastError } from '$lib/stores/toast';
   import { Eye, EyeOff, UserPlus } from 'lucide-svelte';
-  import { getPlan } from '$lib/plans';
+  import { getPlan, formatCents } from '$lib/plans';
 
   const planKey = $derived($page.url.searchParams.get('plan') ?? 'free');
   const plan = $derived(getPlan(planKey));
@@ -57,25 +57,17 @@
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">Plano selecionado</span>
           <span class="text-sm font-bold text-primary-700 dark:text-primary-300">
-            {plan.price_monthly === null ? 'Grátis' : `R$ ${plan.price_monthly.toFixed(2).replace('.', ',')}/mês`}
+            {plan.price_monthly === null ? 'Grátis' : `${formatCents(plan.price_monthly)}/mês`}
           </span>
         </div>
         <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5">{plan.name}</p>
         <ul class="space-y-0.5 mb-2">
-          {#each plan.highlights.filter(h => !h.toLowerCase().includes('votação')) as item}
+          {#each plan.highlights as item}
             <li class="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
               <span class="text-primary-500 shrink-0">✓</span>{item}
             </li>
           {/each}
         </ul>
-        <!-- Voting highlight -->
-        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-2 flex items-start gap-2">
-          <span class="text-base leading-none shrink-0">🏆</span>
-          <div>
-            <p class="text-xs font-semibold text-amber-800 dark:text-amber-300">Votação pós-partida inclusa</p>
-            <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Top 5 da pelada + Decepção do jogo — abre automaticamente após cada partida.</p>
-          </div>
-        </div>
       </div>
     </div>
 

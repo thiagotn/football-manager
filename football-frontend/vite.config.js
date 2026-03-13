@@ -3,6 +3,11 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  define: {
+    // Lê process.env em build-time (disponível via Docker ARG→ENV).
+    // Fallback 'false' garante billing oculto em produção (var ausente).
+    'import.meta.env.VITE_BILLING_ENABLED': JSON.stringify(process.env.VITE_BILLING_ENABLED ?? 'false'),
+  },
   plugins: [
     sveltekit(),
     VitePWA({

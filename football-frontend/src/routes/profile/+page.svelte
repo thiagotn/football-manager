@@ -1,10 +1,11 @@
 <script lang="ts">
   import { auth as authApi, players as playersApi, push as pushApi, subscriptions as subsApi, ApiError } from '$lib/api';
+  import { billingEnabled } from '$lib/billing';
   import type { SubscriptionInfo } from '$lib/api';
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   // Plan
@@ -293,6 +294,23 @@
               </div>
             {/if}
           </div>
+
+          {#if billingEnabled && sub.plan === 'free'}
+            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-2">
+              <a href="/plans" class="btn-primary btn-sm w-full justify-center">
+                <CreditCard size={14} /> Ver planos
+              </a>
+              <a href="/account/subscription" class="btn-secondary btn-sm w-full justify-center text-xs">
+                Gerenciar assinatura
+              </a>
+            </div>
+          {:else if billingEnabled && sub.plan !== 'free'}
+            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <a href="/account/subscription" class="btn-secondary btn-sm w-full justify-center">
+                <CreditCard size={14} /> Gerenciar assinatura
+              </a>
+            </div>
+          {/if}
         </div>
       {/if}
 

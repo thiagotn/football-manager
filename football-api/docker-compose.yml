@@ -51,6 +51,8 @@ services:
     build:
       context: ../football-frontend
       dockerfile: Dockerfile
+      args:
+        VITE_BILLING_ENABLED: "true"
     container_name: football-frontend
     restart: unless-stopped
     environment:

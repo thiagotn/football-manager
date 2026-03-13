@@ -39,8 +39,8 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   basic: {
     key: 'basic',
     name: 'Básico',
-    price_monthly: null,
-    price_yearly: null,
+    price_monthly: 1990,   // centavos → R$ 19,90
+    price_yearly: 19900,   // centavos → R$ 199,00 (~2 meses grátis)
     groups: 3,
     members: 50,
     matches_open: -1,
@@ -57,13 +57,13 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       'Estatísticas pessoais por jogador',
       'Suporte por e-mail',
     ],
-    available: false,
+    available: true,
   },
   pro: {
     key: 'pro',
     name: 'Pro',
-    price_monthly: null,
-    price_yearly: null,
+    price_monthly: 3990,   // centavos → R$ 39,90
+    price_yearly: 39900,   // centavos → R$ 399,00 (~2 meses grátis)
     groups: 10,
     members: -1,
     matches_open: -1,
@@ -80,7 +80,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       'Estatísticas pessoais por jogador',
       'Suporte prioritário',
     ],
-    available: false,
+    available: true,
   },
 };
 
@@ -90,7 +90,13 @@ export function getPlan(key: string): PlanConfig {
   return PLANS[key as PlanKey] ?? PLANS.free;
 }
 
-export function formatPrice(plan: PlanConfig): string {
+/** Formata valor em centavos para exibição: 1990 → "R$ 19,90" */
+export function formatCents(cents: number): string {
+  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+}
+
+export function formatPrice(plan: PlanConfig, cycle: 'monthly' | 'yearly' = 'monthly'): string {
   if (plan.price_monthly === null) return 'Grátis';
-  return `R$ ${plan.price_monthly.toFixed(2).replace('.', ',')}/mês`;
+  const cents = cycle === 'yearly' ? (plan.price_yearly ?? plan.price_monthly * 10) : plan.price_monthly;
+  return `${formatCents(cents)}${cycle === 'yearly' ? '/ano' : '/mês'}`;
 }

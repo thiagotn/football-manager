@@ -3,7 +3,7 @@
   import type { PlayerFullStats } from '$lib/api';
   import { currentPlayer, isLoggedIn } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
-  import { Users, Trophy, Clock, ThumbsDown, Flame, Shield } from 'lucide-svelte';
+  import { Users, Trophy, Clock, ThumbsDown, Flame, Shield, BarChart2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let stats = $state<PlayerFullStats | null>(null);
@@ -70,11 +70,16 @@
 </svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
-    <!-- Header -->
-    <h1 class="text-white text-lg font-bold">Rachão Score</h1>
-    <p class="text-white/60 text-xs mb-4">Seus dados, de acordo com a plataforma de dados Rachão Score.</p>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          <BarChart2 size={24} class="text-primary-400" /> Rachão Score
+        </h1>
+        <p class="text-sm text-white/60 mt-0.5">Seus dados, de acordo com a plataforma de dados Rachão Score.</p>
+      </div>
+    </div>
 
     {#if loading}
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">

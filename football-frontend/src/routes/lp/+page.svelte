@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PLAN_ORDER, PLANS, formatPrice } from '$lib/plans';
+  import { PLAN_ORDER, PLANS, formatPrice, formatCents } from '$lib/plans';
 </script>
 
 <svelte:head>
@@ -417,7 +417,7 @@
               {:else if plan.price_monthly === null}
                 <span class="text-3xl font-extrabold text-primary-600">Grátis</span>
               {:else}
-                <span class="text-3xl font-extrabold text-gray-900">R$ {plan.price_monthly.toFixed(2).replace('.', ',')}</span>
+                <span class="text-3xl font-extrabold text-gray-900">{formatCents(plan.price_monthly)}</span>
                 <span class="text-sm text-gray-400">/mês</span>
               {/if}
             </div>

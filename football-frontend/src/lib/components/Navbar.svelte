@@ -3,7 +3,8 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard } from 'lucide-svelte';
+  import { billingEnabled } from '$lib/billing';
 
   function logout() {
     authStore.logout();
@@ -11,14 +12,15 @@
   }
 
   const links = [
-    { href: '/',               icon: Home,       label: 'Dashboard' },
-    { href: '/groups',         icon: Trophy,     label: 'Grupos' },
-    { href: '/matches',        icon: Calendar,   label: 'Rachões',       playerOnly: true },
-    { href: '/profile/stats',  icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
-    { href: '/review',         icon: Star,       label: 'Avaliar o App', playerOnly: true },
-    { href: '/players',        icon: Users,      label: 'Jogadores',     adminOnly: true },
-    { href: '/admin/reviews',  icon: Star,       label: 'Avaliações',    adminOnly: true },
-    { href: '/admin/faq',      icon: BookOpen,   label: 'Guia Admin',    adminOnly: true },
+    { href: '/',                      icon: Home,       label: 'Dashboard' },
+    { href: '/groups',                icon: Trophy,     label: 'Grupos' },
+    { href: '/matches',               icon: Calendar,   label: 'Rachões',       playerOnly: true },
+    { href: '/plans',                 icon: CreditCard, label: 'Planos',        playerOnly: true, billingOnly: true },
+    { href: '/profile/stats',         icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
+    { href: '/review',                icon: Star,       label: 'Avaliar o App', playerOnly: true },
+    { href: '/players',               icon: Users,      label: 'Jogadores',     adminOnly: true },
+    { href: '/admin/reviews',         icon: Star,       label: 'Avaliações',    adminOnly: true },
+    { href: '/admin/faq',             icon: BookOpen,   label: 'Guia Admin',    adminOnly: true },
   ];
 
   let menuOpen = $state(false);
@@ -39,6 +41,8 @@
     if (pathname === '/matches')        return '/';
     if (pathname === '/profile/stats')  return '/';
     if (pathname === '/review')   return '/';
+    if (pathname === '/plans')    return '/';
+    if (pathname.startsWith('/account/')) return '/profile';
     if (pathname === '/faq')      return '/';
     if (pathname === '/terms')    return '/';
     if (pathname === '/privacy')  return '/';
@@ -77,7 +81,7 @@
     <!-- Links — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-1">
       {#each links as l}
-        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin)}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled)}
           <a
             href={l.href}
             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
@@ -142,7 +146,7 @@
     <!-- Links de navegação -->
     <div class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
       {#each links as l}
-        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin)}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled)}
           <a
             href={l.href}
             onclick={closeMenu}
@@ -156,6 +160,13 @@
       {/each}
 
       <div class="border-t border-primary-700/60 pt-1 mt-1 space-y-1">
+        {#if billingEnabled && !$isAdmin}
+          <a href="/account/subscription" onclick={closeMenu}
+            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+              {$page.url.pathname.startsWith('/account/') ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <CreditCard size={18} /> Assinatura
+          </a>
+        {/if}
         <a href="/faq" onclick={closeMenu}
           class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
             {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">

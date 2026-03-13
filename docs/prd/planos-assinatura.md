@@ -65,10 +65,21 @@
 - **`TestValidacaoFinal`** (4 testes) ✅ — health check, registro público, 409 duplicado, admin sem limites.
 - Demais testes de webhook (`invoice.paid`, `payment_failed`, `subscription.deleted/updated`) requerem `stripe listen` ativo — skipped automaticamente sem o CLI.
 
+#### Testes Manuais UAT (Março 2026) — ambiente Stripe Test Mode + CLI local
+
+> Todos os testes abaixo foram executados apontando para o ambiente de **testes da Stripe** (`sk_test_...`, Price IDs de test mode) com o **Stripe CLI** local (`stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`).
+
+- ✅ **Checkout completo** — fluxo `/plans` → Stripe Checkout → `/account/checkout/success` → `plan=basic`, `status=active`, `current_period_end` definido.
+- ✅ **`invoice.payment_failed`** — `stripe trigger invoice.payment_failed --override invoice:customer=cus_xxx` → `status=past_due`, `grace_period_end = NOW() + 7d`.
+- ✅ **`invoice.paid`** — `stripe trigger invoice.paid` → `status=active`, `current_period_end` renovado.
+- ✅ **`customer.subscription.deleted`** — `stripe subscriptions cancel sub_xxx` → `plan=free`, `status=canceled`.
+
+> **Nota:** o `gateway_customer_id` e `gateway_sub_id` permanecem gravados após cancelamento (preservação de histórico). Para resetar um player para free limpo: `UPDATE player_subscriptions SET plan='free', status='free', gateway_customer_id=NULL, gateway_sub_id=NULL, current_period_end=NULL, grace_period_end=NULL WHERE ...`
+
 #### Pendente (Fases 2 Frontend – 4)
 - Limite de partidas abertas por grupo (RF-09)
 - Arquivamento por regressão de plano (RF-12)
-- Páginas `/plans`, `/account/subscription`, `/account/invoices`
+- `/account/invoices` — histórico de faturas
 - Upgrade/downgrade/cancelamento/reativação via Customer Portal ou UI própria
 - Endpoint `GET /api/v1/plans` (atualmente fonte de verdade está em `src/lib/plans.ts`)
 
@@ -676,30 +687,28 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 
 ## 14. Configuração Manual da Conta Stripe
 
-> Checklist de ações que devem ser realizadas manualmente no dashboard do Stripe **antes** de iniciar o desenvolvimento da integração. Marque cada item conforme concluído.
+> ✅ **Concluído — Março 2026.** Todos os itens abaixo foram realizados.
 
 ### 14.1 Criação e Verificação da Conta
 
-- [ ] Acessar [dashboard.stripe.com](https://dashboard.stripe.com) e criar conta com e-mail do negócio
-- [ ] Confirmar e-mail
-- [ ] Em **Settings → Business details**: preencher nome do negócio ("Rachao.app" ou razão social)
-- [ ] Selecionar tipo de entidade: **Pessoa Física (CPF)** ou **Empresa (CNPJ)** conforme o caso
-- [ ] Informar endereço e telefone brasileiros
-- [ ] Em **Settings → Bank accounts and scheduling**: adicionar conta bancária brasileira para recebimento de saques
-- [ ] Completar verificação de identidade (envio de documento + selfie — processo guiado pelo próprio Stripe)
-- [ ] Aguardar aprovação da conta para pagamentos reais (geralmente automático em minutos para PF)
-
-> **Atenção:** sem a verificação completa, os pagamentos ficam em modo restrito e os saques ficam bloqueados.
+- [x] Acessar [dashboard.stripe.com](https://dashboard.stripe.com) e criar conta com e-mail do negócio
+- [x] Confirmar e-mail
+- [x] Em **Settings → Business details**: preencher nome do negócio ("Rachao.app" ou razão social)
+- [x] Selecionar tipo de entidade: **Pessoa Física (CPF)** ou **Empresa (CNPJ)** conforme o caso
+- [x] Informar endereço e telefone brasileiros
+- [x] Em **Settings → Bank accounts and scheduling**: adicionar conta bancária brasileira para recebimento de saques
+- [x] Completar verificação de identidade (envio de documento + selfie — processo guiado pelo próprio Stripe)
+- [x] Aguardar aprovação da conta para pagamentos reais (geralmente automático em minutos para PF)
 
 ---
 
 ### 14.2 Ativar Métodos de Pagamento
 
-- [ ] Em **Settings → Payment methods**:
-  - [ ] Confirmar que **Cartão de crédito/débito** está ativo (padrão)
-  - [ ] Ativar **PIX** (pode exigir verificação adicional da conta)
-  - [ ] Ativar **Boleto bancário** (pode exigir verificação adicional da conta)
-- [ ] Definir prazo de vencimento do boleto (recomendado: **3 dias**)
+- [x] Em **Settings → Payment methods**:
+  - [x] Confirmar que **Cartão de crédito/débito** está ativo (padrão)
+  - [x] Ativar **PIX** (pode exigir verificação adicional da conta)
+  - [x] Ativar **Boleto bancário** (pode exigir verificação adicional da conta)
+- [x] Definir prazo de vencimento do boleto (recomendado: **3 dias**)
 
 ---
 
@@ -707,15 +716,15 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 
 > Um **Product** representa cada plano; cada Product tem um ou mais **Prices** (mensal, anual).
 
-- [ ] Em **Product catalog → Add product**: criar produto **"Plano Básico"**
-  - [ ] Adicionar Price recorrente **mensal** em BRL (valor a definir)
-  - [ ] Adicionar Price recorrente **anual** em BRL (valor a definir)
-  - [ ] Copiar os **Price IDs** (`price_xxx`) e guardar — serão usados no código
-- [ ] Em **Product catalog → Add product**: criar produto **"Plano Pro"**
-  - [ ] Adicionar Price recorrente **mensal** em BRL (valor a definir)
-  - [ ] Adicionar Price recorrente **anual** em BRL (valor a definir)
-  - [ ] Copiar os **Price IDs** e guardar
-- [ ] Repetir os itens acima no modo **Test** antes de fazer em produção (os IDs são diferentes entre ambientes)
+- [x] Em **Product catalog → Add product**: criar produto **"Plano Básico"**
+  - [x] Adicionar Price recorrente **mensal** em BRL (valor a definir)
+  - [x] Adicionar Price recorrente **anual** em BRL (valor a definir)
+  - [x] Copiar os **Price IDs** (`price_xxx`) e guardar — serão usados no código
+- [x] Em **Product catalog → Add product**: criar produto **"Plano Pro"**
+  - [x] Adicionar Price recorrente **mensal** em BRL (valor a definir)
+  - [x] Adicionar Price recorrente **anual** em BRL (valor a definir)
+  - [x] Copiar os **Price IDs** e guardar
+- [x] Repetir os itens acima no modo **Test** antes de fazer em produção (os IDs são diferentes entre ambientes)
 
 ---
 
@@ -723,66 +732,66 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 
 > O Customer Portal é a UI hosted do Stripe que substitui a necessidade de construir `/account/subscription` do zero.
 
-- [ ] Em **Settings → Customer portal**:
-  - [ ] Habilitar **Cancel subscriptions**
-  - [ ] Habilitar **Update subscriptions** (upgrade/downgrade entre planos)
-  - [ ] Habilitar **Update payment methods**
-  - [ ] Habilitar **View invoice history**
-  - [ ] Em "Business information": adicionar logo e cores do Rachao.app
-  - [ ] Em "Cancellation reasons": habilitar coleta de motivo de cancelamento
-  - [ ] Salvar configuração
-  - [ ] Copiar a **URL do portal** gerada (usada pelo `billing.py` para redirect)
+- [x] Em **Settings → Customer portal**:
+  - [x] Habilitar **Cancel subscriptions**
+  - [x] Habilitar **Update subscriptions** (upgrade/downgrade entre planos)
+  - [x] Habilitar **Update payment methods**
+  - [x] Habilitar **View invoice history**
+  - [x] Em "Business information": adicionar logo e cores do Rachao.app
+  - [x] Em "Cancellation reasons": habilitar coleta de motivo de cancelamento
+  - [x] Salvar configuração
+  - [x] Copiar a **URL do portal** gerada (usada pelo `billing.py` para redirect)
 
 ---
 
 ### 14.5 Configurar Webhook
 
-- [ ] Em **Developers → Webhooks → Add endpoint**:
-  - [ ] URL: `https://rachao.app/api/v1/webhooks/payment` (produção)
-  - [ ] URL alternativa para testes: usar **Stripe CLI** localmente (`stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`)
-  - [ ] Selecionar os eventos (mínimo necessário):
-    - [ ] `checkout.session.completed`
-    - [ ] `invoice.paid`
-    - [ ] `invoice.payment_failed`
-    - [ ] `customer.subscription.updated`
-    - [ ] `customer.subscription.deleted`
-  - [ ] Salvar e copiar o **Webhook Signing Secret** (`whsec_xxx`) — usado para validar autenticidade dos eventos
+- [x] Em **Developers → Webhooks → Add endpoint**:
+  - [x] URL: `https://rachao.app/api/v1/webhooks/payment` (produção)
+  - [x] URL alternativa para testes: usar **Stripe CLI** localmente (`stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`)
+  - [x] Selecionar os eventos (mínimo necessário):
+    - [x] `checkout.session.completed`
+    - [x] `invoice.paid`
+    - [x] `invoice.payment_failed`
+    - [x] `customer.subscription.updated`
+    - [x] `customer.subscription.deleted`
+  - [x] Salvar e copiar o **Webhook Signing Secret** (`whsec_xxx`) — usado para validar autenticidade dos eventos
 
 ---
 
 ### 14.6 Obter Chaves de API
 
-- [ ] Em **Developers → API keys**:
-  - [ ] Copiar **Publishable key** de teste (`pk_test_xxx`)
-  - [ ] Copiar **Secret key** de teste (`sk_test_xxx`)
-  - [ ] Copiar **Publishable key** de produção (`pk_live_xxx`)
-  - [ ] Copiar **Secret key** de produção (`sk_live_xxx`)
-- [ ] Adicionar ao `.env` do projeto:
+- [x] Em **Developers → API keys**:
+  - [x] Copiar **Publishable key** de teste (`pk_test_xxx`)
+  - [x] Copiar **Secret key** de teste (`sk_test_xxx`)
+  - [x] Copiar **Publishable key** de produção (`pk_live_xxx`)
+  - [x] Copiar **Secret key** de produção (`sk_live_xxx`)
+- [x] Adicionar ao `.env` do projeto:
   ```
   STRIPE_SECRET_KEY=sk_test_xxx        # trocar para sk_live_xxx em produção
   STRIPE_PUBLISHABLE_KEY=pk_test_xxx
   STRIPE_WEBHOOK_SECRET=whsec_xxx
   BILLING_PROVIDER=stripe
   ```
-- [ ] Confirmar que `.env` está no `.gitignore` e **nunca** versionar as chaves
+- [x] Confirmar que `.env` está no `.gitignore` e **nunca** versionar as chaves
 
 ---
 
 ### 14.7 Instalar Stripe CLI (desenvolvimento local)
 
-- [ ] Instalar Stripe CLI: `brew install stripe/stripe-cli/stripe` (macOS) ou [instruções Linux](https://stripe.com/docs/stripe-cli)
-- [ ] Autenticar: `stripe login`
-- [ ] Para testar webhooks localmente: `stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`
-- [ ] Para disparar eventos manualmente durante o desenvolvimento: `stripe trigger invoice.paid`
+- [x] Instalar Stripe CLI: `brew install stripe/stripe-cli/stripe` (macOS) ou [instruções Linux](https://stripe.com/docs/stripe-cli)
+- [x] Autenticar: `stripe login`
+- [x] Para testar webhooks localmente: `stripe listen --forward-to localhost:8000/api/v1/webhooks/payment`
+- [x] Para disparar eventos manualmente durante o desenvolvimento: `stripe trigger invoice.paid`
 
 ---
 
 ### 14.8 Configurar Dunning (retentativas automáticas)
 
-- [ ] Em **Settings → Subscriptions and emails → Manage failed payments**:
-  - [ ] Habilitar retentativas automáticas (recomendado: 3, 5 e 7 dias após falha)
-  - [ ] Habilitar envio de e-mail automático do Stripe ao cliente em caso de falha
-  - [ ] Definir ação após esgotar retentativas: **"Cancel the subscription"** (o backend trata o webhook `customer.subscription.deleted`)
+- [x] Em **Settings → Subscriptions and emails → Manage failed payments**:
+  - [x] Habilitar retentativas automáticas (recomendado: 3, 5 e 7 dias após falha)
+  - [x] Habilitar envio de e-mail automático do Stripe ao cliente em caso de falha
+  - [x] Definir ação após esgotar retentativas: **"Cancel the subscription"** (o backend trata o webhook `customer.subscription.deleted`)
 
 ---
 
@@ -820,11 +829,16 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 - Seção "Planos" na `/lp` com cards comparativos (Free ativo, Básico/Pro em breve).
 - Banner de plano selecionado no `/register` com suporte a `?plan=` query param.
 
+#### ✅ Implementado (Março 2026)
+- Página `/plans` com cards comparativos, toggle mensal/anual e CTA de checkout.
+- Painel `/account/subscription` com plano atual, uso de recursos e seleção de upgrade.
+- Páginas `/account/checkout/success` e `/account/checkout/failure`.
+- Feature flag `billingEnabled` em `src/lib/billing.ts` — `true` local, `false` produção.
+- Link "Planos" na Navbar e CTAs de upgrade no `/profile` (visíveis apenas com flag ativa).
+
 #### ⏳ Pendente
-- Página de planos (`/plans`) em `football-frontend/src/routes/plans/` — cards detalhados com toggle mensal/anual.
-- Painel de conta (`/account/subscription`) em `football-frontend/src/routes/account/`.
-- Fluxo de checkout e páginas de retorno em `football-frontend/src/routes/account/checkout/` (`/account/checkout/success`, `/account/checkout/failure`).
-- CTA de upgrade nos cards Básico/Pro da `/lp` ao ativar planos pagos: redirecionar para `/register?plan=basic` (novo usuário) ou `/account/subscription` (usuário logado).
+- CTA de upgrade nos cards Básico/Pro da `/lp` (aguarda definição oficial de preços).
+- `/account/invoices` — histórico de faturas.
 
 ### ✅ Fase 3 — Testes E2E (parcialmente concluída · Março 2026)
 - ✅ `football-e2e/tests/test_stripe_webhooks.py` — 24 testes (14 pass, 9 skip aguardando `stripe listen`, 1 pendente de fase 2 frontend).

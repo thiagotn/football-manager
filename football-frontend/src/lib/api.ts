@@ -171,13 +171,20 @@ export const push = {
 // ── Subscriptions ─────────────────────────────────────────────
 export type SubscriptionInfo = {
   plan: string;
+  status: string;
   groups_limit: number | null;
   groups_used: number;
   members_limit: number | null;
+  gateway_customer_id: string | null;
+  gateway_sub_id: string | null;
+  current_period_end: string | null;
+  grace_period_end: string | null;
 };
 
 export const subscriptions = {
   me: () => get<SubscriptionInfo>('/subscriptions/me'),
+  createCheckout: (plan: string, billing_cycle: 'monthly' | 'yearly') =>
+    post<{ checkout_url: string }>('/subscriptions', { plan, billing_cycle }),
 };
 
 // ── Votes ─────────────────────────────────────────────────────
