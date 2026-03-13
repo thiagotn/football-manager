@@ -66,10 +66,16 @@
 <svelte:head><title>Rachões — rachao.app</title></svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
-    <h1 class="text-white text-lg font-bold mb-1">Rachões</h1>
-    <p class="text-white/60 text-xs mb-4">Todas as partidas dos seus grupos.</p>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          <Calendar size={24} class="text-primary-400" /> Rachões
+        </h1>
+        <p class="text-sm text-white/60 mt-0.5">Todas as partidas dos seus grupos.</p>
+      </div>
+    </div>
 
     <!-- Tabs -->
     <div class="flex border-b border-white/20 mb-4">
