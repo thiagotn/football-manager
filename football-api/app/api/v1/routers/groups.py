@@ -8,9 +8,17 @@ from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError
 from app.db.repositories.subscription_repo import SubscriptionRepository
 
-# Limites do plano gratuito — sincronizar com app/api/v1/routers/subscriptions.py
-_FREE_GROUPS_LIMIT = 1
-_FREE_MEMBERS_LIMIT = 30
+# Limites por plano — fonte de verdade no backend (sincronizar com subscriptions.py)
+_PLAN_GROUPS_LIMIT: dict[str, int | None] = {
+    "free":  1,
+    "basic": 3,
+    "pro":   10,
+}
+_PLAN_MEMBERS_LIMIT: dict[str, int | None] = {
+    "free":  30,
+    "basic": 50,
+    "pro":   None,  # ilimitado
+}
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.group_stats_repo import GroupStatsRepository
 from app.db.repositories.match_repo import MatchRepository
@@ -58,8 +66,10 @@ async def create_group(body: GroupCreate, db: DB, current: CurrentPlayer):
     # Verifica limite de grupos do plano (admins globais são isentos)
     if current.role != PlayerRole.ADMIN:
         sub_repo = SubscriptionRepository(db)
+        sub = await sub_repo.get_or_create(current.id)
+        groups_limit = _PLAN_GROUPS_LIMIT.get(sub.plan, 1)
         groups_used = await sub_repo.count_admin_groups(current.id)
-        if groups_used >= _FREE_GROUPS_LIMIT:
+        if groups_limit is not None and groups_used >= groups_limit:
             raise PlanLimitError()
 
     slug = body.slug or _auto_slug(body.name)
@@ -208,9 +218,13 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
 
     # Verifica limite de membros do plano (admins globais são isentos)
     if current.role != PlayerRole.ADMIN:
-        member_count = len(await g_repo.get_non_admin_member_ids(group_id))
-        if member_count >= _FREE_MEMBERS_LIMIT:
-            raise PlanLimitError()
+        sub_repo = SubscriptionRepository(db)
+        sub = await sub_repo.get_or_create(current.id)
+        members_limit = _PLAN_MEMBERS_LIMIT.get(sub.plan, 30)
+        if members_limit is not None:
+            member_count = len(await g_repo.get_non_admin_member_ids(group_id))
+            if member_count >= members_limit:
+                raise PlanLimitError()
 
     member = await g_repo.add_member(group_id, body.player_id, body.role)
     await db.refresh(member)
