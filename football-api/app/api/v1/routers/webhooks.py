@@ -139,12 +139,34 @@ async def _handle_checkout_completed(sub_repo, session: dict, log) -> None:
         log.warning("checkout_completed_missing_metadata", metadata=metadata)
         return
 
+    import asyncio
     import uuid
+
+    import stripe as _stripe
+
+    from app.core.config import get_settings
+
     try:
         pid = uuid.UUID(player_id)
     except ValueError:
         log.warning("checkout_completed_invalid_player_id", player_id=player_id)
         return
+
+    # Busca current_period_end da Subscription (não está na sessão de checkout)
+    current_period_end = None
+    if subscription_id:
+        try:
+            api_key = get_settings().stripe_secret_key
+
+            def _fetch():
+                return _stripe.Subscription.retrieve(subscription_id, api_key=api_key)
+
+            stripe_sub = await asyncio.to_thread(_fetch)
+            period_end_ts = getattr(stripe_sub, "current_period_end", None)
+            if period_end_ts:
+                current_period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc)
+        except Exception as exc:
+            log.warning("checkout_completed_sub_fetch_failed", error=str(exc))
 
     await sub_repo.update_plan(
         player_id=pid,
@@ -152,6 +174,7 @@ async def _handle_checkout_completed(sub_repo, session: dict, log) -> None:
         status="active",
         gateway_customer_id=customer_id,
         gateway_sub_id=subscription_id,
+        current_period_end=current_period_end,
     )
     log.info("checkout_completed_plan_activated", player_id=player_id, plan=plan)
 
