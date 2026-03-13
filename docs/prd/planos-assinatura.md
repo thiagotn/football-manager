@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.4 |
-| **Status** | Fase 1 Implementada · Fase 2 parcial |
+| **Versão** | 1.5 |
+| **Status** | Fase 1 Implementada · Fase 2 Backend Implementada · Fase 2 Frontend Pendente |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -22,8 +22,8 @@
 - **`POST /api/v1/auth/register`**: auto-cadastro público. Cria player + subscription gratuita + retorna JWT. Retorna 409 se WhatsApp já cadastrado.
 - **`GET /api/v1/players/signups/stats`** (admin-only): `total`, `last_7_days`, `last_30_days`, `recent` (últimos 30 registros).
 - **Limites enforced no backend:**
-  - `POST /api/v1/groups`: bloqueia se player já é admin de 1+ grupo (`_FREE_GROUPS_LIMIT = 1`)
-  - `POST /api/v1/groups/{id}/members`: bloqueia se grupo tem 30+ membros não-admin (`_FREE_MEMBERS_LIMIT = 30`)
+  - `POST /api/v1/groups`: bloqueia com base no plano real da assinatura (free=1, basic=3, pro=10)
+  - `POST /api/v1/groups/{id}/members`: bloqueia com base no plano real (free=30, basic=50, pro=ilimitado)
   - `POST /api/v1/invites/{token}/accept`: mesma checagem antes de criar player (evita player órfão)
 
 > **Nota:** o limite de membros implementado é **30** (não 20 como consta na tabela original). Tabela de planos atualizada abaixo.
@@ -39,13 +39,38 @@
 - **`/lp`**: seção "Planos" com cards dos três planos (Free disponível, Básico/Pro com badge "em breve"). Usa `src/lib/plans.ts`.
 - **`/register`**: banner do plano selecionado no topo do formulário, exibindo nome, preço e highlights. Suporta query param `?plan=` para pré-selecionar plano (ex: `/register?plan=free`). Plano padrão: `free`.
 
-#### Pendente (Fases 2–4)
-- Planos pagos, checkout e gateway de pagamento
-- Tabelas `plans`, `invoices`, `webhook_events`
-- Limite de partidas abertas por grupo
-- Arquivamento por regressão de plano
+---
+
+### ✅ Fase 2 — Backend Stripe Billing (implementada · Março 2026, commits `3001feb`–`abed8e8`)
+
+#### Backend
+- **Migration `022_stripe_checkout_fields.sql`**: adiciona `gateway_customer_id`, `gateway_sub_id`, `status`, `current_period_end`, `grace_period_end` na tabela `player_subscriptions`.
+- **Migration `023_webhook_events.sql`**: tabela `webhook_events` com `event_id UNIQUE` para garantir idempotência (RNF-02).
+- **`app/services/billing.py`**: abstração do gateway de pagamento (seção 9.2). Delega para a implementação ativa via `BILLING_PROVIDER`.
+- **`app/services/billing_stripe.py`**: implementação concreta com Stripe SDK — `get_or_create_customer`, `create_checkout_session`, `verify_webhook_signature`.
+- **`POST /api/v1/subscriptions`**: cria Stripe Customer (ou reutiliza existente) + Checkout Session. Retorna `checkout_url` para redirect do frontend.
+- **`POST /api/v1/webhooks/payment`**: handler completo com verificação de assinatura HMAC-SHA256. Eventos tratados:
+  - `checkout.session.completed` → ativa plano, busca `current_period_end` da Subscription Stripe (fallback calculado por `billing_cycle` em eventos sintéticos)
+  - `invoice.paid` → renova `current_period_end`, mantém `status=active`
+  - `invoice.payment_failed` → `status=past_due`, define `grace_period_end = NOW() + 7d`
+  - `customer.subscription.deleted` → `plan=free`, `status=canceled`
+  - `customer.subscription.updated` → atualiza plano via `metadata.plan`
+- **Limites de grupos e membros**: atualizados para usar o plano real da assinatura (não mais hardcoded para free).
+
+#### Testes E2E (`football-e2e/tests/test_stripe_webhooks.py`)
+- **`TestSubscriptionDefault`** (5 testes) ✅ — novo player tem plano free, limites corretos, 401 sem auth.
+- **`TestPlanLimits`** (3 testes) ✅ — criação permitida, bloqueio 403 no segundo grupo, `groups_used` incrementado.
+- **`TestWebhookCheckoutCompleted`** (2 testes) ✅ — ativa plano basic via `stripe trigger`, verifica `current_period_end`.
+- **`TestWebhookIdempotency.test_webhook_com_event_id_duplicado_retorna_200`** ✅ — idempotência com HMAC correto.
+- **`TestValidacaoFinal`** (4 testes) ✅ — health check, registro público, 409 duplicado, admin sem limites.
+- Demais testes de webhook (`invoice.paid`, `payment_failed`, `subscription.deleted/updated`) requerem `stripe listen` ativo — skipped automaticamente sem o CLI.
+
+#### Pendente (Fases 2 Frontend – 4)
+- Limite de partidas abertas por grupo (RF-09)
+- Arquivamento por regressão de plano (RF-12)
 - Páginas `/plans`, `/account/subscription`, `/account/invoices`
-- Upgrade/downgrade/cancelamento/reativação
+- Upgrade/downgrade/cancelamento/reativação via Customer Portal ou UI própria
+- Endpoint `GET /api/v1/plans` (atualmente fonte de verdade está em `src/lib/plans.ts`)
 
 ---
 
@@ -776,37 +801,40 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 
 ## 15. Plano de Lançamento
 
-### Fase 1 — Backend (Semanas 1–3)
-- Migrations `013` e `014` (tabelas `plans`, `subscriptions`, `invoices`, `webhook_events`, colunas `archived_by_plan`).
-- Seed dos planos iniciais.
-- `app/services/billing.py` — interface de abstração do gateway (seção 9.2).
-- `app/services/billing_stripe.py` — implementação concreta via Stripe SDK.
-- Endpoints de planos e assinaturas em `football-api/app/api/v1/routers/`.
-- Repositórios em `football-api/app/db/repositories/` para `plans` e `subscriptions`.
-- Lógica de verificação de limites nos routers de `groups` e `matches`.
-- Processamento de webhooks Stripe (seção 9.4) via `POST /api/v1/webhooks/payment`.
+### ✅ Fase 1 — Backend (concluída · Março 2026)
+- ✅ Migration `015_player_subscriptions.sql` (tabela `player_subscriptions`, seed para players existentes).
+- ✅ Migration `022_stripe_checkout_fields.sql` (campos Stripe na `player_subscriptions`).
+- ✅ Migration `023_webhook_events.sql` (tabela `webhook_events` para idempotência).
+- ✅ `app/services/billing.py` — interface de abstração do gateway (seção 9.2).
+- ✅ `app/services/billing_stripe.py` — implementação concreta via Stripe SDK.
+- ✅ `GET /api/v1/subscriptions/me`, `POST /api/v1/subscriptions`, `POST /api/v1/webhooks/payment`.
+- ✅ `SubscriptionRepository` com todos os métodos necessários.
+- ✅ Lógica de verificação de limites nos routers de `groups` (por plano real, não hardcoded).
+- ⏳ Limite de partidas abertas por grupo (RF-09) — pendente.
+- ⏳ Migrations de `plans`, `invoices`, `archived_by_plan` — pendente (não priorizadas para MVP).
 
-### Fase 2 — Frontend (Semanas 3–5)
+### Fase 2 — Frontend (em andamento · Março 2026)
 
-#### ✅ Implementado (Março 2026)
+#### ✅ Implementado
 - `src/lib/plans.ts`: configuração centralizada de planos (fonte de verdade do frontend).
 - Seção "Planos" na `/lp` com cards comparativos (Free ativo, Básico/Pro em breve).
 - Banner de plano selecionado no `/register` com suporte a `?plan=` query param.
 
-#### Pendente
+#### ⏳ Pendente
 - Página de planos (`/plans`) em `football-frontend/src/routes/plans/` — cards detalhados com toggle mensal/anual.
 - Painel de conta (`/account/subscription`) em `football-frontend/src/routes/account/`.
 - Fluxo de checkout e páginas de retorno em `football-frontend/src/routes/account/checkout/` (`/account/checkout/success`, `/account/checkout/failure`).
 - CTA de upgrade nos cards Básico/Pro da `/lp` ao ativar planos pagos: redirecionar para `/register?plan=basic` (novo usuário) ou `/account/subscription` (usuário logado).
 
-### Fase 3 — Testes e Validação (Semana 6)
-- Testes E2E em `football-e2e/tests/` cobrindo fluxo de upgrade, falha e regressão.
-- Testes dos fluxos de falha, graça e regressão de plano.
-- Teste de carga nos endpoints de verificação de limite.
-- UAT (User Acceptance Testing) com usuários beta.
+### ✅ Fase 3 — Testes E2E (parcialmente concluída · Março 2026)
+- ✅ `football-e2e/tests/test_stripe_webhooks.py` — 24 testes (14 pass, 9 skip aguardando `stripe listen`, 1 pendente de fase 2 frontend).
+- ✅ Testes de plano free, limites, checkout, idempotência, health check, registro público.
+- ⏳ Testes dos fluxos de falha de pagamento, graça e regressão — requerem `stripe listen` ativo (marcados `@stripe_cli`).
+- ⏳ Teste de carga nos endpoints de verificação de limite.
+- ⏳ UAT (User Acceptance Testing) com usuários beta.
 
-### Fase 4 — Lançamento (Semana 7)
-- Migration de players existentes para plano Free.
+### Fase 4 — Lançamento
+- Migration de players existentes para plano Free (já feita via seed na migration 015).
 - Comunicação prévia por e-mail à base de usuários.
 - Ativação em produção com feature flag.
 - Monitoramento intensivo nas primeiras 48 horas.
