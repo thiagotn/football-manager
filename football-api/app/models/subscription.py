@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -18,3 +19,16 @@ class PlayerSubscription(Base, UUIDMixin, TimestampMixin):
         unique=True,
     )
     plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+
+    # Stripe IDs — preenchidos após checkout.session.completed
+    gateway_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    gateway_sub_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Período da assinatura — gerenciado pelo webhook handler
+    current_period_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    grace_period_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )

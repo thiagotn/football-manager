@@ -31,11 +31,35 @@ class Settings(BaseSettings):
     vapid_public_key: str = ""
     vapid_claims_email: str = "admin@rachao.app"
 
+    # Frontend (usado para montar success_url / cancel_url no checkout)
+    frontend_url: str = "http://localhost:3000"
+
     # Billing (Stripe)
     billing_provider: str = "stripe"
     stripe_secret_key: str = ""
     stripe_publishable_key: str = ""
     stripe_webhook_secret: str = ""
+
+    # Stripe Price IDs — preencher após criar os produtos no Stripe Dashboard.
+    # Obter em: dashboard.stripe.com → Product catalog → (plano) → Price ID
+    stripe_price_basic_monthly: str = ""
+    stripe_price_basic_yearly: str = ""
+    stripe_price_pro_monthly: str = ""
+    stripe_price_pro_yearly: str = ""
+
+    def get_price_id(self, plan: str, billing_cycle: str) -> str:
+        mapping = {
+            ("basic", "monthly"): self.stripe_price_basic_monthly,
+            ("basic", "yearly"):  self.stripe_price_basic_yearly,
+            ("pro",   "monthly"): self.stripe_price_pro_monthly,
+            ("pro",   "yearly"):  self.stripe_price_pro_yearly,
+        }
+        price_id = mapping.get((plan, billing_cycle), "")
+        if not price_id:
+            raise ValueError(
+                f"STRIPE_PRICE_{plan.upper()}_{billing_cycle.upper()} não configurado no .env"
+            )
+        return price_id
 
     @property
     def cors_origins_list(self) -> list[str]:
