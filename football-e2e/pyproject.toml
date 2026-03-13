@@ -7,6 +7,7 @@ dependencies = [
     "playwright>=1.44",
     "pytest-playwright>=0.5",
     "python-dotenv>=1.0",
+    "requests>=2.31",
 ]
 
 [tool.pytest.ini_options]
@@ -14,3 +15,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "stripe_cli: requer Stripe CLI instalado e `stripe listen` rodando",
+    "phase2: testa endpoints ainda não implementados (Fase 2 do PRD — plans, checkout, webhooks)",
+]
