@@ -153,6 +153,7 @@ async def _handle_checkout_completed(sub_repo, session: dict, log) -> None:
         return
 
     # Busca current_period_end da Subscription (não está na sessão de checkout)
+    billing_cycle = metadata.get("billing_cycle", "monthly")
     current_period_end = None
     if subscription_id:
         try:
@@ -167,6 +168,11 @@ async def _handle_checkout_completed(sub_repo, session: dict, log) -> None:
                 current_period_end = datetime.fromtimestamp(period_end_ts, tz=timezone.utc)
         except Exception as exc:
             log.warning("checkout_completed_sub_fetch_failed", error=str(exc))
+
+    # Fallback: calcula data estimada se o fetch falhou (ex: eventos sintéticos de testes)
+    if current_period_end is None:
+        days = 365 if billing_cycle == "yearly" else 30
+        current_period_end = datetime.now(tz=timezone.utc) + timedelta(days=days)
 
     await sub_repo.update_plan(
         player_id=pid,
