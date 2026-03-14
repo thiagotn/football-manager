@@ -83,7 +83,7 @@
   }
 
   function fmtMrr(cents: number): string {
-    return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 });
+    return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
   }
 
   function statusBadge(status: string): string {

@@ -177,7 +177,7 @@
               <CreditCard size={14} class="text-primary-400 opacity-70" />
             </div>
             <p class="text-3xl font-bold text-primary-400">
-              {(billing.mrr_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
+              {(billing.mrr_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })}
             </p>
             <p class="text-xs text-gray-400 mt-1">MRR estimado</p>
           </div>
