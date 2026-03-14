@@ -15,7 +15,6 @@
     { href: '/',                      icon: Home,       label: 'Dashboard' },
     { href: '/groups',                icon: Trophy,     label: 'Grupos' },
     { href: '/matches',               icon: Calendar,   label: 'Rachões',       playerOnly: true },
-    { href: '/plans',                 icon: CreditCard, label: 'Planos',        playerOnly: true, billingOnly: true },
     { href: '/profile/stats',         icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
     { href: '/review',                icon: Star,       label: 'Avaliar o App', playerOnly: true },
     { href: '/players',               icon: Users,      label: 'Jogadores',     adminOnly: true },
@@ -137,7 +136,14 @@
     style="animation: slideInRight 0.22s ease-out;">
     <!-- Cabeçalho do drawer -->
     <div class="flex items-center justify-between px-4 h-16 border-b border-primary-700 shrink-0">
-      <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.name}</p>
+      <div class="flex items-center gap-2 min-w-0">
+        <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.name}</p>
+        <button onclick={themeStore.toggle}
+          class="p-1.5 rounded-lg hover:bg-primary-700 transition-colors text-primary-300 shrink-0"
+          title="Alternar tema">
+          {#if $themeStore === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
+        </button>
+      </div>
       <button onclick={closeMenu} class="p-2 rounded-lg hover:bg-primary-700 transition-colors" aria-label="Fechar">
         <X size={20} />
       </button>
@@ -163,8 +169,8 @@
         {#if billingEnabled && !$isAdmin}
           <a href="/account/subscription" onclick={closeMenu}
             class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-              {$page.url.pathname.startsWith('/account/') ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-            <CreditCard size={18} /> Assinatura
+              {$page.url.pathname.startsWith('/account/') || $page.url.pathname === '/plans' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <CreditCard size={18} /> Plano & Assinatura
           </a>
         {/if}
         <a href="/faq" onclick={closeMenu}
@@ -172,34 +178,35 @@
             {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
           <HelpCircle size={18} /> FAQ
         </a>
-        <a href="/terms" onclick={closeMenu}
-          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-            {$page.url.pathname === '/terms' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-          <FileText size={18} /> Termos de Uso
-        </a>
-        <a href="/privacy" onclick={closeMenu}
-          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-            {$page.url.pathname === '/privacy' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-          <Shield size={18} /> Privacidade
-        </a>
       </div>
     </div>
 
     <!-- Rodapé do drawer -->
-    <div class="px-3 py-3 border-t border-primary-700 space-y-1 shrink-0">
-      <a href="/profile" onclick={closeMenu}
-        class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
-          {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : ''}">
-        <UserCircle size={18} /> Minha Conta
-      </a>
-      <button onclick={themeStore.toggle}
-        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
-        {#if $themeStore === 'dark'}<Sun size={18} /> Tema claro{:else}<Moon size={18} /> Tema escuro{/if}
-      </button>
-      <button onclick={logout}
-        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
-        <LogOut size={18} /> Sair
-      </button>
+    <div class="px-3 py-3 border-t border-primary-700 shrink-0">
+      <div class="space-y-1">
+        <a href="/profile" onclick={closeMenu}
+          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
+            {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : ''}">
+          <UserCircle size={18} /> Minha Conta
+        </a>
+        <button onclick={logout}
+          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
+          <LogOut size={18} /> Sair
+        </button>
+      </div>
+
+      <!-- Links legais — discretos -->
+      <div class="flex items-center gap-3 px-3 pt-3 mt-1 border-t border-primary-700/40">
+        <a href="/terms" onclick={closeMenu}
+          class="text-xs text-primary-400 hover:text-primary-200 transition-colors">
+          Termos de Uso
+        </a>
+        <span class="text-primary-600 text-xs">·</span>
+        <a href="/privacy" onclick={closeMenu}
+          class="text-xs text-primary-400 hover:text-primary-200 transition-colors">
+          Política de Privacidade
+        </a>
+      </div>
     </div>
   </div>
 {/if}
