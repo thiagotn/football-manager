@@ -306,9 +306,11 @@
             <p class="text-xs text-yellow-400">Tolerância até: {fmtDate(item.grace_period_end)}</p>
           {/if}
           <div class="flex gap-2 mt-1 flex-wrap">
-            <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
-              <CreditCard size={12} /> Ativar plano
-            </button>
+            {#if item.status !== 'active'}
+              <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
+                <CreditCard size={12} /> Ativar plano
+              </button>
+            {/if}
             {#if item.status !== 'canceled' && item.plan !== 'free'}
               <button onclick={() => openCancelDialog(item)} class="btn-sm btn-ghost text-xs text-red-400 hover:text-red-300">
                 <XCircle size={12} /> Cancelar
@@ -364,9 +366,11 @@
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
-                    <CreditCard size={12} /> Ativar
-                  </button>
+                  {#if item.status !== 'active'}
+                    <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
+                      <CreditCard size={12} /> Ativar
+                    </button>
+                  {/if}
                   {#if item.status !== 'canceled' && item.plan !== 'free'}
                     <button onclick={() => openCancelDialog(item)} class="btn-sm btn-ghost text-xs text-red-400 hover:text-red-300">
                       <XCircle size={12} /> Cancelar
