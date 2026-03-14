@@ -95,7 +95,7 @@
 
   function statusLabel(status: string): string {
     if (status === 'active')   return 'Ativo';
-    if (status === 'past_due') return 'Past Due';
+    if (status === 'past_due') return 'Pag. Pendente';
     if (status === 'canceled') return 'Cancelado';
     return status;
   }
@@ -193,7 +193,7 @@
       <div class="card p-5 text-center">
         <div class="flex items-center justify-center mb-1"><AlertTriangle size={14} class="{summary.past_due > 0 ? 'text-yellow-400' : 'text-gray-500'} opacity-70" /></div>
         <p class="text-3xl font-bold {summary.past_due > 0 ? 'text-yellow-400' : 'text-gray-500'}">{summary.past_due}</p>
-        <p class="text-xs text-gray-400 mt-1">Past Due</p>
+        <p class="text-xs text-gray-400 mt-1">Pag. Pendente</p>
       </div>
       <div class="card p-5 text-center">
         <div class="flex items-center justify-center mb-1"><Users size={14} class="text-gray-400 opacity-70" /></div>
@@ -228,7 +228,7 @@
   <!-- Filtros -->
   <div class="flex items-center gap-2 overflow-x-auto pb-1">
     <span class="text-xs text-gray-400 shrink-0">Status:</span>
-    {#each [['', 'Todos'], ['active', 'Ativos'], ['past_due', 'Past Due'], ['canceled', 'Cancelados']] as [val, label]}
+    {#each [['', 'Todos'], ['active', 'Ativos'], ['past_due', 'Pag. Pendente'], ['canceled', 'Cancelados']] as [val, label]}
       <button
         onclick={() => { filterStatus = val; currentPage = 1; }}
         class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0
@@ -276,7 +276,7 @@
           </div>
           <p class="text-xs text-gray-400">Vence: {fmtDate(item.current_period_end)}</p>
           {#if item.status === 'past_due' && item.grace_period_end}
-            <p class="text-xs text-yellow-400">Grace até: {fmtDate(item.grace_period_end)}</p>
+            <p class="text-xs text-yellow-400">Tolerância até: {fmtDate(item.grace_period_end)}</p>
           {/if}
           <button
             onclick={() => openModal(item)}
@@ -296,7 +296,7 @@
             <th class="text-left px-4 py-3">Plano</th>
             <th class="text-left px-4 py-3">Status</th>
             <th class="text-left px-4 py-3 hidden md:table-cell">Vencimento</th>
-            <th class="text-left px-4 py-3 hidden md:table-cell">Grace até</th>
+            <th class="text-left px-4 py-3 hidden md:table-cell">Tolerância</th>
             <th class="text-left px-4 py-3 hidden lg:table-cell">Stripe</th>
             <th class="px-4 py-3"></th>
           </tr>
