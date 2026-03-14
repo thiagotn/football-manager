@@ -1,16 +1,32 @@
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
-from fastapi import APIRouter, Query
+import structlog
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 
 from app.core.dependencies import DB, AdminPlayer
+from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.schemas.admin import (
     AdminGroupListResponse,
     AdminMatchListResponse,
     AdminStatsResponse,
+    AdminSubscriptionListResponse,
+    AdminSubscriptionSummary,
+    AdminSubscriptionUpdateRequest,
 )
 
+logger = structlog.get_logger()
+
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Preços em centavos para cálculo de MRR estimado
+_MRR_CENTS = {
+    ("basic", "monthly"): 1990,
+    ("basic", "yearly"):  199_00 // 12,   # ~1658
+    ("pro",   "monthly"): 3990,
+    ("pro",   "yearly"):  399_00 // 12,   # ~3325
+}
 
 
 @router.get("/stats", response_model=AdminStatsResponse)
@@ -114,3 +130,158 @@ async def list_admin_groups(
     )
     items = [dict(row._mapping) for row in rows]
     return {"total": total, "items": items}
+
+
+# ── Subscriptions admin ────────────────────────────────────────────────────────
+
+@router.get("/subscriptions/summary", response_model=AdminSubscriptionSummary)
+async def get_subscription_summary(db: DB, _: AdminPlayer):
+    """Resumo de assinaturas para os cards do painel. Exclusivo para super admins."""
+    total_result = await db.execute(text("SELECT COUNT(*)::int FROM players"))
+    total_players = total_result.scalar_one()
+
+    rows = await db.execute(text("""
+        SELECT
+            COALESCE(ps.status, 'active') AS status,
+            COALESCE(ps.plan, 'free')     AS plan,
+            COALESCE(ps.billing_cycle, 'monthly') AS billing_cycle,
+            COUNT(*)::int AS cnt
+        FROM players p
+        LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
+        GROUP BY ps.status, ps.plan, ps.billing_cycle
+    """))
+
+    active = free = past_due = canceled = 0
+    mrr_cents = 0
+    breakdown_map: dict[tuple, int] = {}
+
+    for row in rows:
+        plan = row.plan or "free"
+        status = row.status or "active"
+        cycle = row.billing_cycle or "monthly"
+        cnt = row.cnt
+
+        if plan == "free" or status == "canceled":
+            free += cnt if plan == "free" else 0
+            canceled += cnt if status == "canceled" else 0
+        elif status == "past_due":
+            past_due += cnt
+        elif status == "active" and plan != "free":
+            active += cnt
+            mrr_cents += _MRR_CENTS.get((plan, cycle), 0) * cnt
+        else:
+            free += cnt
+
+        if plan != "free" and status != "canceled":
+            key = (plan, cycle)
+            breakdown_map[key] = breakdown_map.get(key, 0) + cnt
+
+    breakdown = [
+        {"plan": plan, "billing_cycle": cycle, "count": cnt}
+        for (plan, cycle), cnt in sorted(breakdown_map.items())
+    ]
+
+    return AdminSubscriptionSummary(
+        total_players=total_players,
+        active=active,
+        free=free,
+        past_due=past_due,
+        canceled=canceled,
+        mrr_cents=mrr_cents,
+        breakdown=breakdown,
+    )
+
+
+@router.get("/subscriptions", response_model=AdminSubscriptionListResponse)
+async def list_subscriptions(
+    db: DB,
+    _: AdminPlayer,
+    status: str | None = Query(None),
+    plan: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """Lista paginada de assinantes pagos. Exclusivo para super admins."""
+    conditions = ["ps.plan != 'free'"]
+    params: dict = {"limit": page_size, "offset": (page - 1) * page_size}
+
+    if status:
+        conditions.append("ps.status = :status")
+        params["status"] = status
+    if plan:
+        conditions.append("ps.plan = :plan")
+        params["plan"] = plan
+
+    where = "WHERE " + " AND ".join(conditions)
+
+    count_result = await db.execute(
+        text(f"""
+            SELECT COUNT(*)::int
+            FROM player_subscriptions ps
+            JOIN players p ON p.id = ps.player_id
+            {where}
+        """),
+        params,
+    )
+    total = count_result.scalar_one()
+
+    rows = await db.execute(
+        text(f"""
+            SELECT
+                p.id        AS player_id,
+                p.name      AS player_name,
+                ps.plan,
+                ps.billing_cycle,
+                ps.status,
+                ps.current_period_end,
+                ps.grace_period_end,
+                ps.gateway_customer_id,
+                ps.gateway_sub_id,
+                ps.created_at
+            FROM player_subscriptions ps
+            JOIN players p ON p.id = ps.player_id
+            {where}
+            ORDER BY
+                CASE ps.status WHEN 'past_due' THEN 0 ELSE 1 END,
+                ps.current_period_end ASC NULLS LAST
+            LIMIT :limit OFFSET :offset
+        """),
+        params,
+    )
+    items = [dict(row._mapping) for row in rows]
+    return AdminSubscriptionListResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=items,
+    )
+
+
+@router.patch("/subscriptions/{player_id}", status_code=200)
+async def update_subscription(
+    player_id: UUID,
+    body: AdminSubscriptionUpdateRequest,
+    db: DB,
+    _: AdminPlayer,
+):
+    """Força atualização manual do plano. Usado quando webhook falhou. Exclusivo para super admins."""
+    sub_repo = SubscriptionRepository(db)
+    sub = await sub_repo.get_by_player(player_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada para este player.")
+
+    await sub_repo.update_plan(
+        player_id=player_id,
+        plan=body.plan,
+        status=body.status,
+        billing_cycle=body.billing_cycle,
+    )
+
+    logger.info(
+        "admin_subscription_manual_update",
+        player_id=str(player_id),
+        plan=body.plan,
+        status=body.status,
+        reason=body.reason,
+    )
+    return {"status": "ok", "plan": body.plan}

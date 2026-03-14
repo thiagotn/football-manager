@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.5 |
-| **Status** | Fase 1 Implementada · Fase 2 Backend Implementada · Fase 2 Frontend Pendente |
+| **Versão** | 1.6 |
+| **Status** | Fase 1 Implementada · Fase 2 Backend Implementada · Fase 2 Frontend Parcial · Validação Produção Concluída |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -797,14 +797,22 @@ Os itens abaixo **não fazem parte desta versão** e devem ser considerados para
 
 ### 14.9 Validação Final (antes de ir a produção)
 
-- [ ] Realizar um checkout completo com cartão de teste `4242 4242 4242 4242`
-- [ ] Verificar que o webhook `checkout.session.completed` chegou e foi processado
-- [ ] Verificar que a assinatura foi criada e o plano atualizado no banco
-- [ ] Testar falha de pagamento com cartão `4000 0000 0000 0341`
-- [ ] Verificar que `past_due` e `grace_period_end` foram definidos corretamente
-- [ ] Testar cancelamento via Customer Portal e verificar webhook
-- [ ] Testar PIX em modo sandbox (Stripe disponibiliza simulador)
-- [ ] Revisar todos os Price IDs no código — confirmar que apontam para os IDs de **produção** antes do deploy
+> ✅ **Concluído — Março 2026.** Fluxo completo validado em produção (live mode).
+
+- [x] Realizar um checkout completo com cartão de teste `4242 4242 4242 4242`
+- [x] Verificar que o webhook `checkout.session.completed` chegou e foi processado
+- [x] Verificar que a assinatura foi criada e o plano atualizado no banco
+- [x] Testar falha de pagamento com cartão `4000 0000 0000 0341`
+- [x] Verificar que `past_due` e `grace_period_end` foram definidos corretamente
+- [x] Testar cancelamento via Customer Portal e verificar webhook
+- [x] Testar PIX em modo sandbox (Stripe disponibiliza simulador)
+- [x] Revisar todos os Price IDs no código — confirmar que apontam para os IDs de **produção** antes do deploy
+
+> **Incidentes registrados durante a validação (Março 2026):**
+> - Webhook URL configurada inicialmente como `https://rachao.app/api/v1/webhooks/payment` (frontend) em vez de `https://api.rachao.app/api/v1/webhooks/payment` (API) — corrigido manualmente no Stripe Dashboard. Eventos com 404 foram reenviados manualmente.
+> - `FRONTEND_URL` não estava sendo injetada no container da API em produção, fazendo `success_url` e `cancel_url` do checkout apontarem para `http://localhost:3000` — corrigido via `docker-compose.prod.yml` (commit `272c22b`).
+> - Secrets do Stripe não chegavam ao servidor por estarem ausentes no bloco `env:` do step `ssh-action` no workflow de deploy — corrigido (commit `6fd3802`).
+> - Primeiro checkout real em produção (Plano Básico Mensal) teve o plano ativado via `invoice.paid` recuperado automaticamente pelo Stripe, mas `checkout.session.completed` precisou ser reenviado manualmente pelo Dashboard para setar `plan=basic` corretamente.
 
 ---
 

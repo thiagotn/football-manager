@@ -181,6 +181,7 @@ async def _handle_checkout_completed(sub_repo, session: dict, log) -> None:
         gateway_customer_id=customer_id,
         gateway_sub_id=subscription_id,
         current_period_end=current_period_end,
+        billing_cycle=billing_cycle,
     )
     log.info("checkout_completed_plan_activated", player_id=player_id, plan=plan)
 

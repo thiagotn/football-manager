@@ -46,3 +46,48 @@ class AdminGroupItem(BaseModel):
 class AdminGroupListResponse(BaseModel):
     total: int
     items: list[AdminGroupItem]
+
+
+# ── Subscriptions ─────────────────────────────────────────────
+
+class AdminSubscriptionBreakdownItem(BaseModel):
+    plan: str
+    billing_cycle: str
+    count: int
+
+
+class AdminSubscriptionSummary(BaseModel):
+    total_players: int
+    active: int
+    free: int
+    past_due: int
+    canceled: int
+    mrr_cents: int
+    breakdown: list[AdminSubscriptionBreakdownItem]
+
+
+class AdminSubscriptionItem(BaseModel):
+    player_id: UUID
+    player_name: str
+    plan: str
+    billing_cycle: str
+    status: str
+    current_period_end: datetime | None
+    grace_period_end: datetime | None
+    gateway_customer_id: str | None
+    gateway_sub_id: str | None
+    created_at: datetime
+
+
+class AdminSubscriptionListResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[AdminSubscriptionItem]
+
+
+class AdminSubscriptionUpdateRequest(BaseModel):
+    plan: str
+    status: str = "active"
+    billing_cycle: str = "monthly"
+    reason: str = "manual_admin_override"

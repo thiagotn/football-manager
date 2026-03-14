@@ -17,9 +17,10 @@
     { href: '/matches',               icon: Calendar,   label: 'Rachões',       playerOnly: true },
     { href: '/profile/stats',         icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
     { href: '/review',                icon: Star,       label: 'Avaliar o App', playerOnly: true },
-    { href: '/players',               icon: Users,      label: 'Jogadores',     adminOnly: true },
-    { href: '/admin/reviews',         icon: Star,       label: 'Avaliações',    adminOnly: true },
-    { href: '/admin/faq',             icon: BookOpen,   label: 'Guia Admin',    adminOnly: true },
+    { href: '/players',               icon: Users,      label: 'Jogadores',        adminOnly: true },
+    { href: '/admin/reviews',         icon: Star,       label: 'Avaliações',       adminOnly: true },
+    { href: '/admin/subscriptions',   icon: CreditCard, label: 'Assinaturas',      adminOnly: true },
+    { href: '/admin/faq',             icon: BookOpen,   label: 'Guia Admin',       adminOnly: true },
   ];
 
   let menuOpen = $state(false);

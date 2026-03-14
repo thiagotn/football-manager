@@ -2,11 +2,12 @@
   import { goto } from '$app/navigation';
   import { authStore, isAdmin } from '$lib/stores/auth';
   import { admin as adminApi } from '$lib/api';
-  import type { AdminStatsResponse } from '$lib/api';
-  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight } from 'lucide-svelte';
+  import type { AdminStatsResponse, AdminSubscriptionSummary } from '$lib/api';
+  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight, CreditCard, AlertTriangle, TrendingUp } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let stats = $state<AdminStatsResponse | null>(null);
+  let billing = $state<AdminSubscriptionSummary | null>(null);
   let loading = $state(true);
   let error = $state('');
 
@@ -24,8 +25,11 @@
     if (!$isAdmin) { goto('/dashboard', { replaceState: true }); return; }
     if (loaded) return;
     loaded = true;
-    adminApi.getStats()
-      .then(d => { stats = d; })
+    Promise.all([
+      adminApi.getStats(),
+      adminApi.getSubscriptionSummary(),
+    ])
+      .then(([s, b]) => { stats = s; billing = b; })
       .catch(() => { error = 'Não foi possível carregar os dados.'; })
       .finally(() => { loading = false; });
   });
@@ -131,6 +135,65 @@
         </div>
       </div>
     </div>
+
+    <!-- Billing -->
+    {#if billing}
+      {#if billing.past_due > 0}
+        <a href="/admin/subscriptions?status=past_due"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm hover:bg-yellow-500/20 transition-colors">
+          <AlertTriangle size={16} class="shrink-0" />
+          <span><strong>{billing.past_due}</strong> assinatura{billing.past_due > 1 ? 's' : ''} com pagamento pendente — clique para revisar</span>
+          <ChevronRight size={14} class="ml-auto shrink-0" />
+        </a>
+      {/if}
+
+      <div>
+        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3 flex items-center gap-2">
+          <CreditCard size={14} class="text-emerald-400" /> Billing
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <a href="/admin/subscriptions" class="card p-5 text-center group hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-center mb-1">
+              <TrendingUp size={14} class="text-emerald-400 opacity-70" />
+            </div>
+            <p class="text-3xl font-bold text-emerald-400">{billing.active}</p>
+            <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
+              Assinantes <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+            </p>
+          </a>
+
+          <a href="/admin/subscriptions?status=past_due" class="card p-5 text-center group hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-center mb-1">
+              <AlertTriangle size={14} class="{billing.past_due > 0 ? 'text-yellow-400' : 'text-gray-500'} opacity-70" />
+            </div>
+            <p class="text-3xl font-bold {billing.past_due > 0 ? 'text-yellow-400' : 'text-gray-500'}">{billing.past_due}</p>
+            <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
+              Past Due <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+            </p>
+          </a>
+
+          <div class="card p-5 text-center col-span-2 sm:col-span-1">
+            <div class="flex items-center justify-center mb-1">
+              <CreditCard size={14} class="text-primary-400 opacity-70" />
+            </div>
+            <p class="text-3xl font-bold text-primary-400">
+              {(billing.mrr_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">MRR estimado</p>
+          </div>
+
+          <a href="/admin/subscriptions" class="card p-5 text-center group hover:shadow-md transition-shadow hidden sm:block">
+            <div class="flex items-center justify-center mb-1">
+              <Users size={14} class="text-gray-400 opacity-70" />
+            </div>
+            <p class="text-3xl font-bold text-gray-400">{billing.free}</p>
+            <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
+              Free <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+            </p>
+          </a>
+        </div>
+      </div>
+    {/if}
 
   {/if}
 </main>

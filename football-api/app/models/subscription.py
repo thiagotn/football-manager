@@ -25,6 +25,8 @@ class PlayerSubscription(Base, UUIDMixin, TimestampMixin):
     gateway_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     gateway_sub_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    billing_cycle: Mapped[str] = mapped_column(String(10), nullable=False, default="monthly")
+
     # Período da assinatura — gerenciado pelo webhook handler
     current_period_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

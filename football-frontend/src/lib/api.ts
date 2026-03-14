@@ -335,6 +335,50 @@ export const admin = {
     const qs = q.toString();
     return get<AdminGroupListResponse>(`/admin/groups${qs ? '?' + qs : ''}`);
   },
+  getSubscriptionSummary: () => get<AdminSubscriptionSummary>('/admin/subscriptions/summary'),
+  getSubscriptions: (params?: { status?: string; plan?: string; page?: number; page_size?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.status)    q.set('status',    params.status);
+    if (params?.plan)      q.set('plan',      params.plan);
+    if (params?.page)      q.set('page',      String(params.page));
+    if (params?.page_size) q.set('page_size', String(params.page_size));
+    const qs = q.toString();
+    return get<AdminSubscriptionListResponse>(`/admin/subscriptions${qs ? '?' + qs : ''}`);
+  },
+  updateSubscription: (playerId: string, data: { plan: string; status: string; billing_cycle: string; reason: string }) =>
+    patch<{ status: string; plan: string }>(`/admin/subscriptions/${playerId}`, data),
+};
+
+export type AdminSubscriptionBreakdownItem = { plan: string; billing_cycle: string; count: number };
+
+export type AdminSubscriptionSummary = {
+  total_players: number;
+  active: number;
+  free: number;
+  past_due: number;
+  canceled: number;
+  mrr_cents: number;
+  breakdown: AdminSubscriptionBreakdownItem[];
+};
+
+export type AdminSubscriptionItem = {
+  player_id: string;
+  player_name: string;
+  plan: string;
+  billing_cycle: string;
+  status: string;
+  current_period_end: string | null;
+  grace_period_end: string | null;
+  gateway_customer_id: string | null;
+  gateway_sub_id: string | null;
+  created_at: string;
+};
+
+export type AdminSubscriptionListResponse = {
+  total: number;
+  page: number;
+  page_size: number;
+  items: AdminSubscriptionItem[];
 };
 
 // ── Teams ─────────────────────────────────────────────────────

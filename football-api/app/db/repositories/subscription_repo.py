@@ -48,6 +48,7 @@ class SubscriptionRepository(BaseRepository[PlayerSubscription]):
         gateway_sub_id: str | None = None,
         current_period_end: datetime | None = None,
         grace_period_end: datetime | None = None,
+        billing_cycle: str | None = None,
     ) -> PlayerSubscription:
         sub = await self.get_or_create(player_id)
         sub.plan = plan
@@ -60,6 +61,8 @@ class SubscriptionRepository(BaseRepository[PlayerSubscription]):
             sub.current_period_end = current_period_end
         if grace_period_end is not None:
             sub.grace_period_end = grace_period_end
+        if billing_cycle is not None:
+            sub.billing_cycle = billing_cycle
         await self.session.flush()
         await self.session.refresh(sub)
         return sub
