@@ -347,6 +347,8 @@ export const admin = {
   },
   updateSubscription: (playerId: string, data: { plan: string; status: string; billing_cycle: string; reason: string }) =>
     patch<{ status: string; plan: string }>(`/admin/subscriptions/${playerId}`, data),
+  cancelSubscription: (playerId: string) =>
+    post<{ status: string }>(`/admin/subscriptions/${playerId}/cancel`, {}),
 };
 
 export type AdminSubscriptionBreakdownItem = { plan: string; billing_cycle: string; count: number };

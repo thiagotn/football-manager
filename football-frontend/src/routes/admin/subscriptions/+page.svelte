@@ -4,8 +4,9 @@
   import { authStore, isAdmin } from '$lib/stores/auth';
   import { admin as adminApi } from '$lib/api';
   import type { AdminSubscriptionSummary, AdminSubscriptionListResponse, AdminSubscriptionItem } from '$lib/api';
-  import { CreditCard, AlertTriangle, TrendingUp, Users, ExternalLink, ChevronLeft, ChevronRight, X } from 'lucide-svelte';
+  import { CreditCard, AlertTriangle, TrendingUp, Users, ExternalLink, ChevronLeft, ChevronRight, X, XCircle } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
   // ── State ──────────────────────────────────────────────────────
   let summary = $state<AdminSubscriptionSummary | null>(null);
@@ -17,6 +18,32 @@
   let filterStatus = $state($page.url.searchParams.get('status') ?? '');
   let filterPlan = $state('');
   let currentPage = $state(1);
+
+  // Confirmação de cancelamento
+  let cancelDialogOpen = $state(false);
+  let cancelTarget = $state<AdminSubscriptionItem | null>(null);
+  let canceling = $state(false);
+
+  function openCancelDialog(item: AdminSubscriptionItem) {
+    cancelTarget = item;
+    cancelDialogOpen = true;
+  }
+
+  async function confirmCancel() {
+    if (!cancelTarget) return;
+    canceling = true;
+    try {
+      await adminApi.cancelSubscription(cancelTarget.player_id);
+      cancelDialogOpen = false;
+      cancelTarget = null;
+      await Promise.all([loadSummary(), loadList()]);
+    } catch {
+      error = 'Erro ao cancelar assinatura.';
+      cancelDialogOpen = false;
+    } finally {
+      canceling = false;
+    }
+  }
 
   // Modal de ativação manual
   let modalOpen = $state(false);
@@ -278,11 +305,16 @@
           {#if item.status === 'past_due' && item.grace_period_end}
             <p class="text-xs text-yellow-400">Tolerância até: {fmtDate(item.grace_period_end)}</p>
           {/if}
-          <button
-            onclick={() => openModal(item)}
-            class="btn-sm btn-ghost text-xs mt-1">
-            <CreditCard size={12} /> Ativar plano
-          </button>
+          <div class="flex gap-2 mt-1 flex-wrap">
+            <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
+              <CreditCard size={12} /> Ativar plano
+            </button>
+            {#if item.status !== 'canceled' && item.plan !== 'free'}
+              <button onclick={() => openCancelDialog(item)} class="btn-sm btn-ghost text-xs text-red-400 hover:text-red-300">
+                <XCircle size={12} /> Cancelar
+              </button>
+            {/if}
+          </div>
         </div>
       {/each}
     </div>
@@ -331,9 +363,16 @@
                 {/if}
               </td>
               <td class="px-4 py-3">
-                <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
-                  <CreditCard size={12} /> Ativar
-                </button>
+                <div class="flex items-center gap-2">
+                  <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
+                    <CreditCard size={12} /> Ativar
+                  </button>
+                  {#if item.status !== 'canceled' && item.plan !== 'free'}
+                    <button onclick={() => openCancelDialog(item)} class="btn-sm btn-ghost text-xs text-red-400 hover:text-red-300">
+                      <XCircle size={12} /> Cancelar
+                    </button>
+                  {/if}
+                </div>
               </td>
             </tr>
           {/each}
@@ -365,6 +404,14 @@
 
 </main>
 </PageBackground>
+
+<ConfirmDialog
+  bind:open={cancelDialogOpen}
+  message="Cancelar a assinatura de {cancelTarget?.player_name}? O plano voltará para Free imediatamente e a assinatura será cancelada no Stripe."
+  confirmLabel={canceling ? 'Cancelando…' : 'Cancelar assinatura'}
+  danger={true}
+  onConfirm={confirmCancel}
+/>
 
 <!-- Modal de ativação manual -->
 {#if modalOpen && modalPlayer}

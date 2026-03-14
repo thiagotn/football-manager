@@ -14,6 +14,7 @@ BILLING_PROVIDER = os.getenv("BILLING_PROVIDER", "stripe")
 
 if BILLING_PROVIDER == "stripe":
     from app.services.billing_stripe import (  # noqa: F401
+        cancel_subscription,
         create_checkout_session,
         get_or_create_customer,
         verify_webhook_signature,

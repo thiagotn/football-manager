@@ -66,6 +66,15 @@ async def create_checkout_session(
     return session.url
 
 
+async def cancel_subscription(gateway_sub_id: str) -> None:
+    """Cancela imediatamente uma assinatura no Stripe."""
+
+    def _cancel() -> None:
+        stripe.Subscription.cancel(gateway_sub_id, api_key=_api_key())
+
+    await asyncio.to_thread(_cancel)
+
+
 def verify_webhook_signature(payload: bytes, signature: str) -> dict:
     """
     Verifica a assinatura HMAC-SHA256 do webhook Stripe e retorna o evento.

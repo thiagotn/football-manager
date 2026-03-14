@@ -5,7 +5,10 @@ import structlog
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import text
 
+import stripe.error
+
 from app.core.dependencies import DB, AdminPlayer
+from app.services import billing as billing_service
 from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.schemas.admin import (
     AdminGroupListResponse,
@@ -285,3 +288,36 @@ async def update_subscription(
         reason=body.reason,
     )
     return {"status": "ok", "plan": body.plan}
+
+
+@router.post("/subscriptions/{player_id}/cancel", status_code=200)
+async def cancel_subscription(
+    player_id: UUID,
+    db: DB,
+    _: AdminPlayer,
+):
+    """Cancela a assinatura no Stripe e regride o player para free. Exclusivo para super admins."""
+    sub_repo = SubscriptionRepository(db)
+    sub = await sub_repo.get_by_player(player_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada para este player.")
+
+    if sub.plan == "free" or sub.status == "canceled":
+        raise HTTPException(status_code=400, detail="Assinatura já está cancelada ou é free.")
+
+    # Cancela no Stripe se houver subscription_id
+    if sub.gateway_sub_id:
+        try:
+            await billing_service.cancel_subscription(sub.gateway_sub_id)
+        except stripe.error.InvalidRequestError as e:
+            # Sub já cancelada no Stripe — prosseguir para atualizar o DB
+            logger.warning("stripe_cancel_already_canceled", error=str(e), player_id=str(player_id))
+
+    await sub_repo.update_plan(
+        player_id=player_id,
+        plan="free",
+        status="canceled",
+    )
+
+    logger.info("admin_subscription_canceled", player_id=str(player_id))
+    return {"status": "ok"}
