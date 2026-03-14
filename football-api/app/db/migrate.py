@@ -22,26 +22,33 @@ async def run_migrations(database_url: str) -> None:
             )
         """)
 
-        applied = {
-            row["filename"]
-            for row in await conn.fetch("SELECT filename FROM schema_migrations")
-        }
+        # Lock exclusivo para evitar race condition entre workers simultâneos
+        await conn.execute("SELECT pg_advisory_lock(20260101)")
 
-        pending = sorted(
-            p for p in MIGRATIONS_DIR.glob("*.sql") if p.name not in applied
-        )
+        try:
+            applied = {
+                row["filename"]
+                for row in await conn.fetch("SELECT filename FROM schema_migrations")
+            }
 
-        if not pending:
-            logger.info("migrations_up_to_date")
-            return
-
-        for path in pending:
-            logger.info("migration_applying", file=path.name)
-            await conn.execute(path.read_text())
-            await conn.execute(
-                "INSERT INTO schema_migrations (filename) VALUES ($1)", path.name
+            pending = sorted(
+                p for p in MIGRATIONS_DIR.glob("*.sql") if p.name not in applied
             )
-            logger.info("migration_applied", file=path.name)
+
+            if not pending:
+                logger.info("migrations_up_to_date")
+                return
+
+            for path in pending:
+                logger.info("migration_applying", file=path.name)
+                await conn.execute(path.read_text())
+                await conn.execute(
+                    "INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING",
+                    path.name,
+                )
+                logger.info("migration_applied", file=path.name)
+        finally:
+            await conn.execute("SELECT pg_advisory_unlock(20260101)")
 
     finally:
         await conn.close()
