@@ -17,6 +17,7 @@ from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.models.player import PlayerRole
 from app.schemas.auth import (
     ChangePasswordRequest,
+    ForgotPasswordResetRequest,
     LoginRequest,
     RegisterRequest,
     SendOtpRequest,
@@ -129,6 +130,52 @@ async def register(body: RegisterRequest, db: DB):
 @router.get("/me", response_model=PlayerResponse)
 async def me(current: CurrentPlayer):
     return current
+
+
+@router.post("/forgot-password/send-otp", response_model=SendOtpResponse)
+async def forgot_password_send_otp(body: SendOtpRequest, db: DB):
+    """Send OTP to a registered WhatsApp number for password reset."""
+    whatsapp = re.sub(r"\D", "", body.whatsapp)
+
+    if not await PlayerRepository(db).get_by_whatsapp(whatsapp):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Número não encontrado. Verifique e tente novamente.",
+        )
+
+    try:
+        await twilio_verify.send_otp(whatsapp)
+    except TwilioRestException as e:
+        if e.code in (60200, 60203):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Muitas tentativas. Aguarde antes de solicitar um novo código.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Falha ao enviar código. Tente novamente.",
+        )
+
+    return SendOtpResponse()
+
+
+@router.post("/forgot-password/reset", status_code=204)
+async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
+    """Reset password using a verified OTP token."""
+    whatsapp = re.sub(r"\D", "", body.whatsapp)
+
+    verified_whatsapp = decode_otp_token(body.otp_token)
+    if not verified_whatsapp or verified_whatsapp != whatsapp:
+        raise UnauthorizedError("Token de verificação inválido ou expirado")
+
+    repo = PlayerRepository(db)
+    player = await repo.get_by_whatsapp(whatsapp)
+    if not player:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
+
+    player.password_hash = hash_password(body.new_password)
+    player.must_change_password = False
+    await db.flush()
 
 
 @router.post("/send-otp/me", response_model=SendOtpResponse)

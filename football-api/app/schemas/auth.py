@@ -49,3 +49,9 @@ class ChangePasswordRequest(BaseModel):
     current_password: str | None = None
     new_password: str = Field(..., min_length=6)
     otp_token: str | None = None
+
+
+class ForgotPasswordResetRequest(BaseModel):
+    whatsapp: str
+    otp_token: str
+    new_password: str = Field(..., min_length=6)

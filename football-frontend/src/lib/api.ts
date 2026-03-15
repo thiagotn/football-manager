@@ -44,6 +44,10 @@ export const auth = {
   register: (data: { name: string; whatsapp: string; password: string; nickname?: string; otp_token: string }) =>
     post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/register', data),
   me: () => get<Player>('/auth/me'),
+  forgotPasswordSendOtp: (whatsapp: string) =>
+    post<{ status: string; expires_in_seconds: number }>('/auth/forgot-password/send-otp', { whatsapp }),
+  forgotPasswordReset: (whatsapp: string, otp_token: string, new_password: string) =>
+    post<void>('/auth/forgot-password/reset', { whatsapp, otp_token, new_password }),
   sendOtpMe: () =>
     post<{ status: string; expires_in_seconds: number }>('/auth/send-otp/me', {}),
   verifyOtpMe: (otp_code: string) =>
