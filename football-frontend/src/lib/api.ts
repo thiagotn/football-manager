@@ -37,7 +37,11 @@ const del = (path: string) => request<void>(path, { method: 'DELETE' });
 export const auth = {
   login: (whatsapp: string, password: string) =>
     post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/login', { whatsapp, password }),
-  register: (data: { name: string; whatsapp: string; password: string; nickname?: string }) =>
+  sendOtp: (whatsapp: string) =>
+    post<{ status: string; expires_in_seconds: number }>('/auth/send-otp', { whatsapp }),
+  verifyOtp: (whatsapp: string, otp_code: string) =>
+    post<{ otp_token: string }>('/auth/verify-otp', { whatsapp, otp_code }),
+  register: (data: { name: string; whatsapp: string; password: string; nickname?: string; otp_token: string }) =>
     post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/register', data),
   me: () => get<Player>('/auth/me'),
   changePassword: (current_password: string, new_password: string) =>

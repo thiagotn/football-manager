@@ -33,3 +33,24 @@ def decode_access_token(token: str) -> str | None:
         return payload.get("sub")
     except JWTError:
         return None
+
+
+def create_otp_token(whatsapp: str) -> str:
+    """Create a short-lived signed token confirming OTP verification for a whatsapp number."""
+    return create_access_token(
+        subject=f"otp:{whatsapp}",
+        expires_delta=timedelta(minutes=15),
+    )
+
+
+def decode_otp_token(token: str) -> str | None:
+    """Returns the verified whatsapp number if token is valid, None otherwise."""
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        sub: str = payload.get("sub", "")
+        if not sub.startswith("otp:"):
+            return None
+        return sub[4:]
+    except JWTError:
+        return None

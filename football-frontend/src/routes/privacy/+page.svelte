@@ -90,11 +90,20 @@
                 <td class="py-2 pr-4 align-top">Todos os dados da plataforma</td>
                 <td class="py-2 align-top">Armazenamento e operação do serviço</td>
               </tr>
+              <tr>
+                <td class="py-2 pr-4 align-top">Gateway de pagamento (Stripe)</td>
+                <td class="py-2 pr-4 align-top">Dados de cobrança e assinatura</td>
+                <td class="py-2 align-top">Processamento de pagamentos dos planos pagos</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 align-top">Provedor de SMS (Twilio)</td>
+                <td class="py-2 pr-4 align-top">Número de WhatsApp</td>
+                <td class="py-2 align-top">Envio de código de verificação no cadastro</td>
+              </tr>
             </tbody>
           </table>
         </div>
         <p class="mt-3 text-sm">Os provedores operam como <strong>operadores de dados</strong> sob as nossas instruções e possuem políticas de privacidade e segurança próprias. Servidores podem estar localizados fora do Brasil; ao usar a plataforma, você consente com essa transferência internacional nos termos do Art. 33 da LGPD.</p>
-        <p class="mt-2 text-sm">Quando os planos pagos forem lançados, um gateway de pagamento também será adicionado — a política será atualizada nesse momento.</p>
       </section>
 
       <section>

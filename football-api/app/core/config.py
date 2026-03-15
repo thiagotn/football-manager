@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Frontend (usado para montar success_url / cancel_url no checkout)
     frontend_url: str = "http://localhost:3000"
 
+    # Twilio (OTP verification)
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_verify_sid: str = ""
+
     # Billing (Stripe)
     billing_provider: str = "stripe"
     stripe_secret_key: str = ""

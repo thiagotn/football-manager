@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.1 |
-| **Status** | Draft — decisão de gateway pendente |
+| **Versão** | 1.4 |
+| **Status** | Implementado — SMS ativo; migração para WhatsApp pendente de aprovação Twilio |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -30,35 +30,46 @@ Implementar verificação de número via OTP (One-Time Password) no fluxo de cad
 
 ## 2. Fluxo Proposto
 
-O cadastro passa a ter **duas etapas**:
+O cadastro passa a ter **três etapas**:
 
-### Etapa 1 — Preenchimento do formulário
-O usuário preenche nome, apelido (opcional), WhatsApp e senha na rota `/register` e clica em **"Enviar código de verificação"**.
+### Etapa 1 — Verificação do número
+O usuário informa apenas o WhatsApp e clica em **"Enviar código de verificação"**.
 
-### Etapa 2 — Verificação do OTP
-O backend envia um código de 6 dígitos para o número informado (via WhatsApp ou SMS). O usuário digita o código recebido na tela. Após validação, a conta é criada e o usuário é logado automaticamente.
+### Etapa 2 — Confirmação do OTP
+O backend envia um código de 6 dígitos via **SMS** (canal atual). Após aprovação do template WhatsApp pela Twilio, o canal principal passará a ser **WhatsApp**, com SMS como fallback automático. O usuário digita o código. Após validação bem-sucedida, o backend retorna um `otp_token` assinado (JWT, TTL 15 min) confirmando a posse do número.
+
+### Etapa 3 — Preenchimento do cadastro
+Com o número já verificado, o usuário preenche nome, apelido (opcional) e senha. A conta é criada e o usuário é logado automaticamente.
 
 ```
 [/register — Etapa 1]
-  Usuário preenche: nome, WhatsApp, senha
-  Clica: "Enviar código"
+  Usuário informa: WhatsApp
+  Clica: "Enviar código de verificação"
        ↓
 [POST /auth/send-otp]
-  Backend gera OTP (6 dígitos, TTL 10 min)
-  Envia via gateway (WhatsApp ou SMS)
+  Verifica se número não está cadastrado
+  Envia OTP via SMS (TTL 10 min)
   Retorna: { status: "pending" }
        ↓
 [/register — Etapa 2]
   Usuário digita o código recebido
-  Clica: "Confirmar e criar conta"
+  Clica: "Verificar código"
        ↓
-[POST /auth/register]  ← agora requer otp_code no body
-  Backend valida OTP
+[POST /auth/verify-otp]
+  Backend valida OTP com Twilio
+  Retorna: { otp_token: "<JWT assinado, TTL 15 min>" }
+       ↓
+[/register — Etapa 3]
+  Usuário preenche: nome, apelido, senha
+  Clica: "Criar conta grátis"
+       ↓
+[POST /auth/register]  ← requer otp_token no body
+  Backend valida assinatura e TTL do otp_token
   Cria player + subscription gratuita
   Retorna: JWT (login imediato)
 ```
 
-> **Nota de segurança:** o OTP deve ser validado no backend antes de qualquer criação de registro. O frontend nunca deve confiar na validação local do código.
+> **Nota de segurança:** o OTP é validado no backend via Twilio antes de qualquer criação de registro. O `otp_token` é um JWT assinado com o `SECRET_KEY` do servidor — o frontend não tem como forjá-lo.
 
 ---
 
@@ -122,7 +133,8 @@ CREATE INDEX idx_otp_whatsapp ON otp_verifications (whatsapp, expires_at);
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `POST` | `/api/v1/auth/send-otp` | Gera e envia OTP para o número informado |
-| `POST` | `/api/v1/auth/register` | Agora requer `otp_code` no body |
+| `POST` | `/api/v1/auth/verify-otp` | Valida o OTP e retorna `otp_token` assinado |
+| `POST` | `/api/v1/auth/register` | Cria a conta — requer `otp_token` no body |
 
 ### 6.1 `POST /auth/send-otp`
 
@@ -140,39 +152,57 @@ CREATE INDEX idx_otp_whatsapp ON otp_verifications (whatsapp, expires_at);
 - `409` — número já cadastrado
 - `429` — rate limit atingido
 
-### 6.2 `POST /auth/register` (atualizado)
+### 6.2 `POST /auth/verify-otp` (novo)
 
-**Request (atualizado):**
+**Request:**
+```json
+{ "whatsapp": "11999990000", "otp_code": "483920" }
+```
+
+**Response 200:**
+```json
+{ "otp_token": "<JWT assinado, TTL 15 min>" }
+```
+
+**Erros:**
+- `422 OTP_INVALID` — código incorreto ou expirado
+- `422 OTP_MAX_ATTEMPTS` — tentativas esgotadas
+- `409` — número já cadastrado
+
+### 6.3 `POST /auth/register` (atualizado)
+
+**Request:**
 ```json
 {
   "name": "João Silva",
   "whatsapp": "11999990000",
   "password": "senha123",
   "nickname": "Joãozinho",
-  "otp_code": "483920"
+  "otp_token": "<token retornado pelo verify-otp>"
 }
 ```
 
 **Erros adicionais:**
-- `422 OTP_INVALID` — código incorreto
-- `422 OTP_EXPIRED` — código expirado
-- `422 OTP_MAX_ATTEMPTS` — tentativas esgotadas
+- `422 OTP_TOKEN_INVALID` — token inválido, forjado ou expirado (TTL 15 min)
 
 ---
 
 ## 7. Opções de Gateway
 
-> ⚠️ **Decisão pendente.** As opções abaixo foram avaliadas. A escolha deve ser registrada neste PRD antes da implementação.
+> ✅ **Decisão tomada: Opção A — Twilio Verify.** Implementado e em produção via SMS.
+>
+> **Canal atual:** SMS (`channel="sms"`) — WhatsApp requer aprovação de template pela Twilio/Meta.
+> **Próximo passo:** solicitar aprovação do template WhatsApp na Twilio e migrar `channel="sms"` para `channel="whatsapp"` em `app/services/twilio_verify.py`. O fallback automático (WhatsApp → SMS) passa a funcionar após essa migração.
 
 ---
 
 ### Opção A — Twilio Verify API
-**Status:** ⏳ Pendente de decisão
+**Status:** ✅ Selecionado
 
 | Critério | Avaliação |
 |---|---|
-| Canal principal | WhatsApp Business |
-| Fallback automático | ✅ SMS se WhatsApp falhar |
+| Canal principal | SMS (atual) → WhatsApp Business (após aprovação Twilio) |
+| Fallback automático | ✅ SMS se WhatsApp falhar (ativo após migração de canal) |
 | Custo por verificação (Brasil) | ~US$ 0,07–0,08 (US$ 0,05 verificação + ~US$ 0,02–0,03 SMS Brasil) |
 | Gerenciamento do OTP | ✅ Feito pela Twilio (sem tabela local necessária) |
 | SDK Python | ✅ `twilio` — maduro e bem documentado |
@@ -180,15 +210,16 @@ CREATE INDEX idx_otp_whatsapp ON otp_verifications (whatsapp, expires_at);
 | Confiabilidade | Alta |
 | Recomendação | ✅ Melhor custo-benefício para começar |
 
-**Integração:**
+**Integração (implementada em `app/services/twilio_verify.py`):**
 ```python
 from twilio.rest import Client
 
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-# Enviar OTP
+# Enviar OTP — canal atual: "sms"
+# Após aprovação do template WhatsApp: mudar para channel="whatsapp"
 client.verify.v2.services(TWILIO_VERIFY_SID) \
-    .verifications.create(to=f"+55{whatsapp}", channel="whatsapp")
+    .verifications.create(to=f"+55{whatsapp}", channel="sms")
 
 # Validar OTP
 check = client.verify.v2.services(TWILIO_VERIFY_SID) \
@@ -200,10 +231,18 @@ if check.status != "approved":
 
 > Com Twilio Verify, **a tabela `otp_verifications` não é necessária** — a Twilio gerencia o estado do OTP internamente. A migration 016 só seria necessária nas opções B ou C.
 
+**Migração para WhatsApp (pendente):**
+Para ativar o canal WhatsApp, é necessário:
+1. Solicitar aprovação do template de OTP na Twilio Console (Verify → Serviço → WhatsApp Sender)
+2. Aguardar aprovação pela Meta (prazo variável, tipicamente alguns dias)
+3. Alterar `channel="sms"` para `channel="whatsapp"` em `app/services/twilio_verify.py`
+
+Após a migração, o Twilio Verify faz fallback automático para SMS caso o usuário não tenha WhatsApp ou a entrega falhe.
+
 ---
 
 ### Opção B — Meta Cloud API (WhatsApp Business direto)
-**Status:** ⏳ Pendente de decisão
+**Status:** ⏸ Não selecionado — reavaliar quando volume > 5.000 cadastros/mês
 
 | Critério | Avaliação |
 |---|---|
@@ -218,7 +257,7 @@ if check.status != "approved":
 ---
 
 ### Opção C — SMS puro (Twilio SMS / AWS SNS / Sinch)
-**Status:** ⏳ Pendente de decisão
+**Status:** ⏸ Não selecionado
 
 | Critério | Avaliação |
 |---|---|
