@@ -800,48 +800,58 @@
           {@const pendingList = financePeriod.payments.filter(p => p.status === 'pending')}
           {@const paidList = financePeriod.payments.filter(p => p.status === 'paid')}
 
-          <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
-            {#if pendingList.length > 0}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Pendentes -->
+            <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
               <div class="px-4 py-2 bg-amber-50/5">
                 <span class="text-xs font-semibold text-amber-400 uppercase tracking-wide">Pendente ({pendingList.length})</span>
               </div>
-              {#each pendingList as p (p.id)}
-                <div class="flex items-center gap-3 px-4 py-3">
-                  <Circle size={18} class="text-amber-400 shrink-0" />
-                  <span class="flex-1 text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
-                  {#if isGroupAdmin()}
-                    <button onclick={() => openPaymentSheet(p)}
-                      class="btn-sm btn-primary py-1 text-xs">
-                      Marcar pago
-                    </button>
-                  {/if}
-                </div>
-              {/each}
-            {/if}
+              {#if pendingList.length === 0}
+                <div class="px-4 py-6 text-center text-xs text-gray-400">Nenhum pendente</div>
+              {:else}
+                {#each pendingList as p (p.id)}
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <Circle size={18} class="text-amber-400 shrink-0" />
+                    <span class="flex-1 text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
+                    {#if isGroupAdmin()}
+                      <button onclick={() => openPaymentSheet(p)}
+                        class="btn-sm btn-primary py-1 text-xs">
+                        Marcar pago
+                      </button>
+                    {/if}
+                  </div>
+                {/each}
+              {/if}
+            </div>
 
-            {#if paidList.length > 0}
+            <!-- Pagos -->
+            <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
               <div class="px-4 py-2 bg-green-50/5">
                 <span class="text-xs font-semibold text-green-400 uppercase tracking-wide">Pago ({paidList.length})</span>
               </div>
-              {#each paidList as p (p.id)}
-                <div class="flex items-center gap-3 px-4 py-3">
-                  <CheckCircle2 size={18} class="text-green-500 shrink-0" />
-                  <div class="flex-1 min-w-0">
-                    <span class="text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
-                    <span class="ml-2 text-xs text-gray-400">
-                      {p.payment_type === 'monthly' ? 'Mensal' : 'Avulso'}
-                      {p.amount_due != null ? `· ${fmtCents(p.amount_due)}` : ''}
-                    </span>
+              {#if paidList.length === 0}
+                <div class="px-4 py-6 text-center text-xs text-gray-400">Nenhum pago ainda</div>
+              {:else}
+                {#each paidList as p (p.id)}
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <CheckCircle2 size={18} class="text-green-500 shrink-0" />
+                    <div class="flex-1 min-w-0">
+                      <span class="text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
+                      <span class="ml-2 text-xs text-gray-400">
+                        {p.payment_type === 'monthly' ? 'Mensal' : 'Avulso'}
+                        {p.amount_due != null ? `· ${fmtCents(p.amount_due)}` : ''}
+                      </span>
+                    </div>
+                    {#if isGroupAdmin()}
+                      <button onclick={() => markPending(p)}
+                        class="text-xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1">
+                        Desfazer
+                      </button>
+                    {/if}
                   </div>
-                  {#if isGroupAdmin()}
-                    <button onclick={() => markPending(p)}
-                      class="text-xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1">
-                      Desfazer
-                    </button>
-                  {/if}
-                </div>
-              {/each}
-            {/if}
+                {/each}
+              {/if}
+            </div>
           </div>
         {/if}
       {/if}
