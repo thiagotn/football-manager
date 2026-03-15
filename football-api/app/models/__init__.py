@@ -3,6 +3,7 @@ from app.models.group import Group, GroupMember, GroupMemberRole
 from app.models.match import Match, Attendance, MatchStatus, AttendanceStatus
 from app.models.invite import InviteToken
 from app.models.push_subscription import PushSubscription
+from app.models.finance import FinancePeriod, FinancePayment
 
 __all__ = [
     "Player", "PlayerRole",
@@ -10,4 +11,5 @@ __all__ = [
     "Match", "Attendance", "MatchStatus", "AttendanceStatus",
     "InviteToken",
     "PushSubscription",
+    "FinancePeriod", "FinancePayment",
 ]

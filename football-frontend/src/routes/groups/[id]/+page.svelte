@@ -1,15 +1,15 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, ApiError } from '$lib/api';
-  import type { GroupDetail, GroupMember, Match, Player, VoteStatusResponse, PlayerStatItem } from '$lib/api';
+  import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, finance as financeApi, ApiError } from '$lib/api';
+  import type { GroupDetail, GroupMember, Match, Player, VoteStatusResponse, PlayerStatItem, FinancePeriod, FinancePayment } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
   import TimePicker from '$lib/components/TimePicker.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
   import { relativeDate } from '$lib/utils.js';
@@ -19,7 +19,96 @@
   let group: GroupDetail | null = $state(null);
   let matchList: Match[] = $state([]);
   let loading = $state(true);
-  let tab: 'upcoming' | 'past' | 'members' | 'stats' = $state('upcoming');
+  let tab: 'upcoming' | 'past' | 'members' | 'stats' | 'finance' = $state('upcoming');
+
+  // Finance tab
+  const _monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let financeYear = $state(new Date().getFullYear());
+  let financeMonth = $state(new Date().getMonth() + 1);
+  let financePeriod = $state<FinancePeriod | null>(null);
+  let financeLoading = $state(false);
+  let financeError = $state('');
+  let paymentTarget = $state<FinancePayment | null>(null);
+  let showPaymentSheet = $state(false);
+  let markingPayment = $state(false);
+
+  $effect(() => {
+    if (tab !== 'finance') return;
+    void financeYear; void financeMonth;
+    let cancelled = false;
+    financePeriod = null;
+    financeLoading = true;
+    financeError = '';
+    financeApi.getPeriod(groupId, financeYear, financeMonth)
+      .then(r => { if (!cancelled) financePeriod = r; })
+      .catch(() => { if (!cancelled) financeError = 'Erro ao carregar dados financeiros.'; })
+      .finally(() => { if (!cancelled) financeLoading = false; });
+    return () => { cancelled = true; };
+  });
+
+  function fmtCents(cents: number): string {
+    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+  }
+
+  function openPaymentSheet(p: FinancePayment) {
+    paymentTarget = p;
+    showPaymentSheet = true;
+  }
+
+  async function markPaid(type: 'monthly' | 'per_match') {
+    if (!paymentTarget) return;
+    markingPayment = true;
+    try {
+      const updated = await financeApi.markPayment(paymentTarget.id, { status: 'paid', payment_type: type });
+      financePeriod = financePeriod ? {
+        ...financePeriod,
+        payments: financePeriod.payments.map(p => p.id === updated.id ? updated : p),
+      } : null;
+      if (financePeriod) financePeriod = { ...financePeriod, summary: recalcSummary(financePeriod.payments) };
+      showPaymentSheet = false;
+    } catch { toastError('Erro ao registrar pagamento'); }
+    markingPayment = false;
+  }
+
+  async function markPending(p: FinancePayment) {
+    try {
+      const updated = await financeApi.markPayment(p.id, { status: 'pending' });
+      financePeriod = financePeriod ? {
+        ...financePeriod,
+        payments: financePeriod.payments.map(x => x.id === updated.id ? updated : x),
+      } : null;
+      if (financePeriod) financePeriod = { ...financePeriod, summary: recalcSummary(financePeriod.payments) };
+    } catch { toastError('Erro ao desfazer pagamento'); }
+  }
+
+  function recalcSummary(payments: FinancePayment[]) {
+    const active = payments.filter(p => p.status !== 'excluded');
+    const paid = active.filter(p => p.status === 'paid');
+    const pending = active.filter(p => p.status === 'pending');
+    const received = paid.reduce((s, p) => s + (p.amount_due ?? 0), 0);
+    return {
+      received_cents: received,
+      paid_count: paid.length,
+      pending_count: pending.length,
+      total_members: active.length,
+      compliance_pct: active.length > 0 ? Math.round(paid.length / active.length * 100) : 0,
+    };
+  }
+
+  function prevMonth() {
+    if (financeMonth === 1) { financeMonth = 12; financeYear--; }
+    else financeMonth--;
+  }
+  function nextMonth() {
+    const now = new Date();
+    if (financeYear === now.getFullYear() && financeMonth === now.getMonth() + 1) return;
+    if (financeMonth === 12) { financeMonth = 1; financeYear++; }
+    else financeMonth++;
+  }
+  function isCurrentMonth() {
+    const now = new Date();
+    return financeYear === now.getFullYear() && financeMonth === now.getMonth() + 1;
+  }
 
   // Modals
   let showMatch = $state(false);
@@ -52,7 +141,6 @@
   const _now = new Date();
   const _year = _now.getFullYear();
   const _curMonth = _now.toISOString().slice(0, 7);
-  const _monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const availableMonths = Array.from({ length: 12 }, (_, i) => {
     const m = String(i + 1).padStart(2, '0');
     return { value: `${_year}-${m}`, label: `${_monthNames[i]} ${_year}` };
@@ -437,6 +525,11 @@
         onclick={() => { tab = 'stats'; }}>
         Estatísticas
       </button>
+      <button
+        class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'finance' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
+        onclick={() => { tab = 'finance'; }}>
+        Financeiro
+      </button>
     </div>
 
     <!-- Próximos / Últimos tabs -->
@@ -652,9 +745,148 @@
         {/each}
       </div>
     {/if}
+
+    <!-- Finance tab -->
+    {#if tab === 'finance'}
+      <!-- Nav de meses -->
+      <div class="flex items-center justify-between mb-4">
+        <button onclick={prevMonth} class="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors">←</button>
+        <span class="text-sm font-semibold text-white">
+          {_monthNames[financeMonth - 1]} {financeYear}
+        </span>
+        <button onclick={nextMonth} disabled={isCurrentMonth()}
+          class="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">→</button>
+      </div>
+
+      {#if financeLoading}
+        <div class="animate-pulse space-y-3">
+          <div class="h-20 bg-white/10 rounded-xl"></div>
+          <div class="h-40 bg-white/10 rounded-xl"></div>
+        </div>
+      {:else if financeError}
+        <div class="card p-6 text-center text-red-400">{financeError}</div>
+      {:else if financePeriod}
+        <!-- Summary cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div class="card p-4 text-center">
+            <p class="text-xs text-gray-400 mb-1">Recebido</p>
+            <p class="text-lg font-bold text-green-500">{fmtCents(financePeriod.summary.received_cents)}</p>
+          </div>
+          <div class="card p-4 text-center">
+            <p class="text-xs text-gray-400 mb-1">Pendente</p>
+            <p class="text-lg font-bold text-amber-400">{financePeriod.summary.pending_count} jogador{financePeriod.summary.pending_count !== 1 ? 'es' : ''}</p>
+          </div>
+          <div class="card p-4 text-center">
+            <p class="text-xs text-gray-400 mb-1">Pagos</p>
+            <p class="text-lg font-bold text-white">{financePeriod.summary.paid_count}/{financePeriod.summary.total_members}</p>
+          </div>
+          <div class="card p-4 text-center">
+            <p class="text-xs text-gray-400 mb-1">Adimplência</p>
+            <p class="text-lg font-bold {financePeriod.summary.compliance_pct >= 80 ? 'text-green-400' : financePeriod.summary.compliance_pct >= 50 ? 'text-amber-400' : 'text-red-400'}">
+              {financePeriod.summary.compliance_pct}%
+            </p>
+          </div>
+        </div>
+
+        <!-- Payment list -->
+        {#if financePeriod.payments.length === 0}
+          <div class="card p-10 text-center">
+            <Wallet size={32} class="text-gray-400 mx-auto mb-2" />
+            <p class="text-sm text-gray-400">Nenhum jogador neste período.</p>
+          </div>
+        {:else}
+          {@const pendingList = financePeriod.payments.filter(p => p.status === 'pending')}
+          {@const paidList = financePeriod.payments.filter(p => p.status === 'paid')}
+
+          <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+            {#if pendingList.length > 0}
+              <div class="px-4 py-2 bg-amber-50/5">
+                <span class="text-xs font-semibold text-amber-400 uppercase tracking-wide">Pendente ({pendingList.length})</span>
+              </div>
+              {#each pendingList as p (p.id)}
+                <div class="flex items-center gap-3 px-4 py-3">
+                  <Circle size={18} class="text-amber-400 shrink-0" />
+                  <span class="flex-1 text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
+                  {#if isGroupAdmin()}
+                    <button onclick={() => openPaymentSheet(p)}
+                      class="btn-sm btn-primary py-1 text-xs">
+                      Marcar pago
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+            {/if}
+
+            {#if paidList.length > 0}
+              <div class="px-4 py-2 bg-green-50/5">
+                <span class="text-xs font-semibold text-green-400 uppercase tracking-wide">Pago ({paidList.length})</span>
+              </div>
+              {#each paidList as p (p.id)}
+                <div class="flex items-center gap-3 px-4 py-3">
+                  <CheckCircle2 size={18} class="text-green-500 shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <span class="text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
+                    <span class="ml-2 text-xs text-gray-400">
+                      {p.payment_type === 'monthly' ? 'Mensal' : 'Avulso'}
+                      {p.amount_due != null ? `· ${fmtCents(p.amount_due)}` : ''}
+                    </span>
+                  </div>
+                  {#if isGroupAdmin()}
+                    <button onclick={() => markPending(p)}
+                      class="text-xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1">
+                      Desfazer
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+            {/if}
+          </div>
+        {/if}
+      {/if}
+    {/if}
   {/if}
 </main>
 </PageBackground>
+
+<!-- Payment type bottom sheet -->
+{#if showPaymentSheet && paymentTarget}
+  <button class="fixed inset-0 z-40 bg-black/50" onclick={() => showPaymentSheet = false} aria-label="Fechar" type="button"></button>
+  <div class="fixed z-50 left-0 right-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center pointer-events-none">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-xs pointer-events-auto">
+      <div class="px-5 pt-5 pb-3">
+        <h2 class="font-semibold text-gray-900 dark:text-gray-100 text-base">{paymentTarget.player_name}</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Selecione o tipo de pagamento</p>
+      </div>
+      <div class="px-5 pb-5 space-y-3">
+        <button
+          onclick={() => markPaid('monthly')}
+          disabled={markingPayment || !group?.monthly_amount}
+          class="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 border-primary-500 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          <span class="font-semibold text-primary-700 dark:text-primary-300 text-sm">Mensalidade</span>
+          <span class="text-primary-600 dark:text-primary-400 font-bold text-sm">
+            {group?.monthly_amount != null ? `R$ ${Number(group.monthly_amount).toFixed(2).replace('.', ',')}` : 'não configurado'}
+          </span>
+        </button>
+        <button
+          onclick={() => markPaid('per_match')}
+          disabled={markingPayment || !group?.per_match_amount}
+          class="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm">Avulso</span>
+          <span class="text-gray-600 dark:text-gray-400 font-bold text-sm">
+            {group?.per_match_amount != null ? `R$ ${Number(group.per_match_amount).toFixed(2).replace('.', ',')}` : 'não configurado'}
+          </span>
+        </button>
+        {#if !group?.monthly_amount && !group?.per_match_amount}
+          <p class="text-xs text-amber-600 dark:text-amber-400 text-center">Configure os valores do grupo para registrar pagamentos.</p>
+        {/if}
+        <button type="button" onclick={() => showPaymentSheet = false}
+          class="w-full text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 py-2 transition-colors">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Create match modal -->
 <Modal bind:open={showMatch} title="Novo Rachão">

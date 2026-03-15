@@ -76,6 +76,13 @@
       </section>
 
       <section>
+        <h2 class="text-base font-semibold mb-2">5.1. Controle financeiro de grupos</h2>
+        <p>O rachao.app disponibiliza uma ferramenta de <strong>controle e registro financeiro</strong> para que admins de grupo acompanhem o status de pagamentos (mensalidades ou contribuições avulsas) dos membros.</p>
+        <p class="mt-2">Essa funcionalidade é exclusivamente um <strong>registro informativo</strong>: a plataforma <strong>não realiza cobranças, não processa pagamentos e não intermedia transferências</strong> entre usuários.</p>
+        <p class="mt-2">A responsabilidade pela cobrança, recebimento e gestão dos valores combinados entre os membros é inteiramente do <strong>admin do grupo</strong> e dos próprios participantes. O rachao.app não se responsabiliza por inadimplências, disputas financeiras ou quaisquer prejuízos decorrentes de pagamentos não realizados.</p>
+      </section>
+
+      <section>
         <h2 class="text-base font-semibold mb-2">6. Limitação de responsabilidade</h2>
         <p class="mb-2">Na extensão permitida pela lei, o rachao.app não se responsabiliza por:</p>
         <ul class="list-disc list-inside space-y-1">

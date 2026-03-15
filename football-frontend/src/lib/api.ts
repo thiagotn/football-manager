@@ -417,6 +417,44 @@ export const teams = {
     get<TeamsResponse>(`/matches/${matchId}/teams`),
 };
 
+// ── Finance ───────────────────────────────────────────────────
+export type FinancePayment = {
+  id: string;
+  player_id: string;
+  player_name: string;
+  payment_type: 'monthly' | 'per_match' | null;
+  amount_due: number | null;
+  status: 'pending' | 'paid' | 'excluded';
+  paid_at: string | null;
+};
+
+export type FinanceSummary = {
+  received_cents: number;
+  pending_count: number;
+  paid_count: number;
+  total_members: number;
+  compliance_pct: number;
+};
+
+export type FinancePeriod = {
+  period_id: string;
+  year: number;
+  month: number;
+  summary: FinanceSummary;
+  payments: FinancePayment[];
+};
+
+export type FinancePeriodItem = { id: string; year: number; month: number };
+
+export const finance = {
+  getPeriod: (groupId: string, year: number, month: number) =>
+    get<FinancePeriod>(`/groups/${groupId}/finance/periods/${year}/${month}`),
+  listPeriods: (groupId: string) =>
+    get<FinancePeriodItem[]>(`/groups/${groupId}/finance/periods`),
+  markPayment: (paymentId: string, data: { status: 'paid' | 'pending'; payment_type?: 'monthly' | 'per_match' }) =>
+    patch<FinancePayment>(`/finance/payments/${paymentId}`, data),
+};
+
 // ── Invites ───────────────────────────────────────────────────
 export const invites = {
   create: (groupId: string) => post<{ id: string; token: string; expires_at: string }>('/invites', { group_id: groupId }),
