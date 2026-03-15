@@ -46,6 +46,8 @@ export const auth = {
   me: () => get<Player>('/auth/me'),
   forgotPasswordSendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/forgot-password/send-otp', { whatsapp }),
+  forgotPasswordVerifyOtp: (whatsapp: string, otp_code: string) =>
+    post<{ otp_token: string }>('/auth/forgot-password/verify-otp', { whatsapp, otp_code }),
   forgotPasswordReset: (whatsapp: string, otp_token: string, new_password: string) =>
     post<void>('/auth/forgot-password/reset', { whatsapp, otp_token, new_password }),
   sendOtpMe: () =>

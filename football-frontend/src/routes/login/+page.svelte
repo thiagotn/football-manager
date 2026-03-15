@@ -81,7 +81,7 @@
     forgotLoading = true;
     forgotError = '';
     try {
-      const res = await auth.verifyOtp(forgotWhatsapp, forgotOtpCode);
+      const res = await auth.forgotPasswordVerifyOtp(forgotWhatsapp, forgotOtpCode);
       forgotOtpToken = res.otp_token;
       forgotMode = 'otp-verified';
     } catch {

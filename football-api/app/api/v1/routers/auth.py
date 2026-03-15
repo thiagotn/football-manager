@@ -159,6 +159,21 @@ async def forgot_password_send_otp(body: SendOtpRequest, db: DB):
     return SendOtpResponse()
 
 
+@router.post("/forgot-password/verify-otp", response_model=VerifyOtpResponse)
+async def forgot_password_verify_otp(body: VerifyOtpRequest, db: DB):
+    """Verify OTP for a registered user and return a signed otp_token."""
+    whatsapp = re.sub(r"\D", "", body.whatsapp)
+
+    if not await PlayerRepository(db).get_by_whatsapp(whatsapp):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Número não encontrado.")
+
+    approved = await twilio_verify.check_otp(whatsapp, body.otp_code)
+    if not approved:
+        raise ValidationError("OTP_INVALID")
+
+    return VerifyOtpResponse(otp_token=create_otp_token(whatsapp))
+
+
 @router.post("/forgot-password/reset", status_code=204)
 async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
     """Reset password using a verified OTP token."""
