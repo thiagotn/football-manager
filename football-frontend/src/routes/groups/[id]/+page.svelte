@@ -525,11 +525,13 @@
         onclick={() => { tab = 'stats'; }}>
         Estatísticas
       </button>
+      {#if group?.monthly_amount || group?.per_match_amount}
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'finance' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => { tab = 'finance'; }}>
         Financeiro
       </button>
+      {/if}
     </div>
 
     <!-- Próximos / Últimos tabs -->
