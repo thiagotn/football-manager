@@ -5,7 +5,7 @@
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   // Plan
@@ -133,12 +133,67 @@
   }
 
   // Password
+  type PwMode = 'normal' | 'otp-pending' | 'otp-verified';
+  let pwMode = $state<PwMode>('normal');
   let currentPw = $state('');
   let newPw = $state('');
   let confirmPw = $state('');
   let showCurrent = $state(false);
   let showNew = $state(false);
   let saving = $state(false);
+
+  // OTP for password reset
+  let otpCode = $state('');
+  let otpToken = $state('');
+  let sendingOtp = $state(false);
+  let verifyingOtp = $state(false);
+  let otpError = $state('');
+  let otpCountdown = $state(0);
+  let otpCountdownTimer: ReturnType<typeof setInterval> | null = null;
+
+  function startOtpCountdown() {
+    otpCountdown = 60;
+    if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+    otpCountdownTimer = setInterval(() => {
+      otpCountdown--;
+      if (otpCountdown <= 0 && otpCountdownTimer) clearInterval(otpCountdownTimer);
+    }, 1000);
+  }
+
+  async function sendOtp() {
+    sendingOtp = true;
+    otpError = '';
+    try {
+      await authApi.sendOtpMe();
+      pwMode = 'otp-pending';
+      startOtpCountdown();
+    } catch (e) {
+      otpError = e instanceof ApiError ? e.message : 'Erro ao enviar código. Tente novamente.';
+    }
+    sendingOtp = false;
+  }
+
+  async function verifyOtp() {
+    if (otpCode.length !== 6) return;
+    verifyingOtp = true;
+    otpError = '';
+    try {
+      const res = await authApi.verifyOtpMe(otpCode);
+      otpToken = res.otp_token;
+      pwMode = 'otp-verified';
+    } catch {
+      otpError = 'Código inválido ou expirado. Verifique e tente novamente.';
+    }
+    verifyingOtp = false;
+  }
+
+  function cancelOtp() {
+    pwMode = 'normal';
+    otpCode = '';
+    otpToken = '';
+    otpError = '';
+    if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+  }
 
   let validationError = $derived(
     newPw && confirmPw && newPw !== confirmPw ? 'As senhas não coincidem.' :
@@ -147,10 +202,16 @@
   );
 
   async function submit() {
-    if (validationError || !currentPw || !newPw) return;
+    if (validationError || !newPw) return;
+    if (pwMode === 'normal' && !currentPw) return;
+    if (pwMode === 'otp-verified' && !otpToken) return;
     saving = true;
     try {
-      await authApi.changePassword(currentPw, newPw);
+      if (pwMode === 'otp-verified') {
+        await authApi.changePassword(newPw, { otp_token: otpToken });
+      } else {
+        await authApi.changePassword(newPw, { current_password: currentPw });
+      }
       authStore.setMustChangePassword(false);
       toastSuccess('Senha alterada com sucesso!');
       goto('/');
@@ -355,52 +416,141 @@
           <KeyRound size={16} class="text-primary-600" /> Alterar Senha
         </h2>
 
-        <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
-          <div class="form-group">
-            <label class="label" for="current-pw">Senha atual</label>
-            <div class="relative">
-              <input id="current-pw" class="input pr-10"
-                type={showCurrent ? 'text' : 'password'}
-                bind:value={currentPw} placeholder="••••••" required autocomplete="current-password"
-                disabled={saving} />
-              <button type="button" onclick={() => showCurrent = !showCurrent}
-                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {#if showCurrent}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
+        <!-- Modo normal: senha atual conhecida -->
+        {#if pwMode === 'normal'}
+          <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
+            <div class="form-group">
+              <label class="label" for="current-pw">Senha atual</label>
+              <div class="relative">
+                <input id="current-pw" class="input pr-10"
+                  type={showCurrent ? 'text' : 'password'}
+                  bind:value={currentPw} placeholder="••••••" required autocomplete="current-password"
+                  disabled={saving} />
+                <button type="button" onclick={() => showCurrent = !showCurrent}
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {#if showCurrent}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
+                </button>
+              </div>
+              <button type="button" onclick={sendOtp} disabled={sendingOtp}
+                class="mt-1.5 text-xs text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50">
+                {sendingOtp ? 'Enviando código…' : 'Não lembro a senha atual'}
               </button>
+              {#if otpError}<p class="text-xs text-red-500 mt-1">{otpError}</p>{/if}
+            </div>
+
+            <div class="form-group">
+              <label class="label" for="new-pw">Nova senha</label>
+              <div class="relative">
+                <input id="new-pw" class="input pr-10"
+                  type={showNew ? 'text' : 'password'}
+                  bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password"
+                  disabled={saving} />
+                <button type="button" onclick={() => showNew = !showNew}
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {#if showNew}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="label" for="confirm-pw">Confirmar nova senha</label>
+              <input id="confirm-pw" class="input"
+                type="password" bind:value={confirmPw}
+                placeholder="Repita a nova senha" required autocomplete="new-password"
+                disabled={saving} />
+            </div>
+
+            {#if validationError}
+              <div class="alert-error text-sm">{validationError}</div>
+            {/if}
+
+            <button type="submit" class="btn-primary w-full justify-center py-2.5"
+              disabled={saving || !!validationError || !currentPw || !newPw || !confirmPw}>
+              {saving ? 'Salvando…' : 'Alterar senha'}
+            </button>
+          </form>
+
+        <!-- Modo OTP: aguardando código SMS -->
+        {:else if pwMode === 'otp-pending'}
+          <div class="space-y-4">
+            <div class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg px-4 py-3 text-sm text-primary-800 dark:text-primary-300">
+              Código enviado por SMS para o número cadastrado
+              <strong class="block mt-0.5">
+                {'•'.repeat(($currentPlayer?.whatsapp?.length ?? 4) - 4)}{$currentPlayer?.whatsapp?.slice(-4)}
+              </strong>
+            </div>
+
+            <div class="form-group">
+              <label class="label" for="otp-code">Código de 6 dígitos</label>
+              <input id="otp-code" class="input text-center text-xl tracking-widest font-mono"
+                type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                bind:value={otpCode} placeholder="000000"
+                disabled={verifyingOtp} />
+            </div>
+
+            {#if otpError}<div class="alert-error text-sm">{otpError}</div>{/if}
+
+            <button onclick={verifyOtp} disabled={verifyingOtp || otpCode.length !== 6}
+              class="btn-primary w-full justify-center py-2.5">
+              {verifyingOtp ? 'Verificando…' : 'Verificar código'}
+            </button>
+
+            <div class="flex items-center justify-between text-xs text-gray-400">
+              <button onclick={cancelOtp} class="hover:text-gray-600 dark:hover:text-gray-200">← Voltar</button>
+              {#if otpCountdown > 0}
+                <span>Reenviar em {otpCountdown}s</span>
+              {:else}
+                <button onclick={sendOtp} disabled={sendingOtp} class="text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50">
+                  {sendingOtp ? 'Enviando…' : 'Reenviar código'}
+                </button>
+              {/if}
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="label" for="new-pw">Nova senha</label>
-            <div class="relative">
-              <input id="new-pw" class="input pr-10"
-                type={showNew ? 'text' : 'password'}
-                bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password"
-                disabled={saving} />
-              <button type="button" onclick={() => showNew = !showNew}
-                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {#if showNew}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
-              </button>
+        <!-- Modo OTP verificado: definir nova senha -->
+        {:else if pwMode === 'otp-verified'}
+          <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
+            <div class="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-2.5 text-sm text-green-800 dark:text-green-300">
+              <ShieldCheck size={16} class="shrink-0" />
+              Identidade verificada por SMS
             </div>
-          </div>
 
-          <div class="form-group">
-            <label class="label" for="confirm-pw">Confirmar nova senha</label>
-            <input id="confirm-pw" class="input"
-              type="password" bind:value={confirmPw}
-              placeholder="Repita a nova senha" required autocomplete="new-password"
-              disabled={saving} />
-          </div>
+            <div class="form-group">
+              <label class="label" for="new-pw-otp">Nova senha</label>
+              <div class="relative">
+                <input id="new-pw-otp" class="input pr-10"
+                  type={showNew ? 'text' : 'password'}
+                  bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password"
+                  disabled={saving} />
+                <button type="button" onclick={() => showNew = !showNew}
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {#if showNew}<EyeOff size={15} />{:else}<Eye size={15} />{/if}
+                </button>
+              </div>
+            </div>
 
-          {#if validationError}
-            <div class="alert-error text-sm">{validationError}</div>
-          {/if}
+            <div class="form-group">
+              <label class="label" for="confirm-pw-otp">Confirmar nova senha</label>
+              <input id="confirm-pw-otp" class="input"
+                type="password" bind:value={confirmPw}
+                placeholder="Repita a nova senha" required autocomplete="new-password"
+                disabled={saving} />
+            </div>
 
-          <button type="submit" class="btn-primary w-full justify-center py-2.5"
-            disabled={saving || !!validationError || !currentPw || !newPw || !confirmPw}>
-            {saving ? 'Salvando…' : 'Alterar senha'}
-          </button>
-        </form>
+            {#if validationError}
+              <div class="alert-error text-sm">{validationError}</div>
+            {/if}
+
+            <button type="submit" class="btn-primary w-full justify-center py-2.5"
+              disabled={saving || !!validationError || !newPw || !confirmPw}>
+              {saving ? 'Salvando…' : 'Definir nova senha'}
+            </button>
+
+            <button type="button" onclick={cancelOtp} class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-full text-center">
+              Cancelar
+            </button>
+          </form>
+        {/if}
       </div>
 
     </div><!-- /coluna direita -->

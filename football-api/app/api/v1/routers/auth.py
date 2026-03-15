@@ -22,6 +22,7 @@ from app.schemas.auth import (
     SendOtpRequest,
     SendOtpResponse,
     TokenResponse,
+    VerifyOtpMeRequest,
     VerifyOtpRequest,
     VerifyOtpResponse,
 )
@@ -130,10 +131,47 @@ async def me(current: CurrentPlayer):
     return current
 
 
+@router.post("/send-otp/me", response_model=SendOtpResponse)
+async def send_otp_me(current: CurrentPlayer):
+    """Send OTP to the authenticated user's own WhatsApp number."""
+    try:
+        await twilio_verify.send_otp(current.whatsapp)
+    except TwilioRestException as e:
+        if e.code in (60200, 60203):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Muitas tentativas. Aguarde antes de solicitar um novo código.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Falha ao enviar código. Tente novamente.",
+        )
+    return SendOtpResponse()
+
+
+@router.post("/verify-otp/me", response_model=VerifyOtpResponse)
+async def verify_otp_me(body: VerifyOtpMeRequest, current: CurrentPlayer):
+    """Verify OTP for the authenticated user and return a signed otp_token."""
+    approved = await twilio_verify.check_otp(current.whatsapp, body.otp_code)
+    if not approved:
+        raise ValidationError("OTP_INVALID")
+    return VerifyOtpResponse(otp_token=create_otp_token(current.whatsapp))
+
+
 @router.post("/change-password", status_code=204)
 async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentPlayer):
-    if not verify_password(body.current_password, current.password_hash):
-        raise UnauthorizedError("Senha atual incorreta")
+    if body.otp_token:
+        verified_whatsapp = decode_otp_token(body.otp_token)
+        if not verified_whatsapp or verified_whatsapp != current.whatsapp:
+            raise UnauthorizedError("Token de verificação inválido ou expirado")
+    elif body.current_password:
+        if not verify_password(body.current_password, current.password_hash):
+            raise UnauthorizedError("Senha atual incorreta")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Informe a senha atual ou verifique via SMS.",
+        )
 
     repo = PlayerRepository(db)
     player = await repo.get(current.id)

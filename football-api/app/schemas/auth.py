@@ -20,6 +20,10 @@ class VerifyOtpRequest(BaseModel):
     otp_code: str = Field(..., min_length=6, max_length=6)
 
 
+class VerifyOtpMeRequest(BaseModel):
+    otp_code: str = Field(..., min_length=6, max_length=6)
+
+
 class VerifyOtpResponse(BaseModel):
     otp_token: str
 
@@ -42,5 +46,6 @@ class TokenResponse(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    current_password: str | None = None
     new_password: str = Field(..., min_length=6)
+    otp_token: str | None = None
