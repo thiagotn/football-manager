@@ -1,7 +1,14 @@
+import re
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
+
+
+def _normalize_db_url(url: str) -> str:
+    """Ensure the URL uses postgresql+asyncpg:// scheme."""
+    return re.sub(r"^postgres(ql)?://", "postgresql+asyncpg://", url)
 
 
 class Base(DeclarativeBase):
@@ -11,7 +18,7 @@ class Base(DeclarativeBase):
 def get_engine():
     settings = get_settings()
     return create_async_engine(
-        settings.database_url,
+        _normalize_db_url(settings.database_url),
         pool_size=10,
         max_overflow=20,
         echo=settings.debug,

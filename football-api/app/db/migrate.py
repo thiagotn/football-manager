@@ -1,5 +1,7 @@
 import re
+import ssl
 from pathlib import Path
+from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
 import asyncpg
 import structlog
@@ -13,7 +15,21 @@ async def run_migrations(database_url: str) -> None:
     """Apply any pending SQL migrations, tracking state in schema_migrations table."""
     dsn = re.sub(r"^postgresql\+asyncpg://", "postgresql://", database_url)
 
-    conn = await asyncpg.connect(dsn)
+    # Extrai ?ssl=require da URL e passa como argumento SSL para o asyncpg
+    connect_kwargs: dict = {}
+    parsed = urlparse(dsn)
+    qs = parse_qs(parsed.query)
+    if "ssl" in qs:
+        ssl_value = qs.pop("ssl")[0]
+        if ssl_value in ("require", "true", "1"):
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            connect_kwargs["ssl"] = ctx
+        new_query = urlencode({k: v[0] for k, v in qs.items()})
+        dsn = urlunparse(parsed._replace(query=new_query))
+
+    conn = await asyncpg.connect(dsn, **connect_kwargs)
     try:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS schema_migrations (
