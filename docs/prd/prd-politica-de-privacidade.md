@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.1 |
-| **Status** | Pronto para implementação |
+| **Versão** | 1.2 |
+| **Status** | Publicado |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -24,7 +24,7 @@ Publicar uma Política de Privacidade mínima e honesta em `/privacy`, que:
 - Declara os direitos dos titulares e como exercê-los
 - Não exige revisão jurídica prévia para entrar no ar — a melhor proteção legal é ter um documento honesto publicado, não ter nenhum
 
-> **Nota:** revisão jurídica por advogado especializado em LGPD é recomendada antes do lançamento comercial (planos pagos), mas não é pré-requisito para publicar a versão Beta. Um texto transparente e preciso sobre o que a plataforma faz já atende o espírito da lei.
+> **Nota:** revisão jurídica por advogado especializado em LGPD é recomendada periodicamente. A fase Beta foi encerrada; o produto está em operação com planos pagos disponíveis.
 
 ---
 

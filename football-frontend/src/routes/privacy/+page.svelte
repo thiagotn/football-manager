@@ -15,14 +15,13 @@
     </div>
 
     <h1 class="text-2xl font-bold mb-1">Política de Privacidade</h1>
-    <p class="text-xs text-gray-400 mb-8">Última atualização: março de 2026 · Versão: 1.1</p>
+    <p class="text-xs text-gray-400 mb-8">Última atualização: março de 2026 · Versão: 1.2</p>
 
     <div class="prose prose-sm dark:prose-invert max-w-none space-y-8">
 
       <section>
         <h2 class="text-base font-semibold mb-2">1. Quem somos</h2>
         <p>O rachao.app é uma plataforma de organização de grupos e partidas de futebol amador, operada por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC} ("nós", "nosso" ou "controlador"), com canal de contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
-        <p class="mt-2">A plataforma está em <strong>fase Beta</strong>: funcionalidades podem mudar e dados podem ser resetados sem aviso prévio durante esse período.</p>
       </section>
 
       <section>
@@ -132,7 +131,6 @@
             </tbody>
           </table>
         </div>
-        <p class="mt-3 text-sm">Durante o período Beta, podemos resetar dados da plataforma inteira com aviso mínimo de 48 horas pelo canal de comunicação do produto.</p>
       </section>
 
       <section>

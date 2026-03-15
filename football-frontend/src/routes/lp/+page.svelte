@@ -11,11 +11,6 @@
   <meta property="og:image" content="https://rachao.app/banner-lp.jpg" />
 </svelte:head>
 
-<!-- BETA BANNER -->
-<div class="bg-yellow-400 text-yellow-900 text-xs font-medium text-center py-2 px-4">
-  Versão Beta — produto em desenvolvimento. Funcionalidades podem mudar e dados podem ser resetados sem aviso.
-</div>
-
 <!-- HERO -->
 <section class="relative overflow-hidden text-white" style="min-height:600px;">
   <picture>

@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Versão** | 1.1 |
-| **Status** | Pronto para implementação |
+| **Versão** | 1.2 |
+| **Status** | Publicado |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -14,13 +14,13 @@
 
 ### 1.1 Contexto
 
-O rachao.app já possui usuários ativos na fase Beta. Não há Termos de Uso publicados. Com planos pagos previstos e crescimento da base, a ausência do documento representa risco jurídico e de credibilidade.
+O rachao.app possui usuários ativos e os Termos de Uso estão publicados em `/terms`. A fase Beta foi encerrada; o produto está em operação com planos pagos disponíveis.
 
 ### 1.2 Objetivo
 
 Publicar os Termos de Uso em `/terms` e integrar o aceite ao fluxo de cadastro e, retroativamente, aos usuários já cadastrados. Não requer revisão jurídica prévia para entrar no ar — um texto honesto e preciso já atende o espírito da lei.
 
-> **Nota:** revisão jurídica por advogado especializado antes do lançamento dos planos pagos é recomendada, mas não é pré-requisito para a fase Beta.
+> **Nota:** revisão jurídica por advogado especializado é recomendada periodicamente, especialmente a cada atualização relevante dos termos.
 
 ---
 

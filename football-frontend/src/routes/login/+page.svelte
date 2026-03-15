@@ -34,9 +34,6 @@
   <div class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
     <div class="text-center mb-8">
       <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-56 block mx-auto mb-1" />
-      <div class="flex items-center justify-center gap-2 mb-1">
-        <span class="text-xs font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">Beta</span>
-      </div>
       <p class="text-sm text-gray-500 dark:text-gray-400">Gestão de grupos e partidas</p>
     </div>
 

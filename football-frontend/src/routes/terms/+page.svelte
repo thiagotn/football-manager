@@ -15,7 +15,7 @@
     </div>
 
     <h1 class="text-2xl font-bold mb-1">Termos de Uso</h1>
-    <p class="text-xs text-gray-400 mb-8">Última atualização: março de 2026 · Versão: 1.0</p>
+    <p class="text-xs text-gray-400 mb-8">Última atualização: março de 2026 · Versão: 1.1</p>
 
     <div class="prose prose-sm dark:prose-invert max-w-none space-y-8">
 
@@ -23,7 +23,6 @@
         <h2 class="text-base font-semibold mb-2">1. Aceitação</h2>
         <p>Ao criar uma conta ou usar o rachao.app, você declara ter lido e aceitar estes Termos de Uso. Se não concordar, não utilize a plataforma.</p>
         <p class="mt-2">O rachao.app é operado por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC} ("nós"), com contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
-        <p class="mt-2">A plataforma está em <strong>fase Beta</strong>: funcionalidades podem mudar, ser removidas ou ter dados resetados com aviso mínimo de 48 horas. Não há garantia de disponibilidade contínua (SLA) nesta fase.</p>
       </section>
 
       <section>
@@ -55,18 +54,7 @@
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">4. Fase Beta</h2>
-        <p class="mb-2">Durante o período Beta:</p>
-        <ul class="list-disc list-inside space-y-1">
-          <li>Funcionalidades podem ser alteradas, adicionadas ou removidas sem aviso prévio.</li>
-          <li>Dados de toda a plataforma podem ser resetados com aviso mínimo de 48 horas pelo canal de comunicação do produto.</li>
-          <li>Não garantimos disponibilidade contínua, tempo de resposta ou ausência de falhas.</li>
-        </ul>
-        <p class="mt-2">Ao aceitar estes termos, você reconhece e aceita essas condições específicas do período Beta.</p>
-      </section>
-
-      <section>
-        <h2 class="text-base font-semibold mb-2">5. Responsabilidades do usuário</h2>
+        <h2 class="text-base font-semibold mb-2">4. Responsabilidades do usuário</h2>
         <p>Você é responsável por:</p>
         <ul class="list-disc list-inside space-y-1 mt-2">
           <li>Garantir que as informações fornecidas são verdadeiras e atualizadas;</li>
@@ -76,18 +64,17 @@
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">5.1. Controle financeiro de grupos</h2>
+        <h2 class="text-base font-semibold mb-2">4.1. Controle financeiro de grupos</h2>
         <p>O rachao.app disponibiliza uma ferramenta de <strong>controle e registro financeiro</strong> para que admins de grupo acompanhem o status de pagamentos (mensalidades ou contribuições avulsas) dos membros.</p>
         <p class="mt-2">Essa funcionalidade é exclusivamente um <strong>registro informativo</strong>: a plataforma <strong>não realiza cobranças, não processa pagamentos e não intermedia transferências</strong> entre usuários.</p>
         <p class="mt-2">A responsabilidade pela cobrança, recebimento e gestão dos valores combinados entre os membros é inteiramente do <strong>admin do grupo</strong> e dos próprios participantes. O rachao.app não se responsabiliza por inadimplências, disputas financeiras ou quaisquer prejuízos decorrentes de pagamentos não realizados.</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">6. Limitação de responsabilidade</h2>
+        <h2 class="text-base font-semibold mb-2">5. Limitação de responsabilidade</h2>
         <p class="mb-2">Na extensão permitida pela lei, o rachao.app não se responsabiliza por:</p>
         <ul class="list-disc list-inside space-y-1">
           <li>Danos indiretos, incidentais ou lucros cessantes;</li>
-          <li>Perda de dados durante o período Beta;</li>
           <li>Falhas de disponibilidade ou interrupções do serviço;</li>
           <li>Conflitos entre usuários decorrentes das partidas organizadas.</li>
         </ul>
@@ -95,29 +82,29 @@
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">7. Propriedade intelectual</h2>
+        <h2 class="text-base font-semibold mb-2">6. Propriedade intelectual</h2>
         <p>A marca, logotipo, design e código-fonte do rachao.app são de propriedade exclusiva do controlador. O uso da plataforma não transfere nenhum direito de propriedade intelectual ao usuário.</p>
         <p class="mt-2">Os dados inseridos pelos usuários (nomes, resultados, estatísticas) permanecem de propriedade dos respectivos usuários. Ao usar a plataforma, você concede ao rachao.app licença não exclusiva para armazenar e exibir esses dados no contexto do serviço.</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">8. Cancelamento e encerramento</h2>
+        <h2 class="text-base font-semibold mb-2">7. Cancelamento e encerramento</h2>
         <p>Você pode solicitar a exclusão da sua conta a qualquer momento pelo canal <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>. A conta e seus dados serão removidos conforme os prazos descritos na <a href="/privacy" class="text-primary-600 hover:underline">Política de Privacidade</a>.</p>
         <p class="mt-2">Podemos suspender ou encerrar sua conta caso haja violação destes Termos, com ou sem aviso prévio dependendo da gravidade da infração.</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">9. Alterações nestes Termos</h2>
+        <h2 class="text-base font-semibold mb-2">8. Alterações nestes Termos</h2>
         <p>Quando publicarmos uma nova versão dos Termos, você será notificado na próxima vez que acessar a plataforma e precisará aceitar para continuar usando. A data no topo deste documento indica a versão vigente.</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">10. Lei aplicável e foro</h2>
+        <h2 class="text-base font-semibold mb-2">9. Lei aplicável e foro</h2>
         <p>Estes Termos são regidos pela legislação brasileira. Fica eleito o foro da comarca de <strong>{PUBLIC_LEGAL_FORUM_CITY}</strong> para dirimir quaisquer controvérsias, com renúncia a qualquer outro, por mais privilegiado que seja.</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">11. Contato</h2>
+        <h2 class="text-base font-semibold mb-2">10. Contato</h2>
         <p><strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC}</p>
         <p>E-mail: <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="text-primary-600 hover:underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a></p>
         <p>Plataforma: <a href="https://rachao.app" class="text-primary-600 hover:underline">https://rachao.app</a></p>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PUBLIC_LEGAL_CONTACT_EMAIL } from '$env/static/public';
   import { goto } from '$app/navigation';
   import { isLoggedIn, isAdmin } from '$lib/stores/auth';
   import { subscriptions as subsApi, ApiError } from '$lib/api';
@@ -127,7 +128,7 @@
 
             {#if sub.gateway_sub_id}
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-                Para cancelar, entre em contato via e-mail ou acesse o portal do Stripe.
+                Para cancelar, entre em contato pelo e-mail <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a> ou acesse o portal do Stripe.
               </p>
             {/if}
           </div>

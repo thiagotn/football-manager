@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PUBLIC_LEGAL_CONTACT_EMAIL } from '$env/static/public';
   import { themeStore } from '$lib/stores/theme';
   import { Sun, Moon } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
@@ -85,7 +86,8 @@
     </div>
 
     <div class="mt-8 text-center text-sm text-gray-300">
-      Ainda com dúvidas? Fale com o organizador do seu grupo.
+      Ainda com dúvidas? Fale com o organizador do seu grupo ou entre em contato pelo e-mail
+      <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="text-primary-400 hover:underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a>.
     </div>
   </main>
 </PageBackground>
