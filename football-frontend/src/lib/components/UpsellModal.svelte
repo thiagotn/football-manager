@@ -9,7 +9,7 @@
 
   let {
     open = $bindable(false),
-    title = 'Limite atingido — Plano Free',
+    title = 'Limite atingido — Plano Grátis',
     message = 'Você atingiu o limite do seu plano atual.',
   }: Props = $props();
 </script>

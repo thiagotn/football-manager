@@ -188,7 +188,7 @@
             </div>
             <p class="text-3xl font-bold text-gray-400">{billing.free}</p>
             <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
-              Free <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+              Grátis <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
             </p>
           </a>
         </div>

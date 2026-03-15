@@ -16,7 +16,7 @@ export interface PlanConfig {
 export const PLANS: Record<PlanKey, PlanConfig> = {
   free: {
     key: 'free',
-    name: 'Free',
+    name: 'Grátis',
     price_monthly: null,
     price_yearly: null,
     groups: 1,

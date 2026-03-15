@@ -151,43 +151,50 @@
     <div class="grid grid-cols-1 md:grid-cols-2">
 
       <!-- ── Coluna esquerda: branding + info ───────────────── -->
-      <div class="bg-primary-900/95 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none p-8 flex flex-col justify-between gap-6 md:pt-36">
+      <div class="bg-primary-900/95 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none p-5 md:p-8 flex flex-col justify-between gap-4 md:gap-6 md:pt-36">
         <div>
-          <!-- Logo mobile only -->
-          <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-44 block mx-auto mb-6 md:hidden" />
-
           {#if step === 'whatsapp' || step === 'form'}
-            <!-- Plan info -->
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-primary-300 uppercase tracking-wide">Plano selecionado</span>
-                <span class="text-sm font-bold text-primary-300">
-                  {plan.price_monthly === null ? 'Grátis' : `${formatCents(plan.price_monthly)}/mês`}
-                </span>
+            <!-- Plan info: mobile = logo pequeno ao lado; desktop = sem logo (absoluto) -->
+            <div class="flex items-start gap-4">
+              <!-- Logo mobile only -->
+              <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-20 shrink-0 md:hidden" />
+
+              <div class="flex-1 space-y-2 md:space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-primary-300 uppercase tracking-wide">Plano selecionado</span>
+                  <span class="text-sm font-bold text-primary-300">
+                    {plan.price_monthly === null ? 'Grátis' : `${formatCents(plan.price_monthly)}/mês`}
+                  </span>
+                </div>
+                <p class="text-base font-semibold text-white">{plan.name}</p>
+                <ul class="space-y-1">
+                  {#each plan.highlights as item}
+                    <li class="text-xs text-primary-200/80 flex items-start gap-2">
+                      <span class="text-primary-400 shrink-0 mt-0.5">✓</span>{item}
+                    </li>
+                  {/each}
+                </ul>
               </div>
-              <p class="text-base font-semibold text-white">{plan.name}</p>
-              <ul class="space-y-1.5">
-                {#each plan.highlights as item}
-                  <li class="text-xs text-primary-200/80 flex items-start gap-2">
-                    <span class="text-primary-400 shrink-0 mt-0.5">✓</span>{item}
-                  </li>
-                {/each}
-              </ul>
             </div>
           {:else}
             <!-- OTP step info -->
-            <div class="flex flex-col gap-3">
-              <div class="bg-green-500/20 border border-green-500/30 rounded-xl p-4">
-                <div class="flex items-center gap-3 mb-2">
-                  <MessageCircle size={20} class="text-green-400 shrink-0" />
-                  <span class="text-sm font-semibold text-white">Código enviado</span>
+            <div class="flex items-start gap-4">
+              <!-- Logo mobile only -->
+              <img src="/logo.png" alt="rachao.app" width="320" height="174" class="w-20 shrink-0 md:hidden" />
+
+              <div class="flex-1 flex flex-col gap-3">
+                <div class="bg-green-500/20 border border-green-500/30 rounded-xl p-4">
+                  <div class="flex items-center gap-3 mb-2">
+                    <MessageCircle size={20} class="text-green-400 shrink-0" />
+                    <span class="text-sm font-semibold text-white">Código enviado</span>
+                  </div>
+                  <p class="text-xs text-primary-200/80">
+                    Enviamos um código SMS para<br />
+                    <span class="font-semibold text-white">{maskedWhatsapp}</span>
+                  </p>
                 </div>
-                <p class="text-xs text-primary-200/80">
-                  Enviamos um código SMS para<br />
-                  <span class="font-semibold text-white">{maskedWhatsapp}</span>
-                </p>
+                <p class="text-xs text-primary-300/70">⏱ O código é válido por 10 minutos</p>
               </div>
-              <p class="text-xs text-primary-300/70">⏱ O código é válido por 10 minutos</p>
             </div>
           {/if}
         </div>
@@ -212,7 +219,7 @@
       </div>
 
       <!-- ── Coluna direita: formulário ────────────────────── -->
-      <div class="p-8 flex flex-col justify-center md:pt-36">
+      <div class="p-5 md:p-8 flex flex-col justify-center md:pt-36">
         {#if error}
           <div class="alert-error mb-4">{error}</div>
         {/if}

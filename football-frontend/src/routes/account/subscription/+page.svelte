@@ -35,7 +35,7 @@
       active:   { label: 'Ativa',        cls: 'badge-green' },
       past_due: { label: 'Pagamento pendente', cls: 'badge-yellow' },
       canceled: { label: 'Cancelada',    cls: 'badge-gray'  },
-      free:     { label: 'Free',         cls: 'badge-gray'  },
+      free:     { label: 'Grátis',        cls: 'badge-gray'  },
     }[status] ?? { label: status, cls: 'badge-gray' };
   }
 

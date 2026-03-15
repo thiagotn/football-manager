@@ -61,7 +61,7 @@
 
   function openCreateOrUpsell() {
     if (atGroupLimit) {
-      upsellMessage = `Você já possui ${sub!.groups_used} grupo${sub!.groups_used !== 1 ? 's' : ''} ativo${sub!.groups_used !== 1 ? 's' : ''}, o máximo do plano Free. Planos com mais grupos estarão disponíveis em breve.`;
+      upsellMessage = `Você já possui ${sub!.groups_used} grupo${sub!.groups_used !== 1 ? 's' : ''} ativo${sub!.groups_used !== 1 ? 's' : ''}, o máximo do plano Grátis. Planos com mais grupos estarão disponíveis em breve.`;
       showUpsell = true;
     } else {
       showCreate = true;
@@ -80,7 +80,7 @@
     } catch (e) {
       if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
         showCreate = false;
-        upsellMessage = 'Você atingiu o limite de grupos do plano Free.';
+        upsellMessage = 'Você atingiu o limite de grupos do plano Grátis.';
         showUpsell = true;
       } else {
         toastError(e instanceof ApiError ? e.message : 'Erro ao criar grupo');

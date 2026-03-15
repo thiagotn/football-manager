@@ -104,7 +104,7 @@
   }
 
   function fmtPlan(plan: string, cycle: string): string {
-    const labels: Record<string, string> = { basic: 'Basic', pro: 'Pro', free: 'Free' };
+    const labels: Record<string, string> = { basic: 'Básico', pro: 'Pro', free: 'Grátis' };
     const cycleLabel = cycle === 'yearly' ? 'Anual' : 'Mensal';
     return `${labels[plan] ?? plan} ${cycleLabel}`;
   }
@@ -225,7 +225,7 @@
       <div class="card p-5 text-center">
         <div class="flex items-center justify-center mb-1"><Users size={14} class="text-gray-400 opacity-70" /></div>
         <p class="text-3xl font-bold text-gray-400">{summary.free}</p>
-        <p class="text-xs text-gray-400 mt-1">Free</p>
+        <p class="text-xs text-gray-400 mt-1">Grátis</p>
       </div>
       <div class="card p-5 text-center col-span-2 sm:col-span-1">
         <div class="flex items-center justify-center mb-1"><CreditCard size={14} class="text-primary-400 opacity-70" /></div>
@@ -411,7 +411,7 @@
 
 <ConfirmDialog
   bind:open={cancelDialogOpen}
-  message="Cancelar a assinatura de {cancelTarget?.player_name}? O plano voltará para Free imediatamente e a assinatura será cancelada no Stripe."
+  message="Cancelar a assinatura de {cancelTarget?.player_name}? O plano voltará para Grátis imediatamente e a assinatura será cancelada no Stripe."
   confirmLabel={canceling ? 'Cancelando…' : 'Cancelar assinatura'}
   danger={true}
   onConfirm={confirmCancel}

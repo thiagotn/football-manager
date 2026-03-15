@@ -231,7 +231,7 @@
       toastSuccess('Membro adicionado!');
     } catch (e) {
       if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
-        toastError('Limite de membros do plano atingido (máx. 30 membros no plano Free).');
+        toastError('Limite de membros do plano atingido (máx. 30 membros no plano Grátis).');
       } else {
         toastError(e instanceof ApiError ? e.message : 'Erro');
       }
