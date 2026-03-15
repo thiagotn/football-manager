@@ -39,12 +39,15 @@ class FinanceRepository:
 
     async def _populate_members(self, period: FinancePeriod) -> None:
         from app.models.group import GroupMember
-        from app.models.player import Player
+        from app.models.player import Player, PlayerRole
 
         result = await self.session.execute(
             select(GroupMember, Player)
             .join(Player, GroupMember.player_id == Player.id)
-            .where(GroupMember.group_id == period.group_id)
+            .where(
+                GroupMember.group_id == period.group_id,
+                Player.role != PlayerRole.ADMIN,
+            )
         )
         for member, player in result.all():
             payment = FinancePayment(
