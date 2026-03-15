@@ -21,7 +21,7 @@ API (FastAPI)              porta 8000
 PostgreSQL                 porta 5432
 ```
 
-### Produção (VPS + Traefik)
+### Produção (VPS + Traefik + Supabase)
 
 ```
 Navegador
@@ -32,7 +32,7 @@ Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
     └── api.rachao.app  →  API (FastAPI)
                             │
                             ▼
-                        PostgreSQL  (sem porta pública)
+                        Supabase PostgreSQL  (sa-east-1, São Paulo)
 ```
 
 ### Componentes
@@ -41,7 +41,8 @@ Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
 |---|---|---|
 | **Frontend** | SvelteKit 5 + Tailwind CSS | SPA com roteamento client-side. Consome a API via fetch. |
 | **API** | FastAPI + SQLAlchemy (async) | REST API com autenticação JWT. Documentação automática em `/docs`. |
-| **Banco** | PostgreSQL 16 | Armazena jogadores, grupos, partidas, presenças e convites. |
+| **Banco (local)** | PostgreSQL 16 (Docker) | Instância local para desenvolvimento. |
+| **Banco (prod)** | Supabase PostgreSQL | Banco gerenciado na região sa-east-1 (São Paulo). |
 | **Traefik** | Traefik v3 | Proxy reverso + TLS automático (produção). |
 | **Adminer** | Adminer 4 | Interface web para inspecionar o banco (opcional, via Docker profile). |
 | **E2E** | Playwright + pytest (Python) | Testes end-to-end dos cenários principais. Roda em CI a cada push. |
@@ -203,13 +204,11 @@ football-manager/
 
 | Variável | Descrição |
 |---|---|
-| `POSTGRES_DB` | Nome do banco |
-| `POSTGRES_USER` | Usuário do banco |
-| `POSTGRES_PASSWORD` | Senha do banco |
+| `DATABASE_URL` | Connection string do Supabase (`postgresql+asyncpg://...`) — injetado via GitHub Actions secret |
 | `SECRET_KEY` | Gerado automaticamente pelo `setup-vps.sh` |
 | `ACME_EMAIL` | E-mail para notificações do Let's Encrypt |
 
-> O arquivo `.env.prod` nunca é commitado. Ele é criado pelo script de setup diretamente no VPS.
+> O arquivo `.env.prod` nunca é commitado. Ele é criado pelo script de setup diretamente no VPS e atualizado pelo workflow de deploy.
 
 ---
 
@@ -250,14 +249,13 @@ O script realiza automaticamente:
 nano /opt/football-manager/.env.prod
 ```
 
-Preencha os dois campos obrigatórios:
+Preencha o campo obrigatório:
 
 ```env
-POSTGRES_PASSWORD=escolha_uma_senha_forte
 ACME_EMAIL=seu@email.com        # para notificações de certificado SSL
 ```
 
-> `SECRET_KEY` já foi gerada pelo setup. Os demais campos podem ser mantidos.
+> `SECRET_KEY` já foi gerada pelo setup. `DATABASE_URL` é injetado automaticamente pelo workflow via GitHub Actions secret.
 
 ---
 

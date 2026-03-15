@@ -136,7 +136,7 @@ make test         # Roda os testes
 
 ## Migrations
 
-As migrations ficam em `migrations/` e são aplicadas automaticamente pelo PostgreSQL na primeira vez que o container sobe (via `docker-entrypoint-initdb.d`).
+As migrations ficam em `migrations/` e são aplicadas automaticamente pela API no startup (via `app/db/migrate.py`), tanto local quanto em produção. O estado é rastreado na tabela `schema_migrations`.
 
 | Arquivo | Descrição |
 |---|---|
@@ -197,4 +197,4 @@ Consulte o `README.md` da raiz do repositório para o guia completo de deploy.
 | Traefik | Não | Sim |
 | API target | `dev` (hot-reload) | `production` (multi-worker) |
 | Imagens | Build local | Pull do GHCR |
-| Banco exposto | Sim (porta 5432) | Não (somente interno) |
+| Banco | PostgreSQL 16 via Docker (porta 5432 exposta) | Supabase — sa-east-1, São Paulo (sem container local) |

@@ -2,7 +2,7 @@ name: football-manager
 
 services:
 
-  # ── Banco de Dados ────────────────────────────────────────────
+  # ── Banco de Dados (desenvolvimento local) ────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: football-postgres
