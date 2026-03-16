@@ -163,7 +163,7 @@
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-semibold text-primary-300 uppercase tracking-wide">Plano selecionado</span>
                   <span class="text-sm font-bold text-primary-300">
-                    {plan.price_monthly === null ? 'Grátis' : `${formatCents(plan.price_monthly)}/mês`}
+                    {plan.price_monthly === null ? 'R$ 0/mês' : `${formatCents(plan.price_monthly)}/mês`}
                   </span>
                 </div>
                 <p class="text-base font-semibold text-white">{plan.name}</p>

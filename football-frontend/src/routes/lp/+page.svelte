@@ -434,7 +434,8 @@
               {#if !plan.available}
                 <span class="text-sm text-gray-400 italic">Preço a definir</span>
               {:else if plan.price_monthly === null}
-                <span class="text-3xl font-extrabold text-primary-600">Grátis</span>
+                <span class="text-3xl font-extrabold text-primary-600">R$ 0</span>
+                <span class="text-sm text-gray-400">/mês</span>
               {:else}
                 <span class="text-3xl font-extrabold text-gray-900">{formatCents(plan.price_monthly)}</span>
                 <span class="text-sm text-gray-400">/mês</span>

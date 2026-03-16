@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | Aguardando aprovação |
+| **Status** | ✅ Concluído |
 | **Data** | Março de 2026 |
 
 ---
@@ -13,7 +13,7 @@
 
 A `/lp` é a principal página de aquisição do produto — é para onde usuários não autenticados são redirecionados ao acessar `/`. Atualmente a página não está indexada de forma otimizada no Google, o que limita o crescimento orgânico.
 
-### 1.1 O que já está correto
+### 1.1 O que já estava correto (pré-v1)
 
 | Item | Status |
 |---|---|
@@ -26,17 +26,17 @@ A `/lp` é a principal página de aquisição do produto — é para onde usuár
 | `fetchpriority="high"` na imagem acima da dobra | ✅ `/lp` |
 | Hierarquia de headings `h2 → h3` coerente | ✅ `/lp` |
 
-### 1.2 O que está faltando
+### 1.2 Itens implementados na v1
 
-| Item | Impacto | Complexidade |
+| Item | Impacto | Status |
 |---|---|---|
-| `<h1>` ausente na página | 🔴 Alto | Baixa |
-| `<link rel="canonical">` ausente | 🔴 Alto | Baixa |
-| Meta description genérica (sem palavras-chave) | 🟠 Médio | Baixa |
-| JSON-LD Structured Data ausente | 🟠 Médio | Média |
-| `sitemap.xml` ausente | 🟠 Médio | Baixa |
-| `robots.txt` ausente | 🟡 Baixo | Baixa |
-| Imagem OG com proporção fora do padrão (1920×600) | 🟡 Baixo | Média |
+| `<h1>` ausente na página | 🔴 Alto | ✅ Implementado |
+| `<link rel="canonical">` ausente | 🔴 Alto | ✅ Implementado (Opção A — aponta para `/`) |
+| Meta description genérica (sem palavras-chave) | 🟠 Médio | ✅ Implementado |
+| JSON-LD Structured Data ausente | 🟠 Médio | ✅ Implementado (`WebApplication` + `Organization`) |
+| `sitemap.xml` ausente | 🟠 Médio | ✅ Implementado e submetido ao Google Search Console |
+| `robots.txt` ausente | 🟡 Baixo | ✅ Implementado |
+| Imagem OG com proporção fora do padrão (1920×600) | 🟡 Baixo | 🔜 Pendente (fora do escopo v1) |
 
 ---
 
@@ -204,7 +204,7 @@ Sitemap: https://rachao.app/sitemap.xml
 | Imagem OG 1200×630 (proporção padrão) | Requer geração de novo asset de design |
 | FAQ section com schema `FAQPage` | Requer nova seção de conteúdo na LP |
 | Internacionalização (`hreflang`) | App é pt-BR only por ora |
-| Google Search Console / Analytics | Infra/configuração fora do escopo de código |
+| Google Analytics | Infra/configuração fora do escopo de código |
 
 ---
 
@@ -237,4 +237,13 @@ Nenhuma alteração de backend necessária. Nenhuma migração de banco.
 
 - Nenhuma dependência de backend ✅
 - Nenhuma nova biblioteca necessária ✅
-- Conteúdo da meta description a ser revisado/aprovado pelo responsável pelo produto ⚠️
+- Conteúdo da meta description aprovado ✅
+
+---
+
+## 8. Configuração Google Search Console
+
+| Ação | Status |
+|---|---|
+| Verificação de propriedade (arquivo HTML `google-site-verification-*.html`) | ✅ Concluído |
+| Submissão do `sitemap.xml` | ✅ Concluído |
