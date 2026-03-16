@@ -5,7 +5,7 @@
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck, ChevronDown } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   // Plan
@@ -135,6 +135,11 @@
   // Password
   type PwMode = 'normal' | 'otp-pending' | 'otp-verified';
   let pwMode = $state<PwMode>('normal');
+  let pwOpen = $state(false);
+
+  $effect(() => {
+    if ($currentPlayer?.must_change_password) pwOpen = true;
+  });
   let currentPw = $state('');
   let newPw = $state('');
   let confirmPw = $state('');
@@ -411,10 +416,19 @@
       {/if}
 
       <!-- Troca de senha -->
-      <div class="card card-body">
-        <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-          <KeyRound size={16} class="text-primary-600" /> Alterar Senha
-        </h2>
+      <div class="card">
+        <button
+          type="button"
+          class="w-full card-body flex items-center justify-between gap-2 text-left"
+          onclick={() => { if (pwOpen) { pwMode = 'normal'; otpCode = ''; otpToken = ''; otpError = ''; if (otpCountdownTimer) clearInterval(otpCountdownTimer); } pwOpen = !pwOpen; }}>
+          <span class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+            <KeyRound size={16} class="text-primary-600" /> Alterar Senha
+          </span>
+          <ChevronDown size={16} class="text-gray-400 shrink-0 transition-transform duration-200 {pwOpen ? 'rotate-180' : ''}" />
+        </button>
+
+        {#if pwOpen}
+        <div class="px-4 pb-4 sm:px-6 sm:pb-6 space-y-0 border-t border-gray-100 dark:border-gray-700 pt-4">
 
         <!-- Modo normal: senha atual conhecida -->
         {#if pwMode === 'normal'}
@@ -550,6 +564,9 @@
               Cancelar
             </button>
           </form>
+        {/if}
+
+        </div><!-- /pwOpen content -->
         {/if}
       </div>
 
