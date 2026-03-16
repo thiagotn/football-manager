@@ -120,7 +120,7 @@
   </div>
 
   <!-- Stats row -->
-  <div class="grid gap-4 mb-8 {$isAdmin ? 'grid-cols-4' : 'grid-cols-3'}">
+  <div class="grid gap-2 sm:gap-4 mb-8 {$isAdmin ? 'grid-cols-4' : 'grid-cols-3'}">
     <svelte:element this={$isAdmin ? 'div' : 'a'} href={$isAdmin ? undefined : '/matches'}
       class="card p-4 flex flex-col items-center text-center gap-1.5 {$isAdmin ? '' : 'hover:shadow-md transition-shadow cursor-pointer'}"
       title="{$isAdmin ? 'Total de rachões cadastrados na plataforma' : 'Próximos rachões agendados'}">
@@ -279,7 +279,7 @@
         <UserPlus size={16} class="text-primary-400" /> Novos Cadastros
       </h2>
 
-      <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div class="card p-4 text-center">
           <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">{signupStats.total}</p>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total</p>
