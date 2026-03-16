@@ -228,20 +228,20 @@
         {#if step === 'whatsapp'}
           <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Crie sua conta</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Primeiro, vamos verificar seu número</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Digite seu número de celular</p>
           </div>
 
           <form onsubmit={(e) => { e.preventDefault(); handleSendOtp(); }} class="space-y-5">
             <div class="form-group">
-              <label class="label" for="whatsapp">WhatsApp *</label>
+              <label class="label" for="whatsapp">Celular *</label>
               <input id="whatsapp" class="input" type="tel" bind:value={whatsapp}
                 placeholder="11999990000" required autocomplete="tel" />
-              <p class="text-xs text-gray-400 mt-1">Somente números, com DDD</p>
+              <p class="text-xs text-gray-400 mt-1">Somente números, com DDD. Você receberá um código por SMS ou WhatsApp.</p>
             </div>
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={loading || !whatsapp}>
               <MessageCircle size={16} />
-              {loading ? 'Enviando código…' : 'Enviar código de verificação'}
+              {loading ? 'Enviando código…' : 'Enviar código'}
             </button>
           </form>
 

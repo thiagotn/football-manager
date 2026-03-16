@@ -171,15 +171,16 @@
         <div>
           <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Esqueci minha senha</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            Informe seu número de WhatsApp cadastrado para receber o código de verificação.
+            Digite seu número de celular cadastrado.
           </p>
         </div>
 
         <div class="form-group">
-          <label class="label" for="forgot-whatsapp">WhatsApp</label>
+          <label class="label" for="forgot-whatsapp">Celular</label>
           <input id="forgot-whatsapp" class="input" type="tel"
             bind:value={forgotWhatsapp} placeholder="11999990000"
             disabled={forgotLoading} />
+          <p class="text-xs text-gray-400 mt-1">Somente números, com DDD. Você receberá um código por SMS ou WhatsApp.</p>
         </div>
 
         {#if forgotError}<div class="alert-error text-sm">{forgotError}</div>{/if}
@@ -187,7 +188,7 @@
         <button onclick={sendForgotOtp}
           disabled={forgotLoading || !forgotWhatsapp}
           class="btn-primary w-full justify-center py-2.5">
-          {forgotLoading ? 'Enviando…' : 'Enviar código por SMS'}
+          {forgotLoading ? 'Enviando…' : 'Enviar código'}
         </button>
 
         <button type="button" onclick={cancelForgot}
