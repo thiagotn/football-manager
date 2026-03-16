@@ -253,7 +253,7 @@
   {/if}
 
   <!-- Filtros -->
-  <div class="flex items-center gap-2 overflow-x-auto pb-1">
+  <div class="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
     <span class="text-xs text-gray-400 shrink-0">Status:</span>
     {#each [['', 'Todos'], ['active', 'Ativos'], ['past_due', 'Pag. Pendente'], ['canceled', 'Cancelados']] as [val, label]}
       <button

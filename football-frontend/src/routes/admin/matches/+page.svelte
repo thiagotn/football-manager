@@ -116,7 +116,7 @@
       <p class="text-gray-400 text-sm">Nenhum rachão encontrado.</p>
     </div>
   {:else}
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
@@ -134,7 +134,7 @@
               onclick={() => goto(`/match/${m.hash}`)}>
               <td class="px-4 py-2.5">
                 <p class="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[160px]">{m.group_name}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">#{m.number} · {m.location.split('—')[0].trim()}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">#{m.number} · {m.location.split('—')[0].trim()}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{fmtDate(m.match_date)}</p>
               </td>
               <td class="px-4 py-2.5 text-gray-700 dark:text-gray-300 hidden sm:table-cell whitespace-nowrap">

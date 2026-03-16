@@ -75,7 +75,7 @@
       <p class="text-gray-400 text-sm">Nenhum grupo encontrado.</p>
     </div>
   {:else}
-    <div class="card overflow-hidden">
+    <div class="card overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
