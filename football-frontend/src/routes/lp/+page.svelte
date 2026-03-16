@@ -4,11 +4,35 @@
 
 <svelte:head>
   <title>rachao.app — Organize suas partidas de futebol com facilidade</title>
-  <meta name="description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
-  <meta property="og:url" content="https://rachao.app/lp" />
+  <meta name="description" content="rachao.app — organize sua pelada ou rachão de futebol society sem precisar instalar app. Confirme presenças, sorteie times e acompanhe estatísticas pelo celular." />
+  <link rel="canonical" href="https://rachao.app/" />
+  <meta property="og:url" content="https://rachao.app/" />
   <meta property="og:title" content="rachao.app — Organize suas partidas de futebol com facilidade" />
-  <meta property="og:description" content="Organize grupos de futebol, convide jogadores e controle presenças em um clique." />
+  <meta property="og:description" content="rachao.app — organize sua pelada ou rachão de futebol society sem precisar instalar app. Confirme presenças, sorteie times e acompanhe estatísticas pelo celular." />
   <meta property="og:image" content="https://rachao.app/banner-lp.jpg" />
+  <script type="application/ld+json">{JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "rachao.app",
+    "url": "https://rachao.app",
+    "description": "Organize sua pelada ou rachão de futebol. Confirme presenças, sorteie times e acompanhe estatísticas pelo celular.",
+    "applicationCategory": "SportsApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "pt-BR",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL",
+      "description": "Plano gratuito disponível"
+    }
+  })}</script>
+  <script type="application/ld+json">{JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "rachao.app",
+    "url": "https://rachao.app",
+    "logo": "https://rachao.app/logo.png"
+  })}</script>
 </svelte:head>
 
 <!-- HERO -->
@@ -35,9 +59,9 @@
       class="w-72 sm:w-96 block mx-auto mb-6"
       fetchpriority="high"
     />
-    <p class="text-xl text-primary-100 max-w-xl mx-auto mb-3">
+    <h1 class="text-xl text-primary-100 max-w-xl mx-auto mb-3">
       Organize suas partidas de futebol sem complicação.
-    </p>
+    </h1>
     <p class="text-primary-200 max-w-lg mx-auto mb-10 text-sm leading-relaxed">
       Convide jogadores, confirme presenças e compartilhe os detalhes da partida —
       tudo direto pelo celular, sem precisar instalar nada.

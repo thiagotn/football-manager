@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /groups/
+Disallow: /match/
+Disallow: /players/
+Disallow: /account/
+Disallow: /invite/
+Disallow: /register
+Disallow: /login
+
+Sitemap: https://rachao.app/sitemap.xml
