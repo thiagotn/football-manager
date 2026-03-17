@@ -138,12 +138,15 @@
     const player = $currentPlayer;
     const m = match;
     if (!player || !m) { isGroupAdmin = false; return; }
-    if (player.role === 'admin') { isGroupAdmin = true; return; }
     (async () => {
       try {
         const group = await groupsApi.get(m.group_id);
-        const member = group.members.find(mb => mb.player.id === player.id);
-        isGroupAdmin = member?.role === 'admin';
+        if (player.role === 'admin') {
+          isGroupAdmin = true;
+        } else {
+          const member = group.members.find(mb => mb.player.id === player.id);
+          isGroupAdmin = member?.role === 'admin';
+        }
         if (isGroupAdmin) groupMembers = group.members;
       } catch { isGroupAdmin = false; }
     })();
