@@ -479,6 +479,8 @@
             </span>
             <span class="text-white/30">·</span>
             <span>encerra em {group.vote_duration_hours}h</span>
+            <span class="text-white/30">·</span>
+            <span>após o final de cada rachão</span>
           </div>
         {/if}
       </div>
