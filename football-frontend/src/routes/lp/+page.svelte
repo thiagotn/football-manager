@@ -430,10 +430,11 @@
 
           <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">{plan.name}</h3>
-            <div class="mt-1">
-              {#if !plan.available}
-                <span class="text-sm text-gray-400 italic">Preço a definir</span>
-              {:else if plan.price_monthly === null}
+          </div>
+
+          <div class="{plan.key !== 'free' ? 'blur-sm select-none pointer-events-none' : ''} flex-1 flex flex-col">
+            <div class="mb-4">
+              {#if plan.price_monthly === null}
                 <span class="text-3xl font-extrabold text-primary-600">R$ 0</span>
                 <span class="text-sm text-gray-400">/mês</span>
               {:else}
@@ -441,16 +442,16 @@
                 <span class="text-sm text-gray-400">/mês</span>
               {/if}
             </div>
-          </div>
 
-          <ul class="space-y-2 mb-6 flex-1">
-            {#each plan.highlights as item}
-              <li class="flex items-start gap-2 text-sm text-gray-600">
-                <span class="text-primary-500 mt-0.5 shrink-0">✓</span>
-                {item}
-              </li>
-            {/each}
-          </ul>
+            <ul class="space-y-2 mb-6 flex-1">
+              {#each plan.highlights as item}
+                <li class="flex items-start gap-2 text-sm text-gray-600">
+                  <span class="text-primary-500 mt-0.5 shrink-0">✓</span>
+                  {item}
+                </li>
+              {/each}
+            </ul>
+          </div>
 
           {#if plan.key === 'free'}
             <a href="/register"
