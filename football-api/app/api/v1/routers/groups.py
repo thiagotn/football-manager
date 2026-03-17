@@ -213,6 +213,9 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
     if not player:
         raise NotFoundError("Jogador não encontrado")
 
+    if player.role == PlayerRole.ADMIN:
+        raise ForbiddenError("Super admin não pode ser adicionado como membro de grupo")
+
     existing = await g_repo.get_member(group_id, body.player_id)
     if existing:
         raise ConflictError("Jogador já é membro deste grupo")

@@ -1072,7 +1072,7 @@
 
 <!-- Add member modal -->
 <Modal bind:open={showAddMember} title="Adicionar Membro">
-  {@const available = allPlayers.filter(p => !group?.members.some(m => m.player.id === p.id))}
+  {@const available = allPlayers.filter(p => p.role !== 'admin' && !group?.members.some(m => m.player.id === p.id))}
   <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
     Selecione um jogador cadastrado no sistema que ainda não faça parte deste grupo.
   </p>
