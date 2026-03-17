@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { authStore, isAdmin } from '$lib/stores/auth';
+  import { authStore, isAdmin, currentPlayer } from '$lib/stores/auth';
   import { admin as adminApi, players as playersApi, ApiError } from '$lib/api';
   import type { AdminPlayerItem } from '$lib/api';
   import { toastSuccess, toastError } from '$lib/stores/toast';
@@ -236,7 +236,12 @@
           {#each items as p}
             <tr>
               <td>
-                <p class="font-medium">{p.nickname || p.name}</p>
+                <p class="font-medium flex items-center gap-1.5">
+                  {p.nickname || p.name}
+                  {#if p.role === 'admin'}
+                    <span class="inline-flex items-center px-1.5 py-px rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>
+                  {/if}
+                </p>
                 {#if p.nickname}<p class="text-xs text-gray-400">{p.name}</p>{/if}
               </td>
               <td class="font-mono text-xs text-gray-600 hidden sm:table-cell">{p.whatsapp}</td>
@@ -346,7 +351,7 @@
         <button onclick={openReset} class="btn-sm btn-ghost flex items-center gap-1 border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400">
           <KeyRound size={14} /> Resetar Senha
         </button>
-        {#if selected.active}
+        {#if selected.active && selected.id !== $currentPlayer?.id && selected.role !== 'admin'}
           <button onclick={askDeactivate} class="btn-sm btn-ghost flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400">
             <Trash2 size={14} /> Desativar
           </button>

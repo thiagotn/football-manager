@@ -121,18 +121,18 @@
         <UserPlus size={14} class="text-primary-400" /> Novos Cadastros
       </h2>
       <div class="grid grid-cols-3 gap-3">
-        <div class="card p-4 text-center">
+        <a href="/players" class="card p-4 text-center group hover:shadow-md transition-shadow">
           <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">{stats.signups_total}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Total</p>
-        </div>
-        <div class="card p-4 text-center">
+          <p class="text-xs text-gray-400 mt-0.5 flex items-center justify-center gap-0.5">Total <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" /></p>
+        </a>
+        <a href="/players" class="card p-4 text-center group hover:shadow-md transition-shadow">
           <p class="text-2xl font-bold text-green-600 dark:text-green-400">{stats.signups_last_7_days}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Últimos 7 dias</p>
-        </div>
-        <div class="card p-4 text-center">
+          <p class="text-xs text-gray-400 mt-0.5 flex items-center justify-center gap-0.5">Últimos 7 dias <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" /></p>
+        </a>
+        <a href="/players" class="card p-4 text-center group hover:shadow-md transition-shadow">
           <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.signups_last_30_days}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Últimos 30 dias</p>
-        </div>
+          <p class="text-xs text-gray-400 mt-0.5 flex items-center justify-center gap-0.5">Últimos 30 dias <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" /></p>
+        </a>
       </div>
     </div>
 
@@ -172,15 +172,15 @@
             </p>
           </a>
 
-          <div class="card p-5 text-center col-span-2 sm:col-span-1">
+          <a href="/admin/subscriptions" class="card p-5 text-center group hover:shadow-md transition-shadow col-span-2 sm:col-span-1">
             <div class="flex items-center justify-center mb-1">
               <CreditCard size={14} class="text-primary-400 opacity-70" />
             </div>
             <p class="text-3xl font-bold text-primary-400">
               {(billing.mrr_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })}
             </p>
-            <p class="text-xs text-gray-400 mt-1">MRR estimado</p>
-          </div>
+            <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">MRR estimado <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" /></p>
+          </a>
 
           <a href="/admin/subscriptions" class="card p-5 text-center group hover:shadow-md transition-shadow hidden sm:block">
             <div class="flex items-center justify-center mb-1">

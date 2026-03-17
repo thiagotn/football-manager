@@ -43,14 +43,14 @@ async def get_admin_stats(db: DB, _: AdminPlayer):
             SELECT
                 (SELECT COUNT(*)::int FROM matches)  AS total_matches,
                 (SELECT COUNT(*)::int FROM groups)   AS total_groups,
-                (SELECT COUNT(*)::int FROM players)  AS total_players,
+                (SELECT COUNT(*)::int FROM players   WHERE role != 'admin') AS total_players,
                 (SELECT COALESCE(
                     SUM(GREATEST(0, EXTRACT(EPOCH FROM (end_time - start_time)) / 60)), 0
                 )::int FROM matches WHERE status = 'closed' AND end_time IS NOT NULL
                 ) AS platform_minutes_played,
-                (SELECT COUNT(*)::int FROM players)  AS signups_total,
-                (SELECT COUNT(*)::int FROM players WHERE created_at >= :since_7)  AS signups_last_7_days,
-                (SELECT COUNT(*)::int FROM players WHERE created_at >= :since_30) AS signups_last_30_days,
+                (SELECT COUNT(*)::int FROM players   WHERE role != 'admin') AS signups_total,
+                (SELECT COUNT(*)::int FROM players   WHERE role != 'admin' AND created_at >= :since_7)  AS signups_last_7_days,
+                (SELECT COUNT(*)::int FROM players   WHERE role != 'admin' AND created_at >= :since_30) AS signups_last_30_days,
                 (SELECT COUNT(*)::int FROM app_reviews)                          AS total_reviews
         """),
         {
@@ -141,7 +141,7 @@ async def list_admin_groups(
 @router.get("/subscriptions/summary", response_model=AdminSubscriptionSummary)
 async def get_subscription_summary(db: DB, _: AdminPlayer):
     """Resumo de assinaturas para os cards do painel. Exclusivo para super admins."""
-    total_result = await db.execute(text("SELECT COUNT(*)::int FROM players"))
+    total_result = await db.execute(text("SELECT COUNT(*)::int FROM players WHERE role != 'admin'"))
     total_players = total_result.scalar_one()
 
     rows = await db.execute(text("""
@@ -152,6 +152,7 @@ async def get_subscription_summary(db: DB, _: AdminPlayer):
             COUNT(*)::int AS cnt
         FROM players p
         LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
+        WHERE p.role != 'admin'
         GROUP BY ps.status, ps.plan, ps.billing_cycle
     """))
 
@@ -335,7 +336,7 @@ async def list_admin_players(
     page_size: int = Query(20, ge=1, le=100),
 ):
     """Lista paginada de todos os players, ordenada por cadastro mais recente. Exclusivo para super admins."""
-    conditions: list[str] = []
+    conditions: list[str] = ["p.role != 'admin'"]
     params: dict = {"limit": page_size, "offset": (page - 1) * page_size}
 
     if search:
@@ -344,7 +345,7 @@ async def list_admin_players(
         )
         params["search"] = f"%{search}%"
 
-    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    where = "WHERE " + " AND ".join(conditions)
 
     count_result = await db.execute(
         text(f"SELECT COUNT(*)::int FROM players p {where}"),
