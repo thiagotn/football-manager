@@ -271,7 +271,7 @@
     <!-- Pagination -->
     {#if totalPages > 1}
       <div class="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm text-gray-400">
-        <span>Página {page} de {totalPages} — {total} registros</span>
+        <span class="text-white/70">Página {page} de {totalPages} — {total} registros</span>
         <div class="flex gap-2">
           <button
             onclick={() => goPage(page - 1)}

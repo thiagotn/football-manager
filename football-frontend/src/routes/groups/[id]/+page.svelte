@@ -179,6 +179,8 @@
   );
   let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; is_goalkeeper: boolean } | null>(null);
   let skillSaving = $state(false);
+  let selectedMember = $state<GroupMember | null>(null);
+  let showMemberDetail = $state(false);
 
   const today = new Date().toISOString().slice(0, 10);
   function matchSortKey(m: { match_date: string; start_time: string }) {
@@ -728,20 +730,13 @@
                 </div>
               {/if}
             </div>
-            <!-- Actions -->
-            {#if isGroupAdmin() && m.player.id !== $currentPlayer?.id}
-              <div class="flex items-center gap-1 shrink-0">
-                <button
-                  onclick={() => roleEditMember = { id: m.player.id, name: m.player.name, role: m.role, skill_stars: m.skill_stars ?? 2, is_goalkeeper: m.is_goalkeeper ?? false }}
-                  class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
-                  <Pencil size={11} /> Editar
-                </button>
-                <button
-                  onclick={() => removeMember(m.player.id, m.player.name)}
-                  class="text-xs px-2 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 flex items-center gap-1 shrink-0">
-                  <Trash2 size={11} /> Remover
-                </button>
-              </div>
+            <!-- Details button -->
+            {#if isGroupAdmin()}
+              <button
+                onclick={() => { selectedMember = m; showMemberDetail = true; }}
+                class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
+                <ChevronRight size={12} /> Detalhes
+              </button>
             {/if}
           </div>
         {/each}
@@ -1103,6 +1098,75 @@
         <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Adicionando…' : 'Adicionar'}</button>
       </div>
     </form>
+  {/if}
+</Modal>
+
+<!-- Member detail modal -->
+<Modal bind:open={showMemberDetail} title="Detalhes do Jogador">
+  {#if selectedMember}
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p class="text-xs text-gray-400 mb-0.5">Nome</p>
+          <p class="font-medium">{selectedMember.player.name}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 mb-0.5">Apelido</p>
+          <p class="font-medium">{selectedMember.player.nickname || '—'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 mb-0.5">Função no grupo</p>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold {selectedMember.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}">
+            {selectedMember.role === 'admin' ? 'Presidente' : 'Membro'}
+          </span>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 mb-0.5">Posição</p>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold {selectedMember.is_goalkeeper ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}">
+            {selectedMember.is_goalkeeper ? 'Goleiro' : 'Linha'}
+          </span>
+        </div>
+        {#if selectedMember.skill_stars != null}
+          <div class="col-span-2">
+            <p class="text-xs text-gray-400 mb-1">Habilidade</p>
+            <StarRating rating={selectedMember.skill_stars} readonly size={18} />
+          </div>
+        {/if}
+      </div>
+
+      {#if selectedMember.player.id !== $currentPlayer?.id}
+        <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
+          <button
+            onclick={() => {
+              roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, is_goalkeeper: selectedMember!.is_goalkeeper ?? false };
+              showMemberDetail = false;
+            }}
+            class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
+            <Pencil size={14} /> Editar habilidade
+          </button>
+          <button
+            onclick={() => {
+              toggleRole(selectedMember!.player.id, selectedMember!.role, selectedMember!.player.name);
+              showMemberDetail = false;
+            }}
+            class="btn-sm btn-ghost flex items-center gap-1 border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400">
+            {#if selectedMember.role === 'admin'}
+              <ShieldOff size={14} /> Remover presidência
+            {:else}
+              <ShieldCheck size={14} /> Tornar Presidente
+            {/if}
+          </button>
+          <button
+            onclick={() => {
+              removeMember(selectedMember!.player.id, selectedMember!.player.name);
+              showMemberDetail = false;
+            }}
+            class="btn-sm btn-ghost flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400">
+            <Trash2 size={14} /> Remover do grupo
+          </button>
+        </div>
+      {/if}
+    </div>
   {/if}
 </Modal>
 
