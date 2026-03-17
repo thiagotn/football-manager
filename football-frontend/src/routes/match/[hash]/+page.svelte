@@ -6,7 +6,7 @@
 
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X, Shuffle, ExternalLink } from 'lucide-svelte';
+  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X, Shuffle, ExternalLink, UserPlus } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import VoteForm from '$lib/components/VoteForm.svelte';
@@ -23,6 +23,7 @@
   let responded = $state(false);
   let lastStatus: 'confirmed' | 'declined' | null = $state(null);
   let isGroupAdmin = $state(false);
+  let groupMembers = $state<{ player: { id: string; name: string; nickname: string | null }; role: string }[]>([]);
   let adminResponding = $state<string | null>(null);
   let togglingStatus = $state(false);
   let confirmOpen = $state(false);
@@ -90,6 +91,9 @@
   let confirmed = $derived(match?.attendances.filter(a => a.status === 'confirmed') ?? []);
   let declined  = $derived(match?.attendances.filter(a => a.status === 'declined')  ?? []);
   let pending   = $derived(match?.attendances.filter(a => a.status === 'pending')   ?? []);
+  let absentMembers = $derived(
+    groupMembers.filter(mb => !match?.attendances.some(a => a.player.id === mb.player.id))
+  );
   let mine      = $derived(match?.attendances.find(a => a.player.id === $currentPlayer?.id));
   let isFull    = $derived(!!match?.max_players && (match?.confirmed_count ?? 0) >= match.max_players && mine?.status !== 'confirmed');
 
@@ -140,6 +144,7 @@
         const group = await groupsApi.get(m.group_id);
         const member = group.members.find(mb => mb.player.id === player.id);
         isGroupAdmin = member?.role === 'admin';
+        if (isGroupAdmin) groupMembers = group.members;
       } catch { isGroupAdmin = false; }
     })();
   });
@@ -633,6 +638,38 @@
                       </button>
                     </div>
                   {/if}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+
+        <!-- Absent members (admin only) -->
+        {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && absentMembers.length > 0}
+          <div class="card overflow-hidden">
+            <div class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                <UserPlus size={14} /> Adicionar ao rachão ({absentMembers.length})
+              </h3>
+            </div>
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+              {#each absentMembers as mb}
+                <li class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2.5">
+                  <span class="flex-1 font-medium text-gray-800 dark:text-gray-200">{mb.player.nickname || mb.player.name}</span>
+                  <div class="flex gap-1 shrink-0">
+                    <button
+                      class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1"
+                      onclick={() => respondFor(mb.player.id, 'confirmed')}
+                      disabled={adminResponding === mb.player.id}>
+                      <CheckCircle size={11} /> Confirmar
+                    </button>
+                    <button
+                      class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 flex items-center gap-1"
+                      onclick={() => respondFor(mb.player.id, 'declined')}
+                      disabled={adminResponding === mb.player.id}>
+                      <XCircle size={11} /> Recusar
+                    </button>
+                  </div>
                 </li>
               {/each}
             </ul>
