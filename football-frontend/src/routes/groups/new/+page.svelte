@@ -76,7 +76,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm text-gray-600 mb-1">Duração da votação</label>
+            <label class="block text-sm text-gray-600 mb-1">Votação encerrada após:</label>
             <select bind:value={voteDuration} class="input">
               <option value={2}>2 horas</option>
               <option value={4}>4 horas</option>

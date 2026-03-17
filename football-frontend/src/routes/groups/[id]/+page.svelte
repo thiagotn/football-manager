@@ -1277,7 +1277,7 @@
       <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Configurações de votação</p>
       <div class="space-y-3">
         <div class="form-group">
-          <label class="label" for="egvotedelay">Abertura da votação após o término</label>
+          <label class="label" for="egvotedelay">Ao final de cada rachão inicia em:</label>
           <select id="egvotedelay" class="input" bind:value={editForm.vote_open_delay_minutes}>
             <option value={0}>Imediato (sem atraso)</option>
             <option value={10}>10 minutos</option>
@@ -1287,7 +1287,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="label" for="egvotedur">Duração da votação</label>
+          <label class="label" for="egvotedur">Votação encerrada após:</label>
           <select id="egvotedur" class="input" bind:value={editForm.vote_duration_hours}>
             <option value={2}>2 horas</option>
             <option value={4}>4 horas</option>
