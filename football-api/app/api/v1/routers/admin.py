@@ -13,6 +13,7 @@ from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.schemas.admin import (
     AdminGroupListResponse,
     AdminMatchListResponse,
+    AdminPlayerListResponse,
     AdminStatsResponse,
     AdminSubscriptionListResponse,
     AdminSubscriptionSummary,
@@ -321,3 +322,51 @@ async def cancel_subscription(
 
     logger.info("admin_subscription_canceled", player_id=str(player_id))
     return {"status": "ok"}
+
+
+# ── Players admin ──────────────────────────────────────────────
+
+@router.get("/players", response_model=AdminPlayerListResponse)
+async def list_admin_players(
+    db: DB,
+    _: AdminPlayer,
+    search: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """Lista paginada de todos os players, ordenada por cadastro mais recente. Exclusivo para super admins."""
+    conditions: list[str] = []
+    params: dict = {"limit": page_size, "offset": (page - 1) * page_size}
+
+    if search:
+        conditions.append(
+            "(p.name ILIKE :search OR p.nickname ILIKE :search OR p.whatsapp LIKE :search)"
+        )
+        params["search"] = f"%{search}%"
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    count_result = await db.execute(
+        text(f"SELECT COUNT(*)::int FROM players p {where}"),
+        params,
+    )
+    total = count_result.scalar_one()
+
+    rows = await db.execute(
+        text(f"""
+            SELECT
+                p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at,
+                COALESCE(ps.plan, 'free') AS plan,
+                COUNT(DISTINCT gm.group_id)::int AS total_groups
+            FROM players p
+            LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
+            LEFT JOIN group_members gm ON gm.player_id = p.id
+            {where}
+            GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, ps.plan
+            ORDER BY p.created_at DESC
+            LIMIT :limit OFFSET :offset
+        """),
+        params,
+    )
+    items = [dict(row._mapping) for row in rows]
+    return AdminPlayerListResponse(total=total, page=page, page_size=page_size, items=items)

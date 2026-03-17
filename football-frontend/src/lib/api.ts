@@ -332,8 +332,35 @@ export type AdminGroupItem = {
 
 export type AdminGroupListResponse = { total: number; items: AdminGroupItem[] };
 
+export type AdminPlayerItem = {
+  id: string;
+  name: string;
+  nickname: string | null;
+  whatsapp: string;
+  role: string;
+  active: boolean;
+  created_at: string;
+  plan: string;
+  total_groups: number;
+};
+
+export type AdminPlayerListResponse = {
+  total: number;
+  page: number;
+  page_size: number;
+  items: AdminPlayerItem[];
+};
+
 export const admin = {
   getStats: () => get<AdminStatsResponse>('/admin/stats'),
+  getPlayers: (params?: { search?: string; page?: number; page_size?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.search)    q.set('search',    params.search);
+    if (params?.page)      q.set('page',      String(params.page));
+    if (params?.page_size) q.set('page_size', String(params.page_size));
+    const qs = q.toString();
+    return get<AdminPlayerListResponse>(`/admin/players${qs ? '?' + qs : ''}`);
+  },
   getMatches: (params?: { status?: string; limit?: number; offset?: number }) => {
     const q = new URLSearchParams();
     if (params?.status) q.set('status', params.status);

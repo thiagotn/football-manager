@@ -84,7 +84,7 @@
           </p>
         </a>
 
-        <a href="/players" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer">
+        <a href="/admin/players" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer">
           <div class="flex items-center justify-center gap-1 mb-1">
             <Users size={14} class="text-amber-400 opacity-70" />
           </div>

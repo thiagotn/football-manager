@@ -7,7 +7,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
-  import { Users, Plus, Search, Eye, EyeOff, Pencil, KeyRound, Trash2, Copy, ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import { Users, Search, Eye, Pencil, KeyRound, Trash2, Copy, EyeOff, ChevronLeft, ChevronRight } from 'lucide-svelte';
 
   const PAGE_SIZE = 20;
 
@@ -22,12 +22,6 @@
   let selected = $state<AdminPlayerItem | null>(null);
   let showDetail = $state(false);
 
-  // Create modal
-  let showCreate = $state(false);
-  let createForm = $state({ name: '', nickname: '', whatsapp: '', password: '', role: 'player' });
-  let showCreatePw = $state(false);
-  let creating = $state(false);
-
   // Edit modal
   let showEdit = $state(false);
   let editForm = $state({ name: '', nickname: '', role: '' });
@@ -37,7 +31,7 @@
   let showReset = $state(false);
   let generatedPassword = $state('');
   let resetting = $state(false);
-  let showResetPw = $state(false);
+  let showPw = $state(false);
 
   // Confirm deactivate
   let confirmOpen = $state(false);
@@ -62,7 +56,7 @@
       items = res.items;
       total = res.total;
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Erro ao carregar jogadores.';
+      error = e instanceof ApiError ? e.message : 'Erro ao carregar cadastros.';
     }
     loading = false;
   }
@@ -81,27 +75,11 @@
     load();
   });
 
-  // ── Create ──────────────────────────────────────────────────
-  async function create() {
-    creating = true;
-    try {
-      await playersApi.create({ ...createForm, nickname: createForm.nickname || undefined });
-      showCreate = false;
-      createForm = { name: '', nickname: '', whatsapp: '', password: '', role: 'player' };
-      toastSuccess('Jogador criado!');
-      page = 1;
-      await load();
-    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao criar.'); }
-    creating = false;
-  }
-
-  // ── Detail ──────────────────────────────────────────────────
   function openDetail(p: AdminPlayerItem) {
     selected = p;
     showDetail = true;
   }
 
-  // ── Edit ────────────────────────────────────────────────────
   function openEdit() {
     if (!selected) return;
     editForm = { name: selected.name, nickname: selected.nickname ?? '', role: selected.role };
@@ -118,20 +96,20 @@
         nickname: editForm.nickname || undefined,
         role: editForm.role,
       });
-      const updated = { ...selected, name: editForm.name, nickname: editForm.nickname || null, role: editForm.role };
-      selected = updated;
-      items = items.map(p => p.id === selected!.id ? { ...p, ...updated } : p);
+      selected = { ...selected, name: editForm.name, nickname: editForm.nickname || null, role: editForm.role };
+      items = items.map(p => p.id === selected!.id ? { ...p, name: editForm.name, nickname: editForm.nickname || null, role: editForm.role } : p);
       showEdit = false;
       showDetail = true;
       toastSuccess('Jogador atualizado!');
-    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao atualizar.'); }
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao atualizar.');
+    }
     saving = false;
   }
 
-  // ── Reset password ──────────────────────────────────────────
   function openReset() {
     generatedPassword = '';
-    showResetPw = false;
+    showPw = false;
     showDetail = false;
     showReset = true;
   }
@@ -154,7 +132,6 @@
     toastSuccess('Senha copiada!');
   }
 
-  // ── Deactivate ──────────────────────────────────────────────
   function askDeactivate() {
     showDetail = false;
     confirmOpen = true;
@@ -167,10 +144,11 @@
       selected = { ...selected, active: false };
       items = items.map(p => p.id === selected!.id ? { ...p, active: false } : p);
       toastSuccess('Jogador desativado.');
-    } catch { toastError('Erro ao desativar.'); }
+    } catch {
+      toastError('Erro ao desativar.');
+    }
   }
 
-  // ── Helpers ─────────────────────────────────────────────────
   function fmtDate(iso: string): string {
     return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
@@ -180,20 +158,17 @@
   }
 </script>
 
-<svelte:head><title>Jogadores — rachao.app</title></svelte:head>
+<svelte:head><title>Cadastros — Admin | rachao.app</title></svelte:head>
 
 <PageBackground>
 <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
-  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+  <div class="flex items-center justify-between mb-6">
     <div>
       <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-        <Users size={24} class="text-primary-400" /> Jogadores
+        <Users size={24} class="text-primary-400" /> Cadastros
       </h1>
       <p class="text-sm text-white/60 mt-0.5">{total} jogadores cadastrados</p>
     </div>
-    <button class="btn-primary" onclick={() => showCreate = true}>
-      <Plus size={16} /> Novo Jogador
-    </button>
   </div>
 
   <!-- Search -->
@@ -254,7 +229,7 @@
               <td>
                 <button
                   onclick={() => openDetail(p)}
-                  class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 dark:border-gray-700"
+                  class="text-xs px-2 py-0.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 flex items-center gap-1"
                 >
                   <Eye size={12} /> Detalhes
                 </button>
@@ -270,7 +245,7 @@
 
     <!-- Pagination -->
     {#if totalPages > 1}
-      <div class="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm text-gray-400">
+      <div class="flex items-center justify-between mt-4 text-sm text-gray-400">
         <span>Página {page} de {totalPages} — {total} registros</span>
         <div class="flex gap-2">
           <button
@@ -298,6 +273,7 @@
 <Modal bind:open={showDetail} title="Detalhes do Cadastro">
   {#if selected}
     <div class="space-y-4">
+      <!-- Info grid -->
       <div class="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p class="text-xs text-gray-400 mb-0.5">Nome</p>
@@ -339,6 +315,7 @@
         </div>
       </div>
 
+      <!-- Actions -->
       <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
         <button onclick={openEdit} class="btn-sm btn-ghost flex items-center gap-1 border border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400">
           <Pencil size={14} /> Editar
@@ -354,44 +331,6 @@
       </div>
     </div>
   {/if}
-</Modal>
-
-<!-- Create modal -->
-<Modal bind:open={showCreate} title="Novo Jogador">
-  <form onsubmit={(e) => { e.preventDefault(); create(); }} class="space-y-4">
-    <div class="form-group">
-      <label class="label">Nome *</label>
-      <input class="input" bind:value={createForm.name} required minlength="2" />
-    </div>
-    <div class="form-group">
-      <label class="label">Apelido</label>
-      <input class="input" bind:value={createForm.nickname} placeholder="Opcional" />
-    </div>
-    <div class="form-group">
-      <label class="label">Celular *</label>
-      <input class="input" type="tel" bind:value={createForm.whatsapp} placeholder="11999990000" required />
-    </div>
-    <div class="form-group">
-      <label class="label">Senha *</label>
-      <div class="relative">
-        <input class="input pr-10" type={showCreatePw ? 'text' : 'password'} bind:value={createForm.password} required minlength="6" />
-        <button type="button" onclick={() => showCreatePw = !showCreatePw} class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-          {#if showCreatePw}<EyeOff size={16} />{:else}<Eye size={16} />{/if}
-        </button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="label">Perfil</label>
-      <select class="input" bind:value={createForm.role}>
-        <option value="player">Jogador</option>
-        <option value="admin">Administrador</option>
-      </select>
-    </div>
-    <div class="flex gap-3 justify-end pt-2">
-      <button type="button" class="btn-secondary" onclick={() => showCreate = false}>Cancelar</button>
-      <button type="submit" class="btn-primary" disabled={creating}>{creating ? 'Criando…' : 'Criar'}</button>
-    </div>
-  </form>
 </Modal>
 
 <!-- Edit modal -->

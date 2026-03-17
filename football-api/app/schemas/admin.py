@@ -91,3 +91,24 @@ class AdminSubscriptionUpdateRequest(BaseModel):
     status: str = "active"
     billing_cycle: str = "monthly"
     reason: str = "manual_admin_override"
+
+
+# ── Players admin ──────────────────────────────────────────────
+
+class AdminPlayerItem(BaseModel):
+    id: UUID
+    name: str
+    nickname: str | None
+    whatsapp: str
+    role: str
+    active: bool
+    created_at: datetime
+    plan: str
+    total_groups: int
+
+
+class AdminPlayerListResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[AdminPlayerItem]
