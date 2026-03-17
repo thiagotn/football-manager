@@ -24,6 +24,7 @@ from app.db.repositories.group_stats_repo import GroupStatsRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
 from app.models.group import GroupMemberRole
+from app.models.match import AttendanceStatus
 from app.models.player import PlayerRole
 from app.schemas.group import (
     AddMemberRequest,
@@ -227,6 +228,13 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
                 raise PlanLimitError()
 
     member = await g_repo.add_member(group_id, body.player_id, body.role)
+
+    # Adiciona o novo membro como pendente nas partidas abertas/em andamento
+    m_repo = MatchRepository(db)
+    active_matches = await m_repo.get_active_matches(group_id)
+    for match in active_matches:
+        await m_repo.upsert_attendance(match.id, body.player_id, AttendanceStatus.PENDING)
+
     await db.refresh(member)
     # Eager load player for response
     await db.refresh(member, ["player"])

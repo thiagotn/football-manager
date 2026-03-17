@@ -159,6 +159,16 @@ class MatchRepository(BaseRepository[Match]):
         )
         return list(result.scalars().all())
 
+    async def get_active_matches(self, group_id: UUID) -> list[Match]:
+        """Retorna partidas abertas ou em andamento de um grupo."""
+        result = await self.session.execute(
+            select(Match).where(
+                Match.group_id == group_id,
+                Match.status.in_([MatchStatus.OPEN, MatchStatus.IN_PROGRESS]),
+            )
+        )
+        return list(result.scalars().all())
+
     async def has_open_match(self, group_id: UUID) -> bool:
         result = await self.session.execute(
             select(func.count()).where(
