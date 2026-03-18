@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -27,18 +29,30 @@ def open_match_page(admin_page: Page):
 
 
 def test_dashboard_aba_proximos_exibe_apenas_partidas_abertas(admin_page: Page):
-    dash = DashboardPage(admin_page)
-    dash.goto()
-    dash.select_upcoming_tab()
+    # Navigate to a group detail page which has the match tabs (admin is redirected away from "/")
+    admin_page.goto("/groups")
+    admin_page.wait_for_load_state("networkidle")
+    links = admin_page.locator("a[href^='/groups/']")
+    if links.count() == 0:
+        pytest.skip("Nenhum grupo disponível")
+    links.first.click()
+    admin_page.wait_for_load_state("networkidle")
+    admin_page.get_by_role("button", name=re.compile("Próximos")).click()
     badges = admin_page.locator(".badge-red, .badge-gray").all()
     assert len(badges) == 0, "Aba Próximos não deve conter partidas encerradas"
 
 
 def test_dashboard_aba_ultimos_exibe_partidas_encerradas(admin_page: Page):
-    dash = DashboardPage(admin_page)
-    dash.goto()
-    dash.select_past_tab()
-    # Se há partidas, devem ser encerradas
+    # Navigate to a group detail page which has the match tabs (admin is redirected away from "/")
+    admin_page.goto("/groups")
+    admin_page.wait_for_load_state("networkidle")
+    links = admin_page.locator("a[href^='/groups/']")
+    if links.count() == 0:
+        pytest.skip("Nenhum grupo disponível")
+    links.first.click()
+    admin_page.wait_for_load_state("networkidle")
+    admin_page.get_by_role("button", name=re.compile("Últimos")).click()
+    # If there are matches, they must be closed
     open_badges = admin_page.locator(".badge-green").all()
     for badge in open_badges:
         assert "Aberta" not in (badge.text_content() or "")

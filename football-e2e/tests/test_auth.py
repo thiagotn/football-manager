@@ -34,6 +34,7 @@ def test_redireciona_para_login_sem_autenticacao(page: Page):
 
 
 def test_logout_redireciona_para_login(admin_page: Page):
-    admin_page.goto("/")
-    admin_page.get_by_role("link", name="Sair").click()
+    admin_page.goto("/groups")
+    # "Sair" is a <button> in the Navbar, not a link
+    admin_page.get_by_role("button", name="Sair").first.click()
     expect(admin_page).to_have_url(re.compile(r".*/login"))

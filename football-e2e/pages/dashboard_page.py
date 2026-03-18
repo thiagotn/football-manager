@@ -6,7 +6,8 @@ class DashboardPage:
         self.page = page
 
     def goto(self):
-        self.page.goto("/")
+        # Admin users are redirected from "/" to "/admin"; go to "/groups" which works for all roles
+        self.page.goto("/groups")
 
     def select_upcoming_tab(self):
         self.page.get_by_role("button", name="Próximos Rachões").click()
