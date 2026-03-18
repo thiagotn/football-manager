@@ -1,7 +1,8 @@
 # PRD — Observabilidade (rachao.app)
 
-**Status:** Em revisão
+**Status:** Implementado (pendente: bot Telegram)
 **Data:** 2026-03-17
+**Atualizado:** 2026-03-18
 **Contexto:** VPS único (Hostinger KVM1, 1 vCPU, 4 GB RAM, 50 GB disco, Ubuntu 24.04 LTS), Docker Compose + Traefik.
 
 ---
@@ -229,11 +230,11 @@ cAdvisor não detecta containers por nome no Docker 29.x com storage driver `ove
 
 ### Pré-requisitos
 
-- [ ] Todos os arquivos de monitoramento commitados e no repositório
-- [ ] DNS configurado (painel Hostinger):
-  - [ ] `grafana.rachao.app` → IP do VPS (`76.13.161.72`)
-  - [ ] `uptime.rachao.app` → IP do VPS
-  - [ ] `prometheus.rachao.app` → IP do VPS _(opcional — acesso restrito por Basic Auth)_
+- [x] Todos os arquivos de monitoramento commitados e no repositório
+- [x] DNS configurado (painel Hostinger):
+  - [x] `grafana.rachao.app` → IP do VPS (`76.13.161.72`)
+  - [x] `uptime.rachao.app` → IP do VPS
+  - [x] `prometheus.rachao.app` → IP do VPS _(acesso restrito por Basic Auth)_
 
 ### GitHub Actions
 
@@ -248,19 +249,19 @@ Um novo workflow foi criado: **Deploy Monitoring Stack** (`.github/workflows/dep
 
 Os secrets de VPS (`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_PORT`) já existem. ✅
 
-O workflow existente de deploy da aplicação já copia o `traefik-dynamic.yml` atualizado a cada deploy, incluindo as rotas de monitoramento. ✅
+O workflow copia o `traefik-dynamic.yml` atualizado a cada deploy, incluindo as rotas de monitoramento. ✅
 
 ### VPS — setup único via GitHub Actions
 
-**1. Criar o secret no GitHub:**
+**1. Criar o secret no GitHub:** ✅
 - Acesse **Settings → Secrets and variables → Actions**
 - Adicione `GRAFANA_ADMIN_PASSWORD` com uma senha forte
 
-**2. Executar o workflow:**
+**2. Executar o workflow:** ✅
 - Acesse **Actions → Deploy Monitoring Stack → Run workflow**
 
 O workflow faz automaticamente:
-- Copia `docker-compose.monitoring.prod.yml` e `monitoring/` para o VPS
+- Copia `docker-compose.monitoring.prod.yml`, `monitoring/` e `traefik-dynamic.yml` para o VPS
 - Cria o `.env.monitoring` com as credenciais
 - Sobe a stack com `docker compose up -d`
 
@@ -275,19 +276,19 @@ sed -i 's|admin:\$apr1\$.*|admin:HASH_GERADO|' /opt/football-manager/traefik-dyn
 
 ### Pós-deploy
 
-- [ ] `https://grafana.rachao.app` abre com login _(aguardar ~30s para TLS do Let's Encrypt)_
-- [ ] `https://uptime.rachao.app` abre tela de cadastro do primeiro acesso
-- [ ] `https://prometheus.rachao.app` pede Basic Auth e mostra UI do Prometheus
+- [x] `https://grafana.rachao.app` abre com login
+- [x] `https://uptime.rachao.app` abre tela de cadastro do primeiro acesso
+- [x] `https://prometheus.rachao.app` pede Basic Auth e mostra UI do Prometheus
 
 **Configurar Uptime Kuma** (primeiro acesso — criar conta admin):
-- [ ] Adicionar monitor: `https://rachao.app` — tipo HTTPS, intervalo 60s
-- [ ] Adicionar monitor: `https://api.rachao.app/api/v1/health` — tipo HTTPS, intervalo 60s
-- [ ] Configurar notificação: Telegram (criar bot via @BotFather, gratuito)
+- [x] Adicionar monitor: `https://rachao.app` — tipo HTTPS, intervalo 60s
+- [x] Adicionar monitor: `https://api.rachao.app/api/v1/health` — tipo HTTPS, intervalo 60s
+- [ ] **PENDENTE:** Configurar notificação: Telegram (criar bot via @BotFather, gratuito)
 
 **Importar dashboards no Grafana** (Dashboards → Import):
-- [ ] ID `1860` — Node Exporter Full (métricas do host)
-- [ ] ID `14282` — Docker cAdvisor (métricas por container)
-- [ ] ID `22676` — FastAPI Observability (latência e erros por rota)
+- [x] ID `1860` — Node Exporter Full (métricas do host)
+- [x] ID `14282` — Docker cAdvisor (métricas por container)
+- [x] ID `22676` — FastAPI Observability (latência e erros por rota) _(dados disponíveis após próximo deploy da API)_
 
 **Configurar alertas no Grafana** (Alerting → Alert rules):
 - [ ] RAM > 85% por 5 minutos
