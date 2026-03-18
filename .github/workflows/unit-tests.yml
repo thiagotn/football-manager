@@ -42,5 +42,13 @@ jobs:
             --tb=short \
             --cov=app \
             --cov-report=term-missing \
-            --cov-fail-under=0 \
+            --cov-report=xml \
             -q
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: football-api/coverage.xml
+          flags: unit
+          fail_ci_if_error: false

@@ -1,5 +1,8 @@
 # Football Manager — API
 
+[![Unit Tests](https://github.com/thiagotn/football-manager/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/unit-tests.yml)
+[![codecov](https://codecov.io/gh/thiagotn/football-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/thiagotn/football-manager)
+
 Backend da aplicação: REST API construída com FastAPI + SQLAlchemy assíncrono + PostgreSQL.
 
 ## Stack
