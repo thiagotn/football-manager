@@ -1,4 +1,4 @@
-.PHONY: up up-bg down down-clean logs shell test db-connect adminer monitoring monitoring-down monitoring-logs
+.PHONY: up up-bg down down-clean logs shell test test-unit db-connect adminer monitoring monitoring-down monitoring-logs
 
 # ── Ambiente ─────────────────────────────────────────────────
 
@@ -37,7 +37,9 @@ adminer:
 # ── Testes ────────────────────────────────────────────────────
 
 test:
-	docker compose exec api pytest tests/ -v
+	docker compose run --rm api poetry run pytest tests/unit/ -v
+
+test-unit: test
 
 # ── Health ────────────────────────────────────────────────────
 

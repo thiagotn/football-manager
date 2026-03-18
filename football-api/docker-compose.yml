@@ -40,6 +40,7 @@ services:
     volumes:
       - ./app:/app/app
       - ./migrations:/app/migrations:ro
+      - ./tests:/app/tests
     depends_on:
       postgres:
         condition: service_healthy
