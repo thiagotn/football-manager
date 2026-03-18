@@ -31,7 +31,7 @@ def admin_storage_state(browser: Browser, tmp_path_factory):
     page.locator("#whatsapp").fill(ADMIN_WHATSAPP)
     page.locator("#password").fill(ADMIN_PASSWORD)
     page.get_by_role("button", name="Entrar").click()
-    page.wait_for_url("**/")
+    page.wait_for_load_state("networkidle")
     ctx.storage_state(path=state_path)
     ctx.close()
     return state_path

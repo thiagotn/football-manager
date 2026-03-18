@@ -39,5 +39,6 @@ def test_busca_por_nome_filtra_resultado(admin_page: Page):
 
 
 def test_pagina_players_inacessivel_sem_autenticacao(page: Page):
+    import re
     page.goto("/players")
-    expect(page).to_have_url("**/login**")
+    expect(page).to_have_url(re.compile(r".*/login"))

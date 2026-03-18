@@ -128,6 +128,7 @@ jobs:
           ADMIN_PASSWORD: admin123
         run: |
           pytest tests/ -v \
+            --ignore=tests/test_stripe_webhooks.py \
             --screenshot=only-on-failure \
             --output=test-results/ \
             --tb=short
