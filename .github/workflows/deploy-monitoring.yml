@@ -1,0 +1,67 @@
+name: Deploy Monitoring Stack
+
+on:
+  workflow_dispatch: # disparado manualmente via GitHub Actions UI
+
+env:
+  DEPLOY_DIR: /opt/football-manager
+
+jobs:
+  deploy-monitoring:
+    name: Deploy Monitoring to VPS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Copia os arquivos de monitoramento para o VPS
+      - name: Copiar arquivos de monitoramento para o VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          source: "football-api/docker-compose.monitoring.prod.yml,football-api/monitoring"
+          target: ${{ env.DEPLOY_DIR }}
+          strip_components: 1 # remove o prefixo football-api/
+
+      # Sobe a stack no VPS
+      - name: Deploy
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DIR: ${{ env.DEPLOY_DIR }}
+          GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER || 'admin' }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          envs: DEPLOY_DIR,GRAFANA_ADMIN_USER,GRAFANA_ADMIN_PASSWORD
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_DIR"
+
+            echo "==> Criando/atualizando .env.monitoring..."
+            cat > .env.monitoring << EOF
+            GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}
+            GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+            EOF
+
+            echo "==> Subindo stack de monitoramento..."
+            docker compose \
+              -f docker-compose.monitoring.prod.yml \
+              --env-file .env.monitoring \
+              up -d --remove-orphans
+
+            echo "==> Status dos containers:"
+            docker compose -f docker-compose.monitoring.prod.yml ps
+
+            echo ""
+            echo "Deploy de monitoramento concluido!"
+            echo "  Grafana:    https://grafana.rachao.app"
+            echo "  Uptime Kuma: https://uptime.rachao.app"
+            echo "  Prometheus: https://prometheus.rachao.app  (Basic Auth: admin / monitoring123)"

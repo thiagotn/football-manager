@@ -1,4 +1,4 @@
-.PHONY: up up-bg down down-clean logs shell test db-connect adminer
+.PHONY: up up-bg down down-clean logs shell test db-connect adminer monitoring monitoring-down monitoring-logs
 
 # ── Ambiente ─────────────────────────────────────────────────
 
@@ -46,3 +46,25 @@ health:
 
 docs:
 	@open http://localhost:8000/docs 2>/dev/null || xdg-open http://localhost:8000/docs
+
+# ── Monitoramento ──────────────────────────────────────────────
+
+monitoring:
+	docker compose -f docker-compose.monitoring.yml up -d
+	@echo ""
+	@echo "Stack de monitoramento iniciada:"
+	@echo "  Grafana:      http://localhost:3001  (admin / admin)"
+	@echo "  Prometheus:   http://localhost:9090"
+	@echo "  Uptime Kuma:  http://localhost:3002"
+	@echo "  cAdvisor:     http://localhost:8081"
+	@echo ""
+	@echo "Dashboards recomendados (importar no Grafana por ID):"
+	@echo "  Node Exporter Full:  1860"
+	@echo "  Docker cAdvisor:     14282"
+	@echo "  FastAPI:             16110"
+
+monitoring-down:
+	docker compose -f docker-compose.monitoring.yml down
+
+monitoring-logs:
+	docker compose -f docker-compose.monitoring.yml logs -f prometheus grafana

@@ -7,6 +7,7 @@ from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
@@ -90,14 +91,16 @@ Use `POST /api/v1/auth/login` com seu WhatsApp e senha para obter o token Bearer
     async def log_requests(request: Request, call_next):
         start = time.time()
         response = await call_next(request)
-        duration = round((time.time() - start) * 1000, 1)
-        logger.info(
-            "request",
-            method=request.method,
-            path=request.url.path,
-            status=response.status_code,
-            ms=duration,
-        )
+        # Não loga /metrics e /health para não poluir os logs com scrapes do Prometheus
+        if request.url.path not in ("/metrics", "/health"):
+            duration = round((time.time() - start) * 1000, 1)
+            logger.info(
+                "request",
+                method=request.method,
+                path=request.url.path,
+                status=response.status_code,
+                ms=duration,
+            )
         return response
 
     @app.get("/", include_in_schema=False)
@@ -110,6 +113,13 @@ Use `POST /api/v1/auth/login` com seu WhatsApp e senha para obter o token Bearer
         return {"status": "ok", "uptime_seconds": uptime, "version": settings.app_version}
 
     app.include_router(api_router)
+
+    # Expõe /metrics para o Prometheus (acessível apenas internamente via Docker network)
+    Instrumentator(
+        should_group_status_codes=False,
+        excluded_handlers=["/metrics", "/health"],
+    ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+
     return app
 
 

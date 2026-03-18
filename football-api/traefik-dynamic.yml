@@ -26,6 +26,29 @@ http:
       middlewares: [www-redirect]
       service: frontend
 
+    # ── Monitoramento ────────────────────────────────────────────
+    grafana:
+      rule: "Host(`grafana.rachao.app`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: grafana
+
+    uptime:
+      rule: "Host(`uptime.rachao.app`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: uptime-kuma
+
+    prometheus:
+      rule: "Host(`prometheus.rachao.app`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      middlewares: [monitoring-auth]
+      service: prometheus
+
   services:
     api:
       loadBalancer:
@@ -37,9 +60,33 @@ http:
         servers:
           - url: "http://frontend:3000"
 
+    # ── Monitoramento ────────────────────────────────────────────
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://football-monitoring-grafana:3000"
+
+    uptime-kuma:
+      loadBalancer:
+        servers:
+          - url: "http://football-monitoring-uptime-kuma:3001"
+
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://football-monitoring-prometheus:9090"
+
   middlewares:
     www-redirect:
       redirectRegex:
         regex: "^https://www\\.rachao\\.app(.*)"
         replacement: "https://rachao.app${1}"
         permanent: true
+
+    # Basic Auth para o Prometheus
+    # Senha padrão: monitoring123 — troque no VPS com: htpasswd -nb admin NOVA_SENHA
+    # e atualize diretamente em /opt/football-manager/traefik-dynamic.yml (sem precisar de redeploy)
+    monitoring-auth:
+      basicAuth:
+        users:
+          - "admin:$apr1$S3knzfXa$Ywo4.8EjgPz5ukMgKw1Ht/"

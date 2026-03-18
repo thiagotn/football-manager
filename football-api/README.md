@@ -49,6 +49,26 @@ Na primeira execução o Docker irá:
 | **ReDoc** | http://localhost:8000/redoc |
 | **Adminer** | `make adminer` → http://localhost:8080 |
 
+### 4. Monitoramento (opcional)
+
+```bash
+make monitoring
+```
+
+| Serviço | URL | Credenciais |
+|---------|-----|-------------|
+| **Grafana** | http://localhost:3001 | admin / admin |
+| **Prometheus** | http://localhost:9090 | — |
+| **Uptime Kuma** | http://localhost:3002 | cadastro no 1º acesso |
+| **cAdvisor** | http://localhost:8081 | — |
+
+> **Pré-requisito:** a stack principal deve estar rodando (`make up`) antes de subir o monitoramento.
+
+Dashboards recomendados para importar no Grafana (Dashboards → Import → ID):
+- `1860` — Node Exporter Full
+- `14282` — Docker cAdvisor
+- `22676` — FastAPI Observability
+
 ### Login inicial (admin)
 
 ```
@@ -61,17 +81,20 @@ Senha:    admin123
 ## Comandos úteis
 
 ```bash
-make up           # Sobe tudo com build
-make up-bg        # Sobe em background e exibe logs da API
-make down         # Para todos os containers
-make down-clean   # Para e apaga o volume do banco (dados zerados)
-make logs         # Logs da API e do frontend em tempo real
-make shell        # Bash dentro do container da API
-make db-connect   # psql direto no banco
-make adminer      # Sobe o Adminer (UI do banco)
-make health       # Verifica saúde da API
-make docs         # Abre o Swagger no browser
-make test         # Roda os testes
+make up               # Sobe tudo com build
+make up-bg            # Sobe em background e exibe logs da API
+make down             # Para todos os containers
+make down-clean       # Para e apaga o volume do banco (dados zerados)
+make logs             # Logs da API e do frontend em tempo real
+make shell            # Bash dentro do container da API
+make db-connect       # psql direto no banco
+make adminer          # Sobe o Adminer (UI do banco)
+make health           # Verifica saúde da API
+make docs             # Abre o Swagger no browser
+make test             # Roda os testes
+make monitoring       # Sobe a stack de monitoramento (Grafana, Prometheus, etc.)
+make monitoring-down  # Para a stack de monitoramento
+make monitoring-logs  # Logs do Prometheus e Grafana
 ```
 
 ---
