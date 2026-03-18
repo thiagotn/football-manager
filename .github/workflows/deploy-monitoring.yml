@@ -57,6 +57,9 @@ jobs:
               --env-file .env.monitoring \
               up -d --remove-orphans
 
+            echo "==> Reiniciando Traefik para recarregar traefik-dynamic.yml..."
+            docker compose -f docker-compose.prod.yml restart traefik
+
             echo "==> Status dos containers:"
             docker compose -f docker-compose.monitoring.prod.yml ps
 
@@ -65,3 +68,4 @@ jobs:
             echo "  Grafana:    https://grafana.rachao.app"
             echo "  Uptime Kuma: https://uptime.rachao.app"
             echo "  Prometheus: https://prometheus.rachao.app  (Basic Auth: admin / monitoring123)"
+            echo "  Status:     https://status.rachao.app"
