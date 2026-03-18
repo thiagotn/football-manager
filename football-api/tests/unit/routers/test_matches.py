@@ -229,3 +229,89 @@ async def test_delete_match_non_group_admin_returns_403(api_client, mocker):
     response = await api_client.delete(f"/api/v1/groups/{group_id}/matches/{match_id}")
 
     assert response.status_code == 403
+
+
+# ── PATCH /groups/{id}/matches/{id} ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_update_match_non_group_admin_returns_403(api_client, mocker):
+    group_id = uuid4()
+    match_id = uuid4()
+    member = MagicMock()
+    member.role = "member"
+    mocker.patch(
+        "app.api.v1.routers.matches.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/matches/{match_id}",
+        json={"location": "Nova Quadra"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_match_not_found_returns_404(api_client, mocker):
+    group_id = uuid4()
+    match_id = uuid4()
+    member = MagicMock()
+    member.role = "admin"
+    mocker.patch(
+        "app.api.v1.routers.matches.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+    mocker.patch(
+        "app.api.v1.routers.matches.MatchRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/matches/{match_id}",
+        json={"location": "Nova Quadra"},
+    )
+
+    assert response.status_code == 404
+
+
+# ── DELETE /groups/{id}/matches/{id} — not found ─────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_delete_match_not_found_returns_404(api_client, mocker):
+    group_id = uuid4()
+    match_id = uuid4()
+    member = MagicMock()
+    member.role = "admin"
+    mocker.patch(
+        "app.api.v1.routers.matches.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+    mocker.patch(
+        "app.api.v1.routers.matches.MatchRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.delete(f"/api/v1/groups/{group_id}/matches/{match_id}")
+
+    assert response.status_code == 404
+
+
+# ── POST /groups/{id}/matches — group not found ───────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_match_group_not_found_returns_404(api_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.matches.GroupRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.post(
+        f"/api/v1/groups/{uuid4()}/matches",
+        json={"match_date": "2026-04-01", "start_time": "10:00:00", "location": "Quadra X"},
+    )
+
+    assert response.status_code == 404

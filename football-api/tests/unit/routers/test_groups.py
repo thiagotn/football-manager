@@ -1,11 +1,17 @@
 """
-Testes unitários — POST /api/v1/groups e POST /api/v1/groups/{id}/members
+Testes unitários — routers/groups.py
 
 Regras de negócio cobertas:
 - Limite de grupos por plano (free=1, basic=3, pro=10)
 - Super admin é isento de qualquer limite
 - Super admin não pode ser adicionado como membro de grupo
 - Slug duplicado retorna 409
+- GET /groups/{id} não encontrado → 404
+- GET /groups/{id} não-membro → 403
+- PATCH /groups/{id} não-admin do grupo → 403
+- PATCH /groups/{id} não encontrado → 404
+- DELETE /groups/{id} não encontrado → 404
+- GET /groups/{id}/members não-membro → 403
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -188,5 +194,112 @@ async def test_add_member_rejects_super_admin(api_client, admin_user, mocker):
         f"/api/v1/groups/{group_id}/members",
         json={"player_id": str(admin_user.id)},
     )
+
+    assert response.status_code == 403
+
+
+# ── GET /groups/{id} ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_group_not_found_returns_404(api_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_with_members",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{uuid4()}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_group_non_member_returns_403(api_client, mocker):
+    group = _make_group()
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_with_members",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}")
+
+    assert response.status_code == 403
+
+
+# ── PATCH /groups/{id} ────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_update_group_not_found_returns_404(api_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{uuid4()}",
+        json={"name": "Novo Nome"},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_group_non_group_admin_returns_403(api_client, mocker):
+    group = _make_group()
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "member"  # não é admin do grupo
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group.id}",
+        json={"name": "Novo Nome"},
+    )
+
+    assert response.status_code == 403
+
+
+# ── DELETE /groups/{id} ───────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_delete_group_not_found_returns_404(admin_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await admin_client.delete(f"/api/v1/groups/{uuid4()}")
+
+    assert response.status_code == 404
+
+
+# ── GET /groups/{id}/members ──────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_list_members_non_member_returns_403(api_client, mocker):
+    group = _make_group()
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_with_members",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}/members")
 
     assert response.status_code == 403
