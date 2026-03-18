@@ -95,6 +95,7 @@ make adminer          # Sobe o Adminer (UI do banco)
 make health           # Verifica saúde da API
 make docs             # Abre o Swagger no browser
 make test             # Roda os testes
+make test-cov         # Roda os testes com relatório de cobertura
 make monitoring       # Sobe a stack de monitoramento (Grafana, Prometheus, etc.)
 make monitoring-down  # Para a stack de monitoramento
 make monitoring-logs  # Logs do Prometheus e Grafana

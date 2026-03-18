@@ -41,6 +41,9 @@ test:
 
 test-unit: test
 
+test-cov:
+	docker compose run --rm api poetry run pytest tests/unit/ --cov=app --cov-report=term-missing -q
+
 # ── Health ────────────────────────────────────────────────────
 
 health:
