@@ -1,7 +1,6 @@
 # Football Manager
 
-[![Unit Tests](https://github.com/thiagotn/football-manager/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/unit-tests.yml)
-[![E2E Tests](https://github.com/thiagotn/football-manager/actions/workflows/e2e.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/e2e.yml)
+[![CI](https://github.com/thiagotn/football-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/ci.yml)
 [![Deploy to Production](https://github.com/thiagotn/football-manager/actions/workflows/deploy.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/deploy.yml)
 [![codecov](https://codecov.io/gh/thiagotn/football-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/thiagotn/football-manager)
 
