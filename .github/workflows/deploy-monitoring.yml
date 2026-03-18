@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
-          source: "football-api/docker-compose.monitoring.prod.yml,football-api/monitoring"
+          source: "football-api/docker-compose.monitoring.prod.yml,football-api/monitoring,football-api/traefik-dynamic.yml"
           target: ${{ env.DEPLOY_DIR }}
           strip_components: 1 # remove o prefixo football-api/
 
