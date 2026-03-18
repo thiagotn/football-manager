@@ -41,7 +41,7 @@
     },
     {
       q: 'O rachao.app está fora do ar?',
-      a: 'Você pode verificar o status em tempo real em uptime.rachao.app/status/rachao. Se tudo estiver verde e o problema persistir, aguarde alguns minutos e tente novamente.',
+      a: 'Você pode verificar o status em tempo real em status.rachao.app. Se tudo estiver verde e o problema persistir, aguarde alguns minutos e tente novamente.',
     },
     {
       q: 'E se eu não confirmar pelo link a tempo?',

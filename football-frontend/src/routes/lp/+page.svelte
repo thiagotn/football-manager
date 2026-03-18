@@ -502,7 +502,7 @@
       <a href="/terms" class="hover:text-white transition-colors">Termos de Uso</a>
       <a href="/privacy" class="hover:text-white transition-colors">Privacidade</a>
       <a href="/faq" class="hover:text-white transition-colors">FAQ</a>
-      <a href="https://uptime.rachao.app/status/rachao" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">Status</a>
+      <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">Status</a>
       <a href="/login" class="hover:text-white transition-colors">Entrar</a>
     </div>
   </div>
