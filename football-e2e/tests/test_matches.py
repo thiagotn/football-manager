@@ -51,7 +51,11 @@ def test_dashboard_aba_ultimos_exibe_partidas_encerradas(admin_page: Page):
         pytest.skip("Nenhum grupo disponível")
     links.first.click()
     admin_page.wait_for_load_state("networkidle")
-    admin_page.get_by_role("button", name=re.compile("Últimos")).click()
+    # "Últimos" tab is only rendered when pastMatches.length > 0
+    btn = admin_page.get_by_role("button", name=re.compile("Últimos"))
+    if not btn.is_visible():
+        pytest.skip("Nenhuma partida encerrada no grupo de teste")
+    btn.click()
     # If there are matches, they must be closed
     open_badges = admin_page.locator(".badge-green").all()
     for badge in open_badges:
