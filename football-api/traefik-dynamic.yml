@@ -49,6 +49,14 @@ http:
       middlewares: [monitoring-auth]
       service: prometheus
 
+    status:
+      rule: "Host(`status.rachao.app`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      middlewares: [status-redirect]
+      service: uptime-kuma
+
   services:
     api:
       loadBalancer:
@@ -81,6 +89,12 @@ http:
       redirectRegex:
         regex: "^https://www\\.rachao\\.app(.*)"
         replacement: "https://rachao.app${1}"
+        permanent: true
+
+    status-redirect:
+      redirectRegex:
+        regex: ".*"
+        replacement: "https://uptime.rachao.app/status/rachao"
         permanent: true
 
     # Basic Auth para o Prometheus
