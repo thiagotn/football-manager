@@ -1,6 +1,18 @@
 name: E2E Tests
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "football-frontend/**"
+      - "football-api/**"
+      - "football-e2e/**"
+      - ".github/workflows/e2e.yml"
+  pull_request:
+    paths:
+      - "football-frontend/**"
+      - "football-api/**"
+      - "football-e2e/**"
   workflow_dispatch:
 
 jobs:
@@ -12,6 +24,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Create .env.docker for CI
+        working-directory: football-api
+        run: |
+          cat > .env.docker << 'EOF'
+          APP_ENV=development
+          SECRET_KEY=ci-secret-key-for-e2e-tests-only-32chars
+          CORS_ORIGINS=http://localhost:3000
+          DEBUG=true
+          STRIPE_SECRET_KEY=sk_test_fake
+          STRIPE_WEBHOOK_SECRET=whsec_fake
+          STRIPE_PRICE_BASIC_MONTHLY=price_fake
+          STRIPE_PRICE_BASIC_YEARLY=price_fake
+          STRIPE_PRICE_PRO_MONTHLY=price_fake
+          STRIPE_PRICE_PRO_YEARLY=price_fake
+          EOF
 
       - name: Start stack
         working-directory: football-api
