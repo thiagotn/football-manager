@@ -51,9 +51,13 @@ jobs:
             cat > .env.monitoring << EOF
             GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}
             GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-            TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-            TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
             EOF
+
+            echo "==> Substituindo credenciais do Telegram no provisioning..."
+            sed -i "s|TELEGRAM_BOT_TOKEN_PLACEHOLDER|${TELEGRAM_BOT_TOKEN}|" \
+              monitoring/grafana/provisioning/alerting/contact-points.yml
+            sed -i "s|TELEGRAM_CHAT_ID_PLACEHOLDER|${TELEGRAM_CHAT_ID}|" \
+              monitoring/grafana/provisioning/alerting/contact-points.yml
 
             echo "==> Subindo stack de monitoramento..."
             docker compose \
