@@ -12,11 +12,13 @@
 
   const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy'];
 
-  onMount(async () => {
+  onMount(() => {
     themeStore.init();
     pwaInstall.init();
-    await authStore.init();
 
+    // Registrar o listener ANTES de qualquer await para evitar race condition:
+    // o onMount da página filha pode disparar chamadas API antes do await completar,
+    // fazendo o evento 'session-expired' ser emitido sem listener registrado.
     const handleSessionExpired = () => {
       authStore.logout();
       toastInfo('Sua sessão expirou. Faça login novamente.');
@@ -24,6 +26,9 @@
       goto('/login');
     };
     window.addEventListener('session-expired', handleSessionExpired);
+
+    authStore.init(); // chamado sem await — o store atualiza reativamente quando completa
+
     return () => window.removeEventListener('session-expired', handleSessionExpired);
   });
 
