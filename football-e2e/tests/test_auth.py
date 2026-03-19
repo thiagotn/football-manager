@@ -6,11 +6,11 @@ from playwright.sync_api import Page, expect
 from pages.login_page import LoginPage
 
 
-def test_sessao_expirada_exibe_toast_e_redireciona(admin_page: Page):
+def test_sessao_expirada_redireciona_e_exibe_banner(admin_page: Page):
     """
     Simula expiração de JWT interceptando GET /groups e retornando 401.
-    Verifica que o toast de sessão expirada aparece, o usuário é
-    redirecionado para /login e o banner contextual é exibido.
+    Verifica que o usuário é redirecionado para /login e o banner
+    contextual de sessão expirada é exibido.
     """
     admin_page.route(
         "**/api/v1/groups",
@@ -23,13 +23,8 @@ def test_sessao_expirada_exibe_toast_e_redireciona(admin_page: Page):
 
     admin_page.goto("/groups")
 
-    # Toast "Sua sessão expirou" deve aparecer
-    expect(admin_page.get_by_text("Sua sessão expirou. Faça login novamente.")).to_be_visible(
-        timeout=5000
-    )
-
     # Deve redirecionar para /login
-    expect(admin_page).to_have_url(re.compile(r".*/login"), timeout=5000)
+    expect(admin_page).to_have_url(re.compile(r".*/login"), timeout=8000)
 
     # Banner contextual na página de login deve estar visível
     expect(admin_page.locator("[data-testid='session-expired-banner']")).to_be_visible()

@@ -20,7 +20,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     if (res.status === 401 && typeof window !== 'undefined' && localStorage.getItem('player')) {
-      window.dispatchEvent(new Event('session-expired'));
+      const { sessionExpiredStore } = await import('$lib/stores/sessionExpired');
+      sessionExpiredStore.set(true);
     }
     const body = await res.json().catch(() => ({}));
     const msg = body?.detail ?? `Erro ${res.status}`;

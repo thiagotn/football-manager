@@ -7,6 +7,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { toastInfo } from '$lib/stores/toast';
   import { pwaInstall } from '$lib/stores/pwaInstall';
+  import { sessionExpiredStore } from '$lib/stores/sessionExpired';
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
 
@@ -15,21 +16,19 @@
   onMount(() => {
     themeStore.init();
     pwaInstall.init();
+    authStore.init();
+  });
 
-    // Registrar o listener ANTES de qualquer await para evitar race condition:
-    // o onMount da página filha pode disparar chamadas API antes do await completar,
-    // fazendo o evento 'session-expired' ser emitido sem listener registrado.
-    const handleSessionExpired = () => {
+  // $effect é registrado na inicialização do componente (antes de qualquer onMount),
+  // então detecta a mudança no store independente da ordem de onMount pai/filho.
+  $effect(() => {
+    if ($sessionExpiredStore) {
+      sessionExpiredStore.set(false);
       authStore.logout();
       toastInfo('Sua sessão expirou. Faça login novamente.');
       sessionStorage.setItem('session_expired', '1');
       goto('/login');
-    };
-    window.addEventListener('session-expired', handleSessionExpired);
-
-    authStore.init(); // chamado sem await — o store atualiza reativamente quando completa
-
-    return () => window.removeEventListener('session-expired', handleSessionExpired);
+    }
   });
 
   let isAppPage = $derived(
