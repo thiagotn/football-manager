@@ -6,6 +6,7 @@
   import { authStore, isLoggedIn } from '$lib/stores/auth';
   import { themeStore } from '$lib/stores/theme';
   import { toastInfo } from '$lib/stores/toast';
+  import { pwaInstall } from '$lib/stores/pwaInstall';
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
 
@@ -13,6 +14,7 @@
 
   onMount(async () => {
     themeStore.init();
+    pwaInstall.init();
     await authStore.init();
 
     const handleSessionExpired = () => {

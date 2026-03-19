@@ -10,7 +10,9 @@
     openIndex = openIndex === i ? null : i;
   }
 
-  const faqs = [
+  type Faq = { q: string; a: string; steps?: string[] };
+
+  const faqs: Faq[] = [
     {
       q: 'O que é o rachao.app?',
       a: 'É uma plataforma para organizar partidas de futebol amador. Você entra em grupos, recebe convites para partidas e confirma (ou recusa) sua presença com um clique.',
@@ -46,6 +48,26 @@
     {
       q: 'E se eu não confirmar pelo link a tempo?',
       a: 'O organizador do grupo pode confirmar ou registrar sua falta diretamente pela plataforma, sem precisar que você acesse o link. Mas se possível, responda pelo link — isso ajuda o organizador a ter o controle em tempo real.',
+    },
+    {
+      q: 'Como instalar o app no Android?',
+      a: 'O rachao.app pode ser instalado diretamente na tela inicial do seu celular, sem precisar da Play Store. No menu lateral do app, um botão "Instalar App" aparece automaticamente quando o seu navegador suporta a instalação. Você também pode instalar manualmente:',
+      steps: [
+        'Abra o rachao.app no Chrome ou Samsung Internet',
+        'Toque no menu (⋮) no canto superior direito do navegador',
+        'Toque em "Adicionar à tela inicial" ou "Instalar app"',
+        'Confirme tocando em "Instalar"',
+      ],
+    },
+    {
+      q: 'Como instalar o app no iPhone ou iPad?',
+      a: 'No iOS, o Safari permite salvar o app na tela inicial. O processo é feito manualmente — o botão "Instalar App" no menu do app também exibe esse passo a passo:',
+      steps: [
+        'Abra o rachao.app no Safari — obrigatório, não funciona em Chrome ou outros navegadores no iOS',
+        'Toque no botão Compartilhar (ícone de caixa com seta apontando para cima, na barra inferior do Safari)',
+        'Role a lista de opções para baixo e toque em "Adicionar à Tela de Início"',
+        'Confirme o nome e toque em "Adicionar"',
+      ],
     },
   ];
 </script>
@@ -83,6 +105,13 @@
           {#if openIndex === i}
             <div class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-700 pt-3">
               {faq.a}
+              {#if faq.steps}
+                <ol class="mt-2 space-y-1 list-decimal list-inside">
+                  {#each faq.steps as step}
+                    <li>{step}</li>
+                  {/each}
+                </ol>
+              {/if}
             </div>
           {/if}
         </div>

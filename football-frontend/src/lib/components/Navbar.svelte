@@ -3,8 +3,10 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
+  import { pwaInstall } from '$lib/stores/pwaInstall';
+  import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
 
   function logout() {
     authStore.logout();
@@ -96,6 +98,12 @@
 
     <!-- Direita — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-2">
+      {#if $pwaInstall.canInstall}
+        <button onclick={() => pwaInstall.install()} class="btn-ghost btn-sm text-emerald-300 hover:text-emerald-100 hover:bg-primary-600" title="Instalar App">
+          <Download size={15} />
+          <span>Instalar</span>
+        </button>
+      {/if}
       <span class="text-sm text-primary-200">{$currentPlayer?.name}</span>
       <a href="/profile"
         class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600 {$page.url.pathname === '/profile' ? 'bg-primary-900' : ''}"
@@ -179,6 +187,7 @@
             {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
           <HelpCircle size={18} /> FAQ
         </a>
+        <PwaInstallButton />
       </div>
     </div>
 
