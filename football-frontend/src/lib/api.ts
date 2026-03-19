@@ -19,6 +19,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== 'undefined' && localStorage.getItem('player')) {
+      window.dispatchEvent(new Event('session-expired'));
+    }
     const body = await res.json().catch(() => ({}));
     const msg = body?.detail ?? `Erro ${res.status}`;
     throw new ApiError(res.status, Array.isArray(msg) ? msg[0]?.msg ?? String(msg) : String(msg));

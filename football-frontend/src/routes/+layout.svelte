@@ -5,6 +5,7 @@
   import { page } from '$app/stores';
   import { authStore, isLoggedIn } from '$lib/stores/auth';
   import { themeStore } from '$lib/stores/theme';
+  import { toastInfo } from '$lib/stores/toast';
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
 
@@ -13,6 +14,15 @@
   onMount(async () => {
     themeStore.init();
     await authStore.init();
+
+    const handleSessionExpired = () => {
+      authStore.logout();
+      toastInfo('Sua sessão expirou. Faça login novamente.');
+      sessionStorage.setItem('session_expired', '1');
+      goto('/login');
+    };
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
   });
 
   let isAppPage = $derived(

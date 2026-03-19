@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { auth, ApiError } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
@@ -11,6 +12,14 @@
   let loading = $state(false);
   let showPw = $state(false);
   let error = $state('');
+  let sessionExpired = $state(false);
+
+  onMount(() => {
+    if (sessionStorage.getItem('session_expired')) {
+      sessionExpired = true;
+      sessionStorage.removeItem('session_expired');
+    }
+  });
 
   async function handleLogin() {
     error = '';
@@ -125,6 +134,11 @@
 
     {#if forgotMode === 'idle'}
       <!-- ── Login normal ── -->
+      {#if sessionExpired}
+        <div class="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-sm" data-testid="session-expired-banner">
+          Sua sessão expirou. Por favor, faça login novamente.
+        </div>
+      {/if}
       {#if error}
         <div class="alert-error mb-4">{error}</div>
       {/if}
