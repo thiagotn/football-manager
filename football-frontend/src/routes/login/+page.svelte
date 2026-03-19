@@ -19,6 +19,9 @@
     if (sessionStorage.getItem('session_expired')) {
       sessionExpired = true;
       sessionStorage.removeItem('session_expired');
+      // Limpa o token stale aqui, após o banner já estar na tela, evitando
+      // a navegação dupla que ocorreria se o logout fosse feito no layout.
+      authStore.logout();
     }
   });
 
