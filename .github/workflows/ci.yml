@@ -5,12 +5,16 @@ on:
     branches: [main]
     paths:
       - "football-api/**"
+      - "!football-api/monitoring/**"
+      - "!football-api/docker-compose.monitoring*.yml"
       - "football-frontend/**"
       - "football-e2e/**"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "football-api/**"
+      - "!football-api/monitoring/**"
+      - "!football-api/docker-compose.monitoring*.yml"
       - "football-frontend/**"
       - "football-e2e/**"
   workflow_dispatch:
