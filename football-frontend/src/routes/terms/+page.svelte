@@ -22,7 +22,7 @@
       <section>
         <h2 class="text-base font-semibold mb-2">1. Aceitação</h2>
         <p>Ao criar uma conta ou usar o rachao.app, você declara ter lido e aceitar estes Termos de Uso. Se não concordar, não utilize a plataforma.</p>
-        <p class="mt-2">O rachao.app é operado por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC} ("nós"), com contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
+        <p class="mt-2">O rachao.app é operado por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>{#if PUBLIC_LEGAL_CONTROLLER_DOC}, {PUBLIC_LEGAL_CONTROLLER_DOC}{/if} ("nós"), com contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
       </section>
 
       <section>
@@ -105,7 +105,7 @@
 
       <section>
         <h2 class="text-base font-semibold mb-2">10. Contato</h2>
-        <p><strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC}</p>
+        <p><strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>{#if PUBLIC_LEGAL_CONTROLLER_DOC}, {PUBLIC_LEGAL_CONTROLLER_DOC}{/if}</p>
         <p>E-mail: <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="text-primary-600 hover:underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a></p>
         <p>Plataforma: <a href="https://rachao.app" class="text-primary-600 hover:underline">https://rachao.app</a></p>
       </section>

@@ -21,7 +21,7 @@
 
       <section>
         <h2 class="text-base font-semibold mb-2">1. Quem somos</h2>
-        <p>O rachao.app é uma plataforma de organização de grupos e partidas de futebol amador, operada por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC} ("nós", "nosso" ou "controlador"), com canal de contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
+        <p>O rachao.app é uma plataforma de organização de grupos e partidas de futebol amador, operada por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>{#if PUBLIC_LEGAL_CONTROLLER_DOC}, {PUBLIC_LEGAL_CONTROLLER_DOC}{/if} ("nós", "nosso" ou "controlador"), com canal de contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
       </section>
 
       <section>
@@ -172,7 +172,7 @@
 
       <section>
         <h2 class="text-base font-semibold mb-2">9. Contato</h2>
-        <p><strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>, {PUBLIC_LEGAL_CONTROLLER_DOC}</p>
+        <p><strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>{#if PUBLIC_LEGAL_CONTROLLER_DOC}, {PUBLIC_LEGAL_CONTROLLER_DOC}{/if}</p>
         <p>E-mail: <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="text-primary-600 hover:underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a></p>
         <p>Plataforma: <a href="https://rachao.app" class="text-primary-600 hover:underline">https://rachao.app</a></p>
       </section>
