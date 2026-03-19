@@ -2,6 +2,7 @@
 
 **Status:** Proposta
 **Data:** 2026-03-19
+**Atualizado:** 2026-03-19
 **Contexto:** Hoje todos os grupos são fechados — só participam membros convidados pelo admin. Esta feature adiciona visibilidade pública opcional e um mecanismo de entrada por lista de espera, permitindo crescimento orgânico dos grupos.
 
 ---
@@ -12,6 +13,7 @@
 - Jogadores avulsos interessados em um rachão não têm forma de se candidatar
 - O admin precisa saber de antemão quem convidar — não há fluxo orgânico de adesão
 - Grupos que queiram abrir vagas para desconhecidos não têm ferramenta para isso
+- Jogadores sem cadastro que recebem o link de uma partida com vaga disponível não têm caminho claro para participar — a oportunidade de conversão se perde
 
 ---
 
@@ -27,7 +29,10 @@ Permitir que grupos sejam configurados como **públicos**, tornando seu próximo
 - Flag `is_public` no grupo (criação e edição)
 - Página pública do grupo (acessível via link, sem necessidade de ser membro)
 - Fluxo de entrada na lista de espera com aceite de termos
-- Painel de admins para aceite/rejeição de candidatos
+- Campo de apresentação ("Conte um pouco sobre você") na candidatura
+- Fluxo de cadastro integrado para jogadores sem conta que chegam via link de partida
+- Redirecionamento automático para a lista de espera pós-cadastro
+- Painel de admins para aceite/rejeição de candidatos (com visualização da apresentação)
 - Adição automática ao grupo e confirmação de presença ao aceitar candidato
 - Notificações push para admins (novo candidato) e candidato (aceito/rejeitado)
 
@@ -59,9 +64,11 @@ Permitir que grupos sejam configurados como **públicos**, tornando seu próximo
 - Um jogador só pode estar na fila **uma vez por rachão**
 - Se o rachão for encerrado ou a data passar, candidatos pendentes são descartados automaticamente
 
-### 4.3 Aceite de termos
+### 4.3 Aceite de termos e apresentação
 
-Antes de confirmar a entrada na lista de espera, o jogador vê um resumo com:
+Antes de confirmar a entrada na lista de espera, o jogador preenche um modal com duas partes:
+
+**Parte 1 — Termos do rachão (somente leitura):**
 - Data, horário de início e término da partida
 - Local e endereço
 - Tipo de quadra
@@ -70,7 +77,15 @@ Antes de confirmar a entrada na lista de espera, o jogador vê um resumo com:
 - Valor por partida e/ou mensalidade (se configurados)
 - Regras gerais do grupo (campo `notes` do grupo, se preenchido)
 
-O jogador precisa marcar um checkbox — **"Li e concordo com as condições acima"** — para prosseguir. O timestamp do aceite é registrado no banco.
+**Parte 2 — Apresentação do candidato:**
+- Campo de texto livre: **"Conte um pouco sobre você"** (opcional, máx. 500 caracteres)
+- Exemplo de placeholder: _"Jogo há 5 anos, posição: meia. Disponível toda quinta."_
+- Esse texto é exibido aos admins no painel de revisão para auxiliar na decisão de aceite
+
+**Confirmação:**
+- Checkbox obrigatório: **"Li e concordo com as condições acima"**
+- Botão: **"Enviar candidatura"**
+- O timestamp do aceite e o texto de apresentação são registrados no banco
 
 ### 4.4 Aprovação pelo admin
 
@@ -96,32 +111,60 @@ O jogador precisa marcar um checkbox — **"Li e concordo com as condições aci
 
 ## 5. Fluxo de Usuário
 
-### Jogador externo
+### 5.1 Jogador com cadastro — via link da partida ou do grupo
 
 ```
-1. Recebe link compartilhado pelo admin (ex: rachao.app/groups/[id])
-2. Vê a página pública do grupo:
-   - Nome do grupo, tipo de quadra, local
-   - Próximo rachão: data, horário, vagas disponíveis (X/Y ou "vagas abertas")
-   - Botão "Entrar na fila" (visível se há vagas e usuário está logado)
-3. Clica em "Entrar na fila"
-4. Modal de termos é exibido:
-   - Detalhes do rachão
-   - Valores (se houver)
-   - Regras do grupo (se houver)
+1. Recebe link compartilhado pelo admin:
+   - Link da partida:  rachao.app/match/[hash]
+   - Link do grupo:    rachao.app/groups/[id]
+2. Está logado e vê a página com:
+   - Detalhes do rachão (data, local, vagas disponíveis)
+   - Botão "Quero jogar!" / "Entrar na fila" (se há vagas e não é membro)
+3. Clica no botão → modal de candidatura é exibido:
+   - Termos do rachão (somente leitura)
+   - Campo "Conte um pouco sobre você" (opcional, máx. 500 caracteres)
    - Checkbox: "Li e concordo com as condições acima"
-   - Botão: "Confirmar candidatura"
-5. Entra na fila com status "Aguardando aprovação"
-6. Vê mensagem de confirmação: "Sua candidatura foi enviada. Você será notificado quando um admin revisar."
-7. Recebe push quando aceito ou rejeitado
+   - Botão: "Enviar candidatura"
+4. Entra na fila com status "Aguardando aprovação"
+5. Vê confirmação: "Candidatura enviada! Você será notificado quando um admin revisar."
+6. Recebe push quando aceito ou rejeitado
 ```
 
-### Admin do grupo
+### 5.2 Jogador sem cadastro — via link da partida
+
+Este é o fluxo de maior oportunidade de conversão: o jogador chega via link da partida, vê vagas disponíveis, mas não tem conta.
+
+```
+1. Recebe link da partida: rachao.app/match/[hash]
+2. Acessa sem estar logado — a página /match/[hash] é pública
+3. Vê os detalhes da partida e as vagas disponíveis
+4. Vê um card de chamada à ação:
+   "Quer jogar? Crie sua conta grátis e entre na fila de espera."
+   Botão: "Criar conta e participar"
+5. É redirecionado para: /register?next=/match/[hash]&join_waitlist=1
+6. Preenche o cadastro (nome, WhatsApp, senha)
+7. Após criação da conta, é redirecionado automaticamente para /match/[hash]
+8. A página detecta o parâmetro join_waitlist=1 e abre o modal de candidatura automaticamente
+9. Preenche o modal:
+   - Termos do rachão
+   - Campo "Conte um pouco sobre você" (incentivado: "Ajude o admin a conhecer você")
+   - Checkbox de aceite
+   - Botão: "Enviar candidatura"
+10. Entra na fila com status "Aguardando aprovação"
+11. Recebe push quando aceito ou rejeitado
+```
+
+**Observação:** se o usuário já tiver uma conta mas não estiver logado, o fluxo usa `/login?next=/match/[hash]&join_waitlist=1` em vez de `/register`.
+
+### 5.3 Admin do grupo
 
 ```
 1. Recebe push: "⚽ [Nome] quer participar do rachão em [data]"
 2. Acessa a página do grupo → aba "Próximos" → badge na lista de espera
-3. Vê lista de candidatos: nome, data de candidatura, status
+3. Vê lista de candidatos com:
+   - Nome e apelido do candidato
+   - Data/hora da candidatura
+   - Texto de apresentação (se preenchido)
 4. Por candidato: botões [Aceitar] e [Rejeitar]
 5. Ao aceitar:
    - Candidato desaparece da fila
@@ -145,6 +188,10 @@ O jogador precisa marcar um checkbox — **"Li e concordo com as condições aci
 | Jogador tenta entrar na fila duas vezes | API retorna erro; frontend desabilita botão após entrada |
 | Grupo muda de público para fechado com candidatos na fila | Candidatos pendentes são descartados; não são notificados |
 | Não há próximo rachão aberto | Botão "Entrar na fila" não é exibido; grupo exibe mensagem "Nenhum rachão agendado no momento" |
+| Usuário sem conta acessa link da partida (`/match/[hash]`) de grupo fechado | Não vê botão de candidatura; pode criar conta normalmente pelo `/register` sem redirecionamento de waitlist |
+| Usuário cria conta via `/register?next=...&join_waitlist=1` mas a partida já foi encerrada quando retorna | Ao carregar `/match/[hash]`, o modal não é aberto (partida `closed`); mensagem: "Este rachão já foi encerrado" |
+| Usuário abandona o cadastro no meio do fluxo | Parâmetros `next` e `join_waitlist` se perdem; ao logar depois, vai para home normalmente |
+| Usuário chega via `/register?next=...&join_waitlist=1` mas já tem conta | É redirecionado para `/login?next=...&join_waitlist=1` com mensagem "Você já tem uma conta. Faça login para continuar." |
 
 ---
 
@@ -166,9 +213,10 @@ CREATE TABLE match_waitlist (
   id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id     UUID         NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
   player_id    UUID         NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  agreed_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),  -- timestamp do aceite dos termos
+  intro        TEXT,                                -- apresentação do candidato (máx. 500 chars, opcional)
+  agreed_at    TIMESTAMPTZ  NOT NULL DEFAULT now(), -- timestamp do aceite dos termos
   status       waitlist_status NOT NULL DEFAULT 'pending',
-  reviewed_by  UUID         REFERENCES players(id),  -- admin que tomou a ação
+  reviewed_by  UUID         REFERENCES players(id), -- admin que tomou a ação
   reviewed_at  TIMESTAMPTZ,
   created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
   UNIQUE (match_id, player_id)
@@ -204,7 +252,8 @@ CREATE INDEX idx_match_waitlist_status  ON match_waitlist (status);
 
 ```json
 {
-  "agreed": true  // aceite explícito dos termos — campo obrigatório
+  "agreed": true,   // aceite explícito dos termos — obrigatório
+  "intro": "Jogo há 5 anos, posição: meia. Disponível toda quinta."  // opcional, máx. 500 chars
 }
 ```
 
@@ -223,24 +272,51 @@ CREATE INDEX idx_match_waitlist_status  ON match_waitlist (status);
 | Arquivo | Alteração |
 |---|---|
 | `src/routes/groups/new/+page.svelte` | Adiciona toggle "Visibilidade" (Público / Fechado) |
-| `src/routes/groups/[id]/+page.svelte` | Exibe toggle editável de visibilidade; mostra painel de lista de espera para admins; exibe botão "Entrar na fila" para não-membros |
-| `src/lib/components/WaitlistModal.svelte` | Modal com termos do rachão + checkbox de aceite (novo componente) |
-| `src/lib/components/WaitlistPanel.svelte` | Painel admin: lista de candidatos com botões Aceitar/Rejeitar (novo componente) |
+| `src/routes/groups/[id]/+page.svelte` | Exibe toggle editável de visibilidade; mostra painel de lista de espera para admins; exibe botão "Entrar na fila" para não-membros logados |
+| `src/routes/match/[hash]/+page.svelte` | Exibe card de chamada à ação para não-logados com vagas disponíveis; abre modal de candidatura automaticamente se `join_waitlist=1` na URL |
+| `src/routes/register/+page.svelte` | Preserva parâmetros `next` e `join_waitlist` na URL após cadastro e redireciona corretamente |
+| `src/routes/login/+page.svelte` | Preserva parâmetros `next` e `join_waitlist` na URL após login e redireciona corretamente |
+| `src/lib/components/WaitlistModal.svelte` | Modal: termos do rachão + campo "Conte sobre você" + checkbox + botão (novo componente) |
+| `src/lib/components/WaitlistPanel.svelte` | Painel admin: lista de candidatos com apresentação e ações Aceitar/Rejeitar (novo componente) |
 
-### Visibilidade do botão "Entrar na fila"
+### Visibilidade do botão "Entrar na fila" (usuário logado)
 
 ```
 Exibir quando:
   - grupo.is_public === true
   - usuário está logado
   - usuário NÃO é membro do grupo
-  - existe um rachão com status 'open'
+  - existe um rachão com status 'open' ou 'in_progress'
   - confirmed_count < max_players OU max_players == null
   - usuário ainda não está na fila desse rachão
 
 Desabilitar (com mensagem) quando:
   - rachão está lotado (confirmed_count >= max_players)
   - usuário já está na fila (status 'pending')
+```
+
+### Card de chamada à ação (usuário não logado na página /match/[hash])
+
+```
+Exibir quando:
+  - usuário NÃO está logado
+  - grupo do rachão é público (is_public = true)
+  - rachão tem status 'open' e há vagas disponíveis
+
+Conteúdo:
+  "Quer jogar? Crie sua conta grátis e entre na fila de espera."
+  [Criar conta e participar] → /register?next=/match/[hash]&join_waitlist=1
+  [Já tenho conta]           → /login?next=/match/[hash]&join_waitlist=1
+```
+
+### Abertura automática do modal pós-cadastro/login
+
+```
+Na página /match/[hash], ao detectar join_waitlist=1 na URL:
+  - Aguardar carregamento do match (status check)
+  - Se match.status === 'open' e há vagas → abre WaitlistModal automaticamente
+  - Remove join_waitlist=1 da URL (history.replaceState) após abrir o modal
+  - Se match já estiver closed → exibe mensagem informativa, não abre modal
 ```
 
 ---
@@ -269,28 +345,33 @@ Nesta versão, grupos públicos são encontrados **exclusivamente via link diret
 
 ### Backend
 - [ ] Migration: coluna `is_public` na tabela `groups` (default `true`)
-- [ ] Migration: tabela `match_waitlist` e enum `waitlist_status`
+- [ ] Migration: tabela `match_waitlist` e enum `waitlist_status` (com coluna `intro TEXT`)
 - [ ] Model `Group`: adicionar campo `is_public`
-- [ ] Model `MatchWaitlist`: novo model
+- [ ] Model `MatchWaitlist`: novo model (com campo `intro`)
 - [ ] Repository `WaitlistRepository`: CRUD + queries por match/player
-- [ ] `POST /groups/{id}/waitlist`: valida grupo público, rachão aberto, vagas, not already member/in queue — cria entrada + envia push para admins
-- [ ] `GET /groups/{id}/waitlist`: retorna candidatos (admin only)
+- [ ] `POST /groups/{id}/waitlist`: valida grupo público, rachão aberto, vagas, not already member/in queue — aceita `intro` opcional (máx. 500 chars) — cria entrada + envia push para admins
+- [ ] `GET /groups/{id}/waitlist`: retorna candidatos com `intro` visível (admin only)
 - [ ] `PATCH /groups/{id}/waitlist/{entry_id}`: aceita (add member + confirm attendance + push) ou rejeita (push) — bloqueia aceite se rachão lotado
 - [ ] Atualizar `POST /groups` e `PATCH /groups/{id}` com campo `is_public`
-- [ ] Ajustar visibilidade do `GET /groups/{id}/matches` para grupos públicos (sem auth)
+- [ ] Expor `is_public` e `group_id` no response do `GET /matches/public/{hash}` (para o frontend saber se deve exibir o CTA)
 
 ### Frontend
 - [ ] Toggle "Visibilidade" em `groups/new`
 - [ ] Toggle editável em `groups/[id]` (configurações do grupo, admin only)
-- [ ] Exibir próximo rachão na visão pública do grupo para não-membros
-- [ ] Botão "Entrar na fila" com todos os guards de exibição/habilitação
-- [ ] `WaitlistModal.svelte`: termos do rachão + checkbox + botão confirmar
-- [ ] `WaitlistPanel.svelte`: painel admin com lista de candidatos e ações
-- [ ] Feedback de status para candidato na página do grupo ("Aguardando aprovação")
+- [ ] Exibir próximo rachão na visão pública do grupo para não-membros logados
+- [ ] Botão "Entrar na fila" com todos os guards de exibição/habilitação (usuários logados)
+- [ ] `WaitlistModal.svelte`: termos do rachão + campo "Conte sobre você" (textarea, máx. 500 chars, opcional) + checkbox + botão confirmar
+- [ ] `WaitlistPanel.svelte`: painel admin com lista de candidatos, exibição do `intro` e ações Aceitar/Rejeitar
+- [ ] Feedback de status para candidato na página do grupo e do rachão ("Aguardando aprovação")
+- [ ] Card de CTA em `/match/[hash]` para usuários não logados (grupo público + vagas)
+- [ ] Suporte a `?next=` e `?join_waitlist=1` em `/register` e `/login`
+- [ ] Abertura automática do `WaitlistModal` em `/match/[hash]` quando `join_waitlist=1` na URL pós-auth
 
 ### Testes E2E
-- [ ] Jogador externo → entra na fila → admin aceita → aparece como confirmado
-- [ ] Jogador externo → entra na fila → admin rejeita → não é adicionado ao grupo
-- [ ] Tentativa de entrar na fila sem login → redireciona para login
+- [ ] Jogador logado → entra na fila via página do grupo → admin aceita → aparece como confirmado
+- [ ] Jogador logado → entra na fila via página da partida → admin rejeita → não adicionado ao grupo
+- [ ] Jogador sem conta → acessa link da partida → vê CTA → cadastra → modal abre automaticamente → entra na fila
+- [ ] Jogador com conta sem login → acessa link da partida → vê CTA → faz login → modal abre automaticamente
 - [ ] Tentativa de entrar na fila em grupo fechado → botão não exibido
 - [ ] Tentativa de aceitar candidato com rachão lotado → erro claro
+- [ ] Partida encerrada ao retornar pós-cadastro → modal não abre, mensagem informativa exibida
