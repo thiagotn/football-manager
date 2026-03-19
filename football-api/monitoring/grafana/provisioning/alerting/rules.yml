@@ -1,0 +1,312 @@
+# Grafana Unified Alerting — provisionamento automático
+# Documentação: https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/
+#
+# Pipeline de cada regra: Query (A) → Reduce (B) → Threshold (C)
+#   A: busca a métrica no Prometheus
+#   B: reduz a série temporal para um único valor (última leitura)
+#   C: aplica a condição de disparo
+#
+# Para adicionar notificações (Telegram, e-mail, etc.):
+#   Crie um contact point em Alerting → Contact points e configure
+#   a notification policy em Alerting → Notification policies.
+#
+# Nota sobre a métrica de 5xx: prometheus-fastapi-instrumentator v7 expõe
+# o histograma http_request_duration_seconds com label "status_code".
+# Se após o deploy os dados não aparecerem, verifique o nome real em
+# https://api.rachao.app/metrics e ajuste a linha `expr` abaixo.
+
+apiVersion: 1
+
+groups:
+  # ──────────────────────────────────────────────────────────────────────
+  # Infraestrutura: RAM, disco e CPU do host (via Node Exporter)
+  # ──────────────────────────────────────────────────────────────────────
+  - orgId: 1
+    name: Infraestrutura
+    folder: Alertas
+    interval: 1m
+    rules:
+
+      # ── RAM > 85% por 5 minutos ──────────────────────────────────────
+      - uid: alert-ram-high
+        title: "RAM > 85%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 85
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAM do servidor acima de 85%"
+          description: "Uso atual: {{ $values.B.Value | printf \"%.1f\" }}%"
+
+      # ── Disco > 80% ──────────────────────────────────────────────────
+      - uid: alert-disk-high
+        title: "Disco > 80%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: "(node_filesystem_size_bytes{mountpoint=\"/\"} - node_filesystem_avail_bytes{mountpoint=\"/\"}) / node_filesystem_size_bytes{mountpoint=\"/\"} * 100"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 80
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco do servidor acima de 80%"
+          description: "Uso atual: {{ $values.B.Value | printf \"%.1f\" }}%"
+
+      # ── CPU > 90% por 10 minutos ─────────────────────────────────────
+      - uid: alert-cpu-high
+        title: "CPU > 90%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        isPaused: false
+        labels:
+          severity: critical
+        annotations:
+          summary: "CPU do servidor acima de 90%"
+          description: "Uso atual: {{ $values.B.Value | printf \"%.1f\" }}%"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # API: taxa de erros 5xx (via prometheus-fastapi-instrumentator v7)
+  # ──────────────────────────────────────────────────────────────────────
+  - orgId: 1
+    name: API
+    folder: Alertas
+    interval: 1m
+    rules:
+
+      # ── Taxa de erros 5xx > 1% por 5 minutos ────────────────────────
+      - uid: alert-5xx-rate-high
+        title: "Taxa de erros 5xx > 1%"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              # prometheus-fastapi-instrumentator v7 expõe histograma:
+              # http_request_duration_seconds{handler, method, status_code}
+              # _count é o sub-campo de contagem total do histograma.
+              expr: "sum(rate(http_request_duration_seconds_count{status_code=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count[5m])) * 100"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taxa de erros 5xx acima de 1%"
+          description: "Taxa atual: {{ $values.B.Value | printf \"%.2f\" }}% das requisições"

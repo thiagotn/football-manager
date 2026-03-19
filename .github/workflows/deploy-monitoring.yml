@@ -35,12 +35,14 @@ jobs:
           DEPLOY_DIR: ${{ env.DEPLOY_DIR }}
           GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER || 'admin' }}
           GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
-          envs: DEPLOY_DIR,GRAFANA_ADMIN_USER,GRAFANA_ADMIN_PASSWORD
+          envs: DEPLOY_DIR,GRAFANA_ADMIN_USER,GRAFANA_ADMIN_PASSWORD,TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID
           script: |
             set -euo pipefail
             cd "$DEPLOY_DIR"
@@ -49,6 +51,8 @@ jobs:
             cat > .env.monitoring << EOF
             GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}
             GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+            TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+            TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
             EOF
 
             echo "==> Subindo stack de monitoramento..."
