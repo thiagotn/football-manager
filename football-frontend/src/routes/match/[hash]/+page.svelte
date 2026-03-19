@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { matches as matchesApi, groups as groupsApi, votes as votesApi, teams as teamsApi, ApiError } from '$lib/api';
   import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse } from '$lib/api';
@@ -107,6 +108,22 @@
       if (!cancelled) loading = false;
     })();
     return () => { cancelled = true; };
+  });
+
+  // Polling: atualiza dados a cada 60s enquanto a partida não estiver encerrada.
+  // Guards: tab visível + status ativo (open/in_progress). Para ao ficar closed.
+  onMount(() => {
+    function refresh() {
+      if (document.visibilityState !== 'visible') return;
+      if (!match || match.status === 'closed') return;
+      matchesApi.getByHash(matchHash).then(m => { match = m; }).catch(() => {});
+    }
+    const timer = setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   });
 
   // Carrega times existentes quando a partida é carregada

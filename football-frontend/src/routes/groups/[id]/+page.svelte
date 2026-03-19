@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, finance as financeApi, ApiError } from '$lib/api';
@@ -270,6 +271,23 @@
       if (!cancelled) loading = false;
     })();
     return () => { cancelled = true; };
+  });
+
+  // Polling: atualiza lista de rachões a cada 60s.
+  // Guards: tab visível + aba "Próximos" + existe ao menos um rachão aberto/em andamento.
+  onMount(() => {
+    function refresh() {
+      if (document.visibilityState !== 'visible') return;
+      if (tab !== 'upcoming') return;
+      if (!matchList.some(m => m.status === 'open' || m.status === 'in_progress')) return;
+      matchesApi.list(groupId).then(ms => { matchList = ms; }).catch(() => {});
+    }
+    const timer = setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   });
 
   function isGroupAdmin() {

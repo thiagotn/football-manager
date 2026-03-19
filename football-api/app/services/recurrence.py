@@ -115,37 +115,55 @@ async def run_recurrence(session: AsyncSession) -> int:
     return created
 
 
-async def run_recurrence_job() -> None:
-    """Entry point chamado pelo scheduler — gerencia sua própria sessão."""
+async def _send_in_progress_pushes(session, m_repo: MatchRepository, candidates: list) -> None:
+    """Envia push 'Bola rolando' para os jogadores confirmados dos candidatos a IN_PROGRESS."""
+    for m in candidates:
+        confirmed_ids = await m_repo.get_confirmed_player_ids(m.id)
+        await asyncio.gather(*[
+            send_push(
+                session, pid,
+                title=f"⚽ Bola rolando! — {m.group.name}",
+                body="A partida de hoje já começou! 🎉",
+                url=f"https://rachao.app/match/{m.hash}",
+            )
+            for pid in confirmed_ids
+        ], return_exceptions=True)
+
+
+async def run_status_sync_job() -> None:
+    """
+    Job horário — fecha partidas com data passada e transiciona para IN_PROGRESS.
+    Não cria novos rachões (responsabilidade exclusiva do job das 07h).
+    """
     session_factory = get_session_factory()
     async with session_factory() as session:
         try:
             m_repo = MatchRepository(session)
-
-            # Pre-fetch matches that will transition to IN_PROGRESS before the bulk UPDATE
             in_progress_candidates = await m_repo.get_in_progress_candidates()
+            closed = await m_repo.close_past_matches()
+            await session.commit()
+            if closed:
+                logger.info("status_sync_auto_closed", matches_closed=closed)
+            await _send_in_progress_pushes(session, m_repo, in_progress_candidates)
+        except Exception:
+            await session.rollback()
+            logger.exception("status_sync_job_failed")
 
+
+async def run_recurrence_job() -> None:
+    """Job das 07h — fecha partidas passadas, cria próximos rachões e envia notificações."""
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        try:
+            m_repo = MatchRepository(session)
+            in_progress_candidates = await m_repo.get_in_progress_candidates()
             closed = await m_repo.close_past_matches()
             if closed:
                 logger.info("recurrence_auto_closed", matches_closed=closed)
-
             count = await run_recurrence(session)
             await session.commit()
             logger.info("recurrence_job_done", matches_created=count)
-
-            # Send "Bola rolando" push after commit (session still valid for new queries)
-            for match in in_progress_candidates:
-                confirmed_ids = await m_repo.get_confirmed_player_ids(match.id)
-                await asyncio.gather(*[
-                    send_push(
-                        session, pid,
-                        title=f"⚽ Bola rolando! — {match.group.name}",
-                        body="A partida de hoje já começou! 🎉",
-                        url=f"https://rachao.app/match/{match.hash}",
-                    )
-                    for pid in confirmed_ids
-                ], return_exceptions=True)
-
+            await _send_in_progress_pushes(session, m_repo, in_progress_candidates)
         except Exception:
             await session.rollback()
             logger.exception("recurrence_job_failed")

@@ -12,7 +12,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db.migrate import run_migrations
-from app.services.recurrence import run_recurrence_job
+from app.services.recurrence import run_recurrence_job, run_status_sync_job
 
 logger = structlog.get_logger()
 
@@ -44,7 +44,11 @@ async def lifespan(app: FastAPI):
     await run_migrations(get_settings().database_url)
 
     scheduler = AsyncIOScheduler(timezone="America/Sao_Paulo")
+    # 07h: fecha partidas passadas + cria próximos rachões por recorrência
     scheduler.add_job(run_recurrence_job, CronTrigger(hour=7, minute=0))
+    # A cada hora (:30): fecha partidas passadas e transiciona para IN_PROGRESS
+    # Roda em :30 para não coincidir com o job das 07:00
+    scheduler.add_job(run_status_sync_job, CronTrigger(minute=30))
     scheduler.start()
     logger.info("api_started", version=get_settings().app_version)
 
