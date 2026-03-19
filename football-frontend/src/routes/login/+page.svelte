@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { auth, ApiError } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
@@ -13,14 +14,13 @@
   let loading = $state(false);
   let showPw = $state(false);
   let error = $state('');
-  let sessionExpired = $state(false);
+
+  // Banner reativo ao parâmetro de URL — sem sessionStorage
+  let sessionExpired = $derived($page.url.searchParams.get('expired') === '1');
 
   onMount(() => {
-    if (sessionStorage.getItem('session_expired')) {
-      sessionExpired = true;
-      sessionStorage.removeItem('session_expired');
-      // Limpa o token stale aqui, após o banner já estar na tela, evitando
-      // a navegação dupla que ocorreria se o logout fosse feito no layout.
+    // Limpa o token stale quando chegamos via expiração de sessão
+    if ($page.url.searchParams.get('expired') === '1') {
       authStore.logout();
     }
   });

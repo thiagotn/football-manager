@@ -24,13 +24,8 @@
   $effect(() => {
     if ($sessionExpiredStore) {
       sessionExpiredStore.set(false);
-      // Não chama authStore.logout() aqui: isso dispararia o $effect de proteção
-      // de rotas, causando um segundo goto('/login') que remonta o login page e
-      // apaga o sessionStorage antes do banner ser lido. O logout é feito no
-      // onMount do login page, depois que o banner já foi exibido.
       toastInfo('Sua sessão expirou. Faça login novamente.');
-      sessionStorage.setItem('session_expired', '1');
-      goto('/login');
+      goto('/login?expired=1');
     }
   });
 

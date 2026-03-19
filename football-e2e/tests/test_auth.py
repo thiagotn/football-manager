@@ -23,8 +23,8 @@ def test_sessao_expirada_redireciona_e_exibe_banner(admin_page: Page):
 
     admin_page.goto("/groups")
 
-    # Deve redirecionar para /login
-    expect(admin_page).to_have_url(re.compile(r".*/login"), timeout=8000)
+    # Deve redirecionar para /login?expired=1
+    expect(admin_page).to_have_url(re.compile(r".*/login\?expired=1"), timeout=8000)
 
     # Banner contextual na página de login deve estar visível
     expect(admin_page.locator("[data-testid='session-expired-banner']")).to_be_visible()
