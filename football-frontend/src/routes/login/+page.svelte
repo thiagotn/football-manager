@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { toastError, toastSuccess } from '$lib/stores/toast';
   import { Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-svelte';
+  import PwaSmartBanner from '$lib/components/PwaSmartBanner.svelte';
 
   // ── Login ──────────────────────────────────────────────────
   let whatsapp = $state('');
@@ -121,6 +122,8 @@
 </script>
 
 <svelte:head><title>Login — rachao.app</title></svelte:head>
+
+<PwaSmartBanner />
 
 <div class="min-h-screen flex items-center justify-center p-4 relative bg-primary-900"
   style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">

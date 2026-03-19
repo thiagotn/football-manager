@@ -1,6 +1,9 @@
 <script lang="ts">
   import { PLAN_ORDER, PLANS, formatPrice, formatCents } from '$lib/plans';
+  import PwaSmartBanner from '$lib/components/PwaSmartBanner.svelte';
 </script>
+
+<PwaSmartBanner />
 
 <svelte:head>
   <title>rachao.app — Organize suas partidas de futebol com facilidade</title>
