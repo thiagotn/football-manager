@@ -36,5 +36,6 @@ BEGIN
     END IF;
 END $$;
 
--- 4. Drop the now-unused global sequence
+-- 4. Remove the column default that references the sequence, then drop it
+ALTER TABLE matches ALTER COLUMN number DROP DEFAULT;
 DROP SEQUENCE IF EXISTS matches_number_seq;
