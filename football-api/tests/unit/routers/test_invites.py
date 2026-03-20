@@ -237,6 +237,10 @@ async def test_accept_invite_new_user_success(api_client, mocker):
         "app.api.v1.routers.invites.MatchRepository.get_open_matches",
         new=AsyncMock(return_value=[]),
     )
+    mocker.patch(
+        "app.api.v1.routers.invites.FinanceRepository.ensure_member_in_current_period",
+        new=AsyncMock(return_value=None),
+    )
 
     response = await api_client.post(
         "/api/v1/invites/tokenvalido/accept",
