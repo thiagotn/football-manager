@@ -157,28 +157,28 @@
     <div class="space-y-2">
       {#each faqs as faq, i}
         <div id={faq.id} class="card overflow-hidden scroll-mt-4">
-          <button
-            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
-            onclick={() => toggle(i, faq.id)}
-          >
-            <span class="font-medium text-gray-800 dark:text-gray-100 text-sm flex items-center gap-2">
-              {faq.q}
-              <button
-                type="button"
-                onclick={(e) => copyLink(faq.id, e)}
-                class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-primary-500 shrink-0"
-                title="Copiar link"
-                aria-label="Copiar link para esta pergunta"
-              >
-                {#if copiedId === faq.id}
-                  <span class="text-xs text-green-500 font-normal">copiado!</span>
-                {:else}
-                  <Link2 size={13} />
-                {/if}
-              </button>
-            </span>
-            <span class="text-primary-600 dark:text-primary-400 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
-          </button>
+          <div class="flex items-center group hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button
+              class="flex-1 flex items-center justify-between px-5 py-4 text-left gap-3"
+              onclick={() => toggle(i, faq.id)}
+            >
+              <span class="font-medium text-gray-800 dark:text-gray-100 text-sm">{faq.q}</span>
+              <span class="text-primary-600 dark:text-primary-400 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
+            </button>
+            <button
+              type="button"
+              onclick={(e) => copyLink(faq.id, e)}
+              class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-primary-500 shrink-0 pr-4 py-4"
+              title="Copiar link"
+              aria-label="Copiar link para esta pergunta"
+            >
+              {#if copiedId === faq.id}
+                <span class="text-xs text-green-500 font-normal whitespace-nowrap">copiado!</span>
+              {:else}
+                <Link2 size={13} />
+              {/if}
+            </button>
+          </div>
           {#if openIndex === i}
             <div class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-700 pt-3">
               {@html faq.a}
