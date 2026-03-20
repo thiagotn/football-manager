@@ -84,7 +84,9 @@ async def run_recurrence(session: AsyncSession) -> int:
         session.add(new_match)
         await session.flush()
 
-        player_ids = await m_repo.get_attendance_player_ids(last_match.id)
+        # Usa todos os membros atuais do grupo (não apenas os da partida anterior),
+        # garantindo que quem entrou depois do último rachão também seja convidado.
+        player_ids = await g_repo.get_member_ids(group.id)
         for player_id in player_ids:
             session.add(Attendance(
                 match_id=new_match.id,
