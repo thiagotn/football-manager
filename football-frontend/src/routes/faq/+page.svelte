@@ -1,16 +1,54 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { PUBLIC_LEGAL_CONTACT_EMAIL } from '$env/static/public';
   import { themeStore } from '$lib/stores/theme';
-  import { Sun, Moon } from 'lucide-svelte';
+  import { Sun, Moon, Link2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let openIndex = $state<number | null>(null);
+  let copiedId = $state<string | null>(null);
 
-  function toggle(i: number) {
-    openIndex = openIndex === i ? null : i;
+  function slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
-  type Faq = { q: string; a: string; steps?: string[] };
+  function toggle(i: number, id: string) {
+    if (openIndex === i) {
+      openIndex = null;
+      history.replaceState(null, '', location.pathname);
+    } else {
+      openIndex = i;
+      history.replaceState(null, '', `#${id}`);
+    }
+  }
+
+  async function copyLink(id: string, e: MouseEvent) {
+    e.stopPropagation();
+    const url = `${location.origin}${location.pathname}#${id}`;
+    await navigator.clipboard.writeText(url);
+    copiedId = id;
+    setTimeout(() => { copiedId = null; }, 2000);
+  }
+
+  onMount(() => {
+    const hash = location.hash.slice(1);
+    if (hash) {
+      const idx = faqs.findIndex(f => f.id === hash);
+      if (idx !== -1) {
+        openIndex = idx;
+        setTimeout(() => {
+          document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  });
+
+  type Faq = { id: string; q: string; a: string; steps?: string[] };
 
   const faqs: Faq[] = [
     {
@@ -67,7 +105,7 @@
     },
     {
       q: 'O rachao.app está fora do ar?',
-      a: 'Você pode verificar o status em tempo real em status.rachao.app. Se tudo estiver verde e o problema persistir, aguarde alguns minutos e tente novamente.',
+      a: 'Você pode verificar o status em tempo real em <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 hover:underline">status.rachao.app</a>. Se tudo estiver verde e o problema persistir, aguarde alguns minutos e tente novamente.',
     },
     {
       q: 'E se eu não confirmar pelo link a tempo?',
@@ -93,7 +131,7 @@
         'Confirme o nome e toque em "Adicionar"',
       ],
     },
-  ];
+  ].map(f => ({ ...f, id: slugify(f.q) }));
 </script>
 
 <svelte:head>
@@ -118,17 +156,32 @@
   <main class="relative z-10 max-w-2xl mx-auto px-4 pb-8">
     <div class="space-y-2">
       {#each faqs as faq, i}
-        <div class="card overflow-hidden">
+        <div id={faq.id} class="card overflow-hidden scroll-mt-4">
           <button
-            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            onclick={() => toggle(i)}
+            class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+            onclick={() => toggle(i, faq.id)}
           >
-            <span class="font-medium text-gray-800 dark:text-gray-100 text-sm">{faq.q}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-100 text-sm flex items-center gap-2">
+              {faq.q}
+              <button
+                type="button"
+                onclick={(e) => copyLink(faq.id, e)}
+                class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-primary-500 shrink-0"
+                title="Copiar link"
+                aria-label="Copiar link para esta pergunta"
+              >
+                {#if copiedId === faq.id}
+                  <span class="text-xs text-green-500 font-normal">copiado!</span>
+                {:else}
+                  <Link2 size={13} />
+                {/if}
+              </button>
+            </span>
             <span class="text-primary-600 dark:text-primary-400 text-lg shrink-0 transition-transform duration-200 {openIndex === i ? 'rotate-45' : ''}">+</span>
           </button>
           {#if openIndex === i}
             <div class="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-700 pt-3">
-              {faq.a}
+              {@html faq.a}
               {#if faq.steps}
                 <ol class="mt-2 space-y-1 list-decimal list-inside">
                   {#each faq.steps as step}
