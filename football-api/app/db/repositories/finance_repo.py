@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
@@ -101,3 +101,33 @@ class FinanceRepository:
         payment.paid_at = None
         await self.session.flush()
         return payment
+
+    async def ensure_member_in_current_period(
+        self, group_id: UUID, player_id: UUID, player_name: str
+    ) -> None:
+        """If a finance period already exists for the current month, add the new
+        member to it. This prevents members added after period creation from
+        being invisible in the financial view."""
+        today = date.today()
+        period = await self.get_period(group_id, today.year, today.month)
+        if period is None:
+            return
+
+        existing = await self.session.execute(
+            select(FinancePayment).where(
+                FinancePayment.period_id == period.id,
+                FinancePayment.player_id == player_id,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            return
+
+        self.session.add(
+            FinancePayment(
+                period_id=period.id,
+                player_id=player_id,
+                player_name=player_name,
+                status="pending",
+            )
+        )
+        await self.session.flush()

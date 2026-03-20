@@ -11,6 +11,7 @@ from app.db.repositories.subscription_repo import SubscriptionRepository
 
 _FREE_MEMBERS_LIMIT = 30
 from app.core.security import create_access_token, hash_password, verify_password
+from app.db.repositories.finance_repo import FinanceRepository
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.invite_repo import InviteRepository
 from app.db.repositories.match_repo import MatchRepository
@@ -152,6 +153,12 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
             existing_att = await m_repo.get_attendance(match.id, player.id)
             if not existing_att:
                 await m_repo.create_pending_attendances(match.id, [player.id])
+
+        # Garante que o novo membro aparece no período financeiro do mês corrente
+        f_repo = FinanceRepository(db)
+        await f_repo.ensure_member_in_current_period(
+            invite.group_id, player.id, player.nickname or player.name
+        )
 
     # Mark invite as used
     invite.used = True

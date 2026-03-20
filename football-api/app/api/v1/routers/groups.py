@@ -22,6 +22,7 @@ _PLAN_MEMBERS_LIMIT: dict[str, int | None] = {
     "basic": 50,
     "pro":   None,  # ilimitado
 }
+from app.db.repositories.finance_repo import FinanceRepository
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.group_stats_repo import GroupStatsRepository
 from app.db.repositories.match_repo import MatchRepository
@@ -252,6 +253,12 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
     active_matches = await m_repo.get_active_matches(group_id)
     for match in active_matches:
         await m_repo.upsert_attendance(match.id, body.player_id, AttendanceStatus.PENDING)
+
+    # Garante que o novo membro aparece no período financeiro do mês corrente
+    f_repo = FinanceRepository(db)
+    await f_repo.ensure_member_in_current_period(
+        group_id, body.player_id, player.nickname or player.name
+    )
 
     await db.refresh(member)
     # Eager load player for response
@@ -532,6 +539,11 @@ async def review_waitlist_entry(
         existing_member = await g_repo.get_member(group_id, entry.player_id)
         if not existing_member:
             await g_repo.add_member(group_id, entry.player_id, GroupMemberRole.MEMBER)
+            # Garante que o novo membro aparece no período financeiro do mês corrente
+            f_repo = FinanceRepository(db)
+            await f_repo.ensure_member_in_current_period(
+                group_id, entry.player_id, candidate_player.nickname or candidate_player.name
+            )
 
         # Confirm attendance
         m_repo = MatchRepository(db)
