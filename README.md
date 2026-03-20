@@ -64,26 +64,22 @@ Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
 
 ## Executar localmente
 
-> Todos os comandos abaixo devem ser executados a partir do diretório `football-api/`.
-
-```bash
-cd football-api
-```
-
 ### 1. Configurar variáveis de ambiente
 
 ```bash
-cp .env.example .env.docker
+cp football-api/.env.example football-api/.env.docker
 ```
 
 O arquivo já vem configurado para o ambiente local. Não é necessário alterar nada para rodar.
 
 ### 2. Subir os containers
 
+A partir da **raiz do repositório**:
+
 ```bash
+make up        # build normal + sobe API, frontend e PostgreSQL
+# ou:
 docker compose up --build
-# ou com Make:
-make up
 ```
 
 Na primeira execução o Docker irá:
@@ -124,30 +120,36 @@ Acesse http://localhost:8080 e conecte com:
 
 ## Comandos úteis
 
-Execute a partir de `football-api/`:
+### Raiz do repositório
 
 ```bash
-make up           # Sobe tudo com build
-make up-bg        # Sobe em background e exibe logs da API
+make up           # Build + sobe API, frontend e PostgreSQL
+make rebuild      # Rebuild sem cache (--no-cache) + sobe tudo
 make down         # Para todos os containers
 make down-clean   # Para e apaga o volume do banco (dados zerados)
 make logs         # Logs da API e do frontend em tempo real
+```
+
+### Dentro de `football-api/` (comandos adicionais)
+
+```bash
+make up-bg        # Sobe em background e exibe logs da API
 make shell        # Bash dentro do container da API
 make db-connect   # psql direto no banco
 make adminer      # Sobe o Adminer (UI do banco)
 make health       # Verifica saúde da API
 make docs         # Abre o Swagger no browser
-make test         # Roda os testes
+make test         # Roda os testes unitários
 ```
 
-Ou com Docker Compose diretamente:
+Ou com Docker Compose diretamente (a partir da raiz):
 
 ```bash
-docker compose up -d --build      # Subir em background
-docker compose logs -f api        # Logs da API
-docker compose down               # Parar tudo
-docker compose down -v            # Parar e apagar volumes (banco zerado)
-docker compose build --no-cache   # Rebuild forçado sem cache
+docker compose up -d --build             # Subir em background
+docker compose logs -f api frontend      # Logs da API e frontend
+docker compose down                      # Parar tudo
+docker compose down -v                   # Parar e apagar volumes (banco zerado)
+docker compose build --no-cache          # Rebuild forçado sem cache
 ```
 
 ---
