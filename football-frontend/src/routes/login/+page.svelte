@@ -10,6 +10,12 @@
 
   // ── Login ──────────────────────────────────────────────────
   let whatsapp = $state('');
+
+  function sanitizePhone(value: string): string {
+    let digits = value.replace(/\D/g, '');
+    if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2);
+    return digits;
+  }
   let password = $state('');
   let loading = $state(false);
   let showPw = $state(false);
@@ -164,7 +170,8 @@
         <div class="form-group">
           <label class="label" for="whatsapp">WhatsApp</label>
           <input id="whatsapp" class="input" type="tel" bind:value={whatsapp}
-            placeholder="11999990000" required autocomplete="username" />
+            placeholder="11999990000" required autocomplete="username"
+            oninput={(e) => { whatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
         </div>
 
         <div class="form-group">
@@ -214,7 +221,8 @@
           <label class="label" for="forgot-whatsapp">Celular</label>
           <input id="forgot-whatsapp" class="input" type="tel"
             bind:value={forgotWhatsapp} placeholder="11999990000"
-            disabled={forgotLoading} />
+            disabled={forgotLoading}
+            oninput={(e) => { forgotWhatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
           <p class="text-xs text-gray-400 mt-1">Somente números, com DDD. Você receberá um código por SMS ou WhatsApp.</p>
         </div>
 

@@ -12,6 +12,13 @@
   // ── Step 1 — WhatsApp ──────────────────────────────────────
   let whatsapp = $state('');
 
+  function sanitizePhone(value: string): string {
+    let digits = value.replace(/\D/g, '');
+    // Remove código do país +55 se preenchido pelo autocomplete (ex: 5511999990000 → 11999990000)
+    if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2);
+    return digits;
+  }
+
   // ── Step 2 — OTP ───────────────────────────────────────────
   let digits = $state(['', '', '', '', '', '']);
   let inputRefs: HTMLInputElement[] = [];
@@ -256,7 +263,8 @@
             <div class="form-group">
               <label class="label" for="whatsapp">Celular *</label>
               <input id="whatsapp" class="input" type="tel" bind:value={whatsapp}
-                placeholder="11999990000" required autocomplete="tel" />
+                placeholder="11999990000" required autocomplete="tel"
+                oninput={(e) => { whatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
               <p class="text-xs text-gray-400 mt-1">Somente números, com DDD. Você receberá um código por SMS ou WhatsApp.</p>
             </div>
 
