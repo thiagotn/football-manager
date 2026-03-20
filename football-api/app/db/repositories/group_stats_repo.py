@@ -13,7 +13,7 @@ _MONTHS_PT = [
 ]
 
 # Partidas elegíveis: encerradas E com votação também encerrada (closes_at < NOW())
-# closes_at = match_date + end_time (ou 23:59) em BRT + 24h20min
+# closes_at = match_date + end_time (ou 23:59) em BRT + vote_open_delay_minutes + vote_duration_hours
 _QUERY_TEMPLATE = """
 WITH eligible_matches AS (
     SELECT id, match_date
@@ -23,7 +23,8 @@ WITH eligible_matches AS (
       AND  (
         (match_date + COALESCE(end_time, '23:59:00'::time))::timestamp
         AT TIME ZONE 'America/Sao_Paulo'
-        + interval '24 hours 20 minutes'
+        + (vote_open_delay_minutes || ' minutes')::interval
+        + (vote_duration_hours    || ' hours')::interval
       ) < NOW()
     {date_filter}
 ),

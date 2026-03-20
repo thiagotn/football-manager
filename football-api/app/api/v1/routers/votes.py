@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -9,8 +10,10 @@ from app.core.dependencies import CurrentPlayer, DB
 
 _BRT = ZoneInfo("America/Sao_Paulo")
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.vote_repo import VoteRepository
+from app.models.group import GroupMemberRole
 from app.models.match import AttendanceStatus, MatchStatus
 from app.models.player import PlayerRole
 from app.schemas.vote import (
@@ -235,3 +238,25 @@ async def get_vote_results(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
         total_voters=data["total_voters"],
         eligible_voters=len(confirmed_ids),
     )
+
+
+@router.post("/matches/{match_id}/votes/close", status_code=200)
+async def close_voting_early(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
+    """Encerra a votação imediatamente. Restrito ao admin do grupo ou super-admin."""
+    match = await _get_match_or_404(match_id, db)
+
+    # Verifica permissão: super-admin ou admin do grupo
+    if current.role != PlayerRole.ADMIN:
+        g_repo = GroupRepository(db)
+        member = await g_repo.get_member(match.group_id, current.id)
+        if not member or member.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("NOT_GROUP_ADMIN")
+
+    if voting_status(match) != "open":
+        raise ForbiddenError("VOTING_NOT_OPEN")
+
+    # Define duração = 0 para que closes_at = opens_at (já no passado se open)
+    match.vote_duration_hours = 0
+    await db.flush()
+
+    return {"message": "Votação encerrada com sucesso."}

@@ -251,6 +251,7 @@ export const votes = {
   submit: (matchId: string, top5: { player_id: string; position: number }[], flop_player_id?: string | null) =>
     post<{ message: string }>(`/matches/${matchId}/votes`, { top5, flop_player_id }),
   getPending: () => get<{ items: VotePendingItem[] }>('/votes/pending'),
+  closeEarly: (matchId: string) => post<{ message: string }>(`/matches/${matchId}/votes/close`, {}),
 };
 
 // ── Reviews ───────────────────────────────────────────────────

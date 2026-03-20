@@ -43,20 +43,21 @@
   let voteSubmitted = $state(false);
   let showVoteModal = $state(true);
   let showResultsPromo = $state(false);
+  let closingVote = $state(false);
 
   $effect(() => {
     const m = match;
-    if (!m || !$isLoggedIn || $isAdmin) return;
+    if (!m || !$isLoggedIn) return;
     if (m.status !== 'closed') return;
     votesApi.getStatus(m.id)
       .then(s => {
         voteStatus = s;
         if (s.status === 'closed') {
+          if ($isAdmin) return;
           votesApi.getResults(m.id).then(r => {
             voteResults = r;
             if (r.total_voters > 0) {
-              const seen = sessionStorage.getItem(`results-seen-${matchHash}`);
-              if (!seen) showResultsPromo = true;
+              showResultsPromo = true;
               showVoteModal = false;
             }
           }).catch(() => {});
@@ -64,6 +65,20 @@
       })
       .catch(() => {});
   });
+
+  async function closeVotingEarly() {
+    if (!match) return;
+    closingVote = true;
+    try {
+      await votesApi.closeEarly(match.id);
+      const s = await votesApi.getStatus(match.id);
+      voteStatus = s;
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao encerrar votação');
+    } finally {
+      closingVote = false;
+    }
+  }
 
   async function submitVote(top5: { player_id: string; position: number }[], flop_player_id: string | null) {
     if (!match) return;
@@ -575,6 +590,32 @@
         </button>
       {/if}
 
+      <!-- Admin: voting status card with early-close button -->
+      {#if voteStatus && match.status === 'closed' && $isAdmin}
+        <div class="mb-3 card px-4 py-3 flex items-center justify-between gap-3">
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+            🏆 Votação
+            <span class="text-xs font-normal px-2 py-0.5 rounded-full
+              {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+               voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
+               'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
+              {voteStatus.status === 'open' ? 'Aberta' : voteStatus.status === 'closed' ? 'Encerrada' : 'Em breve'}
+            </span>
+          </span>
+          <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+            {voteStatus.voter_count}/{voteStatus.eligible_count} votos
+          </span>
+          {#if voteStatus.status === 'open'}
+            <button
+              onclick={closeVotingEarly}
+              disabled={closingVote}
+              class="btn btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 shrink-0">
+              {closingVote ? 'Encerrando…' : 'Encerrar agora'}
+            </button>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Teams card — above player lists -->
       {#if (teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress'))}
         <div class="card mb-3 overflow-hidden">
@@ -838,12 +879,11 @@
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Confira quem foram os melhores desta partida.</p>
       <a
         href="/match/{matchHash}/results"
-        onclick={() => sessionStorage.setItem(`results-seen-${matchHash}`, '1')}
         class="btn btn-primary w-full justify-center mb-3">
         Ver resultado completo
       </a>
       <button
-        onclick={() => { showResultsPromo = false; sessionStorage.setItem(`results-seen-${matchHash}`, '1'); }}
+        onclick={() => { showResultsPromo = false; }}
         class="btn btn-secondary w-full justify-center">
         <X size={15} /> Fechar
       </button>
