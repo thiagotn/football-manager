@@ -1,3 +1,5 @@
+import re
+
 from playwright.sync_api import Page
 
 
@@ -6,13 +8,13 @@ class GroupPage:
         self.page = page
 
     def tab_upcoming(self):
-        self.page.get_by_role("button", name=lambda n: n.startswith("Próximos")).click()
+        self.page.get_by_role("button", name=re.compile(r"Próximos")).click()
 
     def tab_past(self):
-        self.page.get_by_role("button", name=lambda n: n.startswith("Últimos")).click()
+        self.page.get_by_role("button", name=re.compile(r"Últimos")).click()
 
     def tab_members(self):
-        self.page.get_by_role("button", name=lambda n: n.startswith("Jogadores")).click()
+        self.page.get_by_role("button", name=re.compile(r"Jogadores")).click()
 
     def new_match_button(self):
         return self.page.get_by_role("button", name="Novo Rachão")
