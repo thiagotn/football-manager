@@ -558,7 +558,7 @@
       {/if}
 
       <!-- Voting chip (before player list) -->
-      {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && !showVoteModal}
+      {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal}
         <button
           onclick={() => showVoteModal = true}
           class="mb-3 w-full card px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors text-left">
@@ -852,7 +852,7 @@
 {/if}
 
 <!-- Voting Modal (fixed overlay, bottom sheet on mobile / centered on desktop) -->
-{#if voteStatus && match && match.status === 'closed' && $isLoggedIn && !$isAdmin && showVoteModal}
+{#if voteStatus && match && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && showVoteModal}
   <!-- Backdrop -->
   <div
     class="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center"
