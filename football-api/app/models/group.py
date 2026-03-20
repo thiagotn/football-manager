@@ -32,6 +32,7 @@ class Group(Base, UUIDMixin, TimestampMixin):
     per_match_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     monthly_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     recurrence_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     vote_open_delay_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
     vote_duration_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=24)
 

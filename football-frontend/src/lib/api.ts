@@ -71,9 +71,10 @@ export type Player = {
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string };
 export type PlayerMemberView = PlayerPublic & { whatsapp: string };
-export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; created_at: string; updated_at: string };
+export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; created_at: string; updated_at: string };
 export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; is_goalkeeper: boolean | null; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
+export type WaitlistEntry = { id: string; match_id: string; player_id: string; player_name: string; player_nickname: string | null; intro: string | null; status: 'pending' | 'accepted' | 'rejected'; created_at: string };
 export type Match = {
   id: string; number: number; group_id: string; match_date: string; start_time: string; end_time: string | null;
   location: string; address: string | null;
@@ -84,7 +85,7 @@ export type Match = {
   created_at: string; updated_at: string;
 };
 export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string };
-export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null };
+export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean };
 export type PlayerMatchItem = Match & { group_name: string; my_attendance: 'confirmed' | 'declined' | 'pending' | null };
 
 // ── Players ───────────────────────────────────────────────────
@@ -141,8 +142,8 @@ export type GroupStatsResponse = { players: PlayerStatItem[]; period_label: stri
 export const groups = {
   list: () => get<Group[]>('/groups'),
   get: (id: string) => get<GroupDetail>(`/groups/${id}`),
-  create: (data: { name: string; description?: string; slug?: string; vote_open_delay_minutes?: number; vote_duration_hours?: number }) => post<Group>('/groups', data),
-  update: (id: string, data: { name?: string; description?: string; per_match_amount?: number | null; monthly_amount?: number | null; recurrence_enabled?: boolean; vote_open_delay_minutes?: number; vote_duration_hours?: number }) => patch<Group>(`/groups/${id}`, data),
+  create: (data: { name: string; description?: string; slug?: string; is_public?: boolean; vote_open_delay_minutes?: number; vote_duration_hours?: number }) => post<Group>('/groups', data),
+  update: (id: string, data: { name?: string; description?: string; per_match_amount?: number | null; monthly_amount?: number | null; recurrence_enabled?: boolean; is_public?: boolean; vote_open_delay_minutes?: number; vote_duration_hours?: number }) => patch<Group>(`/groups/${id}`, data),
   delete: (id: string) => del(`/groups/${id}`),
   addMember: (groupId: string, playerId: string, role = 'member') =>
     post<GroupMember>(`/groups/${groupId}/members`, { player_id: playerId, role }),
@@ -158,6 +159,12 @@ export const groups = {
     const qs = q.toString();
     return get<GroupStatsResponse>(`/groups/${id}/stats${qs ? '?' + qs : ''}`);
   },
+  joinWaitlist: (groupId: string, data: { agreed: boolean; intro?: string }) =>
+    post<WaitlistEntry>(`/groups/${groupId}/waitlist`, data),
+  getWaitlist: (groupId: string) => get<WaitlistEntry[]>(`/groups/${groupId}/waitlist`),
+  getMyWaitlistEntry: (groupId: string) => get<WaitlistEntry | null>(`/groups/${groupId}/waitlist/me`),
+  reviewWaitlist: (groupId: string, entryId: string, action: 'accept' | 'reject') =>
+    patch<WaitlistEntry>(`/groups/${groupId}/waitlist/${entryId}`, { action }),
 };
 
 // ── Matches ───────────────────────────────────────────────────

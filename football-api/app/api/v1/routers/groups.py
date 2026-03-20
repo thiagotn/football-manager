@@ -1,12 +1,15 @@
+import asyncio
 import re
 import uuid
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError
 from app.db.repositories.subscription_repo import SubscriptionRepository
+from app.db.repositories.waitlist_repo import WaitlistRepository
 
 # Limites por plano — fonte de verdade no backend (sincronizar com subscriptions.py)
 _PLAN_GROUPS_LIMIT: dict[str, int | None] = {
@@ -23,9 +26,11 @@ from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.group_stats_repo import GroupStatsRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
-from app.models.group import GroupMemberRole
-from app.models.match import AttendanceStatus
+from app.models.group import GroupMember, GroupMemberRole
+from app.models.match import Attendance, AttendanceStatus, MatchStatus
 from app.models.player import PlayerRole
+from app.models.waitlist import WaitlistStatus
+from app.services.push import send_push
 from app.schemas.group import (
     AddMemberRequest,
     GroupCreate,
@@ -35,8 +40,16 @@ from app.schemas.group import (
     GroupUpdate,
     UpdateMemberRoleRequest,
     UpdateMemberRequest,
+    WaitlistJoinRequest,
+    WaitlistActionRequest,
+    WaitlistEntryResponse,
 )
 from app.schemas.group_stats import GroupStatsResponse
+
+_MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
+
+def _fmt_date(d) -> str:
+    return f"{d.day} de {_MONTHS_PT[d.month - 1]}"
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -82,6 +95,7 @@ async def create_group(body: GroupCreate, db: DB, current: CurrentPlayer):
         name=body.name,
         description=body.description,
         slug=slug,
+        is_public=body.is_public,
         vote_open_delay_minutes=body.vote_open_delay_minutes,
         vote_duration_hours=body.vote_duration_hours,
     )
@@ -125,6 +139,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         per_match_amount=group.per_match_amount,
         monthly_amount=group.monthly_amount,
         recurrence_enabled=group.recurrence_enabled,
+        is_public=group.is_public,
         vote_open_delay_minutes=group.vote_open_delay_minutes,
         vote_duration_hours=group.vote_duration_hours,
         created_at=group.created_at,
@@ -322,3 +337,231 @@ async def get_group_stats(
     stats_repo = GroupStatsRepository(db)
     players, period_label = await stats_repo.get_group_stats(group_id, period=period, month=month)
     return GroupStatsResponse(players=players, period_label=period_label)
+
+
+# ── Waitlist ────────────────────────────────────────────────────────────────────
+
+@router.post("/{group_id}/waitlist", response_model=WaitlistEntryResponse, status_code=201)
+async def join_waitlist(group_id: uuid.UUID, body: WaitlistJoinRequest, db: DB, current: CurrentPlayer):
+    """Enter the waitlist for the next open match of a public group."""
+    if not body.agreed:
+        raise ForbiddenError("É necessário aceitar os termos para entrar na fila")
+
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+    if not group.is_public:
+        raise ForbiddenError("Este grupo não aceita candidatos externos")
+
+    # Player must not be a member
+    member = await g_repo.get_member(group_id, current.id)
+    if member:
+        raise ConflictError("Você já é membro deste grupo")
+
+    # Find the open match
+    m_repo = MatchRepository(db)
+    active_matches = await m_repo.get_active_matches(group_id)
+    if not active_matches:
+        raise NotFoundError("Nenhum rachão aberto neste grupo")
+    open_match = active_matches[0]
+
+    # Check vacancy (if max_players defined)
+    if open_match.max_players is not None:
+        result = await db.execute(
+            select(func.count()).where(
+                Attendance.match_id == open_match.id,
+                Attendance.status == AttendanceStatus.CONFIRMED,
+            )
+        )
+        confirmed_count = result.scalar_one()
+        if confirmed_count >= open_match.max_players:
+            raise ForbiddenError("Rachão lotado — não há vagas disponíveis")
+
+    w_repo = WaitlistRepository(db)
+    existing = await w_repo.get_entry(open_match.id, current.id)
+    if existing:
+        raise ConflictError("Você já está na lista de espera deste rachão")
+
+    entry = await w_repo.create(open_match.id, current.id, body.intro)
+
+    # Notify all group admins
+    result = await db.execute(
+        select(GroupMember.player_id).where(
+            GroupMember.group_id == group_id,
+            GroupMember.role == GroupMemberRole.ADMIN,
+        )
+    )
+    admin_ids = list(result.scalars().all())
+    await asyncio.gather(*[
+        send_push(
+            db, aid,
+            title=f"⚽ Novo candidato — {group.name}",
+            body=f"{current.name} quer participar do rachão em {_fmt_date(open_match.match_date)}. Acesse o grupo para revisar.",
+            url=f"https://rachao.app/groups/{group_id}",
+        )
+        for aid in admin_ids
+    ], return_exceptions=True)
+
+    return WaitlistEntryResponse(
+        id=entry.id,
+        match_id=entry.match_id,
+        player_id=entry.player_id,
+        player_name=entry.player.name,
+        player_nickname=entry.player.nickname,
+        intro=entry.intro,
+        status=entry.status,
+        created_at=entry.created_at,
+    )
+
+
+@router.get("/{group_id}/waitlist", response_model=list[WaitlistEntryResponse])
+async def list_waitlist(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
+    """List waitlist candidates for the group's active match (admin only)."""
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    if current.role != PlayerRole.ADMIN:
+        member = await g_repo.get_member(group_id, current.id)
+        if not member or member.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem ver a lista de espera")
+
+    m_repo = MatchRepository(db)
+    active_matches = await m_repo.get_active_matches(group_id)
+    if not active_matches:
+        return []
+
+    open_match = active_matches[0]
+    w_repo = WaitlistRepository(db)
+    entries = await w_repo.get_pending_for_match(open_match.id)
+    return [
+        WaitlistEntryResponse(
+            id=e.id,
+            match_id=e.match_id,
+            player_id=e.player_id,
+            player_name=e.player.name,
+            player_nickname=e.player.nickname,
+            intro=e.intro,
+            status=e.status,
+            created_at=e.created_at,
+        )
+        for e in entries
+    ]
+
+
+@router.get("/{group_id}/waitlist/me", response_model=WaitlistEntryResponse | None)
+async def get_my_waitlist_entry(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
+    """Get the current player's waitlist entry for the group's active match, if any."""
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    m_repo = MatchRepository(db)
+    active_matches = await m_repo.get_active_matches(group_id)
+    if not active_matches:
+        return None
+
+    w_repo = WaitlistRepository(db)
+    entry = await w_repo.get_entry(active_matches[0].id, current.id)
+    if not entry:
+        return None
+
+    # Load player relationship
+    await db.refresh(entry, ["player"])
+    return WaitlistEntryResponse(
+        id=entry.id,
+        match_id=entry.match_id,
+        player_id=entry.player_id,
+        player_name=entry.player.name,
+        player_nickname=entry.player.nickname,
+        intro=entry.intro,
+        status=entry.status,
+        created_at=entry.created_at,
+    )
+
+
+@router.patch("/{group_id}/waitlist/{entry_id}", response_model=WaitlistEntryResponse)
+async def review_waitlist_entry(
+    group_id: uuid.UUID,
+    entry_id: uuid.UUID,
+    body: WaitlistActionRequest,
+    db: DB,
+    current: CurrentPlayer,
+):
+    """Accept or reject a waitlist candidate (admin only)."""
+    if body.action not in ("accept", "reject"):
+        raise ForbiddenError("Ação inválida. Use 'accept' ou 'reject'")
+
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    if current.role != PlayerRole.ADMIN:
+        member = await g_repo.get_member(group_id, current.id)
+        if not member or member.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem revisar candidatos")
+
+    w_repo = WaitlistRepository(db)
+    entry = await w_repo.get_by_id(entry_id)
+    if not entry or entry.match.group_id != group_id:
+        raise NotFoundError("Candidatura não encontrada")
+    if entry.status != WaitlistStatus.PENDING:
+        raise ConflictError("Esta candidatura já foi revisada")
+
+    match = entry.match
+    candidate_player = entry.player
+
+    if body.action == "accept":
+        # Check vacancy
+        if match.max_players is not None:
+            result = await db.execute(
+                select(func.count()).where(
+                    Attendance.match_id == match.id,
+                    Attendance.status == AttendanceStatus.CONFIRMED,
+                )
+            )
+            confirmed_count = result.scalar_one()
+            if confirmed_count >= match.max_players:
+                raise ForbiddenError("Rachão lotado — não é possível aceitar mais candidatos")
+
+        # Add as group member
+        existing_member = await g_repo.get_member(group_id, entry.player_id)
+        if not existing_member:
+            await g_repo.add_member(group_id, entry.player_id, GroupMemberRole.MEMBER)
+
+        # Confirm attendance
+        m_repo = MatchRepository(db)
+        await m_repo.upsert_attendance(match.id, entry.player_id, AttendanceStatus.CONFIRMED)
+
+        await w_repo.accept(entry, current.id)
+
+        await send_push(
+            db, entry.player_id,
+            title="✅ Você foi aceito!",
+            body=f"Bem-vindo ao grupo {group.name}! Sua presença no rachão de {_fmt_date(match.match_date)} foi confirmada.",
+            url=f"https://rachao.app/match/{match.hash}",
+        )
+    else:
+        await w_repo.reject(entry, current.id)
+
+        await send_push(
+            db, entry.player_id,
+            title="❌ Candidatura não aprovada",
+            body=f"Sua candidatura para o grupo {group.name} não foi aprovada desta vez.",
+            url=f"https://rachao.app/groups/{group_id}",
+        )
+
+    return WaitlistEntryResponse(
+        id=entry.id,
+        match_id=entry.match_id,
+        player_id=entry.player_id,
+        player_name=candidate_player.name,
+        player_nickname=candidate_player.nickname,
+        intro=entry.intro,
+        status=entry.status,
+        created_at=entry.created_at,
+    )

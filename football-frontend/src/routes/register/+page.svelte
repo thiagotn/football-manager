@@ -106,12 +106,33 @@
     try {
       const res = await auth.register({ name, whatsapp, password, nickname: nickname || undefined, otp_token: otpToken });
       authStore.login(res.access_token, res);
-      goto('/');
+      const nextUrl = $page.url.searchParams.get('next');
+      const joinWaitlist = $page.url.searchParams.get('join_waitlist');
+      if (nextUrl) {
+        const dest = joinWaitlist ? `${nextUrl}?join_waitlist=${joinWaitlist}` : nextUrl;
+        goto(dest);
+      } else {
+        goto('/');
+      }
     } catch (e) {
       if (e instanceof ApiError) {
-        error = e.message === 'OTP_TOKEN_INVALID'
-          ? 'Sessão de verificação expirada. Recomece o cadastro.'
-          : e.message;
+        if (e.status === 409) {
+          // User already exists — redirect to login preserving params
+          const nextUrl = $page.url.searchParams.get('next');
+          const joinWaitlist = $page.url.searchParams.get('join_waitlist');
+          let loginUrl = '/login';
+          if (nextUrl) {
+            loginUrl += `?next=${nextUrl}`;
+            if (joinWaitlist) loginUrl += `&join_waitlist=${joinWaitlist}`;
+          }
+          error = 'Você já tem uma conta. Faça login para continuar.';
+          // Brief delay so user can read the error
+          setTimeout(() => goto(loginUrl), 2000);
+        } else {
+          error = e.message === 'OTP_TOKEN_INVALID'
+            ? 'Sessão de verificação expirada. Recomece o cadastro.'
+            : e.message;
+        }
       } else { error = 'Erro ao conectar'; }
     } finally { loading = false; }
   }
@@ -246,7 +267,11 @@
           </form>
 
           <p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
-            Já tem conta? <a href="/login" class="text-primary-600 hover:underline">Entrar</a>
+            {#if $page.url.searchParams.get('next')}
+              Já tem conta? <a href="/login?next={$page.url.searchParams.get('next')}{$page.url.searchParams.get('join_waitlist') ? '&join_waitlist=' + $page.url.searchParams.get('join_waitlist') : ''}" class="text-primary-600 hover:underline">Entrar</a>
+            {:else}
+              Já tem conta? <a href="/login" class="text-primary-600 hover:underline">Entrar</a>
+            {/if}
           </p>
 
         <!-- Step 2: OTP -->

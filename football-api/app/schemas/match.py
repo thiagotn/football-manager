@@ -71,6 +71,7 @@ class MatchDetailResponse(MatchResponse):
     group_name: str = ""
     group_per_match_amount: Decimal | None = None
     group_monthly_amount: Decimal | None = None
+    group_is_public: bool = True
 
 
 class PlayerMatchItem(MatchResponse):

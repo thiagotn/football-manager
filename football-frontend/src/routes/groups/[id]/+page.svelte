@@ -3,16 +3,18 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, finance as financeApi, ApiError } from '$lib/api';
-  import type { GroupDetail, GroupMember, Match, Player, VoteStatusResponse, PlayerStatItem, FinancePeriod, FinancePayment } from '$lib/api';
+  import type { GroupDetail, GroupMember, Match, MatchDetail, Player, VoteStatusResponse, PlayerStatItem, FinancePeriod, FinancePayment, WaitlistEntry } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
   import TimePicker from '$lib/components/TimePicker.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
+  import WaitlistModal from '$lib/components/WaitlistModal.svelte';
+  import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
   import { relativeDate } from '$lib/utils.js';
 
   const groupId = $page.params.id;
@@ -129,7 +131,15 @@
   let allPlayers: Player[] = $state([]);
   let addMemberId = $state('');
 
-  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, vote_open_delay_minutes: 20, vote_duration_hours: 24 });
+  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, vote_open_delay_minutes: 20, vote_duration_hours: 24 });
+
+  // Waitlist
+  let waitlistEntries = $state<WaitlistEntry[]>([]);
+  let myWaitlistEntry = $state<WaitlistEntry | null>(null);
+  let acceptingWaitlist = $state<string | null>(null);
+  let rejectingWaitlist = $state<string | null>(null);
+  let showWaitlistModal = $state(false);
+  let submittingWaitlist = $state(false);
 
   // Stats tab
   let stats = $state<PlayerStatItem[] | null>(null);
@@ -233,6 +243,7 @@
       per_match_amount: group.per_match_amount != null ? String(group.per_match_amount) : '',
       monthly_amount: group.monthly_amount != null ? String(group.monthly_amount) : '',
       recurrence_enabled: group.recurrence_enabled,
+      is_public: group.is_public,
       vote_open_delay_minutes: group.vote_open_delay_minutes ?? 20,
       vote_duration_hours: group.vote_duration_hours ?? 24,
     };
@@ -248,6 +259,7 @@
         per_match_amount: editForm.per_match_amount !== '' ? parseFloat(editForm.per_match_amount) : null,
         monthly_amount: editForm.monthly_amount !== '' ? parseFloat(editForm.monthly_amount) : null,
         recurrence_enabled: editForm.recurrence_enabled,
+        is_public: editForm.is_public,
         vote_open_delay_minutes: editForm.vote_open_delay_minutes,
         vote_duration_hours: editForm.vote_duration_hours,
       });
@@ -293,6 +305,81 @@
   function isGroupAdmin() {
     if ($isAdmin) return true;
     return group?.members.some(m => m.player.id === $currentPlayer?.id && m.role === 'admin') ?? false;
+  }
+
+  function isGroupMember() {
+    if ($isAdmin) return true;
+    return group?.members.some(m => m.player.id === $currentPlayer?.id) ?? false;
+  }
+
+  // Load waitlist data when group is loaded
+  $effect(() => {
+    const g = group;
+    if (!g || !$isLoggedIn) return;
+    if (isGroupAdmin()) {
+      // Load all pending entries for admin
+      groupsApi.getWaitlist(groupId)
+        .then(entries => { waitlistEntries = entries; })
+        .catch(() => {});
+    } else if (!isGroupMember()) {
+      // Load my entry for non-members
+      groupsApi.getMyWaitlistEntry(groupId)
+        .then(entry => { myWaitlistEntry = entry; })
+        .catch(() => {});
+    }
+  });
+
+  async function acceptWaitlist(entryId: string) {
+    acceptingWaitlist = entryId;
+    try {
+      await groupsApi.reviewWaitlist(groupId, entryId, 'accept');
+      waitlistEntries = waitlistEntries.filter(e => e.id !== entryId);
+      // Reload group and matches to reflect new member
+      const [g, ms] = await Promise.all([groupsApi.get(groupId), matchesApi.list(groupId)]);
+      group = g;
+      matchList = ms;
+      toastSuccess('Jogador adicionado ao grupo e confirmado no rachão');
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao aceitar candidato');
+    }
+    acceptingWaitlist = null;
+  }
+
+  async function rejectWaitlist(entryId: string) {
+    rejectingWaitlist = entryId;
+    try {
+      await groupsApi.reviewWaitlist(groupId, entryId, 'reject');
+      waitlistEntries = waitlistEntries.filter(e => e.id !== entryId);
+      toastSuccess('Candidatura rejeitada');
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao rejeitar candidato');
+    }
+    rejectingWaitlist = null;
+  }
+
+  async function submitWaitlist(data: { agreed: boolean; intro: string }) {
+    submittingWaitlist = true;
+    try {
+      const entry = await groupsApi.joinWaitlist(groupId, { agreed: data.agreed, intro: data.intro || undefined });
+      myWaitlistEntry = entry;
+      showWaitlistModal = false;
+      toastSuccess('Candidatura enviada! Você será notificado quando um admin revisar.');
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao enviar candidatura');
+    }
+    submittingWaitlist = false;
+  }
+
+  // Get the active match for waitlist modal
+  let activeMatchDetail = $state<MatchDetail | null>(null);
+
+  async function openWaitlistModal() {
+    const m = upcomingMatches[0];
+    if (!m) return;
+    try {
+      activeMatchDetail = await matchesApi.getByHash(m.hash);
+    } catch { activeMatchDetail = null; }
+    showWaitlistModal = true;
   }
 
   async function createMatch() {
@@ -487,6 +574,9 @@
         {#if group.recurrence_enabled}
           <span class="text-xs text-primary-600 dark:text-primary-400">Recorrência semanal</span>
         {/if}
+        <span class="text-xs flex items-center gap-1 {group.is_public ? 'text-green-400' : 'text-gray-400'}">
+          {#if group.is_public}<Globe size={11} /> Público{:else}<Lock size={11} /> Fechado{/if}
+        </span>
         {#if isGroupAdmin()}
           <div class="flex items-center gap-1.5 text-xs text-gray-300 bg-white/10 rounded-lg px-2.5 py-1 w-full sm:w-auto">
             <span>🗳️</span>
@@ -630,6 +720,38 @@
           {/each}
         </div>
       {/if}
+    {/if}
+
+    <!-- Waitlist panel (admin) -->
+    {#if tab === 'upcoming' && isGroupAdmin() && group.is_public && upcomingMatches.length > 0}
+      <div class="mt-4">
+        <WaitlistPanel
+          entries={waitlistEntries}
+          accepting={acceptingWaitlist}
+          rejecting={rejectingWaitlist}
+          onaccept={acceptWaitlist}
+          onreject={rejectWaitlist}
+        />
+      </div>
+    {/if}
+
+    <!-- Join waitlist (non-member, logged in, public group, active match) -->
+    {#if tab === 'upcoming' && $isLoggedIn && !$isAdmin && group.is_public && !isGroupMember() && upcomingMatches.length > 0}
+      <div class="card mt-4 p-4">
+        {#if myWaitlistEntry}
+          <div class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+            <span>⏳</span>
+            <span class="font-medium">Candidatura enviada — aguardando aprovação do admin</span>
+          </div>
+        {:else}
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Você não é membro deste grupo. Solicite uma vaga para o próximo rachão.</p>
+          <button
+            onclick={openWaitlistModal}
+            class="btn btn-primary w-full justify-center gap-2">
+            <UserPlus size={15} /> Quero jogar!
+          </button>
+        {/if}
+      </div>
     {/if}
 
     <!-- Stats tab -->
@@ -1293,6 +1415,19 @@
         Quando ativa, uma nova partida é criada automaticamente após o encerramento da atual, herdando os convidados com presença pendente.
       </p>
     </div>
+    <div class="form-group">
+      <label class="flex items-center gap-3 cursor-pointer select-none">
+        <div class="relative">
+          <input type="checkbox" class="sr-only peer" bind:checked={editForm.is_public} />
+          <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+        </div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Grupo público</span>
+      </label>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        Quando ativo, qualquer pessoa com o link pode solicitar entrada no próximo rachão via lista de espera.
+      </p>
+    </div>
     <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
       <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Configurações de votação</p>
       <div class="space-y-3">
@@ -1326,3 +1461,13 @@
     </div>
   </form>
 </Modal>
+
+{#if showWaitlistModal && activeMatchDetail}
+  <WaitlistModal
+    bind:open={showWaitlistModal}
+    match={activeMatchDetail}
+    submitting={submittingWaitlist}
+    onsubmit={submitWaitlist}
+    onclose={() => showWaitlistModal = false}
+  />
+{/if}

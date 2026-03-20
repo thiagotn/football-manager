@@ -4,6 +4,7 @@ from app.models.match import Match, Attendance, MatchStatus, AttendanceStatus
 from app.models.invite import InviteToken
 from app.models.push_subscription import PushSubscription
 from app.models.finance import FinancePeriod, FinancePayment
+from app.models.waitlist import MatchWaitlist, WaitlistStatus
 
 __all__ = [
     "Player", "PlayerRole",
@@ -12,4 +13,5 @@ __all__ = [
     "InviteToken",
     "PushSubscription",
     "FinancePeriod", "FinancePayment",
+    "MatchWaitlist", "WaitlistStatus",
 ]

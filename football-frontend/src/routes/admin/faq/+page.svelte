@@ -46,6 +46,34 @@
       q: 'Qual é a diferença entre perfil Admin e Jogador?',
       a: 'Jogadores podem confirmar presença e ver informações das partidas dos grupos em que participam. Admins têm acesso a todas as funcionalidades: criar grupos, adicionar jogadores, gerar convites, criar partidas e gerenciar presenças de qualquer membro.',
     },
+    {
+      q: 'Como tornar meu grupo público?',
+      a: 'Na página do grupo, clique em "Editar". No modal de edição, você encontrará o toggle "Grupo público". Quando ativado, qualquer jogador com o link do grupo ou de uma partida poderá se candidatar a uma vaga via lista de espera. Você pode reverter para fechado a qualquer momento.',
+    },
+    {
+      q: 'O que é a lista de espera e quando ela aparece?',
+      a: 'A lista de espera permite que jogadores externos se candidatem a uma vaga no seu rachão. Ela fica disponível quando o grupo é público e há uma partida aberta com vagas disponíveis. Como admin, você verá o painel "Lista de espera" na aba Próximos do grupo sempre que houver candidatos pendentes.',
+    },
+    {
+      q: 'Como revisar e aceitar candidatos na lista de espera?',
+      a: 'Na página do grupo, acesse a aba "Próximos". Abaixo do próximo rachão aparece o painel "Lista de espera" com os candidatos pendentes. Para cada candidato você vê o nome, data/hora da candidatura e a apresentação que ele escreveu. Clique em "Aceitar" para aprovar ou "Rejeitar" para recusar.',
+    },
+    {
+      q: 'O que acontece quando aceito um candidato?',
+      a: 'O jogador é adicionado automaticamente ao grupo como membro e sua presença no rachão é marcada como confirmada. Ele recebe uma notificação push informando que foi aceito. Nos próximos rachões, ele participará normalmente como qualquer outro membro.',
+    },
+    {
+      q: 'O que acontece quando rejeito um candidato?',
+      a: 'O candidato recebe uma notificação informando que a candidatura não foi aprovada. Ele não é adicionado ao grupo. A rejeição fica registrada no histórico da lista de espera daquele rachão.',
+    },
+    {
+      q: 'O rachão está lotado mas ainda há candidatos na fila — o que acontece?',
+      a: 'Quando o número de confirmados atinge o limite máximo de jogadores configurado, o botão "Aceitar" fica bloqueado com a mensagem "Rachão já está lotado". Você precisa primeiro abrir uma vaga (registrando a falta de algum membro) para conseguir aceitar novos candidatos.',
+    },
+    {
+      q: 'Jogadores na fila são notificados automaticamente quando o rachão encerra?',
+      a: 'Não. Candidatos pendentes não recebem notificação quando o rachão é encerrado ou a data passa. A notificação de rejeição só é enviada se você manualmente rejeitar a candidatura. Portanto, se um candidato ficou na fila e o rachão encerrou sem aprovação, ele simplesmente não recebe mais retorno — recomendamos revisar a lista com antecedência.',
+    },
   ];
 </script>
 

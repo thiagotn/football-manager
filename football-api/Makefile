@@ -1,4 +1,4 @@
-.PHONY: up up-bg down down-clean logs shell test test-unit db-connect adminer monitoring monitoring-down monitoring-logs
+.PHONY: up up-bg rebuild down down-clean logs shell test test-unit db-connect adminer monitoring monitoring-down monitoring-logs
 
 # ── Ambiente ─────────────────────────────────────────────────
 
@@ -7,6 +7,9 @@ up:
 
 up-bg:
 	docker compose up --build -d && docker compose logs -f api
+
+rebuild:
+	docker compose build --no-cache && docker compose up
 
 down:
 	docker compose down

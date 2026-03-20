@@ -23,7 +23,31 @@
     },
     {
       q: 'Como entrar em um grupo?',
-      a: 'Peça ao organizador do grupo que gere um link de convite. Clique no link e crie sua conta (ou faça login). Você será adicionado automaticamente ao grupo.',
+      a: 'Existem duas formas: (1) via convite — o organizador gera um link de convite, você clica e cria sua conta (ou faz login) para ser adicionado automaticamente; (2) via lista de espera — se o grupo for público e houver uma partida aberta, você pode se candidatar clicando em "Quero jogar!" e aguardar a aprovação do admin.',
+    },
+    {
+      q: 'O que é um grupo público e como funciona?',
+      a: 'Grupos públicos permitem que qualquer jogador logado se candidate a uma vaga em um rachão aberto, sem precisar de convite. Ao acessar o link do grupo ou da partida, você verá o botão "Quero jogar!" — basta clicar para enviar sua candidatura. O admin do grupo revisa e aprova ou rejeita.',
+    },
+    {
+      q: 'Como entrar na lista de espera de um rachão?',
+      a: 'Se o grupo for público e houver uma partida aberta com vagas disponíveis, o botão "Quero jogar!" aparece na página do grupo (aba Próximos) e na página da partida. Ao clicar, um modal exibe os detalhes do rachão (data, local, valores) e um campo para você se apresentar brevemente ao admin. Marque o checkbox de aceite e clique em "Enviar candidatura".',
+    },
+    {
+      q: 'Posso participar de uma partida sem ter cadastro?',
+      a: 'Sim! Se você receber o link de uma partida de um grupo público com vagas abertas, verá um card com o botão "Criar conta e participar". Clique, preencha seu cadastro (nome, WhatsApp, senha) e após o cadastro o app abre automaticamente o modal de candidatura para aquela partida.',
+    },
+    {
+      q: 'Como fico sabendo se fui aceito ou recusado na lista de espera?',
+      a: 'Você recebe uma notificação push assim que o admin tomar uma decisão. Se aceito, você já passa a ser membro do grupo e sua presença no rachão é confirmada automaticamente. Se recusado, você é notificado mas não é adicionado ao grupo.',
+    },
+    {
+      q: 'Posso ver o status da minha candidatura?',
+      a: 'Sim. Na página do grupo (aba Próximos) ou na página da partida, você verá o status atual: "Aguardando aprovação" enquanto a candidatura estiver pendente.',
+    },
+    {
+      q: 'Se for aceito na lista de espera, preciso entrar na fila novamente nos próximos rachões?',
+      a: 'Não. Ao ser aceito, você se torna membro permanente do grupo. Nos próximos rachões você participará normalmente, como qualquer outro membro — receberá convite automático se o grupo usar recorrência semanal.',
     },
     {
       q: 'Como ver a lista de confirmados?',

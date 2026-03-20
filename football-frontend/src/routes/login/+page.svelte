@@ -31,7 +31,18 @@
     try {
       const res = await auth.login(whatsapp, password);
       authStore.login(res.access_token, res);
-      goto(res.must_change_password ? '/profile' : '/');
+      if (res.must_change_password) {
+        goto('/profile');
+      } else {
+        const nextUrl = $page.url.searchParams.get('next');
+        const joinWaitlist = $page.url.searchParams.get('join_waitlist');
+        if (nextUrl) {
+          const dest = joinWaitlist ? `${nextUrl}?join_waitlist=${joinWaitlist}` : nextUrl;
+          goto(dest);
+        } else {
+          goto('/');
+        }
+      }
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Erro ao conectar';
     } finally {
@@ -182,7 +193,11 @@
       </form>
 
       <p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
-        Não tem conta? <a href="/register" class="text-primary-600 hover:underline">Cadastre-se grátis</a>
+        {#if $page.url.searchParams.get('next')}
+          Não tem conta? <a href="/register?next={$page.url.searchParams.get('next')}{$page.url.searchParams.get('join_waitlist') ? '&join_waitlist=' + $page.url.searchParams.get('join_waitlist') : ''}" class="text-primary-600 hover:underline">Cadastre-se grátis</a>
+        {:else}
+          Não tem conta? <a href="/register" class="text-primary-600 hover:underline">Cadastre-se grátis</a>
+        {/if}
       </p>
 
     {:else if forgotMode === 'whatsapp'}

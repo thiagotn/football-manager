@@ -344,30 +344,38 @@ Nesta versão, grupos públicos são encontrados **exclusivamente via link diret
 ## 12. Checklist de Implementação
 
 ### Backend
-- [ ] Migration: coluna `is_public` na tabela `groups` (default `true`)
-- [ ] Migration: tabela `match_waitlist` e enum `waitlist_status` (com coluna `intro TEXT`)
-- [ ] Model `Group`: adicionar campo `is_public`
-- [ ] Model `MatchWaitlist`: novo model (com campo `intro`)
-- [ ] Repository `WaitlistRepository`: CRUD + queries por match/player
-- [ ] `POST /groups/{id}/waitlist`: valida grupo público, rachão aberto, vagas, not already member/in queue — aceita `intro` opcional (máx. 500 chars) — cria entrada + envia push para admins
-- [ ] `GET /groups/{id}/waitlist`: retorna candidatos com `intro` visível (admin only)
-- [ ] `PATCH /groups/{id}/waitlist/{entry_id}`: aceita (add member + confirm attendance + push) ou rejeita (push) — bloqueia aceite se rachão lotado
-- [ ] Atualizar `POST /groups` e `PATCH /groups/{id}` com campo `is_public`
-- [ ] Expor `is_public` e `group_id` no response do `GET /matches/public/{hash}` (para o frontend saber se deve exibir o CTA)
+- [x] Migration: coluna `is_public` na tabela `groups` (default `true`)
+- [x] Migration: tabela `match_waitlist` e enum `waitlist_status` (com coluna `intro TEXT`)
+- [x] Model `Group`: adicionar campo `is_public`
+- [x] Model `MatchWaitlist`: novo model (com campo `intro`)
+- [x] Repository `WaitlistRepository`: CRUD + queries por match/player
+- [x] `POST /groups/{id}/waitlist`: valida grupo público, rachão aberto, vagas, not already member/in queue — aceita `intro` opcional (máx. 500 chars) — cria entrada + envia push para admins
+- [x] `GET /groups/{id}/waitlist`: retorna candidatos com `intro` visível (admin only)
+- [x] `GET /groups/{id}/waitlist/me`: retorna entrada do jogador atual no rachão ativo (ou null)
+- [x] `PATCH /groups/{id}/waitlist/{entry_id}`: aceita (add member + confirm attendance + push) ou rejeita (push) — bloqueia aceite se rachão lotado
+- [x] Atualizar `POST /groups` e `PATCH /groups/{id}` com campo `is_public`
+- [x] Expor `is_public` e `group_is_public` no response do `GET /matches/public/{hash}` (para o frontend saber se deve exibir o CTA)
 
 ### Frontend
-- [ ] Toggle "Visibilidade" em `groups/new`
-- [ ] Toggle editável em `groups/[id]` (configurações do grupo, admin only)
-- [ ] Exibir próximo rachão na visão pública do grupo para não-membros logados
-- [ ] Botão "Entrar na fila" com todos os guards de exibição/habilitação (usuários logados)
-- [ ] `WaitlistModal.svelte`: termos do rachão + campo "Conte sobre você" (textarea, máx. 500 chars, opcional) + checkbox + botão confirmar
-- [ ] `WaitlistPanel.svelte`: painel admin com lista de candidatos, exibição do `intro` e ações Aceitar/Rejeitar
-- [ ] Feedback de status para candidato na página do grupo e do rachão ("Aguardando aprovação")
-- [ ] Card de CTA em `/match/[hash]` para usuários não logados (grupo público + vagas)
-- [ ] Suporte a `?next=` e `?join_waitlist=1` em `/register` e `/login`
-- [ ] Abertura automática do `WaitlistModal` em `/match/[hash]` quando `join_waitlist=1` na URL pós-auth
+- [x] Toggle "Visibilidade" em `groups/new`
+- [x] Toggle editável em `groups/[id]` (configurações do grupo, admin only)
+- [x] Badge de visibilidade (Público/Fechado) no cabeçalho da página do grupo
+- [x] Exibir próximo rachão na visão pública do grupo para não-membros logados
+- [x] Botão "Entrar na fila" com todos os guards de exibição/habilitação (usuários logados)
+- [x] `WaitlistModal.svelte`: termos do rachão + campo "Conte sobre você" (textarea, máx. 500 chars, opcional) + checkbox + botão confirmar
+- [x] `WaitlistPanel.svelte`: painel admin com lista de candidatos, exibição do `intro` e ações Aceitar/Rejeitar
+- [x] Feedback de status para candidato na página do grupo e do rachão ("Aguardando aprovação")
+- [x] Card de CTA em `/match/[hash]` para usuários não logados (grupo público + vagas)
+- [x] Suporte a `?next=` e `?join_waitlist=1` em `/register` e `/login`
+- [x] Abertura automática do `WaitlistModal` em `/match/[hash]` quando `join_waitlist=1` na URL pós-auth
 
 ### Testes E2E
+- [x] Badge de visibilidade (Público/Fechado) visível na página do grupo
+- [x] Modal de edição exibe toggle `is_public`
+- [x] Admin vê painel de lista de espera em grupo público com rachão aberto
+- [x] Membro/admin não vê botão "Quero jogar!" (apenas não-membros devem ver)
+- [x] Usuário não logado vê CTA na página da partida de grupo público
+- [x] Link "Criar conta e participar" contém `?join_waitlist=1` e `?next=` corretos
 - [ ] Jogador logado → entra na fila via página do grupo → admin aceita → aparece como confirmado
 - [ ] Jogador logado → entra na fila via página da partida → admin rejeita → não adicionado ao grupo
 - [ ] Jogador sem conta → acessa link da partida → vê CTA → cadastra → modal abre automaticamente → entra na fila

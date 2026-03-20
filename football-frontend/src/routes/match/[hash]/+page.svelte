@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { matches as matchesApi, groups as groupsApi, votes as votesApi, teams as teamsApi, ApiError } from '$lib/api';
-  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse } from '$lib/api';
+  import { matches as matchesApi, votes as votesApi, teams as teamsApi, groups as groupsApi, ApiError } from '$lib/api';
+  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse, WaitlistEntry } from '$lib/api';
   import { currentPlayer, isLoggedIn, isAdmin } from '$lib/stores/auth';
 
   let { data } = $props();
@@ -12,6 +12,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import VoteForm from '$lib/components/VoteForm.svelte';
   import VoteResults from '$lib/components/VoteResults.svelte';
+  import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { relativeDate } from '$lib/utils.js';
   import { goto } from '$app/navigation';
 
@@ -287,6 +288,72 @@
     }
   }
 
+  // ── Waitlist ──────────────────────────────────────────────────────────────────
+  let showWaitlistModal = $state(false);
+  let waitlistEntry = $state<WaitlistEntry | null>(null);
+  let submittingWaitlist = $state(false);
+
+  // Check if current user is already in waitlist for this match
+  $effect(() => {
+    const m = match;
+    const player = $currentPlayer;
+    if (!m || !player || $isAdmin) return;
+    if (m.status === 'closed') return;
+    // Only check if user is not already in attendances
+    const alreadyInAttendances = m.attendances.some(a => a.player.id === player.id);
+    if (alreadyInAttendances) return;
+    groupsApi.getMyWaitlistEntry(m.group_id)
+      .then(e => { waitlistEntry = e; })
+      .catch(() => {});
+  });
+
+  // Auto-open waitlist modal when join_waitlist=1 is in URL (post-register/login)
+  $effect(() => {
+    const m = match;
+    if (!m || !$isLoggedIn || $isAdmin) return;
+    const joinWaitlist = $page.url.searchParams.get('join_waitlist');
+    if (joinWaitlist !== '1') return;
+    if (m.status !== 'open') return;
+    // Check if not already a member (not in attendances)
+    const alreadyMember = m.attendances.some(a => a.player.id === $currentPlayer?.id);
+    if (alreadyMember) return;
+    // Remove the param from URL without navigation
+    const url = new URL(window.location.href);
+    url.searchParams.delete('join_waitlist');
+    history.replaceState({}, '', url.toString());
+    // Open modal
+    showWaitlistModal = true;
+  });
+
+  async function submitWaitlist(data: { agreed: boolean; intro: string }) {
+    if (!match) return;
+    submittingWaitlist = true;
+    try {
+      const entry = await groupsApi.joinWaitlist(match.group_id, { agreed: data.agreed, intro: data.intro || undefined });
+      waitlistEntry = entry;
+      showWaitlistModal = false;
+      toastSuccess('Candidatura enviada! Você será notificado quando um admin revisar.');
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'Erro ao enviar candidatura');
+    } finally {
+      submittingWaitlist = false;
+    }
+  }
+
+  // Derived: show waitlist button for non-member logged users on public groups
+  let canJoinWaitlist = $derived(
+    !!match &&
+    !!$isLoggedIn &&
+    !$isAdmin &&
+    match.group_is_public &&
+    (match.status === 'open' || match.status === 'in_progress') &&
+    !match.attendances.some(a => a.player.id === $currentPlayer?.id) &&
+    waitlistEntry === null
+  );
+  let isWaitlistFull = $derived(
+    !!match?.max_players && (match?.confirmed_count ?? 0) >= match!.max_players
+  );
+
   function askCloseMatch() {
     confirmMessage = 'Encerrar esta partida? Os jogadores não poderão mais confirmar presença.';
     confirmAction = () => toggleStatus('closed');
@@ -446,6 +513,49 @@
           </div>
         </div>
       </div>
+
+      <!-- CTA for non-logged users on public groups with open spots -->
+      {#if !$isLoggedIn && match.group_is_public && match.status === 'open' && (!match.max_players || match.confirmed_count < match.max_players)}
+        <div class="card mb-4 p-5 border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20">
+          <p class="text-sm font-semibold text-primary-800 dark:text-primary-200 mb-1">Quer jogar?</p>
+          <p class="text-xs text-primary-600 dark:text-primary-400 mb-4">Crie sua conta grátis e entre na fila de espera do rachão.</p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <a
+              href="/register?next=/match/{matchHash}&join_waitlist=1"
+              class="btn btn-primary flex-1 justify-center text-sm">
+              Criar conta e participar
+            </a>
+            <a
+              href="/login?next=/match/{matchHash}&join_waitlist=1"
+              class="btn btn-secondary flex-1 justify-center text-sm">
+              Já tenho conta
+            </a>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Waitlist button for logged-in non-members -->
+      {#if $isLoggedIn && !$isAdmin && match.group_is_public && (match.status === 'open' || match.status === 'in_progress') && !match.attendances.some(a => a.player.id === $currentPlayer?.id)}
+        <div class="card mb-4 p-4">
+          {#if waitlistEntry}
+            <div class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+              <Clock3 size={15} class="shrink-0" />
+              <span class="font-medium">Candidatura enviada — aguardando aprovação do admin</span>
+            </div>
+          {:else if isWaitlistFull}
+            <div class="text-sm text-red-500 dark:text-red-400 font-medium text-center py-1">
+              ⛔ Rachão lotado — não há vagas disponíveis no momento
+            </div>
+          {:else}
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Você não é membro deste grupo. Solicite uma vaga para o admin.</p>
+            <button
+              onclick={() => showWaitlistModal = true}
+              class="btn btn-primary w-full justify-center gap-2">
+              <UserPlus size={15} /> Quero jogar!
+            </button>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Voting chip (before player list) -->
       {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && !showVoteModal}
@@ -829,6 +939,16 @@
   danger={true}
   onConfirm={confirmAction}
 />
+
+{#if match && showWaitlistModal}
+  <WaitlistModal
+    bind:open={showWaitlistModal}
+    {match}
+    submitting={submittingWaitlist}
+    onsubmit={submitWaitlist}
+    onclose={() => showWaitlistModal = false}
+  />
+{/if}
 
 <ConfirmDialog
   bind:open={confirmTeamsOpen}

@@ -5,6 +5,7 @@
 
   let name = $state('');
   let description = $state('');
+  let isPublic = $state(true);
   let voteOpenDelay = $state(20);
   let voteDuration = $state(24);
   let loading = $state(false);
@@ -17,6 +18,7 @@
       const g = await groupsApi.create({
         name,
         description: description || undefined,
+        is_public: isPublic,
         vote_open_delay_minutes: voteOpenDelay,
         vote_duration_hours: voteDuration,
       });
@@ -60,6 +62,30 @@
           placeholder="Descrição opcional do grupo"
           maxlength="500"
         ></textarea>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4">
+        <p class="text-sm font-medium text-gray-700 mb-3">Visibilidade</p>
+        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Grupo público</p>
+            <p class="text-xs text-gray-500 mt-0.5">
+              {#if isPublic}
+                Qualquer pessoa com o link pode entrar na lista de espera do rachão
+              {:else}
+                Apenas membros convidados podem participar
+              {/if}
+            </p>
+          </div>
+          <button
+            type="button"
+            onclick={() => isPublic = !isPublic}
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {isPublic ? 'bg-primary-600' : 'bg-gray-300'}"
+            role="switch"
+            aria-checked={isPublic}>
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform {isPublic ? 'translate-x-6' : 'translate-x-1'}"></span>
+          </button>
+        </div>
       </div>
 
       <div class="border-t border-gray-100 pt-4">

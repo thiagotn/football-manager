@@ -23,6 +23,7 @@ class GroupCreate(BaseModel):
     slug: str | None = Field(None, max_length=60, description="Deixe vazio para gerar automaticamente")
     per_match_amount: Decimal | None = None
     monthly_amount: Decimal | None = None
+    is_public: bool = True
     vote_open_delay_minutes: int = Field(20, ge=0, le=120)
     vote_duration_hours: int = Field(24, ge=2, le=72)
 
@@ -40,6 +41,7 @@ class GroupUpdate(BaseModel):
     per_match_amount: Decimal | None = None
     monthly_amount: Decimal | None = None
     recurrence_enabled: bool | None = None
+    is_public: bool | None = None
     vote_open_delay_minutes: int | None = Field(None, ge=0, le=120)
     vote_duration_hours: int | None = Field(None, ge=2, le=72)
 
@@ -65,6 +67,7 @@ class GroupResponse(BaseModel):
     per_match_amount: Decimal | None
     monthly_amount: Decimal | None
     recurrence_enabled: bool
+    is_public: bool
     vote_open_delay_minutes: int
     vote_duration_hours: int
     created_at: datetime
@@ -89,3 +92,27 @@ class UpdateMemberRequest(BaseModel):
     role: GroupMemberRole | None = None
     skill_stars: int | None = Field(None, ge=1, le=5)
     is_goalkeeper: bool | None = None
+
+
+# ── Waitlist ──────────────────────────────────────────────────────────────────
+
+class WaitlistJoinRequest(BaseModel):
+    agreed: bool
+    intro: str | None = Field(None, max_length=500)
+
+
+class WaitlistActionRequest(BaseModel):
+    action: str  # "accept" or "reject"
+
+
+class WaitlistEntryResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    match_id: uuid.UUID
+    player_id: uuid.UUID
+    player_name: str
+    player_nickname: str | None
+    intro: str | None
+    status: str
+    created_at: datetime
