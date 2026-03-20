@@ -4,7 +4,6 @@ from enum import Enum as PyEnum
 
 from sqlalchemy import Date, ForeignKey, Integer, SmallInteger, String, Text, Time, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum, UUID
-from sqlalchemy import text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import TimestampMixin, UUIDMixin
@@ -55,9 +54,7 @@ _attendance_status_col = PgEnum(
 class Match(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "matches"
 
-    number: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("nextval('matches_number_seq')")
-    )
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
     group_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False
     )

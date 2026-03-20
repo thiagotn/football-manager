@@ -67,6 +67,7 @@ async def run_recurrence(session: AsyncSession) -> int:
 
         new_match = Match(
             group_id=group.id,
+            number=await m_repo.next_number_for_group(group.id),
             match_date=next_date,
             start_time=last_match.start_time,
             end_time=last_match.end_time,

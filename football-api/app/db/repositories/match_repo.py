@@ -17,6 +17,12 @@ class MatchRepository(BaseRepository[Match]):
     def __init__(self, session: AsyncSession):
         super().__init__(session)
 
+    async def next_number_for_group(self, group_id: UUID) -> int:
+        result = await self.session.execute(
+            select(func.coalesce(func.max(Match.number), 0)).where(Match.group_id == group_id)
+        )
+        return result.scalar_one() + 1
+
     async def get_by_hash(self, hash: str) -> Match | None:
         result = await self.session.execute(
             select(Match).where(Match.hash == hash)

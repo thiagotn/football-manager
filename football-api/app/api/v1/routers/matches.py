@@ -139,6 +139,7 @@ async def create_match(group_id: uuid.UUID, body: MatchCreate, db: DB, current: 
 
     match = await m_repo.create(
         group_id=group_id,
+        number=await m_repo.next_number_for_group(group_id),
         match_date=body.match_date,
         start_time=body.start_time,
         end_time=body.end_time,
