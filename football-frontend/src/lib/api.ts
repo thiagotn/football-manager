@@ -87,6 +87,7 @@ export type Match = {
 export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string };
 export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean };
 export type PlayerMatchItem = Match & { group_name: string; my_attendance: 'confirmed' | 'declined' | 'pending' | null };
+export type DiscoverMatch = Match & { group_name: string; confirmed_count: number; spots_left: number | null };
 
 // ── Players ───────────────────────────────────────────────────
 export type MonthlyStatItem = { month: string; matches_confirmed: number; minutes_played: number };
@@ -179,6 +180,17 @@ export const matches = {
   delete: (groupId: string, matchId: string) => del(`/groups/${groupId}/matches/${matchId}`),
   setAttendance: (groupId: string, matchId: string, playerId: string, status: string) =>
     post<Attendance>(`/groups/${groupId}/matches/${matchId}/attendance`, { player_id: playerId, status }),
+  discover: (params?: { date_from?: string; date_to?: string; court_type?: string[]; weekday?: number[]; limit?: number; offset?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.date_from) q.set('date_from', params.date_from);
+    if (params?.date_to)   q.set('date_to',   params.date_to);
+    params?.court_type?.forEach(ct => q.append('court_type', ct));
+    params?.weekday?.forEach(d => q.append('weekday', String(d)));
+    if (params?.limit  != null) q.set('limit',  String(params.limit));
+    if (params?.offset != null) q.set('offset', String(params.offset));
+    const qs = q.toString();
+    return get<DiscoverMatch[]>(`/matches/discover${qs ? '?' + qs : ''}`);
+  },
 };
 
 // ── Push notifications ────────────────────────────────────────

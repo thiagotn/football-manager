@@ -82,3 +82,24 @@ class PlayerMatchItem(MatchResponse):
 class SetAttendanceRequest(BaseModel):
     player_id: uuid.UUID
     status: AttendanceStatus
+
+
+class DiscoverMatchResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    hash: str
+    number: int
+    match_date: date
+    start_time: time
+    end_time: time | None
+    location: str
+    address: str | None
+    court_type: CourtType | None
+    players_per_team: int | None
+    max_players: int | None
+    notes: str | None
+    group_id: uuid.UUID
+    group_name: str
+    confirmed_count: int
+    spots_left: int | None  # None = sem limite de vagas

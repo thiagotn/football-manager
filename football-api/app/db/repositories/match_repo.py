@@ -2,6 +2,8 @@ from uuid import UUID
 
 from datetime import datetime, timezone, timedelta
 
+from datetime import date as date_type
+
 from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -215,6 +217,71 @@ class MatchRepository(BaseRepository[Match]):
             select(Attendance.player_id).where(Attendance.match_id == match_id)
         )
         return list(result.scalars().all())
+
+    async def get_discover_matches(
+        self,
+        player_id: UUID,
+        date_from: date_type | None = None,
+        date_to: date_type | None = None,
+        court_types: list[str] | None = None,
+        weekdays: list[int] | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[dict]:
+        """Partidas abertas de grupos públicos que o jogador não integra, com vagas disponíveis."""
+        from app.models.group import Group
+        from app.models.match_waitlist import MatchWaitlist
+
+        BRAZIL = timezone(timedelta(hours=-3))
+        today = datetime.now(BRAZIL).date()
+
+        member_group_ids = select(GroupMember.group_id).where(GroupMember.player_id == player_id)
+        waitlisted_match_ids = select(MatchWaitlist.match_id).where(MatchWaitlist.player_id == player_id)
+
+        confirmed_sub = (
+            select(Attendance.match_id, func.count().label("cnt"))
+            .where(Attendance.status == AttendanceStatus.CONFIRMED)
+            .group_by(Attendance.match_id)
+            .subquery()
+        )
+
+        stmt = (
+            select(
+                Match,
+                Group.name.label("group_name"),
+                func.coalesce(confirmed_sub.c.cnt, 0).label("confirmed_count"),
+            )
+            .join(Group, Group.id == Match.group_id)
+            .outerjoin(confirmed_sub, confirmed_sub.c.match_id == Match.id)
+            .where(
+                Group.is_public.is_(True),
+                Match.status == MatchStatus.OPEN,
+                Match.match_date >= today,
+                Match.group_id.not_in(member_group_ids),
+                Match.id.not_in(waitlisted_match_ids),
+                or_(
+                    Match.max_players.is_(None),
+                    func.coalesce(confirmed_sub.c.cnt, 0) < Match.max_players,
+                ),
+            )
+        )
+
+        if date_from:
+            stmt = stmt.where(Match.match_date >= date_from)
+        if date_to:
+            stmt = stmt.where(Match.match_date <= date_to)
+        if court_types:
+            stmt = stmt.where(Match.court_type.in_(court_types))
+        if weekdays:
+            stmt = stmt.where(func.extract("dow", Match.match_date).in_(weekdays))
+
+        stmt = stmt.order_by(Match.match_date.asc(), Match.start_time.asc()).limit(limit).offset(offset)
+
+        result = await self.session.execute(stmt)
+        return [
+            {"match": row.Match, "group_name": row.group_name, "confirmed_count": row.confirmed_count}
+            for row in result.all()
+        ]
 
     async def delete_player_attendances_in_open_matches(self, group_id: UUID, player_id: UUID) -> None:
         open_match_ids = select(Match.id).where(

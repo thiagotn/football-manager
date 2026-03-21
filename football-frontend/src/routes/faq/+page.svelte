@@ -88,6 +88,10 @@
       a: 'Não. Ao ser aceito, você se torna membro permanente do grupo. Nos próximos rachões você participará normalmente, como qualquer outro membro — receberá convite automático se o grupo usar recorrência semanal.',
     },
     {
+      q: 'Como descobrir rachões de outros grupos com vaga?',
+      a: 'Na seção "Descobrir Rachões" (ícone de bússola no menu), você vê partidas abertas de grupos públicos onde ainda há vagas. Filtre por período, tipo de quadra ou dia da semana. Clique em "Quero jogar!" para enviar sua candidatura diretamente de lá. A home também exibe até 3 rachões com vaga em destaque.',
+    },
+    {
       q: 'Como ver a lista de confirmados?',
       a: 'Na página da partida (acessível pelo link que você recebeu) você verá as seções "Confirmados", "Recusaram" e "Aguardando" com o nome de cada jogador.',
     },

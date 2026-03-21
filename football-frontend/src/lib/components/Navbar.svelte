@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -16,6 +16,7 @@
   const links = [
     { href: '/',                      icon: Home,       label: 'Dashboard' },
     { href: '/groups',                icon: Trophy,     label: 'Grupos' },
+    { href: '/discover',              icon: Compass,    label: 'Descobrir',     playerOnly: true },
     { href: '/matches',               icon: Calendar,   label: 'Rachões',       playerOnly: true },
     { href: '/profile/stats',         icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
     { href: '/review',                icon: Star,       label: 'Avaliar o App', playerOnly: true },
@@ -41,6 +42,7 @@
     if (pathname === '/players')  return '/';
     if (pathname === '/profile')        return '/';
     if (pathname === '/matches')        return '/';
+    if (pathname === '/discover')       return '/';
     if (pathname === '/profile/stats')  return '/';
     if (pathname === '/review')   return '/';
     if (pathname === '/plans')    return '/';

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { groups, matches, players as playersApi, votes as votesApi } from '$lib/api';
-  import type { Group, Match, SignupStats, VotePendingItem } from '$lib/api';
+  import type { DiscoverMatch, Group, Match, SignupStats, VotePendingItem } from '$lib/api';
+  import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { authStore, currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
-  import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users, UserPlus } from 'lucide-svelte';
+  import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users, UserPlus, Compass } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate, formatWhatsapp } from '$lib/utils.js';
 
@@ -19,6 +20,10 @@
   let platformTotalMatches = $state(0);
   let signupStats: SignupStats | null = $state(null);
   let pendingVotes: VotePendingItem[] = $state([]);
+  let discoverMatches: DiscoverMatch[] = $state([]);
+  let discoverWaitlistMatch = $state<DiscoverMatch | null>(null);
+  let showDiscoverModal = $state(false);
+  let discoverSubmitting = $state(false);
 
   function fmtPlaytime(minutes: number): string {
     if (minutes === 0) return '0min';
@@ -83,6 +88,14 @@
     if ($authStore.loading || $isAdmin || !$isLoggedIn) return;
     votesApi.getPending()
       .then(r => { pendingVotes = r.items; })
+      .catch(() => {});
+  });
+
+  // Feed de descoberta — apenas jogadores não-admin
+  $effect(() => {
+    if ($authStore.loading || $isAdmin || !$isLoggedIn) return;
+    matches.discover({ limit: 3 })
+      .then(r => { discoverMatches = r; })
       .catch(() => {});
   });
 
@@ -272,6 +285,65 @@
       </div>
     </div>
   </div>
+  <!-- ── Discover: Rachões com vaga ──────────────────────── -->
+  {#if !$isAdmin && discoverMatches.length > 0}
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base font-semibold text-white flex items-center gap-2">
+          <Compass size={16} class="text-primary-400" /> Rachões com vaga
+        </h2>
+        <a href="/discover" class="text-xs text-primary-400 hover:text-primary-300 font-medium">Ver todos →</a>
+      </div>
+      <div class="space-y-2">
+        {#each discoverMatches as dm}
+          <div class="card px-4 py-3 flex items-start gap-3">
+            <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 mt-0.5">
+              <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{dm.group_name}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2 mt-0.5">
+                <span class="flex items-center gap-1"><Calendar size={11} />{new Date(dm.match_date + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                <span class="flex items-center gap-1"><Clock size={11} />{dm.start_time.slice(0,5)}</span>
+                <span class="flex items-center gap-1"><MapPin size={11} /><span class="truncate">{dm.location}</span></span>
+              </p>
+              <p class="text-xs mt-1 {dm.spots_left !== null && dm.spots_left <= 3 ? 'text-amber-500 dark:text-amber-400 font-medium' : 'text-gray-400 dark:text-gray-500'}">
+                {dm.spots_left !== null ? `${dm.spots_left} vaga${dm.spots_left !== 1 ? 's' : ''} disponível` : 'Vagas abertas'}
+              </p>
+            </div>
+            <button
+              onclick={() => { discoverWaitlistMatch = dm; showDiscoverModal = true; }}
+              class="btn btn-sm btn-primary shrink-0 self-center">
+              Quero jogar
+            </button>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  {#if discoverWaitlistMatch && showDiscoverModal}
+    <WaitlistModal
+      bind:open={showDiscoverModal}
+      match={{ ...discoverWaitlistMatch, attendances: [], confirmed_count: discoverWaitlistMatch.confirmed_count, declined_count: 0, pending_count: 0, group_name: discoverWaitlistMatch.group_name, group_per_match_amount: null, group_monthly_amount: null, group_is_public: true }}
+      submitting={discoverSubmitting}
+      onsubmit={async (data) => {
+        if (!discoverWaitlistMatch) return;
+        discoverSubmitting = true;
+        try {
+          await groups.joinWaitlist(discoverWaitlistMatch.group_id, data);
+          const removedId = discoverWaitlistMatch.id;
+          showDiscoverModal = false;
+          discoverWaitlistMatch = null;
+          discoverMatches = discoverMatches.filter(m => m.id !== removedId);
+        } catch { /* errors shown by api */ } finally {
+          discoverSubmitting = false;
+        }
+      }}
+      onclose={() => { showDiscoverModal = false; discoverWaitlistMatch = null; }}
+    />
+  {/if}
+
   <!-- ── Admin-only: Novos Cadastros ──────────────────────── -->
   {#if $isAdmin && signupStats}
     <div class="mt-6">

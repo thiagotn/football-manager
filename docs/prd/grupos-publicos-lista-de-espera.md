@@ -331,13 +331,119 @@ Na página /match/[hash], ao detectar join_waitlist=1 na URL:
 
 ---
 
-## 11. Descoberta de grupos públicos (escopo futuro)
+## 11. Feed de Rachões com Vagas (descoberta orgânica)
 
-Nesta versão, grupos públicos são encontrados **exclusivamente via link direto** compartilhado pelo admin. Uma página de descoberta poderá ser construída futuramente com:
+### 11.1 Contexto
 
-- Listagem de grupos públicos com vagas abertas no próximo rachão
-- Filtros: cidade, tipo de quadra, dia da semana, horário
-- Rota sugerida: `/groups/explore` ou `/discover`
+Na versão atual, grupos públicos são encontrados **exclusivamente via link direto** compartilhado pelo admin. Para que o crescimento orgânico de fato aconteça, é necessário que jogadores sem vínculo prévio com um grupo **descubram ativamente rachões próximos com vagas** — sem depender de ninguém compartilhar um link.
+
+Esta seção especifica um feed de descoberta integrado à plataforma, acessível a qualquer jogador logado.
+
+---
+
+### 11.2 Onde exibir
+
+**Opção A — Card na home (dashboard):** seção destacada na tela inicial, logo abaixo do próximo rachão do próprio jogador. Exibe até 3 rachões com vagas de grupos públicos aos quais o jogador não pertence.
+
+**Opção B — Página dedicada `/discover`:** listagem completa, acessível via ícone/tab na navegação principal. Permite rolagem, paginação e filtros.
+
+**Recomendação:** implementar as duas em conjunto — card na home como entry point, página `/discover` como destino ao clicar em "Ver mais".
+
+---
+
+### 11.3 Regras de exibição
+
+Um rachão aparece no feed quando:
+
+- O grupo é público (`is_public = true`)
+- O jogador logado **não é membro** do grupo
+- O rachão tem `status = 'open'`
+- A `match_date` é **hoje ou futura**
+- `confirmed_count < max_players` **ou** `max_players` é nulo (sem limite)
+- O jogador não está na fila desse rachão (não exibir se já candidatou)
+
+Ordenação padrão: **data mais próxima primeiro**, depois por vagas disponíveis (menos vagas = mais urgência → aparece antes).
+
+---
+
+### 11.4 Informações exibidas por card
+
+Cada card no feed exibe:
+
+| Campo | Origem |
+|---|---|
+| Nome do grupo | `groups.name` |
+| Data e horário | `matches.match_date` + `start_time` |
+| Local | `matches.location` |
+| Tipo de quadra | `matches.court_type` |
+| Vagas disponíveis | `max_players - confirmed_count` (ou "Sem limite") |
+| Jogadores por time | `matches.players_per_team` (se definido) |
+| Botão de ação | "Quero jogar!" → abre `WaitlistModal` (mesmo fluxo já implementado) |
+
+Campos opcionais (exibidos se preenchidos): endereço, notas/regras do grupo.
+
+---
+
+### 11.5 Filtros (página `/discover`)
+
+| Filtro | Tipo | Observação |
+|---|---|---|
+| Data | Seletor de período (hoje / esta semana / próximos 30 dias) | Padrão: "esta semana" |
+| Tipo de quadra | Multi-select (society, futsal, campo, areia) | Baseado em `court_type` |
+| Dia da semana | Multi-select (seg–dom) | Extraído de `match_date` |
+| Horário | Faixa (manhã / tarde / noite) | Baseado em `start_time` |
+| Com vagas | Toggle | Ligado por padrão |
+
+Filtros de **cidade/bairro** são desejáveis mas dependem de geocodificação — fora do escopo desta versão.
+
+---
+
+### 11.6 Fluxo do usuário
+
+```
+1. Jogador logado acessa a home ou /discover
+2. Vê card(s) com rachões de grupos públicos com vagas
+3. Clica em "Quero jogar!" → WaitlistModal abre (mesmo componente já implementado)
+4. Preenche apresentação opcional + aceita termos
+5. Entra na fila → feedback "Candidatura enviada!"
+6. Admin do grupo recebe push e revisa
+7. Jogador recebe push ao ser aceito ou rejeitado
+```
+
+Ao ser aceito, o jogador passa a ser membro permanente do grupo e não vê mais esse grupo no feed.
+
+---
+
+### 11.7 Impacto em componentes existentes
+
+- `WaitlistModal.svelte` — reutilizado sem alteração
+- `src/routes/+page.svelte` (home/dashboard) — adicionar seção "Rachões com vaga perto de você"
+- Nova rota `src/routes/discover/+page.svelte` — listagem completa com filtros
+- Nova navegação: ícone/tab "Descobrir" no menu principal (mobile: barra inferior)
+
+---
+
+### 11.8 API
+
+**Novo endpoint:**
+
+```
+GET /api/v1/matches/discover
+```
+
+- Requer autenticação
+- Retorna partidas de grupos públicos com vaga que o jogador não pertence
+- Parâmetros de query: `date_from`, `date_to`, `court_type` (multi), `weekday` (multi), `limit`, `offset`
+- Response: lista de objetos com dados da partida + grupo + contagem de confirmados/vagas
+
+---
+
+### 11.9 Privacidade e limites
+
+- Jogadores cujo grupo mudou para fechado (`is_public = false`) deixam de aparecer no feed imediatamente
+- O feed **não expõe** lista de membros do grupo — apenas as informações públicas da partida
+- Admin global não vê o feed de descoberta (role `admin` é isento)
+- Grupos com admin inativo por mais de 90 dias podem ser excluídos do feed futuramente (fora do escopo atual)
 
 ---
 

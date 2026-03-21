@@ -1,9 +1,10 @@
 import asyncio
 import secrets
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.core.dependencies import DB, CurrentPlayer
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
@@ -21,6 +22,7 @@ def _fmt_date(d) -> str:
     return f"{d.day} de {_MONTHS_PT[d.month - 1]}"
 from app.schemas.match import (
     AttendanceResponse,
+    DiscoverMatchResponse,
     MatchCreate,
     MatchDetailResponse,
     MatchResponse,
@@ -68,6 +70,57 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         group_monthly_amount=match.group.monthly_amount if match.group else None,
         group_is_public=match.group.is_public if match.group else True,
     )
+
+
+# ── Discover feed ─────────────────────────────────────────────────────────────
+
+@router.get("/matches/discover", response_model=list[DiscoverMatchResponse])
+async def discover_matches(
+    db: DB,
+    current: CurrentPlayer,
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    court_type: Annotated[list[str] | None, Query()] = None,
+    weekday: Annotated[list[int] | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """Partidas abertas de grupos públicos onde o jogador não é membro."""
+    if current.role == PlayerRole.ADMIN:
+        return []
+    m_repo = MatchRepository(db)
+    rows = await m_repo.get_discover_matches(
+        player_id=current.id,
+        date_from=date_from,
+        date_to=date_to,
+        court_types=court_type,
+        weekdays=weekday,
+        limit=limit,
+        offset=offset,
+    )
+    result = []
+    for row in rows:
+        m = row["match"]
+        confirmed = row["confirmed_count"]
+        result.append(DiscoverMatchResponse(
+            id=m.id,
+            hash=m.hash,
+            number=m.number,
+            match_date=m.match_date,
+            start_time=m.start_time,
+            end_time=m.end_time,
+            location=m.location,
+            address=m.address,
+            court_type=m.court_type,
+            players_per_team=m.players_per_team,
+            max_players=m.max_players,
+            notes=m.notes,
+            group_id=m.group_id,
+            group_name=row["group_name"],
+            confirmed_count=confirmed,
+            spots_left=(m.max_players - confirmed) if m.max_players else None,
+        ))
+    return result
 
 
 # ── Public endpoint (no auth) ─────────────────────────────────────────────────

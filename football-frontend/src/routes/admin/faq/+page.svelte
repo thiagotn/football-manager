@@ -74,6 +74,10 @@
       q: 'Jogadores na fila são notificados automaticamente quando o rachão encerra?',
       a: 'Não. Candidatos pendentes não recebem notificação quando o rachão é encerrado ou a data passa. A notificação de rejeição só é enviada se você manualmente rejeitar a candidatura. Portanto, se um candidato ficou na fila e o rachão encerrou sem aprovação, ele simplesmente não recebe mais retorno — recomendamos revisar a lista com antecedência.',
     },
+    {
+      q: 'Como o feed "Descobrir Rachões" pode ajudar meu grupo a crescer?',
+      a: 'Quando seu grupo está configurado como público e há uma partida aberta com vagas, ele aparece automaticamente no feed "Descobrir Rachões" para todos os jogadores da plataforma que ainda não são membros do seu grupo. Eles podem se candidatar diretamente pelo feed, sem precisar de um link de convite. Quanto antes você revisar e aceitar candidatos, maior a chance de o grupo atrair novos membros orgânicos.',
+    },
   ];
 </script>
 
