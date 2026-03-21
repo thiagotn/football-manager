@@ -125,16 +125,16 @@
 
 <PageBackground>
   <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
-    <div class="flex items-center justify-between mb-6">
-      <div>
+    <div class="flex items-start justify-between mb-6 gap-3">
+      <div class="min-w-0">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <Compass size={24} class="text-primary-400" /> Descobrir Rachões
+          <Compass size={24} class="text-primary-400 shrink-0" /> Descobrir Rachões
         </h1>
-        <p class="text-sm text-white/60 mt-0.5">Grupos públicos com vagas abertas para novos jogadores</p>
+        <p class="text-sm text-white/60 mt-0.5">Grupos públicos com vagas abertas</p>
       </div>
       <button
         onclick={() => showFilters = !showFilters}
-        class="btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 relative">
+        class="btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 relative shrink-0 mt-1">
         <Filter size={14} /> Filtros
         {#if activeFilterCount > 0}
           <span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary-500 text-white text-[10px] flex items-center justify-center font-bold">{activeFilterCount}</span>

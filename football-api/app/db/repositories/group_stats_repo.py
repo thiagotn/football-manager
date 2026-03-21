@@ -1,5 +1,5 @@
 from calendar import monthrange
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import text
@@ -87,8 +87,8 @@ class GroupStatsRepository:
             year, m = int(month[:4]), int(month[5:7])
             _, last_day = monthrange(year, m)
             date_filter = "AND match_date BETWEEN :month_start AND :month_end"
-            params["month_start"] = f"{year:04d}-{m:02d}-01"
-            params["month_end"] = f"{year:04d}-{m:02d}-{last_day:02d}"
+            params["month_start"] = date(year, m, 1)
+            params["month_end"] = date(year, m, last_day)
             period_label = f"{_MONTHS_PT[m - 1]} {year}"
         else:
             current_year = datetime.now(timezone.utc).year
