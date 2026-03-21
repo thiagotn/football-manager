@@ -234,7 +234,7 @@ async def test_accept_invite_new_user_success(api_client, mocker):
         new=AsyncMock(return_value=None),
     )
     mocker.patch(
-        "app.api.v1.routers.invites.MatchRepository.get_open_matches",
+        "app.api.v1.routers.invites.MatchRepository.get_active_matches",
         new=AsyncMock(return_value=[]),
     )
     mocker.patch(
