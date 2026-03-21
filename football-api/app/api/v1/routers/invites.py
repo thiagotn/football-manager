@@ -145,11 +145,11 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
         await g_repo.add_member(invite.group_id, player.id, GroupMemberRole.MEMBER)
         just_joined = True
 
-    # Adiciona o jogador como pendente nos rachões abertos do grupo
+    # Adiciona o jogador como pendente nos rachões abertos/em andamento do grupo
     if just_joined:
         m_repo = MatchRepository(db)
-        open_matches = await m_repo.get_open_matches(invite.group_id)
-        for match in open_matches:
+        active_matches = await m_repo.get_active_matches(invite.group_id)
+        for match in active_matches:
             existing_att = await m_repo.get_attendance(match.id, player.id)
             if not existing_att:
                 await m_repo.create_pending_attendances(match.id, [player.id])
