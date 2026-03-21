@@ -10,6 +10,7 @@ from app.db.repositories.match_repo import MatchRepository
 from app.db.session import get_session_factory
 from app.models.match import Attendance, AttendanceStatus, Match, MatchStatus
 from app.services.push import send_push
+from app.services.voting import voting_status
 
 _MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
 
@@ -57,6 +58,10 @@ async def run_recurrence(session: AsyncSession) -> int:
             logger.info("recurrence_skipped_today_not_closed", group_id=str(group.id))
             continue
 
+        if voting_status(last_match) != "closed":
+            logger.info("recurrence_skipped_voting_not_closed", group_id=str(group.id))
+            continue
+
         next_date = last_match.match_date + timedelta(days=7)
 
         # Garantia de hash único
@@ -80,6 +85,8 @@ async def run_recurrence(session: AsyncSession) -> int:
             hash=hash_,
             status=MatchStatus.OPEN,
             created_by_id=None,
+            vote_open_delay_minutes=group.vote_open_delay_minutes,
+            vote_duration_hours=group.vote_duration_hours,
         )
         session.add(new_match)
         await session.flush()
