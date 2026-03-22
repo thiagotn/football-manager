@@ -1,7 +1,6 @@
 # Football Manager
 
-[![CI](https://github.com/thiagotn/football-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/ci.yml)
-[![Deploy to Production](https://github.com/thiagotn/football-manager/actions/workflows/deploy.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/deploy.yml)
+[![CI / CD](https://github.com/thiagotn/football-manager/actions/workflows/main.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/thiagotn/football-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/thiagotn/football-manager)
 
 Aplicação web para gerenciamento de grupos de futebol: agendamento de partidas, controle de presenças e convites por link.
@@ -160,8 +159,8 @@ docker compose build --no-cache          # Rebuild forçado sem cache
 football-manager/
 ├── .github/
 │   └── workflows/
-│       ├── deploy.yml              # CI/CD: build → GHCR → deploy no VPS (disparo manual)
-│       └── e2e.yml                 # Testes E2E: roda a cada push em main
+│       ├── main.yml                # CI/CD: testes unitários → E2E → build → deploy (unificado)
+│       └── deploy-monitoring.yml   # Deploy da stack de monitoramento (disparo manual)
 ├── scripts/
 │   └── setup-vps.sh                # Prepara o VPS Ubuntu 24.04 para receber o deploy
 ├── football-api/                   # Backend
@@ -291,10 +290,16 @@ Acesse **Settings → Secrets and variables → Actions** no repositório e crie
 
 No GitHub, acesse **Actions → Deploy to Production → Run workflow → Run workflow**.
 
-O pipeline executa em dois jobs sequenciais:
+O pipeline executa os jobs em sequência:
 
 ```
 Run workflow (manual)
+       │
+       ▼
+  Job: unit-tests  (testes unitários da API)
+       │
+       ▼
+  Job: e2e         (testes E2E com stack completa)
        │
        ▼
   Job: build
@@ -306,6 +311,8 @@ Run workflow (manual)
   ├── SCP: envia docker-compose.prod.yml + migrations para o VPS
   └── SSH: docker compose pull → up -d → image prune
 ```
+
+> Use o input **"Skip tests"** para pular testes e fazer deploy direto (útil para re-deploy sem alterações de código).
 
 > O certificado TLS é emitido automaticamente pelo Traefik via Let's Encrypt na primeira vez que o deploy sobe. Aguarde ~30 segundos após o primeiro deploy para o certificado estar ativo.
 
