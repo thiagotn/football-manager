@@ -122,13 +122,20 @@
   );
 
   let courtLabels = $derived<Record<string, string>>({
-    campo: $t('discover.court_type') === $t('discover.court_type') ? 'Campo' : 'Campo',
-    sintetico: 'Sintético',
-    terrao: 'Terrão',
-    quadra: 'Quadra'
+    campo:     $t('group.court_campo'),
+    sintetico: $t('group.court_sintetico'),
+    terrao:    $t('group.court_terrao'),
+    quadra:    $t('group.court_quadra'),
   });
 
-  const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  // Jan 7 2024 = Sunday (i=0), Mon (i=1), ... Sáb (i=6)
+  let WEEKDAY_LABELS = $derived(
+    Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(2024, 0, 7 + i);
+      const label = new Intl.DateTimeFormat($locale, { weekday: 'short' }).format(d);
+      return label.replace(/\.$/, '').replace(/^(.)/, c => c.toUpperCase());
+    })
+  );
 
   let periodOptions = $derived<[string, string][]>([
     ['week', $t('discover.this_week')],

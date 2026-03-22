@@ -38,6 +38,13 @@
     menuOpen = false;
   });
 
+  // Trava scroll do body quando o drawer está aberto
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  });
+
   function getBackHref(pathname: string): string | null {
     if (pathname.startsWith('/groups/')) return '/groups';
     if (pathname === '/groups')   return '/';
