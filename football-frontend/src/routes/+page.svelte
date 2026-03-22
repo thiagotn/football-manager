@@ -306,28 +306,35 @@
       {:else}
         <div class="space-y-2">
           {#each discoverMatches as dm}
-            <div class="card px-4 py-3 flex items-start gap-3">
-              <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
+            <div class="card px-4 py-3">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{dm.group_name}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2 mt-0.5">
+                    <span class="flex items-center gap-1"><Calendar size={11} />{new Date(dm.match_date + 'T12:00').toLocaleDateString($locale, { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                    <span class="flex items-center gap-1"><Clock size={11} />{dm.start_time.slice(0,5)}</span>
+                    <span class="flex items-center gap-1 min-w-0"><MapPin size={11} /><span class="truncate">{dm.location}</span></span>
+                  </p>
+                  <p class="text-xs mt-1 {dm.spots_left !== null && dm.spots_left <= 3 ? 'text-amber-500 dark:text-amber-400 font-medium' : 'text-gray-400 dark:text-gray-500'}">
+                    {dm.spots_left !== null
+                      ? (dm.spots_left !== 1 ? $t('dash.spots_available_plural').replace('{n}', String(dm.spots_left)) : $t('dash.spots_available').replace('{n}', String(dm.spots_left)))
+                      : $t('dash.spots_open')}
+                  </p>
+                </div>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{dm.group_name}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2 mt-0.5">
-                  <span class="flex items-center gap-1"><Calendar size={11} />{new Date(dm.match_date + 'T12:00').toLocaleDateString($locale, { weekday: 'short', day: '2-digit', month: 'short' })}</span>
-                  <span class="flex items-center gap-1"><Clock size={11} />{dm.start_time.slice(0,5)}</span>
-                  <span class="flex items-center gap-1"><MapPin size={11} /><span class="truncate">{dm.location}</span></span>
-                </p>
-                <p class="text-xs mt-1 {dm.spots_left !== null && dm.spots_left <= 3 ? 'text-amber-500 dark:text-amber-400 font-medium' : 'text-gray-400 dark:text-gray-500'}">
-                  {dm.spots_left !== null
-                    ? (dm.spots_left !== 1 ? $t('dash.spots_available_plural').replace('{n}', String(dm.spots_left)) : $t('dash.spots_available').replace('{n}', String(dm.spots_left)))
-                    : $t('dash.spots_open')}
-                </p>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <a href="/match/{dm.hash}" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+                  {$t('discover.see_details')}
+                </a>
+                <button
+                  onclick={() => { discoverWaitlistMatch = dm; showDiscoverModal = true; }}
+                  class="btn btn-sm btn-primary">
+                  {$t('dash.want_to_play')}
+                </button>
               </div>
-              <button
-                onclick={() => { discoverWaitlistMatch = dm; showDiscoverModal = true; }}
-                class="btn btn-sm btn-primary shrink-0 self-center">
-                {$t('dash.want_to_play')}
-              </button>
             </div>
           {/each}
         </div>

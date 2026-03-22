@@ -72,7 +72,7 @@
 
     <div
       class="w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-1 overflow-hidden
-        {variant === 'drawer' ? 'absolute left-0 top-full mt-1 z-20' : ''}"
+        {variant === 'drawer' ? 'absolute left-0 top-full mt-1 z-50' : ''}"
       style={variant === 'bar' ? dropdownStyle : ''}
     >
       {#each SUPPORTED_LOCALES as l}

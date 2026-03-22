@@ -21,7 +21,7 @@
     { href: '/discover',              icon: Compass,    labelKey: 'nav.discover',       playerOnly: true },
     { href: '/matches',               icon: Calendar,   labelKey: 'nav.matches',        playerOnly: true },
     { href: '/profile/stats',         icon: BarChart2,  labelKey: 'nav.score',          playerOnly: true },
-    { href: '/review',                icon: Star,       labelKey: 'nav.review',         playerOnly: true },
+    { href: '/review',                icon: Star,       labelKey: 'nav.review',         playerOnly: true, mobileHide: true },
     { href: '/players',               icon: Users,      labelKey: 'nav.players',        adminOnly: true },
     { href: '/admin/reviews',         icon: Star,       labelKey: 'nav.admin_reviews',  adminOnly: true },
     { href: '/admin/subscriptions',   icon: CreditCard, labelKey: 'nav.subscriptions',  adminOnly: true },
@@ -150,14 +150,7 @@
     style="animation: slideInRight 0.22s ease-out;">
     <!-- Cabeçalho do drawer -->
     <div class="flex items-center justify-between px-4 h-16 border-b border-primary-700 shrink-0">
-      <div class="flex items-center gap-2 min-w-0">
-        <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.nickname || $currentPlayer?.name}</p>
-        <button onclick={themeStore.toggle}
-          class="p-1.5 rounded-lg hover:bg-primary-700 transition-colors text-primary-300 shrink-0"
-          title={$t('aria.theme')}>
-          {#if $themeStore === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
-        </button>
-      </div>
+      <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.nickname || $currentPlayer?.name}</p>
       <button onclick={closeMenu} class="p-2 rounded-lg hover:bg-primary-700 transition-colors" aria-label={$t('aria.close')}>
         <X size={20} />
       </button>
@@ -166,7 +159,7 @@
     <!-- Links de navegação -->
     <div class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
       {#each links as l}
-        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled)}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled) && !l.mobileHide}
           <a
             href={l.href}
             onclick={closeMenu}
@@ -200,6 +193,18 @@
     <!-- Rodapé do drawer -->
     <div class="px-3 py-3 border-t border-primary-700 shrink-0">
       <div class="space-y-1">
+        {#if !$isAdmin}
+          <a href="/review" onclick={closeMenu}
+            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
+              {$page.url.pathname === '/review' ? 'bg-primary-900 text-white' : ''}">
+            <Star size={18} /> {$t('nav.review')}
+          </a>
+        {/if}
+        <button onclick={themeStore.toggle}
+          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
+          {#if $themeStore === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
+          {$t('aria.theme')}
+        </button>
         <a href="/profile" onclick={closeMenu}
           class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
             {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : ''}">
