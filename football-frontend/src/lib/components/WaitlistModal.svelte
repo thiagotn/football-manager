@@ -1,6 +1,7 @@
 <script lang="ts">
   import { X, Clock, MapPin, Users } from 'lucide-svelte';
   import type { MatchDetail } from '$lib/api';
+  import { t } from '$lib/i18n';
 
   interface Props {
     open: boolean;
@@ -97,7 +98,7 @@
               {/if}
               {#if match.group_monthly_amount != null}
                 <span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs rounded px-2 py-0.5 font-medium">
-                  R$ {Number(match.group_monthly_amount).toFixed(2).replace('.', ',')} mensal
+                  R$ {Number(match.group_monthly_amount).toFixed(2).replace('.', ',')} {$t('group.label_monthly')}
                 </span>
               {/if}
             </div>

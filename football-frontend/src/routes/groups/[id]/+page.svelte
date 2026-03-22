@@ -236,8 +236,8 @@
 
   function fmtPricingParts(perMatch: number | string | null, monthly: number | string | null): string[] {
     const parts: string[] = [];
-    if (perMatch != null) parts.push(`R$ ${Number(perMatch).toFixed(2).replace('.', ',')} avulso`);
-    if (monthly != null) parts.push(`R$ ${Number(monthly).toFixed(2).replace('.', ',')} mensal`);
+    if (perMatch != null) parts.push(`R$ ${Number(perMatch).toFixed(2).replace('.', ',')} ${$t('group.label_per_match')}`);
+    if (monthly != null) parts.push(`R$ ${Number(monthly).toFixed(2).replace('.', ',')} ${$t('group.label_monthly')}`);
     return parts;
   }
 

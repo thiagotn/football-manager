@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CheckCircle, XCircle, Clock3, UserCheck } from 'lucide-svelte';
   import type { WaitlistEntry } from '$lib/api';
+  import { t, locale } from '$lib/i18n';
 
   interface Props {
     entries: WaitlistEntry[];
@@ -14,20 +15,20 @@
 
   function fmtDate(s: string) {
     const d = new Date(s);
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString($locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 </script>
 
 <div class="card overflow-hidden">
   <div class="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border-b border-gray-100 dark:border-gray-700">
     <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-      <UserCheck size={14} /> Lista de espera ({entries.length})
+      <UserCheck size={14} /> {$t('waitlist.panel_title').replace('{n}', String(entries.length))}
     </h3>
   </div>
 
   {#if entries.length === 0}
     <div class="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-      Nenhum candidato aguardando aprovação.
+      {$t('waitlist.empty')}
     </div>
   {:else}
     <ul class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -47,13 +48,13 @@
                 class="btn-sm btn-ghost text-green-600 dark:text-green-400 flex items-center gap-1 disabled:opacity-40"
                 onclick={() => onaccept(entry.id)}
                 disabled={accepting === entry.id || rejecting === entry.id}>
-                <CheckCircle size={13} /> {accepting === entry.id ? 'Aceitando…' : 'Aceitar'}
+                <CheckCircle size={13} /> {accepting === entry.id ? $t('waitlist.accepting') : $t('waitlist.accept')}
               </button>
               <button
                 class="btn-sm btn-ghost text-red-500 dark:text-red-400 flex items-center gap-1 disabled:opacity-40"
                 onclick={() => onreject(entry.id)}
                 disabled={accepting === entry.id || rejecting === entry.id}>
-                <XCircle size={13} /> {rejecting === entry.id ? 'Rejeitando…' : 'Rejeitar'}
+                <XCircle size={13} /> {rejecting === entry.id ? $t('waitlist.rejecting') : $t('waitlist.reject')}
               </button>
             </div>
           </div>
