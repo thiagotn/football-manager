@@ -1,22 +1,6 @@
 name: CI / CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "football-api/**"
-      - "!football-api/monitoring/**"
-      - "!football-api/docker-compose.monitoring*.yml"
-      - "football-frontend/**"
-      - "football-e2e/**"
-      - ".github/workflows/main.yml"
-  pull_request:
-    paths:
-      - "football-api/**"
-      - "!football-api/monitoring/**"
-      - "!football-api/docker-compose.monitoring*.yml"
-      - "football-frontend/**"
-      - "football-e2e/**"
   workflow_dispatch:
     inputs:
       deploy:
