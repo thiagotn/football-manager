@@ -26,6 +26,16 @@ export function formatTime(timeStr) {
 }
 
 export function formatWhatsapp(phone) {
+  if (phone.startsWith('+')) {
+    // E.164 — display in international format
+    const digits = phone.replace(/\D/g, '');
+    // Brazilian number: +55 DD XXXXX-XXXX (13 digits total)
+    if (digits.startsWith('55') && digits.length === 13) {
+      return `+55 (${digits.slice(2,4)}) ${digits.slice(4,9)}-${digits.slice(9)}`;
+    }
+    return phone;
+  }
+  // Legacy Brazilian format (digits only, 11 chars)
   const digits = phone.replace(/\D/g, '');
   if (digits.length === 11) {
     return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
@@ -34,6 +44,12 @@ export function formatWhatsapp(phone) {
 }
 
 export function whatsappLink(phone, text = '') {
+  if (phone.startsWith('+')) {
+    // E.164 — use directly, stripping the +
+    const num = phone.replace(/^\+/, '');
+    return `https://wa.me/${num}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
+  }
+  // Legacy: assume Brazilian
   const digits = phone.replace(/\D/g, '');
   const num = digits.startsWith('55') ? digits : `55${digits}`;
   return `https://wa.me/${num}${text ? `?text=${encodeURIComponent(text)}` : ''}`;

@@ -76,7 +76,7 @@ def test_expired_token_returns_none():
 
 
 def test_otp_token_roundtrip():
-    whatsapp = "11999990000"
+    whatsapp = "+5511999990000"
     token = create_otp_token(whatsapp)
     result = decode_otp_token(token)
     assert result == whatsapp

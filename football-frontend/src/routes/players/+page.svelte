@@ -8,6 +8,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { Users, Plus, Search, Eye, EyeOff, Pencil, KeyRound, Trash2, Copy, ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import PhoneInput from '$lib/components/PhoneInput.svelte';
 
   const PAGE_SIZE = 20;
 
@@ -374,7 +375,7 @@
     </div>
     <div class="form-group">
       <label class="label">Celular *</label>
-      <input class="input" type="tel" bind:value={createForm.whatsapp} placeholder="11999990000" required />
+      <PhoneInput bind:value={createForm.whatsapp} placeholder="11999990000" required />
     </div>
     <div class="form-group">
       <label class="label">Senha *</label>

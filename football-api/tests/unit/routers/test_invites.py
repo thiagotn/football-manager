@@ -42,7 +42,7 @@ def _make_group() -> MagicMock:
     return g
 
 
-def _make_player(whatsapp: str = "11999990001") -> MagicMock:
+def _make_player(whatsapp: str = "+5511999990001") -> MagicMock:
     p = MagicMock()
     p.id = uuid4()
     p.name = "João"
@@ -127,7 +127,7 @@ async def test_accept_invite_invalid_token_returns_404(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/invites/tokeninvalido/accept",
-        json={"whatsapp": "11999990001", "password": "senha"},
+        json={"whatsapp": "+5511999990001", "password": "senha"},
     )
 
     assert response.status_code == 404
@@ -151,7 +151,7 @@ async def test_accept_invite_new_user_without_name_returns_422(api_client, mocke
 
     response = await api_client.post(
         "/api/v1/invites/tokenvalido/accept",
-        json={"whatsapp": "11999990001", "password": "senha123"},
+        json={"whatsapp": "+5511999990001", "password": "senha123"},
         # name ausente
     )
 
@@ -173,7 +173,7 @@ async def test_accept_invite_existing_user_wrong_password_returns_403(api_client
 
     response = await api_client.post(
         "/api/v1/invites/tokenvalido/accept",
-        json={"whatsapp": "11999990001", "password": "senha_errada"},
+        json={"whatsapp": "+5511999990001", "password": "senha_errada"},
     )
 
     assert response.status_code == 403
@@ -198,7 +198,7 @@ async def test_accept_invite_member_limit_reached_returns_403(api_client, mocker
 
     response = await api_client.post(
         "/api/v1/invites/tokenvalido/accept",
-        json={"whatsapp": "11999990001", "password": "senha123", "name": "Novo Jogador"},
+        json={"whatsapp": "+5511999990001", "password": "senha123", "name": "Novo Jogador"},
     )
 
     assert response.status_code == 403
@@ -244,7 +244,7 @@ async def test_accept_invite_new_user_success(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/invites/tokenvalido/accept",
-        json={"whatsapp": "11999990002", "password": "senha123", "name": "Novo Jogador"},
+        json={"whatsapp": "+5511999990002", "password": "senha123", "name": "Novo Jogador"},
     )
 
     assert response.status_code == 200

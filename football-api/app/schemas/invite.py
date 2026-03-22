@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.schemas.player import normalize_whatsapp
 
 
 class InviteCreateRequest(BaseModel):
@@ -22,6 +24,11 @@ class InviteResponse(BaseModel):
 class InviteCheckRequest(BaseModel):
     whatsapp: str
 
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
+
 
 class InviteCheckResponse(BaseModel):
     exists: bool
@@ -33,3 +40,8 @@ class InviteAcceptRequest(BaseModel):
     nickname: str | None = None
     whatsapp: str
     password: str                # obrigatório para ambos (novo cadastro e login)
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)

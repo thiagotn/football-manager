@@ -29,7 +29,7 @@ def _make_player_db(player_id=None) -> MagicMock:
     p.id = player_id or uuid4()
     p.name = "Jogador Teste"
     p.nickname = None
-    p.whatsapp = "11999990001"
+    p.whatsapp = "+5511999990001"
     p.role = PlayerRole.PLAYER
     p.active = True
     p.must_change_password = False
@@ -85,7 +85,7 @@ async def test_create_player_non_admin_returns_403(api_client):
     """Apenas admins podem criar jogadores diretamente."""
     response = await api_client.post(
         "/api/v1/players",
-        json={"name": "Novo", "whatsapp": "11999990002", "password": "senha123"},
+        json={"name": "Novo", "whatsapp": "+5511999990002", "password": "senha123"},
     )
 
     assert response.status_code == 403
@@ -101,7 +101,7 @@ async def test_create_player_duplicate_whatsapp_returns_409(admin_client, mocker
 
     response = await admin_client.post(
         "/api/v1/players",
-        json={"name": "Novo", "whatsapp": "11999990002", "password": "senha123"},
+        json={"name": "Novo", "whatsapp": "+5511999990002", "password": "senha123"},
     )
 
     assert response.status_code == 409
@@ -122,7 +122,7 @@ async def test_create_player_success_returns_201(admin_client, mocker):
 
     response = await admin_client.post(
         "/api/v1/players",
-        json={"name": "Novo Jogador", "whatsapp": "11999990002", "password": "senha123"},
+        json={"name": "Novo Jogador", "whatsapp": "+5511999990002", "password": "senha123"},
     )
 
     assert response.status_code == 201

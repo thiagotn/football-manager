@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime
 
@@ -6,11 +7,17 @@ from pydantic import BaseModel, Field, field_validator
 from app.models.player import PlayerRole
 
 
-def _normalize_whatsapp(v: str) -> str:
-    import re
-    cleaned = re.sub(r"\D", "", v)
-    if len(cleaned) < 10 or len(cleaned) > 13:
-        raise ValueError("WhatsApp inválido. Use apenas dígitos (DDD + número)")
+def normalize_whatsapp(v: str) -> str:
+    """Normalize a phone number to E.164 format (+CCNUMBER)."""
+    cleaned = re.sub(r"[\s\-\(\)\.]", "", v)
+    if cleaned.startswith("+"):
+        digits = re.sub(r"\D", "", cleaned[1:])
+        cleaned = "+" + digits
+    else:
+        digits = re.sub(r"\D", "", cleaned)
+        cleaned = "+" + digits
+    if not re.match(r"^\+[1-9]\d{6,14}$", cleaned):
+        raise ValueError("WhatsApp inválido. Use formato internacional: +5511999990000")
     return cleaned
 
 
@@ -24,7 +31,7 @@ class PlayerCreate(BaseModel):
     @field_validator("whatsapp")
     @classmethod
     def validate_whatsapp(cls, v: str) -> str:
-        return _normalize_whatsapp(v)
+        return normalize_whatsapp(v)
 
 
 class PlayerUpdate(BaseModel):
@@ -40,7 +47,7 @@ class PlayerUpdate(BaseModel):
     def validate_whatsapp(cls, v: str | None) -> str | None:
         if v is None:
             return v
-        return _normalize_whatsapp(v)
+        return normalize_whatsapp(v)
 
 
 class PlayerResponse(BaseModel):

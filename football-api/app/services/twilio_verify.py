@@ -7,17 +7,19 @@ from app.core.config import get_settings
 
 
 def _send(whatsapp: str) -> None:
+    # whatsapp is E.164 (e.g. +5511999990000)
     s = get_settings()
     Client(s.twilio_account_sid, s.twilio_auth_token) \
         .verify.v2.services(s.twilio_verify_sid) \
-        .verifications.create(to=f"+55{whatsapp}", channel="sms")
+        .verifications.create(to=whatsapp, channel="sms")
 
 
 def _check(whatsapp: str, code: str) -> str:
+    # whatsapp is E.164 (e.g. +5511999990000)
     s = get_settings()
     check = Client(s.twilio_account_sid, s.twilio_auth_token) \
         .verify.v2.services(s.twilio_verify_sid) \
-        .verification_checks.create(to=f"+55{whatsapp}", code=code)
+        .verification_checks.create(to=whatsapp, code=code)
     return check.status
 
 

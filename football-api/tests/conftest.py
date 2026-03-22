@@ -31,7 +31,7 @@ def player_user() -> Player:
     p = MagicMock(spec=Player)
     p.id = uuid4()
     p.name = "João Silva"
-    p.whatsapp = "11999990001"
+    p.whatsapp = "+5511999990001"
     p.role = PlayerRole.PLAYER
     p.active = True
     p.must_change_password = False
@@ -43,7 +43,7 @@ def admin_user() -> Player:
     p = MagicMock(spec=Player)
     p.id = uuid4()
     p.name = "Super Admin"
-    p.whatsapp = "11999990000"
+    p.whatsapp = "+5511999990000"
     p.role = PlayerRole.ADMIN
     p.active = True
     p.must_change_password = False

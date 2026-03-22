@@ -1,13 +1,25 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.schemas.player import normalize_whatsapp
 
 
 class LoginRequest(BaseModel):
-    whatsapp: str = Field(..., description="Número WhatsApp (somente dígitos)")
+    whatsapp: str = Field(..., description="Número WhatsApp em formato E.164")
     password: str
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
 
 
 class SendOtpRequest(BaseModel):
     whatsapp: str
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
 
 
 class SendOtpResponse(BaseModel):
@@ -18,6 +30,11 @@ class SendOtpResponse(BaseModel):
 class VerifyOtpRequest(BaseModel):
     whatsapp: str
     otp_code: str = Field(..., min_length=6, max_length=6)
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
 
 
 class VerifyOtpMeRequest(BaseModel):
@@ -34,6 +51,11 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
     nickname: str | None = None
     otp_token: str
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
 
 
 class TokenResponse(BaseModel):
@@ -55,3 +77,8 @@ class ForgotPasswordResetRequest(BaseModel):
     whatsapp: str
     otp_token: str
     new_password: str = Field(..., min_length=6)
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)

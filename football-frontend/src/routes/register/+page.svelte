@@ -5,19 +5,13 @@
   import { page } from '$app/stores';
   import { Eye, EyeOff, UserPlus, MessageCircle, RotateCcw, ShieldCheck } from 'lucide-svelte';
   import { getPlan, formatCents } from '$lib/plans';
+  import PhoneInput from '$lib/components/PhoneInput.svelte';
 
   const planKey = $derived($page.url.searchParams.get('plan') ?? 'free');
   const plan = $derived(getPlan(planKey));
 
   // ── Step 1 — WhatsApp ──────────────────────────────────────
   let whatsapp = $state('');
-
-  function sanitizePhone(value: string): string {
-    let digits = value.replace(/\D/g, '');
-    // Remove código do país +55 se preenchido pelo autocomplete (ex: 5511999990000 → 11999990000)
-    if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2);
-    return digits;
-  }
 
   // ── Step 2 — OTP ───────────────────────────────────────────
   let digits = $state(['', '', '', '', '', '']);
@@ -40,7 +34,8 @@
   let error = $state('');
 
   const maskedWhatsapp = $derived(
-    whatsapp.replace(/\D/g, '').replace(/^(\d{2})(\d+)(\d{4})$/, '($1) ••••• $3')
+    // Show country code + masked local number: +55 (11) ••••• 0000
+    whatsapp.replace(/(\+\d{1,3})(\d{2})(\d+)(\d{4})$/, '$1 ($2) ••••• $4') || whatsapp
   );
   const otpCode = $derived(digits.join(''));
 
@@ -262,10 +257,8 @@
           <form onsubmit={(e) => { e.preventDefault(); handleSendOtp(); }} class="space-y-5">
             <div class="form-group">
               <label class="label" for="whatsapp">Celular *</label>
-              <input id="whatsapp" class="input" type="tel" bind:value={whatsapp}
-                placeholder="11999990000" required autocomplete="tel"
-                oninput={(e) => { whatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
-              <p class="text-xs text-gray-400 mt-1">Somente números, com DDD. Você receberá um código por SMS ou WhatsApp.</p>
+              <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required />
+              <p class="text-xs text-gray-400 mt-1">Selecione o país e digite o número. Você receberá um código por SMS ou WhatsApp.</p>
             </div>
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={loading || !whatsapp}>

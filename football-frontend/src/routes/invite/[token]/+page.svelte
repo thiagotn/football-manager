@@ -4,6 +4,7 @@
   import { authStore } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { UserPlus, CheckCircle, Eye, EyeOff, ArrowLeft } from 'lucide-svelte';
+  import PhoneInput from '$lib/components/PhoneInput.svelte';
 
   const token = $page.params.token;
 
@@ -15,12 +16,6 @@
 
   let step = $state<Step>('whatsapp');
   let whatsapp = $state('');
-
-  function sanitizePhone(value: string): string {
-    let digits = value.replace(/\D/g, '');
-    if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2);
-    return digits;
-  }
   let firstName = $state('');           // nome do usuário existente (para boas-vindas)
 
   let form = $state({ name: '', nickname: '', password: '' });
@@ -158,12 +153,7 @@
         <form onsubmit={(e) => { e.preventDefault(); checkWhatsapp(); }} class="space-y-4">
           <div class="form-group">
             <label class="label" for="wa">Seu WhatsApp *</label>
-            <input
-              id="wa" class="input" type="tel"
-              bind:value={whatsapp}
-              placeholder="11999990000"
-              required
-              oninput={(e) => { whatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
+            <PhoneInput id="wa" bind:value={whatsapp} placeholder="11999990000" required />
             <p class="text-xs text-gray-400 mt-1">Usado para identificar se você já tem conta.</p>
           </div>
           <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={checking}>

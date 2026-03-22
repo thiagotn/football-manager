@@ -1,5 +1,3 @@
-import re
-
 from fastapi import APIRouter, HTTPException, status
 from twilio.base.exceptions import TwilioRestException
 
@@ -35,9 +33,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: DB):
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
     repo = PlayerRepository(db)
-    player = await repo.get_by_whatsapp(whatsapp)
+    player = await repo.get_by_whatsapp(body.whatsapp)
 
     if not player or not verify_password(body.password, player.password_hash):
         raise UnauthorizedError("WhatsApp ou senha incorretos")
@@ -57,13 +54,11 @@ async def login(body: LoginRequest, db: DB):
 @router.post("/send-otp", response_model=SendOtpResponse)
 async def send_otp(body: SendOtpRequest, db: DB):
     """Send OTP verification code to WhatsApp number."""
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
-
-    if await PlayerRepository(db).get_by_whatsapp(whatsapp):
+    if await PlayerRepository(db).get_by_whatsapp(body.whatsapp):
         raise ConflictError("WhatsApp já cadastrado")
 
     try:
-        await twilio_verify.send_otp(whatsapp)
+        await twilio_verify.send_otp(body.whatsapp)
     except TwilioRestException as e:
         if e.code in (60200, 60203):
             raise HTTPException(
@@ -81,16 +76,14 @@ async def send_otp(body: SendOtpRequest, db: DB):
 @router.post("/verify-otp", response_model=VerifyOtpResponse)
 async def verify_otp(body: VerifyOtpRequest, db: DB):
     """Verify OTP code and return a signed token confirming phone ownership."""
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
-
-    if await PlayerRepository(db).get_by_whatsapp(whatsapp):
+    if await PlayerRepository(db).get_by_whatsapp(body.whatsapp):
         raise ConflictError("WhatsApp já cadastrado")
 
-    approved = await twilio_verify.check_otp(whatsapp, body.otp_code)
+    approved = await twilio_verify.check_otp(body.whatsapp, body.otp_code)
     if not approved:
         raise ValidationError("OTP_INVALID")
 
-    return VerifyOtpResponse(otp_token=create_otp_token(whatsapp))
+    return VerifyOtpResponse(otp_token=create_otp_token(body.whatsapp))
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
@@ -100,18 +93,17 @@ async def register(body: RegisterRequest, db: DB):
     if not verified_whatsapp:
         raise ValidationError("OTP_TOKEN_INVALID")
 
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
-    if whatsapp != verified_whatsapp:
+    if body.whatsapp != verified_whatsapp:
         raise ValidationError("OTP_TOKEN_INVALID")
 
     repo = PlayerRepository(db)
-    if await repo.get_by_whatsapp(whatsapp):
+    if await repo.get_by_whatsapp(body.whatsapp):
         raise ConflictError("WhatsApp já cadastrado")
 
     player = await repo.create(
         name=body.name.strip(),
         nickname=body.nickname,
-        whatsapp=whatsapp,
+        whatsapp=body.whatsapp,
         password_hash=hash_password(body.password),
         role=PlayerRole.PLAYER,
     )
@@ -135,16 +127,14 @@ async def me(current: CurrentPlayer):
 @router.post("/forgot-password/send-otp", response_model=SendOtpResponse)
 async def forgot_password_send_otp(body: SendOtpRequest, db: DB):
     """Send OTP to a registered WhatsApp number for password reset."""
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
-
-    if not await PlayerRepository(db).get_by_whatsapp(whatsapp):
+    if not await PlayerRepository(db).get_by_whatsapp(body.whatsapp):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Número não encontrado. Verifique e tente novamente.",
         )
 
     try:
-        await twilio_verify.send_otp(whatsapp)
+        await twilio_verify.send_otp(body.whatsapp)
     except TwilioRestException as e:
         if e.code in (60200, 60203):
             raise HTTPException(
@@ -162,29 +152,25 @@ async def forgot_password_send_otp(body: SendOtpRequest, db: DB):
 @router.post("/forgot-password/verify-otp", response_model=VerifyOtpResponse)
 async def forgot_password_verify_otp(body: VerifyOtpRequest, db: DB):
     """Verify OTP for a registered user and return a signed otp_token."""
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
-
-    if not await PlayerRepository(db).get_by_whatsapp(whatsapp):
+    if not await PlayerRepository(db).get_by_whatsapp(body.whatsapp):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Número não encontrado.")
 
-    approved = await twilio_verify.check_otp(whatsapp, body.otp_code)
+    approved = await twilio_verify.check_otp(body.whatsapp, body.otp_code)
     if not approved:
         raise ValidationError("OTP_INVALID")
 
-    return VerifyOtpResponse(otp_token=create_otp_token(whatsapp))
+    return VerifyOtpResponse(otp_token=create_otp_token(body.whatsapp))
 
 
 @router.post("/forgot-password/reset", status_code=204)
 async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
     """Reset password using a verified OTP token."""
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
-
     verified_whatsapp = decode_otp_token(body.otp_token)
-    if not verified_whatsapp or verified_whatsapp != whatsapp:
+    if not verified_whatsapp or verified_whatsapp != body.whatsapp:
         raise UnauthorizedError("Token de verificação inválido ou expirado")
 
     repo = PlayerRepository(db)
-    player = await repo.get_by_whatsapp(whatsapp)
+    player = await repo.get_by_whatsapp(body.whatsapp)
     if not player:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
 

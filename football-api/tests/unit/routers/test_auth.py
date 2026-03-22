@@ -24,7 +24,7 @@ from app.models.player import PlayerRole
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _make_player(active: bool = True, whatsapp: str = "11999990001") -> MagicMock:
+def _make_player(active: bool = True, whatsapp: str = "+5511999990001") -> MagicMock:
     p = MagicMock()
     p.id = uuid4()
     p.name = "João Silva"
@@ -49,7 +49,7 @@ async def test_login_correct_credentials_returns_token(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/auth/login",
-        json={"whatsapp": "11999990001", "password": "senha123"},
+        json={"whatsapp": "+5511999990001", "password": "senha123"},
     )
 
     assert response.status_code == 200
@@ -68,7 +68,7 @@ async def test_login_wrong_password_returns_401(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/auth/login",
-        json={"whatsapp": "11999990001", "password": "errada"},
+        json={"whatsapp": "+5511999990001", "password": "errada"},
     )
 
     assert response.status_code == 401
@@ -83,7 +83,7 @@ async def test_login_user_not_found_returns_401(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/auth/login",
-        json={"whatsapp": "11000000000", "password": "qualquer"},
+        json={"whatsapp": "+5511000000000", "password": "qualquer"},
     )
 
     assert response.status_code == 401
@@ -99,7 +99,7 @@ async def test_login_inactive_account_returns_401(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/auth/login",
-        json={"whatsapp": "11999990001", "password": "senha123"},
+        json={"whatsapp": "+5511999990001", "password": "senha123"},
     )
 
     assert response.status_code == 401
@@ -107,8 +107,8 @@ async def test_login_inactive_account_returns_401(api_client, mocker):
 
 @pytest.mark.asyncio
 async def test_login_normalizes_whatsapp(api_client, mocker):
-    """WhatsApp com formatação (55 11 9 9999-0001) deve ser normalizado antes de consultar."""
-    player = _make_player(whatsapp="5511999990001")
+    """WhatsApp com formatação (+55 (11) 9 9999-0001) deve ser normalizado para E.164."""
+    player = _make_player(whatsapp="+5511999990001")
     mock_get = AsyncMock(return_value=player)
     mocker.patch("app.api.v1.routers.auth.PlayerRepository.get_by_whatsapp", new=mock_get)
 
@@ -118,7 +118,7 @@ async def test_login_normalizes_whatsapp(api_client, mocker):
     )
 
     called_with = mock_get.call_args[0][0]
-    assert called_with == "5511999990001"
+    assert called_with == "+5511999990001"
 
 
 # ── GET /auth/me ──────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ async def test_login_normalizes_whatsapp(api_client, mocker):
 @pytest.mark.asyncio
 async def test_me_returns_current_player(api_client, player_user):
     player_user.name = "João Silva"
-    player_user.whatsapp = "11999990001"
+    player_user.whatsapp = "+5511999990001"
     player_user.nickname = None
     player_user.role = PlayerRole.PLAYER
     player_user.active = True
@@ -147,7 +147,7 @@ async def test_me_returns_current_player(api_client, player_user):
 @pytest.mark.asyncio
 async def test_change_password_correct_current_password(api_client, player_user, mocker):
     player_user.password_hash = hash_password("senha_atual")
-    player_user.whatsapp = "11999990001"
+    player_user.whatsapp = "+5511999990001"
 
     db_player = MagicMock()
     mocker.patch(
@@ -187,8 +187,8 @@ async def test_change_password_no_credentials_returns_422(api_client):
 
 @pytest.mark.asyncio
 async def test_change_password_with_valid_otp_token(api_client, player_user, mocker):
-    player_user.whatsapp = "11999990001"
-    otp_token = create_otp_token("11999990001")
+    player_user.whatsapp = "+5511999990001"
+    otp_token = create_otp_token("+5511999990001")
 
     db_player = MagicMock()
     mocker.patch(
@@ -221,7 +221,7 @@ async def test_change_password_with_invalid_otp_token_returns_401(api_client):
 async def test_forgot_password_reset_invalid_token_returns_401(api_client):
     response = await api_client.post(
         "/api/v1/auth/forgot-password/reset",
-        json={"whatsapp": "11999990001", "otp_token": "invalido", "new_password": "nova123"},
+        json={"whatsapp": "+5511999990001", "otp_token": "invalido", "new_password": "nova123"},
     )
 
     assert response.status_code == 401
@@ -229,7 +229,7 @@ async def test_forgot_password_reset_invalid_token_returns_401(api_client):
 
 @pytest.mark.asyncio
 async def test_forgot_password_reset_valid_token(api_client, mocker):
-    whatsapp = "11999990001"
+    whatsapp = "+5511999990001"
     otp_token = create_otp_token(whatsapp)
     player = _make_player(whatsapp=whatsapp)
 
@@ -240,7 +240,7 @@ async def test_forgot_password_reset_valid_token(api_client, mocker):
 
     response = await api_client.post(
         "/api/v1/auth/forgot-password/reset",
-        json={"whatsapp": whatsapp, "otp_token": otp_token, "new_password": "nova_senha"},
+        json={"whatsapp": whatsapp, "otp_token": otp_token, "new_password": "nova_senha_123"},
     )
 
     assert response.status_code == 204

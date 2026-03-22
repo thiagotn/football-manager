@@ -7,15 +7,10 @@
   import { toastError, toastSuccess } from '$lib/stores/toast';
   import { Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-svelte';
   import PwaSmartBanner from '$lib/components/PwaSmartBanner.svelte';
+  import PhoneInput from '$lib/components/PhoneInput.svelte';
 
   // ── Login ──────────────────────────────────────────────────
   let whatsapp = $state('');
-
-  function sanitizePhone(value: string): string {
-    let digits = value.replace(/\D/g, '');
-    if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2);
-    return digits;
-  }
   let password = $state('');
   let loading = $state(false);
   let showPw = $state(false);
@@ -91,13 +86,11 @@
   }
 
   async function sendForgotOtp() {
-    const wpp = forgotWhatsapp.replace(/\D/g, '');
-    if (!wpp) return;
+    if (!forgotWhatsapp) return;
     forgotLoading = true;
     forgotError = '';
     try {
-      await auth.forgotPasswordSendOtp(wpp);
-      forgotWhatsapp = wpp;
+      await auth.forgotPasswordSendOtp(forgotWhatsapp);
       forgotMode = 'otp-pending';
       startCountdown();
     } catch (e) {
@@ -169,9 +162,7 @@
       <form onsubmit={(e) => { e.preventDefault(); handleLogin(); }} class="space-y-4">
         <div class="form-group">
           <label class="label" for="whatsapp">WhatsApp</label>
-          <input id="whatsapp" class="input" type="tel" bind:value={whatsapp}
-            placeholder="11999990000" required autocomplete="username"
-            oninput={(e) => { whatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
+          <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required />
         </div>
 
         <div class="form-group">
@@ -219,11 +210,8 @@
 
         <div class="form-group">
           <label class="label" for="forgot-whatsapp">Celular</label>
-          <input id="forgot-whatsapp" class="input" type="tel"
-            bind:value={forgotWhatsapp} placeholder="11999990000"
-            disabled={forgotLoading}
-            oninput={(e) => { forgotWhatsapp = sanitizePhone((e.target as HTMLInputElement).value); }} />
-          <p class="text-xs text-gray-400 mt-1">Somente números, com DDD. Você receberá um código por SMS ou WhatsApp.</p>
+          <PhoneInput id="forgot-whatsapp" bind:value={forgotWhatsapp} placeholder="11999990000" disabled={forgotLoading} />
+          <p class="text-xs text-gray-400 mt-1">Selecione o país e digite o número. Você receberá um código por SMS ou WhatsApp.</p>
         </div>
 
         {#if forgotError}<div class="alert-error text-sm">{forgotError}</div>{/if}
