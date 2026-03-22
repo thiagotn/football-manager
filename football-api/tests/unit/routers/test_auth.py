@@ -28,6 +28,7 @@ def _make_player(active: bool = True, whatsapp: str = "+5511999990001") -> Magic
     p = MagicMock()
     p.id = uuid4()
     p.name = "João Silva"
+    p.nickname = None
     p.whatsapp = whatsapp
     p.password_hash = hash_password("senha123")
     p.role = PlayerRole.PLAYER

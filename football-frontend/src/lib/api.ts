@@ -40,13 +40,13 @@ const del = (path: string) => request<void>(path, { method: 'DELETE' });
 // ── Auth ──────────────────────────────────────────────────────
 export const auth = {
   login: (whatsapp: string, password: string) =>
-    post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/login', { whatsapp, password }),
+    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean }>('/auth/login', { whatsapp, password }),
   sendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/send-otp', { whatsapp }),
   verifyOtp: (whatsapp: string, otp_code: string) =>
     post<{ otp_token: string }>('/auth/verify-otp', { whatsapp, otp_code }),
   register: (data: { name: string; whatsapp: string; password: string; nickname?: string; otp_token: string }) =>
-    post<{ access_token: string; player_id: string; name: string; role: string; must_change_password: boolean }>('/auth/register', data),
+    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean }>('/auth/register', data),
   me: () => get<Player>('/auth/me'),
   forgotPasswordSendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/forgot-password/send-otp', { whatsapp }),

@@ -65,8 +65,8 @@ function createAuthStore() {
 
       set({ token, player, loading: false });
     },
-    login(token: string, player: { player_id: string; name: string; role: string; must_change_password?: boolean }) {
-      const p = { id: player.player_id, name: player.name, role: player.role, must_change_password: player.must_change_password ?? false } as unknown as Player;
+    login(token: string, player: { player_id: string; name: string; nickname?: string | null; role: string; must_change_password?: boolean }) {
+      const p = { id: player.player_id, name: player.name, nickname: player.nickname ?? null, role: player.role, must_change_password: player.must_change_password ?? false } as unknown as Player;
       localStorage.setItem('token', token);
       localStorage.setItem('player', JSON.stringify(p));
       set({ token, player: p, loading: false });

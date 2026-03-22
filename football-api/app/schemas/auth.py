@@ -63,6 +63,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     player_id: str
     name: str
+    nickname: str | None = None
     role: str
     must_change_password: bool = False
 

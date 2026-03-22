@@ -46,6 +46,7 @@ async def login(body: LoginRequest, db: DB):
         access_token=token,
         player_id=str(player.id),
         name=player.name,
+        nickname=player.nickname,
         role=player.role,
         must_change_password=player.must_change_password,
     )
@@ -114,6 +115,7 @@ async def register(body: RegisterRequest, db: DB):
         access_token=token,
         player_id=str(player.id),
         name=player.name,
+        nickname=player.nickname,
         role=player.role,
         must_change_password=False,
     )
