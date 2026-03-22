@@ -8,6 +8,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { ChevronLeft, Copy, RefreshCw, Shield } from 'lucide-svelte';
+  import { t } from '$lib/i18n';
 
   const matchHash = $page.params.hash;
 
@@ -53,9 +54,9 @@
     try {
       const result = await teamsApi.generate(match.id);
       teamsData = result;
-      toastSuccess('Times remontados!');
+      toastSuccess($t('teams.rebuilt_success'));
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : 'Erro ao remontar times');
+      toastError(e instanceof ApiError ? e.message : $t('teams.rebuild_error'));
     } finally {
       regenerating = false;
     }
@@ -63,7 +64,7 @@
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
-    toastSuccess('Link copiado!');
+    toastSuccess($t('teams.link_copied'));
   }
 
   const MONTHS_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -90,44 +91,44 @@
           <p class="text-white font-semibold truncate">{match.group_name}</p>
           <p class="text-white/60 text-xs">{fmtDate(match.match_date)} · {match.location}</p>
         {:else if loading}
-          <p class="text-white/60 text-sm">Carregando…</p>
+          <p class="text-white/60 text-sm">{$t('teams.loading')}</p>
         {:else}
-          <p class="text-white/60 text-sm">Partida não encontrada</p>
+          <p class="text-white/60 text-sm">{$t('teams.not_found')}</p>
         {/if}
       </div>
-      <button onclick={copyLink} class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors" title="Copiar link">
+      <button onclick={copyLink} class="p-1.5 rounded-lg hover:bg-white/10 text-white/80 transition-colors" title={$t('teams.link_copied')}>
         <Copy size={18} />
       </button>
     </div>
 
     <!-- Title + admin action -->
     <div class="flex items-center justify-between mb-3">
-      <h1 class="text-white text-base font-bold">⚽ Times do Rachão</h1>
+      <h1 class="text-white text-base font-bold">{$t('teams.title')}</h1>
       {#if !loading && teamsData && isGroupAdmin}
         <button
           onclick={() => confirmOpen = true}
           disabled={regenerating}
           class="btn-secondary btn-sm gap-1 text-xs py-1">
           <RefreshCw size={12} class={regenerating ? 'animate-spin' : ''} />
-          {regenerating ? 'Remontando…' : 'Remontar'}
+          {regenerating ? $t('teams.rebuilding') : $t('teams.rebuild')}
         </button>
       {/if}
     </div>
 
     {#if loading}
-      <div class="text-center py-16 text-white/50">Carregando…</div>
+      <div class="text-center py-16 text-white/50">{$t('teams.loading')}</div>
 
     {:else if !match}
       <div class="card card-body text-center text-gray-500 dark:text-gray-400">
-        <p>Partida não encontrada.</p>
+        <p>{$t('teams.not_found')}</p>
       </div>
 
     {:else if !teamsData || teamsData.teams.length === 0}
       <div class="card card-body text-center py-10">
         <p class="text-4xl mb-3">🎲</p>
-        <p class="font-semibold text-gray-700 dark:text-gray-200 mb-1">Os times ainda não foram sorteados.</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">O administrador do grupo pode montar os times na página da partida.</p>
-        <a href="/match/{matchHash}" class="btn-primary btn-sm mx-auto">← Ir para a partida</a>
+        <p class="font-semibold text-gray-700 dark:text-gray-200 mb-1">{$t('teams.not_sorted_title')}</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">{$t('teams.not_sorted_desc')}</p>
+        <a href="/match/{matchHash}" class="btn-primary btn-sm mx-auto">{$t('teams.go_to_match')}</a>
       </div>
 
     {:else}
@@ -137,7 +138,7 @@
         {@const t2 = teamsData.teams[1]}
         <div class="card overflow-hidden mb-3">
           <div class="px-3 py-2 text-center">
-            <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">1º jogo do rachão</p>
+            <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">{$t('teams.first_match')}</p>
             <div class="flex items-center justify-center gap-2 min-w-0">
               <div class="flex items-center gap-1 min-w-0 justify-end flex-1">
                 <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{t1.name}</span>
@@ -179,7 +180,7 @@
             </ul>
             {#if isGroupAdmin}
               <div class="px-2 py-1 border-t border-gray-100 dark:border-gray-700">
-                <p class="text-[10px] text-gray-400 dark:text-gray-500">{team.players.length} jog.</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">{$t('teams.players_count').replace('{n}', String(team.players.length))}</p>
               </div>
             {/if}
           </div>
@@ -190,7 +191,7 @@
       {#if teamsData.reserves.length > 0}
         <div class="card overflow-hidden mb-3">
           <div class="px-3 py-1.5 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400">Reservas ({teamsData.reserves.length})</h3>
+            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400">{$t('teams.reserves').replace('{n}', String(teamsData.reserves.length))}</h3>
           </div>
           <div class="px-3 py-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
             {#each teamsData.reserves as p}
@@ -204,7 +205,7 @@
 
       <!-- Share -->
       <button onclick={copyLink} class="btn btn-secondary w-full justify-center gap-2">
-        <Copy size={15} /> Copiar link dos times
+        <Copy size={15} /> {$t('teams.copy_link')}
       </button>
     {/if}
 
@@ -213,8 +214,8 @@
 
 <ConfirmDialog
   bind:open={confirmOpen}
-  message="Remontar os times vai substituir o sorteio atual. Continuar?"
-  confirmLabel="Remontar"
+  message={$t('teams.rebuild_confirm')}
+  confirmLabel={$t('teams.rebuild_label')}
   danger={false}
   onConfirm={regenerateTeams}
 />

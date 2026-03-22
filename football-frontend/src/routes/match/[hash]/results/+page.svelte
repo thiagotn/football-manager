@@ -5,11 +5,16 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { Trophy, Share2, Clock, MapPin } from 'lucide-svelte';
   import { relativeDate } from '$lib/utils.js';
+  import { t, locale } from '$lib/i18n';
 
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
 
   function fmtDate(d: string) {
-    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }, $locale, {
+      today: $t('date.today'),
+      tomorrow: $t('date.tomorrow'),
+      yesterday: $t('date.yesterday'),
+    });
   }
 
   function fmtTimeRange(start: string, end: string | null): string {
@@ -49,9 +54,9 @@
       } catch (e) {
         if (!cancelled) {
           if (e instanceof ApiError && e.status === 404) {
-            error = 'Resultados não disponíveis ainda. A votação pode ainda estar aberta ou não ter ocorrido.';
+            error = $t('results.not_available_desc');
           } else {
-            error = 'Erro ao carregar resultados.';
+            error = $t('results.load_error');
           }
         }
       } finally {
@@ -140,7 +145,7 @@
     <button
       onclick={() => history.length > 1 ? history.back() : (window.location.href = `/match/${matchHash}`)}
       class="mb-4 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-      ← Voltar para a partida
+      {$t('results.back')}
     </button>
 
     <!-- Match info card -->
@@ -173,7 +178,7 @@
             {#if match.court_type || match.players_per_team}
               <div class="flex flex-wrap gap-2 mt-1.5 text-primary-200 text-xs">
                 {#if match.court_type}<span class="bg-primary-800/40 rounded px-2 py-0.5">{COURT_LABELS[match.court_type]}</span>{/if}
-                {#if match.players_per_team}<span class="bg-primary-800/40 rounded px-2 py-0.5">{match.players_per_team} na linha + goleiro</span>{/if}
+                {#if match.players_per_team}<span class="bg-primary-800/40 rounded px-2 py-0.5">{$t('results.line_goalkeeper').replace('{n}', String(match.players_per_team))}</span>{/if}
               </div>
             {/if}
           </div>
@@ -190,9 +195,9 @@
     {:else if error}
       <div class="card p-10 text-center">
         <p class="text-4xl mb-3">⏳</p>
-        <p class="text-base font-semibold text-gray-700 dark:text-gray-200 mb-1">Resultados indisponíveis</p>
+        <p class="text-base font-semibold text-gray-700 dark:text-gray-200 mb-1">{$t('results.unavailable_title')}</p>
         <p class="text-sm text-gray-400 dark:text-gray-500">{error}</p>
-        <a href="/match/{matchHash}" class="mt-4 inline-block btn btn-secondary btn-sm">Ver partida</a>
+        <a href="/match/{matchHash}" class="mt-4 inline-block btn btn-secondary btn-sm">{$t('results.see_match')}</a>
       </div>
 
     {:else if results}
@@ -200,21 +205,21 @@
       <div class="text-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
           <Trophy size={24} class="text-amber-500" />
-          Melhores do Rachão
+          {$t('results.title')}
         </h1>
         <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-          {results.total_voters} de {results.eligible_voters} jogador{results.eligible_voters !== 1 ? 'es' : ''} votaram
+          {$t('results.voters').replace('{voted}', String(results.total_voters)).replace('{eligible}', String(results.eligible_voters)).replace('{plural}', results.eligible_voters !== 1 ? 'es' : '')}
         </p>
       </div>
 
       {#if results.top5.length === 0}
         <div class="card p-8 text-center">
-          <p class="text-gray-400 dark:text-gray-500 text-sm">Nenhum voto registrado nesta partida.</p>
+          <p class="text-gray-400 dark:text-gray-500 text-sm">{$t('results.no_votes')}</p>
         </div>
       {:else}
         <!-- Podium -->
         <div class="card mb-4 px-4 pt-6 pb-4 overflow-hidden">
-          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center mb-6">Pódio</p>
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center mb-6">{$t('results.podium')}</p>
           <div class="flex items-end justify-center gap-3">
             {#each top3 as item}
               {@const pos = item.position}
@@ -236,7 +241,7 @@
         {#if rest.length > 0}
           <div class="card mb-4 overflow-hidden">
             <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Também na lista</p>
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{$t('results.also_listed')}</p>
             </div>
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each rest as item}
@@ -260,7 +265,7 @@
         {#if results.flop.length > 0}
           <div class="card mb-4 overflow-hidden">
             <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-red-50 dark:bg-red-900/10">
-              <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">😬 Decepção do Jogo</p>
+              <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">{$t('results.flop')}</p>
             </div>
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each results.flop as item}
@@ -277,7 +282,7 @@
         <button
           onclick={shareResults}
           class="w-full btn btn-secondary justify-center gap-2">
-          <Share2 size={16} /> Compartilhar resultado
+          <Share2 size={16} /> {$t('results.share')}
         </button>
       {/if}
 

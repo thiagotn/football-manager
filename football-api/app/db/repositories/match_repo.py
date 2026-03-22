@@ -230,7 +230,7 @@ class MatchRepository(BaseRepository[Match]):
     ) -> list[dict]:
         """Partidas abertas de grupos públicos que o jogador não integra, com vagas disponíveis."""
         from app.models.group import Group
-        from app.models.match_waitlist import MatchWaitlist
+        from app.models.waitlist import MatchWaitlist
 
         BRAZIL = timezone(timedelta(hours=-3))
         today = datetime.now(BRAZIL).date()

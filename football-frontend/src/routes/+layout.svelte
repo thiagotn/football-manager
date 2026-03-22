@@ -10,6 +10,7 @@
   import { sessionExpiredStore } from '$lib/stores/sessionExpired';
   import Navbar from '$lib/components/Navbar.svelte';
   import Toast from '$lib/components/Toast.svelte';
+  import { initLocale, t } from '$lib/i18n';
 
   const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy'];
 
@@ -17,6 +18,7 @@
     themeStore.init();
     pwaInstall.init();
     authStore.init();
+    initLocale();
   });
 
   // $effect é registrado na inicialização do componente (antes de qualquer onMount),
@@ -24,7 +26,7 @@
   $effect(() => {
     if ($sessionExpiredStore) {
       sessionExpiredStore.set(false);
-      toastInfo('Sua sessão expirou. Faça login novamente.');
+      toastInfo($t('layout.session_expired'));
       goto('/login?expired=1');
     }
   });
@@ -56,9 +58,9 @@
 <slot />
 {#if isAppPage}
   <footer class="hidden min-[940px]:flex border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-xs text-gray-400 dark:text-gray-500 flex-wrap items-center justify-center gap-4">
-    <a href="/terms" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Termos de Uso</a>
-    <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Política de Privacidade</a>
-    <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">FAQ</a>
-    <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Status</a>
+    <a href="/terms" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.terms')}</a>
+    <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.privacy')}</a>
+    <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.faq')}</a>
+    <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.status')}</a>
   </footer>
 {/if}

@@ -7,6 +7,8 @@
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
+  import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+  import { t } from '$lib/i18n';
 
   function logout() {
     authStore.logout();
@@ -14,16 +16,16 @@
   }
 
   const links = [
-    { href: '/',                      icon: Home,       label: 'Dashboard' },
-    { href: '/groups',                icon: Trophy,     label: 'Grupos' },
-    { href: '/discover',              icon: Compass,    label: 'Descobrir',     playerOnly: true },
-    { href: '/matches',               icon: Calendar,   label: 'Rachões',       playerOnly: true },
-    { href: '/profile/stats',         icon: BarChart2,  label: 'Rachão Score',  playerOnly: true },
-    { href: '/review',                icon: Star,       label: 'Avaliar o App', playerOnly: true },
-    { href: '/players',               icon: Users,      label: 'Jogadores',        adminOnly: true },
-    { href: '/admin/reviews',         icon: Star,       label: 'Avaliações',       adminOnly: true },
-    { href: '/admin/subscriptions',   icon: CreditCard, label: 'Assinaturas',      adminOnly: true },
-    { href: '/admin/faq',             icon: BookOpen,   label: 'Guia Admin',       adminOnly: true },
+    { href: '/',                      icon: Home,       labelKey: 'nav.dashboard' },
+    { href: '/groups',                icon: Trophy,     labelKey: 'nav.groups' },
+    { href: '/discover',              icon: Compass,    labelKey: 'nav.discover',       playerOnly: true },
+    { href: '/matches',               icon: Calendar,   labelKey: 'nav.matches',        playerOnly: true },
+    { href: '/profile/stats',         icon: BarChart2,  labelKey: 'nav.score',          playerOnly: true },
+    { href: '/review',                icon: Star,       labelKey: 'nav.review',         playerOnly: true },
+    { href: '/players',               icon: Users,      labelKey: 'nav.players',        adminOnly: true },
+    { href: '/admin/reviews',         icon: Star,       labelKey: 'nav.admin_reviews',  adminOnly: true },
+    { href: '/admin/subscriptions',   icon: CreditCard, labelKey: 'nav.subscriptions',  adminOnly: true },
+    { href: '/admin/faq',             icon: BookOpen,   labelKey: 'nav.guide',          adminOnly: true },
   ];
 
   let menuOpen = $state(false);
@@ -66,7 +68,7 @@
         <a
           href={backHref}
           class="min-[940px]:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-primary-600 transition-colors"
-          aria-label="Voltar"
+          aria-label={$t('aria.back')}
         >
           <ChevronLeft size={22} />
         </a>
@@ -92,7 +94,7 @@
               {$page.url.pathname === l.href ? 'bg-primary-900' : 'hover:bg-primary-600'}"
           >
             <l.icon size={15} />
-            {l.label}
+            {$t(l.labelKey)}
           </a>
         {/if}
       {/each}
@@ -101,24 +103,25 @@
     <!-- Direita — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-2">
       {#if $pwaInstall.canInstall}
-        <button onclick={() => pwaInstall.install()} class="btn-ghost btn-sm text-emerald-300 hover:text-emerald-100 hover:bg-primary-600" title="Instalar App">
+        <button onclick={() => pwaInstall.install()} class="btn-ghost btn-sm text-emerald-300 hover:text-emerald-100 hover:bg-primary-600" title={$t('nav.install')}>
           <Download size={15} />
-          <span>Instalar</span>
+          <span>{$t('nav.install')}</span>
         </button>
       {/if}
-      <span class="text-sm text-primary-200">{$currentPlayer?.name}</span>
+      <span class="text-sm text-primary-200">{$currentPlayer?.nickname || $currentPlayer?.name}</span>
+      <LanguageSwitcher variant="bar" />
       <a href="/profile"
         class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600 {$page.url.pathname === '/profile' ? 'bg-primary-900' : ''}"
-        title="Minha conta">
+        title={$t('nav.my_account')}>
         <UserCircle size={15} />
-        <span>Conta</span>
+        <span>{$t('nav.account')}</span>
       </a>
-      <button onclick={themeStore.toggle} class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600" title="Alternar tema">
+      <button onclick={themeStore.toggle} class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600" title={$t('aria.theme')}>
         {#if $themeStore === 'dark'}<Sun size={15} />{:else}<Moon size={15} />{/if}
       </button>
       <button onclick={logout} class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600">
         <LogOut size={15} />
-        <span>Sair</span>
+        <span>{$t('nav.logout')}</span>
       </button>
     </div>
 
@@ -126,7 +129,7 @@
     <button
       class="min-[940px]:hidden p-2 rounded-lg hover:bg-primary-600 transition-colors"
       onclick={() => menuOpen = !menuOpen}
-      aria-label="Menu"
+      aria-label={$t('aria.menu')}
     >
       <Menu size={22} />
     </button>
@@ -139,7 +142,7 @@
   <button
     class="min-[940px]:hidden fixed inset-0 z-40 bg-black/50"
     onclick={closeMenu}
-    aria-label="Fechar menu"
+    aria-label={$t('aria.close_menu')}
   ></button>
 
   <!-- Painel deslizante da direita -->
@@ -148,14 +151,14 @@
     <!-- Cabeçalho do drawer -->
     <div class="flex items-center justify-between px-4 h-16 border-b border-primary-700 shrink-0">
       <div class="flex items-center gap-2 min-w-0">
-        <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.name}</p>
+        <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.nickname || $currentPlayer?.name}</p>
         <button onclick={themeStore.toggle}
           class="p-1.5 rounded-lg hover:bg-primary-700 transition-colors text-primary-300 shrink-0"
-          title="Alternar tema">
+          title={$t('aria.theme')}>
           {#if $themeStore === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
         </button>
       </div>
-      <button onclick={closeMenu} class="p-2 rounded-lg hover:bg-primary-700 transition-colors" aria-label="Fechar">
+      <button onclick={closeMenu} class="p-2 rounded-lg hover:bg-primary-700 transition-colors" aria-label={$t('aria.close')}>
         <X size={20} />
       </button>
     </div>
@@ -171,7 +174,7 @@
               {$page.url.pathname === l.href ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}"
           >
             <l.icon size={18} />
-            {l.label}
+            {$t(l.labelKey)}
           </a>
         {/if}
       {/each}
@@ -181,14 +184,15 @@
           <a href="/account/subscription" onclick={closeMenu}
             class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
               {$page.url.pathname.startsWith('/account/') || $page.url.pathname === '/plans' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-            <CreditCard size={18} /> Plano & Assinatura
+            <CreditCard size={18} /> {$t('nav.plan')}
           </a>
         {/if}
         <a href="/faq" onclick={closeMenu}
           class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
             {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-          <HelpCircle size={18} /> FAQ
+          <HelpCircle size={18} /> {$t('nav.faq')}
         </a>
+        <LanguageSwitcher variant="drawer" />
         <PwaInstallButton />
       </div>
     </div>
@@ -199,11 +203,11 @@
         <a href="/profile" onclick={closeMenu}
           class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
             {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : ''}">
-          <UserCircle size={18} /> Minha Conta
+          <UserCircle size={18} /> {$t('nav.my_account')}
         </a>
         <button onclick={logout}
           class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
-          <LogOut size={18} /> Sair
+          <LogOut size={18} /> {$t('nav.logout')}
         </button>
       </div>
 
@@ -211,12 +215,12 @@
       <div class="flex items-center gap-3 px-3 pt-3 mt-1 border-t border-primary-700/40">
         <a href="/terms" onclick={closeMenu}
           class="text-xs text-primary-400 hover:text-primary-200 transition-colors">
-          Termos de Uso
+          {$t('footer.terms')}
         </a>
         <span class="text-primary-600 text-xs">·</span>
         <a href="/privacy" onclick={closeMenu}
           class="text-xs text-primary-400 hover:text-primary-200 transition-colors">
-          Política de Privacidade
+          {$t('footer.privacy')}
         </a>
       </div>
     </div>

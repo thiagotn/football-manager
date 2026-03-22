@@ -7,6 +7,7 @@
   import { goto } from '$app/navigation';
   import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck, ChevronDown } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import { t } from '$lib/i18n';
 
   // Plan
   let sub: SubscriptionInfo | null = $state(null);
@@ -44,7 +45,7 @@
       const updated = await playersApi.update($currentPlayer.id, { nickname: nickname.trim() || null });
       authStore.updatePlayer(updated);
       editingNickname = false;
-      toastSuccess('Apelido atualizado!');
+      toastSuccess($t('profile.nickname_updated'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao salvar apelido');
     }
@@ -100,7 +101,7 @@
       console.log('[push] subscrito:', sub.endpoint);
       await pushApi.subscribe(sub.toJSON() as PushSubscriptionJSON, navigator.userAgent);
       pushSubscribed = true;
-      toastSuccess('Notificações ativadas!');
+      toastSuccess($t('profile.push_enabled'));
     } catch (e) {
       console.error('[push] enablePush error:', e);
       toastError(e instanceof Error ? e.message : 'Erro ao ativar notificações');
@@ -117,7 +118,7 @@
       if (sub) await sub.unsubscribe();
       await pushApi.unsubscribe();
       pushSubscribed = false;
-      toastSuccess('Notificações desativadas.');
+      toastSuccess($t('profile.push_disabled'));
     } catch (e) {
       toastError(e instanceof Error ? e.message : 'Erro ao desativar notificações');
     } finally {
@@ -201,8 +202,8 @@
   }
 
   let validationError = $derived(
-    newPw && confirmPw && newPw !== confirmPw ? 'As senhas não coincidem.' :
-    newPw && newPw.length < 6 ? 'A nova senha deve ter ao menos 6 caracteres.' :
+    newPw && confirmPw && newPw !== confirmPw ? $t('profile.pw_mismatch') :
+    newPw && newPw.length < 6 ? $t('profile.pw_too_short') :
     null
   );
 
@@ -218,7 +219,7 @@
         await authApi.changePassword(newPw, { current_password: currentPw });
       }
       authStore.setMustChangePassword(false);
-      toastSuccess('Senha alterada com sucesso!');
+      toastSuccess($t('profile.pw_changed'));
       goto('/');
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao alterar senha');
@@ -238,15 +239,15 @@
   <div class="flex items-center justify-between mb-6">
     <div>
       <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-        <User size={24} class="text-primary-400" /> Minha Conta
+        <User size={24} class="text-primary-400" /> {$t('profile.title')}
       </h1>
-      <p class="text-sm text-white/60 mt-0.5">Informações do seu perfil e segurança</p>
+      <p class="text-sm text-white/60 mt-0.5">{$t('profile.subtitle')}</p>
     </div>
   </div>
 
   {#if $currentPlayer?.must_change_password}
     <div class="bg-amber-50 border border-amber-300 text-amber-800 rounded-lg px-4 py-3 mb-6 text-sm font-medium">
-      ⚠️ Sua senha foi redefinida pelo administrador. Por favor, defina uma nova senha abaixo antes de continuar.
+      {$t('profile.must_change_pw')}
     </div>
   {/if}
 
@@ -263,8 +264,8 @@
             <BarChart2 size={20} class="text-primary-600 dark:text-primary-400" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Rachão Score</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Partidas, presença, reputação e mais</p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('profile.stats_link')}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{$t('profile.stats_link_desc')}</p>
           </div>
           <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0 group-hover:translate-x-0.5 transition-transform">→</span>
         </a>
@@ -272,14 +273,14 @@
 
       <!-- Dados do perfil (somente leitura) -->
       <div class="card card-body">
-        <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Perfil</h2>
+        <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">{$t('profile.section_profile')}</h2>
         <dl class="space-y-3 text-sm">
           <div class="flex justify-between">
-            <dt class="text-gray-500 dark:text-gray-400">Nome</dt>
+            <dt class="text-gray-500 dark:text-gray-400">{$t('profile.name')}</dt>
             <dd class="font-medium text-gray-900 dark:text-gray-100">{$currentPlayer?.name ?? '—'}</dd>
           </div>
           <div class="flex justify-between items-center">
-            <dt class="text-gray-500 dark:text-gray-400">Apelido</dt>
+            <dt class="text-gray-500 dark:text-gray-400">{$t('profile.nickname')}</dt>
             {#if !editingNickname}
               <dd class="flex items-center gap-2">
                 <span class="font-medium text-gray-900 dark:text-gray-100">{$currentPlayer?.nickname || '—'}</span>
@@ -295,27 +296,27 @@
               <input
                 class="input text-sm flex-1 min-w-0"
                 bind:value={nickname}
-                placeholder="Como te chamam?"
+                placeholder={$t('profile.nickname_placeholder')}
                 maxlength="50"
                 disabled={savingNickname}
                 autofocus />
               <button type="submit" class="btn-primary btn-sm shrink-0" disabled={savingNickname}>
-                {savingNickname ? 'Salvando…' : 'Salvar'}
+                {savingNickname ? $t('profile.nickname_saving') : $t('profile.nickname_save')}
               </button>
               <button type="button" class="btn-secondary btn-sm shrink-0" onclick={() => { editingNickname = false; nickname = $currentPlayer?.nickname ?? ''; }}>
-                Cancelar
+                {$t('profile.nickname_cancel')}
               </button>
             </form>
           {/if}
           <div class="flex justify-between">
-            <dt class="text-gray-500 dark:text-gray-400">WhatsApp</dt>
+            <dt class="text-gray-500 dark:text-gray-400">{$t('profile.whatsapp')}</dt>
             <dd class="font-mono text-gray-700 dark:text-gray-300">{$currentPlayer?.whatsapp ?? '—'}</dd>
           </div>
           <div class="flex justify-between">
-            <dt class="text-gray-500 dark:text-gray-400">Perfil</dt>
+            <dt class="text-gray-500 dark:text-gray-400">{$t('profile.role')}</dt>
             <dd>
               <span class="badge {$currentPlayer?.role === 'admin' ? 'badge-blue' : 'badge-gray'}">
-                {$currentPlayer?.role === 'admin' ? 'Admin' : 'Jogador'}
+                {$currentPlayer?.role === 'admin' ? $t('profile.role_admin') : $t('profile.role_player')}
               </span>
             </dd>
           </div>
@@ -325,7 +326,7 @@
       <!-- Plano atual (apenas não-admins) -->
       {#if !$isAdmin && sub}
         <div class="card card-body">
-          <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Seu Plano</h2>
+          <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">{$t('profile.plan_section')}</h2>
 
           <div class="flex items-center gap-2 mb-4">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
@@ -339,7 +340,7 @@
               {@const pct = Math.min(100, Math.round((sub.groups_used / sub.groups_limit) * 100))}
               <div>
                 <div class="flex items-center justify-between mb-1.5">
-                  <span class="text-sm text-gray-600 dark:text-gray-400">Grupos</span>
+                  <span class="text-sm text-gray-600 dark:text-gray-400">{$t('profile.groups_label')}</span>
                   <span class="text-sm font-medium {usageTextColor(sub.groups_used, sub.groups_limit)}">
                     {sub.groups_used} de {sub.groups_limit}
                   </span>
@@ -355,8 +356,8 @@
 
             {#if sub.members_limit !== null}
               <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600 dark:text-gray-400">Membros por grupo</span>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">até {sub.members_limit}</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{$t('profile.members_label')}</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('profile.members_up_to').replace('{n}', String(sub.members_limit))}</span>
               </div>
             {/if}
           </div>
@@ -364,16 +365,16 @@
           {#if billingEnabled && sub.plan === 'free'}
             <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-2">
               <a href="/plans" class="btn-primary btn-sm w-full justify-center">
-                <CreditCard size={14} /> Ver planos
+                <CreditCard size={14} /> {$t('profile.see_plans')}
               </a>
               <a href="/account/subscription" class="btn-secondary btn-sm w-full justify-center text-xs">
-                Gerenciar assinatura
+                {$t('profile.manage_subscription')}
               </a>
             </div>
           {:else if billingEnabled && sub.plan !== 'free'}
             <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <a href="/account/subscription" class="btn-secondary btn-sm w-full justify-center">
-                <CreditCard size={14} /> Gerenciar assinatura
+                <CreditCard size={14} /> {$t('profile.manage_subscription')}
               </a>
             </div>
           {/if}
@@ -389,27 +390,27 @@
       {#if pushSupported}
         <div class="card card-body">
           <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2">
-            <Bell size={16} class="text-primary-600" /> Notificações
+            <Bell size={16} class="text-primary-600" /> {$t('profile.notifications_title')}
           </h2>
           <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">
-            Receba avisos de novas partidas, convites e lembretes diretamente no seu dispositivo.
+            {$t('profile.notifications_desc')}
           </p>
           {#if pushPermission === 'denied'}
             <p class="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
-              Notificações bloqueadas no navegador. Altere nas configurações do seu dispositivo para habilitá-las.
+              {$t('profile.notifications_blocked')}
             </p>
           {:else if pushSubscribed}
             <div class="flex items-center justify-between">
               <span class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5">
-                <Bell size={14} /> Ativas
+                <Bell size={14} /> {$t('profile.notifications_active')}
               </span>
               <button class="btn-sm btn-secondary flex items-center gap-1" onclick={disablePush} disabled={pushLoading}>
-                <BellOff size={14} /> {pushLoading ? 'Aguarde…' : 'Desativar'}
+                <BellOff size={14} /> {pushLoading ? $t('profile.notifications_disable_loading') : $t('profile.notifications_disable')}
               </button>
             </div>
           {:else}
             <button class="btn-primary w-full justify-center" onclick={enablePush} disabled={pushLoading}>
-              <Bell size={15} /> {pushLoading ? 'Ativando…' : 'Ativar notificações'}
+              <Bell size={15} /> {pushLoading ? $t('profile.notifications_enable_loading') : $t('profile.notifications_enable')}
             </button>
           {/if}
         </div>
@@ -422,7 +423,7 @@
           class="w-full card-body flex items-center justify-between gap-2 text-left"
           onclick={() => { if (pwOpen) { pwMode = 'normal'; otpCode = ''; otpToken = ''; otpError = ''; if (otpCountdownTimer) clearInterval(otpCountdownTimer); } pwOpen = !pwOpen; }}>
           <span class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <KeyRound size={16} class="text-primary-600" /> Alterar Senha
+            <KeyRound size={16} class="text-primary-600" /> {$t('profile.change_password')}
           </span>
           <ChevronDown size={16} class="text-gray-400 shrink-0 transition-transform duration-200 {pwOpen ? 'rotate-180' : ''}" />
         </button>
@@ -434,7 +435,7 @@
         {#if pwMode === 'normal'}
           <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
             <div class="form-group">
-              <label class="label" for="current-pw">Senha atual</label>
+              <label class="label" for="current-pw">{$t('profile.current_password')}</label>
               <div class="relative">
                 <input id="current-pw" class="input pr-10"
                   type={showCurrent ? 'text' : 'password'}
@@ -447,17 +448,17 @@
               </div>
               <button type="button" onclick={sendOtp} disabled={sendingOtp}
                 class="mt-1.5 text-xs text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50">
-                {sendingOtp ? 'Enviando código…' : 'Não lembro a senha atual'}
+                {sendingOtp ? $t('profile.otp_sending') : $t('profile.forgot_password')}
               </button>
               {#if otpError}<p class="text-xs text-red-500 mt-1">{otpError}</p>{/if}
             </div>
 
             <div class="form-group">
-              <label class="label" for="new-pw">Nova senha</label>
+              <label class="label" for="new-pw">{$t('profile.new_password')}</label>
               <div class="relative">
                 <input id="new-pw" class="input pr-10"
                   type={showNew ? 'text' : 'password'}
-                  bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password"
+                  bind:value={newPw} placeholder={$t('profile.new_password_placeholder')} required minlength="6" autocomplete="new-password"
                   disabled={saving} />
                 <button type="button" onclick={() => showNew = !showNew}
                   class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -467,10 +468,10 @@
             </div>
 
             <div class="form-group">
-              <label class="label" for="confirm-pw">Confirmar nova senha</label>
+              <label class="label" for="confirm-pw">{$t('profile.confirm_password')}</label>
               <input id="confirm-pw" class="input"
                 type="password" bind:value={confirmPw}
-                placeholder="Repita a nova senha" required autocomplete="new-password"
+                placeholder={$t('profile.confirm_password_placeholder')} required autocomplete="new-password"
                 disabled={saving} />
             </div>
 
@@ -480,7 +481,7 @@
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5"
               disabled={saving || !!validationError || !currentPw || !newPw || !confirmPw}>
-              {saving ? 'Salvando…' : 'Alterar senha'}
+              {saving ? $t('profile.saving') : $t('profile.change_pw_btn')}
             </button>
           </form>
 
@@ -488,14 +489,14 @@
         {:else if pwMode === 'otp-pending'}
           <div class="space-y-4">
             <div class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg px-4 py-3 text-sm text-primary-800 dark:text-primary-300">
-              Código enviado por SMS para o número cadastrado
+              {$t('profile.otp_sent_to')}
               <strong class="block mt-0.5">
                 {'•'.repeat(($currentPlayer?.whatsapp?.length ?? 4) - 4)}{$currentPlayer?.whatsapp?.slice(-4)}
               </strong>
             </div>
 
             <div class="form-group">
-              <label class="label" for="otp-code">Código de 6 dígitos</label>
+              <label class="label" for="otp-code">{$t('profile.otp_label')}</label>
               <input id="otp-code" class="input text-center text-xl tracking-widest font-mono"
                 type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
                 bind:value={otpCode} placeholder="000000"
@@ -506,16 +507,16 @@
 
             <button onclick={verifyOtp} disabled={verifyingOtp || otpCode.length !== 6}
               class="btn-primary w-full justify-center py-2.5">
-              {verifyingOtp ? 'Verificando…' : 'Verificar código'}
+              {verifyingOtp ? $t('profile.otp_verify_loading') : $t('profile.otp_verify')}
             </button>
 
             <div class="flex items-center justify-between text-xs text-gray-400">
-              <button onclick={cancelOtp} class="hover:text-gray-600 dark:hover:text-gray-200">← Voltar</button>
+              <button onclick={cancelOtp} class="hover:text-gray-600 dark:hover:text-gray-200">{$t('profile.otp_back')}</button>
               {#if otpCountdown > 0}
-                <span>Reenviar em {otpCountdown}s</span>
+                <span>{$t('profile.otp_resend_countdown').replace('{s}', String(otpCountdown))}</span>
               {:else}
                 <button onclick={sendOtp} disabled={sendingOtp} class="text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50">
-                  {sendingOtp ? 'Enviando…' : 'Reenviar código'}
+                  {sendingOtp ? $t('profile.otp_resend_loading') : $t('profile.otp_resend')}
                 </button>
               {/if}
             </div>
@@ -526,15 +527,15 @@
           <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
             <div class="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-2.5 text-sm text-green-800 dark:text-green-300">
               <ShieldCheck size={16} class="shrink-0" />
-              Identidade verificada por SMS
+              {$t('profile.identity_verified')}
             </div>
 
             <div class="form-group">
-              <label class="label" for="new-pw-otp">Nova senha</label>
+              <label class="label" for="new-pw-otp">{$t('profile.new_password')}</label>
               <div class="relative">
                 <input id="new-pw-otp" class="input pr-10"
                   type={showNew ? 'text' : 'password'}
-                  bind:value={newPw} placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password"
+                  bind:value={newPw} placeholder={$t('profile.new_password_placeholder')} required minlength="6" autocomplete="new-password"
                   disabled={saving} />
                 <button type="button" onclick={() => showNew = !showNew}
                   class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -544,10 +545,10 @@
             </div>
 
             <div class="form-group">
-              <label class="label" for="confirm-pw-otp">Confirmar nova senha</label>
+              <label class="label" for="confirm-pw-otp">{$t('profile.confirm_password')}</label>
               <input id="confirm-pw-otp" class="input"
                 type="password" bind:value={confirmPw}
-                placeholder="Repita a nova senha" required autocomplete="new-password"
+                placeholder={$t('profile.confirm_password_placeholder')} required autocomplete="new-password"
                 disabled={saving} />
             </div>
 
@@ -557,11 +558,11 @@
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5"
               disabled={saving || !!validationError || !newPw || !confirmPw}>
-              {saving ? 'Salvando…' : 'Definir nova senha'}
+              {saving ? $t('profile.saving') : $t('profile.set_new_password')}
             </button>
 
             <button type="button" onclick={cancelOtp} class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-full text-center">
-              Cancelar
+              {$t('profile.otp_cancel')}
             </button>
           </form>
         {/if}

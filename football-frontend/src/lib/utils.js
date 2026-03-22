@@ -1,23 +1,33 @@
-export function formatDate(dateStr) {
+export function formatDate(dateStr, locale = 'pt-BR') {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /**
- * Retorna 'Hoje', 'Amanhã' ou 'Ontem' quando aplicável,
- * caso contrário formata com as opções fornecidas.
+ * Returns a relative label (Today/Tomorrow/Yesterday) when applicable,
+ * otherwise formats with the given locale and options.
+ *
+ * @param {string} dateStr
+ * @param {{ weekday?: string, day?: string, month?: string }} [options]
+ * @param {string} [locale] - BCP 47 locale tag (e.g. 'pt-BR', 'en', 'es')
+ * @param {{ today?: string, tomorrow?: string, yesterday?: string }} [labels] - localized relative labels
  */
-export function relativeDate(dateStr, options = { weekday: 'long', day: '2-digit', month: 'long' }) {
+export function relativeDate(
+  dateStr,
+  options = { weekday: 'long', day: '2-digit', month: 'long' },
+  locale = 'pt-BR',
+  labels = { today: 'Hoje', tomorrow: 'Amanhã', yesterday: 'Ontem' }
+) {
   if (!dateStr) return '';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const d = new Date(dateStr + 'T00:00');
   const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
-  if (diffDays === 0) return 'Hoje';
-  if (diffDays === 1) return 'Amanhã';
-  if (diffDays === -1) return 'Ontem';
-  return d.toLocaleDateString('pt-BR', options);
+  if (diffDays === 0) return labels.today;
+  if (diffDays === 1) return labels.tomorrow;
+  if (diffDays === -1) return labels.yesterday;
+  return d.toLocaleDateString(locale, options);
 }
 
 export function formatTime(timeStr) {

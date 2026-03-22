@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { groups as groupsApi } from '$lib/api';
   import { toastSuccess, toastError } from '$lib/stores/toast';
+  import { t } from '$lib/i18n';
 
   let name = $state('');
   let description = $state('');
@@ -22,7 +23,7 @@
         vote_open_delay_minutes: voteOpenDelay,
         vote_duration_hours: voteDuration,
       });
-      toastSuccess('Grupo criado com sucesso!');
+      toastSuccess($t('new_group.success'));
       goto(`/groups/${g.id}`);
     } catch (e: any) {
       error = e.message ?? 'Erro ao criar grupo';
@@ -36,44 +37,44 @@
 
 <main class="max-w-xl mx-auto px-4 py-8">
   <div class="mb-6">
-    <a href="/groups" class="text-sm text-gray-500 hover:text-gray-700">← Voltar</a>
-    <h1 class="text-2xl font-bold text-gray-900 mt-2">Novo Grupo</h1>
+    <a href="/groups" class="text-sm text-gray-500 hover:text-gray-700">{$t('new_group.back')}</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-2">{$t('new_group.title')}</h1>
   </div>
 
   <div class="card p-6">
     <form onsubmit={(e) => { e.preventDefault(); handleCreate(); }} class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nome do grupo *</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{$t('new_group.name_label')}</label>
         <input
           type="text"
           bind:value={name}
           class="input"
-          placeholder="Ex: Futebol GQC"
+          placeholder={$t('new_group.name_placeholder')}
           required
           maxlength="100"
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{$t('new_group.desc_label')}</label>
         <textarea
           bind:value={description}
           class="input resize-none"
           rows="3"
-          placeholder="Descrição opcional do grupo"
+          placeholder={$t('new_group.desc_placeholder')}
           maxlength="500"
         ></textarea>
       </div>
 
       <div class="border-t border-gray-100 pt-4">
-        <p class="text-sm font-medium text-gray-700 mb-3">Visibilidade</p>
+        <p class="text-sm font-medium text-gray-700 mb-3">{$t('new_group.visibility')}</p>
         <div class="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50">
           <div>
-            <p class="text-sm font-medium text-gray-700">Grupo público</p>
+            <p class="text-sm font-medium text-gray-700">{$t('new_group.public_title')}</p>
             <p class="text-xs text-gray-500 mt-0.5">
               {#if isPublic}
-                Qualquer pessoa com o link pode entrar na lista de espera do rachão
+                {$t('new_group.public_desc')}
               {:else}
-                Apenas membros convidados podem participar
+                {$t('new_group.private_desc')}
               {/if}
             </p>
           </div>
@@ -89,28 +90,28 @@
       </div>
 
       <div class="border-t border-gray-100 pt-4">
-        <p class="text-sm font-medium text-gray-700 mb-3">Configurações de votação</p>
+        <p class="text-sm font-medium text-gray-700 mb-3">{$t('new_group.vote_settings')}</p>
         <div class="space-y-3">
           <div>
-            <label class="block text-sm text-gray-600 mb-1">Após o termino da partida, será aberta em</label>
+            <label class="block text-sm text-gray-600 mb-1">{$t('new_group.vote_delay_label')}</label>
             <select bind:value={voteOpenDelay} class="input">
-              <option value={0}>Imediato (sem atraso)</option>
-              <option value={10}>10 minutos</option>
-              <option value={20}>20 minutos (padrão)</option>
-              <option value={30}>30 minutos</option>
-              <option value={60}>1 hora</option>
+              <option value={0}>{$t('new_group.vote_immediate')}</option>
+              <option value={10}>{$t('new_group.vote_10min')}</option>
+              <option value={20}>{$t('new_group.vote_20min')}</option>
+              <option value={30}>{$t('new_group.vote_30min')}</option>
+              <option value={60}>{$t('new_group.vote_1h')}</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm text-gray-600 mb-1">Votação encerrada após:</label>
+            <label class="block text-sm text-gray-600 mb-1">{$t('new_group.vote_duration_label')}</label>
             <select bind:value={voteDuration} class="input">
-              <option value={2}>2 horas</option>
-              <option value={4}>4 horas</option>
-              <option value={6}>6 horas</option>
-              <option value={12}>12 horas</option>
-              <option value={24}>24 horas (padrão)</option>
-              <option value={48}>48 horas</option>
-              <option value={72}>72 horas</option>
+              <option value={2}>{$t('new_group.vote_2h')}</option>
+              <option value={4}>{$t('new_group.vote_4h')}</option>
+              <option value={6}>{$t('new_group.vote_6h')}</option>
+              <option value={12}>{$t('new_group.vote_12h')}</option>
+              <option value={24}>{$t('new_group.vote_24h')}</option>
+              <option value={48}>{$t('new_group.vote_48h')}</option>
+              <option value={72}>{$t('new_group.vote_72h')}</option>
             </select>
           </div>
         </div>
@@ -121,9 +122,9 @@
       {/if}
 
       <div class="flex gap-3 pt-2">
-        <a href="/groups" class="btn-secondary flex-1 justify-center">Cancelar</a>
+        <a href="/groups" class="btn-secondary flex-1 justify-center">{$t('new_group.cancel')}</a>
         <button type="submit" class="btn-primary flex-1" disabled={loading || !name.trim()}>
-          {loading ? 'Criando...' : 'Criar Grupo'}
+          {loading ? $t('new_group.creating') : $t('new_group.create')}
         </button>
       </div>
     </form>

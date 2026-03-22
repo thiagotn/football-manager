@@ -6,6 +6,7 @@
   import { Eye, EyeOff, UserPlus, MessageCircle, RotateCcw, ShieldCheck } from 'lucide-svelte';
   import { getPlan, formatCents } from '$lib/plans';
   import PhoneInput from '$lib/components/PhoneInput.svelte';
+  import { t } from '$lib/i18n';
 
   const planKey = $derived($page.url.searchParams.get('plan') ?? 'free');
   const plan = $derived(getPlan(planKey));
@@ -58,10 +59,10 @@
       setTimeout(() => inputRefs[0]?.focus(), 50);
     } catch (e) {
       if (e instanceof ApiError) {
-        error = e.status === 409 ? 'Este WhatsApp já está cadastrado.'
-          : e.status === 429 ? 'Muitas tentativas. Aguarde antes de solicitar um novo código.'
+        error = e.status === 409 ? $t('register.whatsapp_already_registered')
+          : e.status === 429 ? $t('register.too_many_attempts')
           : e.message;
-      } else { error = 'Erro ao conectar'; }
+      } else { error = $t('register.connect_error'); }
     } finally { loading = false; }
   }
 
@@ -76,14 +77,14 @@
       setTimeout(() => inputRefs[0]?.focus(), 50);
     } catch (e) {
       error = e instanceof ApiError && e.status === 429
-        ? 'Muitas tentativas. Tente novamente mais tarde.'
-        : 'Erro ao reenviar código';
+        ? $t('register.too_many_resend')
+        : $t('register.resend_error');
     } finally { loading = false; }
   }
 
   async function handleVerifyOtp() {
     error = '';
-    if (otpCode.length < 6) { error = 'Digite o código completo de 6 dígitos'; return; }
+    if (otpCode.length < 6) { error = $t('register.otp_complete'); return; }
     loading = true;
     try {
       const res = await auth.verifyOtp(whatsapp, otpCode);
@@ -92,18 +93,18 @@
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.message === 'OTP_INVALID' || e.message === 'OTP_EXPIRED') {
-          error = 'Código inválido ou expirado. Verifique e tente novamente.';
+          error = $t('register.otp_invalid');
         } else if (e.message === 'OTP_MAX_ATTEMPTS') {
-          error = 'Tentativas esgotadas. Solicite um novo código.';
+          error = $t('register.otp_max_attempts');
           digits = ['', '', '', '', '', ''];
         } else { error = e.message; }
-      } else { error = 'Erro ao conectar'; }
+      } else { error = $t('register.connect_error'); }
     } finally { loading = false; }
   }
 
   async function handleRegister() {
     error = '';
-    if (password !== confirmPassword) { error = 'As senhas não coincidem'; return; }
+    if (password !== confirmPassword) { error = $t('register.pw_mismatch'); return; }
     loading = true;
     try {
       const res = await auth.register({ name, whatsapp, password, nickname: nickname || undefined, otp_token: otpToken });
@@ -127,15 +128,15 @@
             loginUrl += `?next=${nextUrl}`;
             if (joinWaitlist) loginUrl += `&join_waitlist=${joinWaitlist}`;
           }
-          error = 'Você já tem uma conta. Faça login para continuar.';
+          error = $t('register.already_has_account');
           // Brief delay so user can read the error
           setTimeout(() => goto(loginUrl), 2000);
         } else {
           error = e.message === 'OTP_TOKEN_INVALID'
-            ? 'Sessão de verificação expirada. Recomece o cadastro.'
+            ? $t('register.session_expired')
             : e.message;
         }
-      } else { error = 'Erro ao conectar'; }
+      } else { error = $t('register.connect_error'); }
     } finally { loading = false; }
   }
 
@@ -184,7 +185,7 @@
 
               <div class="flex-1 space-y-2 md:space-y-3">
                 <div class="flex items-center justify-between">
-                  <span class="text-xs font-semibold text-primary-300 uppercase tracking-wide">Plano selecionado</span>
+                  <span class="text-xs font-semibold text-primary-300 uppercase tracking-wide">{$t('register.plan_selected')}</span>
                   <span class="text-sm font-bold text-primary-300">
                     {plan.price_monthly === null ? 'R$ 0/mês' : `${formatCents(plan.price_monthly)}/mês`}
                   </span>
@@ -209,14 +210,14 @@
                 <div class="bg-green-500/20 border border-green-500/30 rounded-xl p-4">
                   <div class="flex items-center gap-3 mb-2">
                     <MessageCircle size={20} class="text-green-400 shrink-0" />
-                    <span class="text-sm font-semibold text-white">Código enviado</span>
+                    <span class="text-sm font-semibold text-white">{$t('register.code_sent')}</span>
                   </div>
                   <p class="text-xs text-primary-200/80">
-                    Enviamos um código SMS para<br />
+                    {$t('register.code_sent_to')}<br />
                     <span class="font-semibold text-white">{maskedWhatsapp}</span>
                   </p>
                 </div>
-                <p class="text-xs text-primary-300/70">⏱ O código é válido por 10 minutos</p>
+                <p class="text-xs text-primary-300/70">{$t('register.code_valid')}</p>
               </div>
             </div>
           {/if}
@@ -233,7 +234,7 @@
                 {n}
               </div>
               <span class="text-xs {step === s ? 'text-white font-medium' : 'text-primary-400'}">
-                {s === 'whatsapp' ? 'WhatsApp' : s === 'otp' ? 'Verificação' : 'Cadastro'}
+                {s === 'whatsapp' ? $t('register.step_whatsapp') : s === 'otp' ? $t('register.step_verification') : $t('register.step_register')}
               </span>
             </div>
             {#if n !== '3'}<div class="flex-1 h-px bg-primary-700 mx-1"></div>{/if}
@@ -250,36 +251,36 @@
         <!-- Step 1: WhatsApp -->
         {#if step === 'whatsapp'}
           <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Crie sua conta</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Digite seu número de celular</p>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">{$t('register.create_account_title')}</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{$t('register.create_account_subtitle')}</p>
           </div>
 
           <form onsubmit={(e) => { e.preventDefault(); handleSendOtp(); }} class="space-y-5">
             <div class="form-group">
-              <label class="label" for="whatsapp">Celular *</label>
+              <label class="label" for="whatsapp">{$t('register.phone_label')}</label>
               <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required />
-              <p class="text-xs text-gray-400 mt-1">Selecione o país e digite o número. Você receberá um código por SMS ou WhatsApp.</p>
+              <p class="text-xs text-gray-400 mt-1">{$t('register.phone_hint')}</p>
             </div>
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={loading || !whatsapp}>
               <MessageCircle size={16} />
-              {loading ? 'Enviando código…' : 'Enviar código'}
+              {loading ? $t('register.send_code_loading') : $t('register.send_code')}
             </button>
           </form>
 
           <p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
             {#if $page.url.searchParams.get('next')}
-              Já tem conta? <a href="/login?next={$page.url.searchParams.get('next')}{$page.url.searchParams.get('join_waitlist') ? '&join_waitlist=' + $page.url.searchParams.get('join_waitlist') : ''}" class="text-primary-600 hover:underline">Entrar</a>
+              {$t('register.already_have_account')} <a href="/login?next={$page.url.searchParams.get('next')}{$page.url.searchParams.get('join_waitlist') ? '&join_waitlist=' + $page.url.searchParams.get('join_waitlist') : ''}" class="text-primary-600 hover:underline">{$t('register.login')}</a>
             {:else}
-              Já tem conta? <a href="/login" class="text-primary-600 hover:underline">Entrar</a>
+              {$t('register.already_have_account')} <a href="/login" class="text-primary-600 hover:underline">{$t('register.login')}</a>
             {/if}
           </p>
 
         <!-- Step 2: OTP -->
         {:else if step === 'otp'}
           <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Digite o código</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Insira o código de 6 dígitos recebido</p>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">{$t('register.enter_code_title')}</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{$t('register.enter_code_subtitle')}</p>
           </div>
 
           <form onsubmit={(e) => { e.preventDefault(); handleVerifyOtp(); }} class="space-y-6">
@@ -306,24 +307,24 @@
             <button type="submit" class="btn-primary w-full justify-center py-2.5"
               disabled={loading || otpCode.length < 6}>
               <ShieldCheck size={16} />
-              {loading ? 'Verificando…' : 'Verificar código'}
+              {loading ? $t('register.verify_loading') : $t('register.verify_submit')}
             </button>
 
             <div class="text-center space-y-3">
               {#if countdown > 0}
                 <p class="text-xs text-gray-400">
-                  Não recebeu? Reenviar em <span class="font-semibold tabular-nums">{countdown}s</span>
+                  {$t('register.resend_countdown').replace('{s}', String(countdown))}
                 </p>
               {:else}
                 <button type="button" onclick={handleResend} disabled={loading}
                   class="text-xs text-primary-600 hover:underline flex items-center gap-1 mx-auto disabled:opacity-50">
-                  <RotateCcw size={12} /> Reenviar código
+                  <RotateCcw size={12} /> {$t('register.resend')}
                 </button>
               {/if}
               <button type="button"
                 onclick={() => { step = 'whatsapp'; error = ''; digits = ['', '', '', '', '', '']; }}
                 class="text-xs text-gray-400 hover:text-gray-600 block w-full">
-                ← Alterar número
+                {$t('register.change_number')}
               </button>
             </div>
           </form>
@@ -333,31 +334,31 @@
           <div class="mb-5">
             <div class="flex items-center gap-2 mb-1">
               <ShieldCheck size={16} class="text-green-500" />
-              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Complete seu cadastro</h2>
+              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">{$t('register.complete_title')}</h2>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Número verificado — só falta criar sua conta</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{$t('register.number_verified')}</p>
           </div>
 
           <form onsubmit={(e) => { e.preventDefault(); handleRegister(); }} class="space-y-4">
             <div class="form-group">
-              <label class="label" for="name">Nome completo *</label>
+              <label class="label" for="name">{$t('register.full_name_label')}</label>
               <input id="name" class="input" type="text" bind:value={name}
-                placeholder="Ex: João Silva" required autocomplete="name" />
+                placeholder={$t('register.full_name_placeholder')} required autocomplete="name" />
             </div>
 
             <div class="form-group">
-              <label class="label" for="nickname">Apelido <span class="text-gray-400 font-normal">(opcional)</span></label>
+              <label class="label" for="nickname">{$t('register.nickname_label')} <span class="text-gray-400 font-normal">{$t('register.nickname_optional')}</span></label>
               <input id="nickname" class="input" type="text" bind:value={nickname}
-                placeholder="Como te chamam no rachão" autocomplete="off" />
+                placeholder={$t('register.nickname_placeholder')} autocomplete="off" />
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div class="form-group">
-                <label class="label" for="password">Senha *</label>
+                <label class="label" for="password">{$t('register.password_label')}</label>
                 <div class="relative">
                   <input id="password" class="input pr-9"
                     type={showPw ? 'text' : 'password'}
-                    bind:value={password} placeholder="Mín. 6 chars" required
+                    bind:value={password} placeholder={$t('register.password_placeholder')} required
                     minlength="6" autocomplete="new-password" />
                   <button type="button" onclick={() => showPw = !showPw}
                     class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -366,10 +367,10 @@
                 </div>
               </div>
               <div class="form-group">
-                <label class="label" for="confirm-password">Confirmar *</label>
+                <label class="label" for="confirm-password">{$t('register.confirm_label')}</label>
                 <input id="confirm-password" class="input"
                   type={showPw ? 'text' : 'password'}
-                  bind:value={confirmPassword} placeholder="Repita" required
+                  bind:value={confirmPassword} placeholder={$t('register.confirm_placeholder')} required
                   autocomplete="new-password" />
               </div>
             </div>
@@ -377,17 +378,17 @@
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" bind:checked={termsAccepted} class="mt-0.5 shrink-0 accent-primary-600" />
               <span class="text-xs text-gray-500 dark:text-gray-400">
-                Li e aceito os
-                <a href="/terms" target="_blank" class="text-primary-600 hover:underline">Termos de Uso</a>
-                e a
-                <a href="/privacy" target="_blank" class="text-primary-600 hover:underline">Política de Privacidade</a>
+                {$t('register.terms_agree')}
+                <a href="/terms" target="_blank" class="text-primary-600 hover:underline">{$t('register.terms_link')}</a>
+                {$t('register.terms_and')}
+                <a href="/privacy" target="_blank" class="text-primary-600 hover:underline">{$t('register.privacy_link')}</a>
               </span>
             </label>
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5"
               disabled={loading || !termsAccepted}>
               <UserPlus size={16} />
-              {loading ? 'Criando conta…' : 'Criar conta grátis'}
+              {loading ? $t('register.create_loading') : $t('register.create_submit')}
             </button>
           </form>
         {/if}

@@ -8,6 +8,7 @@
   import { billingEnabled } from '$lib/billing';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { CreditCard, Zap, Check, ExternalLink } from 'lucide-svelte';
+  import { t } from '$lib/i18n';
 
   if (!billingEnabled) goto('/');
 
@@ -23,7 +24,7 @@
     if ($isAdmin) { goto('/'); return; }
     subsApi.me()
       .then(d => { sub = d; loading = false; })
-      .catch(() => { error = 'Erro ao carregar assinatura.'; loading = false; });
+      .catch(() => { error = $t('account.load_error'); loading = false; });
   });
 
   function formatDate(iso: string | null): string {
@@ -32,19 +33,19 @@
   }
 
   function statusLabel(status: string): { label: string; cls: string } {
-    return {
-      active:   { label: 'Ativa',        cls: 'badge-green' },
-      past_due: { label: 'Pagamento pendente', cls: 'badge-yellow' },
-      canceled: { label: 'Cancelada',    cls: 'badge-gray'  },
-      free:     { label: 'Grátis',        cls: 'badge-gray'  },
-    }[status] ?? { label: status, cls: 'badge-gray' };
+    return ({
+      active:   { label: $t('account.status_active'),    cls: 'badge-green' },
+      past_due: { label: $t('account.status_past_due'),  cls: 'badge-yellow' },
+      canceled: { label: $t('account.status_canceled'),  cls: 'badge-gray'  },
+      free:     { label: $t('account.status_free'),      cls: 'badge-gray'  },
+    } as Record<string, { label: string; cls: string }>)[status] ?? { label: status, cls: 'badge-gray' };
   }
 
   function price(planKey: string, c: 'monthly' | 'yearly'): string {
     const p = PLANS[planKey as keyof typeof PLANS];
-    if (!p || p.price_monthly === null) return 'Grátis';
+    if (!p || p.price_monthly === null) return $t('account.status_free');
     const cents = c === 'yearly' ? (p.price_yearly ?? p.price_monthly * 10) : p.price_monthly;
-    return `${formatCents(cents)}${c === 'yearly' ? '/ano' : '/mês'}`;
+    return `${formatCents(cents)}${c === 'yearly' ? $t('plans.per_year') : $t('plans.per_month')}`;
   }
 
   async function startCheckout() {
@@ -67,9 +68,9 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <CreditCard size={24} class="text-primary-400" /> Assinatura
+          <CreditCard size={24} class="text-primary-400" /> {$t('account.title')}
         </h1>
-        <p class="text-sm text-white/60 mt-0.5">Gerencie seu plano e cobranças.</p>
+        <p class="text-sm text-white/60 mt-0.5">{$t('account.subtitle')}</p>
       </div>
     </div>
 
@@ -89,7 +90,7 @@
         <!-- Coluna esquerda: plano atual -->
         <div class="space-y-4">
           <div class="card card-body">
-            <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Plano atual</h2>
+            <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">{$t('account.current_plan')}</h2>
             <div class="flex items-center gap-2 mb-4">
               <span class="text-2xl font-black text-gray-900 dark:text-gray-100 capitalize">
                 {PLANS[sub.plan as keyof typeof PLANS]?.name ?? sub.plan}
@@ -102,33 +103,37 @@
             <dl class="space-y-2 text-sm">
               {#if sub.current_period_end}
                 <div class="flex justify-between">
-                  <dt class="text-gray-500 dark:text-gray-400">Renova em</dt>
+                  <dt class="text-gray-500 dark:text-gray-400">{$t('account.renews_at')}</dt>
                   <dd class="font-medium text-gray-800 dark:text-gray-200">{formatDate(sub.current_period_end)}</dd>
                 </div>
               {/if}
               {#if sub.grace_period_end}
                 <div class="flex justify-between">
-                  <dt class="text-gray-500 dark:text-gray-400">Período de graça até</dt>
+                  <dt class="text-gray-500 dark:text-gray-400">{$t('account.grace_period')}</dt>
                   <dd class="font-medium text-amber-600 dark:text-amber-400">{formatDate(sub.grace_period_end)}</dd>
                 </div>
               {/if}
               <div class="flex justify-between">
-                <dt class="text-gray-500 dark:text-gray-400">Grupos</dt>
+                <dt class="text-gray-500 dark:text-gray-400">{$t('account.groups')}</dt>
                 <dd class="font-medium text-gray-800 dark:text-gray-200">
-                  {sub.groups_used} {sub.groups_limit !== null ? `de ${sub.groups_limit}` : '(ilimitado)'}
+                  {sub.groups_used} {sub.groups_limit !== null ? `de ${sub.groups_limit}` : $t('account.groups_unlimited')}
                 </dd>
               </div>
               {#if sub.members_limit !== null}
                 <div class="flex justify-between">
-                  <dt class="text-gray-500 dark:text-gray-400">Membros por grupo</dt>
-                  <dd class="font-medium text-gray-800 dark:text-gray-200">até {sub.members_limit}</dd>
+                  <dt class="text-gray-500 dark:text-gray-400">{$t('account.members')}</dt>
+                  <dd class="font-medium text-gray-800 dark:text-gray-200">{$t('account.members_up_to').replace('{n}', String(sub.members_limit))}</dd>
                 </div>
               {/if}
             </dl>
 
             {#if sub.gateway_sub_id}
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-                Para cancelar, entre em contato pelo e-mail <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a> ou acesse o portal do Stripe.
+                {#if $t('account.cancel_contact').includes('{email}')}
+                  {@html $t('account.cancel_contact').replace('{email}', `<a href="mailto:${PUBLIC_LEGAL_CONTACT_EMAIL}" class="underline">${PUBLIC_LEGAL_CONTACT_EMAIL}</a>`)}
+                {:else}
+                  Para cancelar, entre em contato pelo e-mail <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a> ou acesse o portal do Stripe.
+                {/if}
               </p>
             {/if}
           </div>
@@ -137,19 +142,19 @@
         <!-- Coluna direita: upgrade (apenas se estiver no free) -->
         {#if sub.plan === 'free'}
           <div class="card card-body">
-            <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">Fazer upgrade</h2>
+            <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">{$t('account.upgrade_title')}</h2>
 
             <!-- Ciclo de cobrança -->
             <div class="flex gap-2 mb-4">
               <button
                 class="flex-1 py-2 rounded-lg text-sm font-medium border transition-colors {cycle === 'monthly' ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-400 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'}"
                 onclick={() => cycle = 'monthly'}>
-                Mensal
+                {$t('account.monthly')}
               </button>
               <button
                 class="flex-1 py-2 rounded-lg text-sm font-medium border transition-colors {cycle === 'yearly' ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-400 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'}"
                 onclick={() => cycle = 'yearly'}>
-                Anual <span class="text-xs text-green-600 dark:text-green-400">economia anual</span>
+                {$t('account.yearly')} <span class="text-xs text-green-600 dark:text-green-400">{$t('account.yearly_saving')}</span>
               </button>
             </div>
 
@@ -165,7 +170,7 @@
                   </span>
                   <span class="flex-1 min-w-0">
                     <span class="font-semibold text-gray-900 dark:text-gray-100 text-sm">{plan.name}</span>
-                    <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{plan.groups} grupos · {plan.members === -1 ? 'ilimitado' : plan.members} membros</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{$t('account.members_hint').replace('{groups}', String(plan.groups)).replace('{members}', plan.members === -1 ? $t('account.members_unlimited') : String(plan.members))}</span>
                   </span>
                   <span class="text-sm font-bold text-primary-600 dark:text-primary-400 shrink-0">{price(pk, cycle)}</span>
                 </button>
@@ -181,14 +186,14 @@
               onclick={startCheckout}
               disabled={checkoutLoading}>
               {#if checkoutLoading}
-                <Zap size={15} class="animate-pulse" /> Redirecionando…
+                <Zap size={15} class="animate-pulse" /> {$t('account.checkout_redirecting')}
               {:else}
-                <ExternalLink size={15} /> Ir para pagamento
+                <ExternalLink size={15} /> {$t('account.checkout_btn')}
               {/if}
             </button>
 
             <p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-3">
-              Pagamento seguro via Stripe. Cancele quando quiser.
+              {$t('account.checkout_secure')}
             </p>
           </div>
         {/if}

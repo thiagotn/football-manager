@@ -7,11 +7,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { toastError, toastSuccess } from '$lib/stores/toast';
-
-  const COURT_LABELS: Record<string, string> = {
-    campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra'
-  };
-  const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  import { t, locale } from '$lib/i18n';
 
   // Filters
   let selectedCourts = $state<string[]>([]);
@@ -108,7 +104,7 @@
       showModal = false;
       waitlistMatch = null;
       items = items.filter(m => m.id !== removedId);
-      toastSuccess('Candidatura enviada! Você será notificado assim que o admin revisar.');
+      toastSuccess($t('discover.waitlist_success'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao enviar candidatura');
     } finally {
@@ -119,6 +115,21 @@
   const activeFilterCount = $derived(
     selectedCourts.length + selectedWeekdays.length + (dateRange !== 'week' ? 1 : 0)
   );
+
+  let courtLabels = $derived<Record<string, string>>({
+    campo: $t('discover.court_type') === $t('discover.court_type') ? 'Campo' : 'Campo',
+    sintetico: 'Sintético',
+    terrao: 'Terrão',
+    quadra: 'Quadra'
+  });
+
+  const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+  let periodOptions = $derived<[string, string][]>([
+    ['week', $t('discover.this_week')],
+    ['month', $t('discover.next_30_days')],
+    ['all', $t('discover.any_date')]
+  ]);
 </script>
 
 <svelte:head><title>Descobrir Rachões — rachao.app</title></svelte:head>
@@ -128,14 +139,14 @@
     <div class="flex items-start justify-between mb-6 gap-3">
       <div class="min-w-0">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <Compass size={24} class="text-primary-400 shrink-0" /> Descobrir Rachões
+          <Compass size={24} class="text-primary-400 shrink-0" /> {$t('discover.title')}
         </h1>
-        <p class="text-sm text-white/60 mt-0.5">Grupos públicos com vagas abertas</p>
+        <p class="text-sm text-white/60 mt-0.5">{$t('discover.subtitle')}</p>
       </div>
       <button
         onclick={() => showFilters = !showFilters}
         class="btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 relative shrink-0 mt-1">
-        <Filter size={14} /> Filtros
+        <Filter size={14} /> {$t('discover.filters')}
         {#if activeFilterCount > 0}
           <span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary-500 text-white text-[10px] flex items-center justify-center font-bold">{activeFilterCount}</span>
         {/if}
@@ -147,9 +158,9 @@
       <div class="card p-4 mb-6 space-y-4">
         <!-- Período -->
         <div>
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Período</p>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{$t('discover.period')}</p>
           <div class="flex gap-2 flex-wrap">
-            {#each [['week', 'Esta semana'], ['month', 'Próximos 30 dias'], ['all', 'Qualquer data']] as [val, label]}
+            {#each periodOptions as [val, label]}
               <button
                 onclick={() => dateRange = val as typeof dateRange}
                 class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
@@ -162,9 +173,9 @@
 
         <!-- Tipo de quadra -->
         <div>
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de quadra</p>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{$t('discover.court_type')}</p>
           <div class="flex gap-2 flex-wrap">
-            {#each Object.entries(COURT_LABELS) as [val, label]}
+            {#each Object.entries(courtLabels) as [val, label]}
               <button
                 onclick={() => toggleCourt(val)}
                 class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
@@ -177,7 +188,7 @@
 
         <!-- Dia da semana -->
         <div>
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dia da semana</p>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{$t('discover.weekday')}</p>
           <div class="flex gap-2 flex-wrap">
             {#each WEEKDAY_LABELS as label, i}
               <button
@@ -191,9 +202,9 @@
         </div>
 
         <div class="flex gap-2 pt-1">
-          <button onclick={applyFilters} class="btn btn-sm btn-primary">Aplicar</button>
+          <button onclick={applyFilters} class="btn btn-sm btn-primary">{$t('discover.apply')}</button>
           <button onclick={clearFilters} class="btn btn-sm btn-ghost text-gray-500">
-            <X size={13} /> Limpar
+            <X size={13} /> {$t('discover.clear')}
           </button>
         </div>
       </div>
@@ -212,11 +223,11 @@
     {:else if items.length === 0}
       <div class="card px-6 py-12 text-center">
         <p class="text-4xl mb-3">⚽</p>
-        <p class="text-base font-semibold text-gray-700 dark:text-gray-300">Nenhum rachão encontrado</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Tente ajustar os filtros ou volte mais tarde.</p>
+        <p class="text-base font-semibold text-gray-700 dark:text-gray-300">{$t('discover.no_results')}</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">{$t('discover.no_results_desc')}</p>
         {#if activeFilterCount > 0}
           <button onclick={clearFilters} class="btn btn-sm btn-ghost mt-4 text-primary-600 dark:text-primary-400">
-            <X size={13} /> Limpar filtros
+            <X size={13} /> {$t('discover.clear_filters')}
           </button>
         {/if}
       </div>
@@ -233,12 +244,14 @@
                   <div class="min-w-0">
                     <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{dm.group_name}</p>
                     <p class="text-xs text-primary-600 dark:text-primary-400 font-medium mt-0.5">
-                      {new Date(dm.match_date + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                      {new Date(dm.match_date + 'T12:00').toLocaleDateString($locale, { weekday: 'long', day: '2-digit', month: 'long' })}
                     </p>
                   </div>
                   <span class="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full
                     {dm.spots_left !== null && dm.spots_left <= 3 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}">
-                    {dm.spots_left !== null ? `${dm.spots_left} vaga${dm.spots_left !== 1 ? 's' : ''}` : 'Vagas abertas'}
+                    {dm.spots_left !== null
+                      ? (dm.spots_left !== 1 ? $t('discover.spots_plural').replace('{n}', String(dm.spots_left)) : $t('discover.spots').replace('{n}', String(dm.spots_left)))
+                      : $t('discover.spots_open')}
                   </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5">
@@ -249,7 +262,7 @@
                     <MapPin size={11} /><span class="truncate">{dm.location}</span>
                   </span>
                   {#if dm.court_type}
-                    <span class="text-xs text-gray-400 dark:text-gray-500">{COURT_LABELS[dm.court_type] ?? dm.court_type}</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500">{courtLabels[dm.court_type] ?? dm.court_type}</span>
                   {/if}
                   {#if dm.players_per_team}
                     <span class="text-xs text-gray-400 dark:text-gray-500">{dm.players_per_team}×{dm.players_per_team}</span>
@@ -262,12 +275,12 @@
             </div>
             <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
               <a href="/match/{dm.hash}" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">
-                Ver detalhes →
+                {$t('discover.see_details')}
               </a>
               <button
                 onclick={() => { waitlistMatch = dm; showModal = true; }}
                 class="btn btn-sm btn-primary">
-                Quero jogar!
+                {$t('discover.want_to_play')}
               </button>
             </div>
           </div>
@@ -279,11 +292,11 @@
               onclick={() => load()}
               disabled={loading}
               class="btn btn-sm btn-ghost text-gray-500 dark:text-gray-400 disabled:opacity-40">
-              {loading ? 'Carregando…' : 'Carregar mais'}
+              {loading ? $t('discover.loading') : $t('discover.load_more')}
             </button>
           </div>
         {:else if items.length > 0}
-          <p class="text-center text-xs text-gray-400 dark:text-gray-500 py-4">Isso é tudo por enquanto.</p>
+          <p class="text-center text-xs text-gray-400 dark:text-gray-500 py-4">{$t('discover.all_loaded')}</p>
         {/if}
       </div>
     {/if}

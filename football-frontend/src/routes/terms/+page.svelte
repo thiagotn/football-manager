@@ -1,8 +1,15 @@
 <script lang="ts">
   import { PUBLIC_LEGAL_CONTROLLER_NAME, PUBLIC_LEGAL_CONTROLLER_DOC, PUBLIC_LEGAL_FORUM_CITY, PUBLIC_LEGAL_CONTACT_EMAIL } from '$env/static/public';
   import { isLoggedIn } from '$lib/stores/auth';
+  import { t } from '$lib/i18n';
 
   let backHref = $derived($isLoggedIn ? '/' : '/lp');
+
+  let controllerFull = $derived(
+    PUBLIC_LEGAL_CONTROLLER_DOC
+      ? `${PUBLIC_LEGAL_CONTROLLER_NAME}, ${PUBLIC_LEGAL_CONTROLLER_DOC}`
+      : PUBLIC_LEGAL_CONTROLLER_NAME
+  );
 </script>
 
 <svelte:head><title>Termos de Uso — rachao.app</title></svelte:head>
@@ -11,100 +18,100 @@
   <div class="max-w-3xl mx-auto px-6 py-10">
 
     <div class="mb-8">
-      <a href={backHref} class="text-sm text-primary-600 hover:underline">← rachao.app</a>
+      <a href={backHref} class="text-sm text-primary-600 hover:underline">{$t('terms.back')}</a>
     </div>
 
-    <h1 class="text-2xl font-bold mb-1">Termos de Uso</h1>
-    <p class="text-xs text-gray-400 mb-8">Última atualização: março de 2026 · Versão: 1.1</p>
+    <h1 class="text-2xl font-bold mb-1">{$t('terms.title')}</h1>
+    <p class="text-xs text-gray-400 mb-8">{$t('terms.version')}</p>
 
     <div class="prose prose-sm dark:prose-invert max-w-none space-y-8">
 
       <section>
-        <h2 class="text-base font-semibold mb-2">1. Aceitação</h2>
-        <p>Ao criar uma conta ou usar o rachao.app, você declara ter lido e aceitar estes Termos de Uso. Se não concordar, não utilize a plataforma.</p>
-        <p class="mt-2">O rachao.app é operado por <strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>{#if PUBLIC_LEGAL_CONTROLLER_DOC}, {PUBLIC_LEGAL_CONTROLLER_DOC}{/if} ("nós"), com contato em <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>.</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s1.h')}</h2>
+        <p>{$t('terms.s1.p1')}</p>
+        <p class="mt-2">{@html $t('terms.s1.p2', { controller: controllerFull, email: PUBLIC_LEGAL_CONTACT_EMAIL })}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">2. Cadastro e conta</h2>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s2.h')}</h2>
         <ul class="list-disc list-inside space-y-1">
-          <li>Você deve informar dados verídicos no cadastro (nome, apelido, número de WhatsApp).</li>
-          <li>Cada número de WhatsApp corresponde a uma única conta.</li>
-          <li>Você é responsável pela segurança da sua senha e por toda atividade realizada com sua conta.</li>
-          <li>Não é permitido criar contas em nome de terceiros sem autorização.</li>
-          <li>Menores de 18 anos devem ter consentimento do responsável legal.</li>
+          <li>{$t('terms.s2.l1')}</li>
+          <li>{$t('terms.s2.l2')}</li>
+          <li>{$t('terms.s2.l3')}</li>
+          <li>{$t('terms.s2.l4')}</li>
+          <li>{$t('terms.s2.l5')}</li>
         </ul>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">3. Uso aceito</h2>
-        <p class="mb-2">Você pode usar o rachao.app para:</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s3.h')}</h2>
+        <p class="mb-2">{$t('terms.s3.p1')}</p>
         <ul class="list-disc list-inside space-y-1 mb-4">
-          <li>Organizar grupos e partidas de futebol amador;</li>
-          <li>Confirmar ou recusar presença em partidas;</li>
-          <li>Votar nos melhores jogadores e acompanhar estatísticas do grupo.</li>
+          <li>{$t('terms.s3.l1')}</li>
+          <li>{$t('terms.s3.l2')}</li>
+          <li>{$t('terms.s3.l3')}</li>
         </ul>
-        <p class="mb-2">É expressamente <strong>proibido</strong>:</p>
+        <p class="mb-2">{@html $t('terms.s3.p2')}</p>
         <ul class="list-disc list-inside space-y-1">
-          <li>Usar a plataforma para fins ilegais ou que violem direitos de terceiros;</li>
-          <li>Criar contas falsas, automatizar ações ou usar bots;</li>
-          <li>Tentar acessar dados de outros usuários ou grupos sem autorização;</li>
-          <li>Enviar conteúdo ofensivo, discriminatório ou abusivo para outros usuários.</li>
+          <li>{$t('terms.s3.l4')}</li>
+          <li>{$t('terms.s3.l5')}</li>
+          <li>{$t('terms.s3.l6')}</li>
+          <li>{$t('terms.s3.l7')}</li>
         </ul>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">4. Responsabilidades do usuário</h2>
-        <p>Você é responsável por:</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s4.h')}</h2>
+        <p>{$t('terms.s4.p1')}</p>
         <ul class="list-disc list-inside space-y-1 mt-2">
-          <li>Garantir que as informações fornecidas são verdadeiras e atualizadas;</li>
-          <li>Usar a plataforma de acordo com estes Termos e a legislação vigente;</li>
-          <li>Qualquer disputa ou conflito decorrente das partidas organizadas pela plataforma — o rachao.app é uma ferramenta de organização, não parte das partidas.</li>
+          <li>{$t('terms.s4.l1')}</li>
+          <li>{$t('terms.s4.l2')}</li>
+          <li>{$t('terms.s4.l3')}</li>
         </ul>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">4.1. Controle financeiro de grupos</h2>
-        <p>O rachao.app disponibiliza uma ferramenta de <strong>controle e registro financeiro</strong> para que admins de grupo acompanhem o status de pagamentos (mensalidades ou contribuições avulsas) dos membros.</p>
-        <p class="mt-2">Essa funcionalidade é exclusivamente um <strong>registro informativo</strong>: a plataforma <strong>não realiza cobranças, não processa pagamentos e não intermedia transferências</strong> entre usuários.</p>
-        <p class="mt-2">A responsabilidade pela cobrança, recebimento e gestão dos valores combinados entre os membros é inteiramente do <strong>admin do grupo</strong> e dos próprios participantes. O rachao.app não se responsabiliza por inadimplências, disputas financeiras ou quaisquer prejuízos decorrentes de pagamentos não realizados.</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s4b.h')}</h2>
+        <p>{@html $t('terms.s4b.p1')}</p>
+        <p class="mt-2">{@html $t('terms.s4b.p2')}</p>
+        <p class="mt-2">{@html $t('terms.s4b.p3')}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">5. Limitação de responsabilidade</h2>
-        <p class="mb-2">Na extensão permitida pela lei, o rachao.app não se responsabiliza por:</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s5.h')}</h2>
+        <p class="mb-2">{$t('terms.s5.p1')}</p>
         <ul class="list-disc list-inside space-y-1">
-          <li>Danos indiretos, incidentais ou lucros cessantes;</li>
-          <li>Falhas de disponibilidade ou interrupções do serviço;</li>
-          <li>Conflitos entre usuários decorrentes das partidas organizadas.</li>
+          <li>{$t('terms.s5.l1')}</li>
+          <li>{$t('terms.s5.l2')}</li>
+          <li>{$t('terms.s5.l3')}</li>
         </ul>
-        <p class="mt-2">O serviço é fornecido "no estado em que se encontra" (as-is), sem garantias implícitas de adequação a uma finalidade específica.</p>
+        <p class="mt-2">{$t('terms.s5.p2')}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">6. Propriedade intelectual</h2>
-        <p>A marca, logotipo, design e código-fonte do rachao.app são de propriedade exclusiva do controlador. O uso da plataforma não transfere nenhum direito de propriedade intelectual ao usuário.</p>
-        <p class="mt-2">Os dados inseridos pelos usuários (nomes, resultados, estatísticas) permanecem de propriedade dos respectivos usuários. Ao usar a plataforma, você concede ao rachao.app licença não exclusiva para armazenar e exibir esses dados no contexto do serviço.</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s6.h')}</h2>
+        <p>{$t('terms.s6.p1')}</p>
+        <p class="mt-2">{$t('terms.s6.p2')}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">7. Cancelamento e encerramento</h2>
-        <p>Você pode solicitar a exclusão da sua conta a qualquer momento pelo canal <strong>{PUBLIC_LEGAL_CONTACT_EMAIL}</strong>. A conta e seus dados serão removidos conforme os prazos descritos na <a href="/privacy" class="text-primary-600 hover:underline">Política de Privacidade</a>.</p>
-        <p class="mt-2">Podemos suspender ou encerrar sua conta caso haja violação destes Termos, com ou sem aviso prévio dependendo da gravidade da infração.</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s7.h')}</h2>
+        <p>{@html $t('terms.s7.p1', { email: PUBLIC_LEGAL_CONTACT_EMAIL })}</p>
+        <p class="mt-2">{$t('terms.s7.p2')}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">8. Alterações nestes Termos</h2>
-        <p>Quando publicarmos uma nova versão dos Termos, você será notificado na próxima vez que acessar a plataforma e precisará aceitar para continuar usando. A data no topo deste documento indica a versão vigente.</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s8.h')}</h2>
+        <p>{$t('terms.s8.p1')}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">9. Lei aplicável e foro</h2>
-        <p>Estes Termos são regidos pela legislação brasileira. Fica eleito o foro da comarca de <strong>{PUBLIC_LEGAL_FORUM_CITY}</strong> para dirimir quaisquer controvérsias, com renúncia a qualquer outro, por mais privilegiado que seja.</p>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s9.h')}</h2>
+        <p>{@html $t('terms.s9.p1', { city: PUBLIC_LEGAL_FORUM_CITY })}</p>
       </section>
 
       <section>
-        <h2 class="text-base font-semibold mb-2">10. Contato</h2>
+        <h2 class="text-base font-semibold mb-2">{$t('terms.s10.h')}</h2>
         <p><strong>{PUBLIC_LEGAL_CONTROLLER_NAME}</strong>{#if PUBLIC_LEGAL_CONTROLLER_DOC}, {PUBLIC_LEGAL_CONTROLLER_DOC}{/if}</p>
         <p>E-mail: <a href="mailto:{PUBLIC_LEGAL_CONTACT_EMAIL}" class="text-primary-600 hover:underline">{PUBLIC_LEGAL_CONTACT_EMAIL}</a></p>
         <p>Plataforma: <a href="https://rachao.app" class="text-primary-600 hover:underline">https://rachao.app</a></p>
@@ -113,8 +120,8 @@
     </div>
 
     <div class="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 flex flex-wrap gap-4">
-      <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300">Política de Privacidade</a>
-      <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300">FAQ</a>
+      <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300">{$t('footer.privacy')}</a>
+      <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300">{$t('footer.faq')}</a>
       <a href={backHref} class="hover:text-gray-600 dark:hover:text-gray-300">rachao.app</a>
     </div>
 

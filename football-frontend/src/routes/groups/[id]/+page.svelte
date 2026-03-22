@@ -16,6 +16,7 @@
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
   import { relativeDate } from '$lib/utils.js';
+  import { t, locale } from '$lib/i18n';
 
   const groupId = $page.params.id;
 
@@ -69,7 +70,7 @@
       } : null;
       if (financePeriod) financePeriod = { ...financePeriod, summary: recalcSummary(financePeriod.payments) };
       showPaymentSheet = false;
-    } catch { toastError('Erro ao registrar pagamento'); }
+    } catch { toastError($t('group.finance_mark_error')); }
     markingPayment = false;
   }
 
@@ -81,7 +82,7 @@
         payments: financePeriod.payments.map(x => x.id === updated.id ? updated : x),
       } : null;
       if (financePeriod) financePeriod = { ...financePeriod, summary: recalcSummary(financePeriod.payments) };
-    } catch { toastError('Erro ao desfazer pagamento'); }
+    } catch { toastError($t('group.finance_undo_error')); }
   }
 
   function recalcSummary(payments: FinancePayment[]) {
@@ -122,7 +123,12 @@
 
   let inviteLink = $state('');
   let inviteQr = $state('');
-  const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
+  let courtLabels = $derived<Record<string, string>>({
+    campo: $t('group.court_campo'),
+    sintetico: $t('group.court_sintetico'),
+    terrao: $t('group.court_terrao'),
+    quadra: $t('group.court_quadra'),
+  });
   let matchForm = $state({ match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' });
   let editMatchForm = $state({ match_date: '', start_time: '', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '', status: 'open' });
   let editingMatch: Match | null = $state(null);
@@ -202,7 +208,7 @@
 
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
-  let confirmLabel = $state('Confirmar');
+  let confirmLabel = $state($t('group.cancel'));
   let confirmAction = $state<() => void>(() => {});
 
   // Partidas encerradas com votação aberta e pendente para o jogador atual
@@ -265,7 +271,7 @@
       });
       group = await groupsApi.get(groupId);
       showEditGroup = false;
-      toastSuccess('Grupo atualizado!');
+      toastSuccess($t('group.group_updated'));
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
     saving = false;
   }
@@ -286,7 +292,6 @@
   });
 
   // Polling: atualiza lista de rachões a cada 60s.
-  // Guards: tab visível + aba "Próximos" + existe ao menos um rachão aberto/em andamento.
   onMount(() => {
     function refresh() {
       if (document.visibilityState !== 'visible') return;
@@ -317,12 +322,10 @@
     const g = group;
     if (!g || !$isLoggedIn) return;
     if (isGroupAdmin()) {
-      // Load all pending entries for admin
       groupsApi.getWaitlist(groupId)
         .then(entries => { waitlistEntries = entries; })
         .catch(() => {});
     } else if (!isGroupMember()) {
-      // Load my entry for non-members
       groupsApi.getMyWaitlistEntry(groupId)
         .then(entry => { myWaitlistEntry = entry; })
         .catch(() => {});
@@ -334,11 +337,10 @@
     try {
       await groupsApi.reviewWaitlist(groupId, entryId, 'accept');
       waitlistEntries = waitlistEntries.filter(e => e.id !== entryId);
-      // Reload group and matches to reflect new member
       const [g, ms] = await Promise.all([groupsApi.get(groupId), matchesApi.list(groupId)]);
       group = g;
       matchList = ms;
-      toastSuccess('Jogador adicionado ao grupo e confirmado no rachão');
+      toastSuccess($t('group.accept_waitlist_success'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao aceitar candidato');
     }
@@ -350,7 +352,7 @@
     try {
       await groupsApi.reviewWaitlist(groupId, entryId, 'reject');
       waitlistEntries = waitlistEntries.filter(e => e.id !== entryId);
-      toastSuccess('Candidatura rejeitada');
+      toastSuccess($t('group.reject_waitlist_success'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao rejeitar candidato');
     }
@@ -363,7 +365,7 @@
       const entry = await groupsApi.joinWaitlist(groupId, { agreed: data.agreed, intro: data.intro || undefined });
       myWaitlistEntry = entry;
       showWaitlistModal = false;
-      toastSuccess('Candidatura enviada! Você será notificado quando um admin revisar.');
+      toastSuccess($t('group.waitlist_submitted'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao enviar candidatura');
     }
@@ -389,7 +391,7 @@
       matchList = [m, ...matchList];
       showMatch = false;
       matchForm = { match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' };
-      toastSuccess('Rachão criado!');
+      toastSuccess($t('group.create_match_success'));
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     saving = false;
   }
@@ -407,7 +409,7 @@
 
   function copyLink() {
     navigator.clipboard.writeText(inviteLink);
-    toastInfo('Link copiado!');
+    toastInfo($t('group.link_copied'));
   }
 
   async function openAddMember() {
@@ -423,12 +425,12 @@
       group = await groupsApi.get(groupId);
       showAddMember = false;
       addMemberId = '';
-      toastSuccess('Membro adicionado!');
+      toastSuccess($t('group.add_member_success'));
     } catch (e) {
       if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
-        toastError('Limite de membros do plano atingido (máx. 30 membros no plano Grátis).');
+        toastError($t('group.add_member_limit'));
       } else {
-        toastError(e instanceof ApiError ? e.message : 'Erro');
+        toastError(e instanceof ApiError ? e.message : $t('group.add_member_error'));
       }
     }
     saving = false;
@@ -436,10 +438,10 @@
 
   async function toggleRole(playerId: string, currentRole: string, name: string) {
     const newRole = currentRole === 'admin' ? 'member' : 'admin';
-    const actionLabel = newRole === 'admin' ? 'Tornar Presidente' : 'Remover Presidência';
+    const actionLabel = newRole === 'admin' ? $t('group.make_president_label') : $t('group.remove_president_label');
     const msg = newRole === 'admin'
-      ? `Tornar "${name}" presidente do grupo?`
-      : `Remover a presidência de "${name}"?`;
+      ? $t('group.make_president_confirm').replace('{name}', name)
+      : $t('group.remove_president_confirm').replace('{name}', name);
     askConfirm(msg, actionLabel, async () => {
       try {
         await groupsApi.updateMemberRole(groupId, playerId, newRole);
@@ -459,27 +461,31 @@
   }
 
   async function removeMember(playerId: string, name: string) {
-    askConfirm(`Remover "${name}" do grupo?`, 'Remover', async () => {
+    askConfirm($t('group.remove_member_confirm').replace('{name}', name), $t('group.remove_member_label'), async () => {
       try {
         await groupsApi.removeMember(groupId, playerId);
         group = await groupsApi.get(groupId);
-        toastSuccess('Membro removido');
-      } catch (e) { toastError('Erro ao remover membro'); }
+        toastSuccess($t('group.remove_member_success'));
+      } catch (e) { toastError($t('group.remove_member_error')); }
     });
   }
 
   async function deleteMatch(m: Match) {
-    askConfirm('Excluir este rachão?', 'Excluir', async () => {
+    askConfirm($t('group.delete_match_confirm'), $t('group.delete_match_label'), async () => {
       try {
         await matchesApi.delete(groupId, m.id);
         matchList = matchList.filter(x => x.id !== m.id);
-        toastSuccess('Rachão excluído');
+        toastSuccess($t('group.delete_match_success'));
       } catch (e) { toastError('Erro ao excluir'); }
     });
   }
 
   function fmtDate(d: string) {
-    const s = relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long' });
+    const s = relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long' }, $locale, {
+      today: $t('date.today'),
+      tomorrow: $t('date.tomorrow'),
+      yesterday: $t('date.yesterday'),
+    });
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
@@ -531,7 +537,7 @@
       });
       matchList = matchList.map(m => m.id === updated.id ? updated : m);
       showEditMatch = false;
-      toastSuccess('Rachão atualizado!');
+      toastSuccess($t('group.edit_match_success'));
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
     saving = false;
   }
@@ -556,39 +562,39 @@
         </div>
         {#if isGroupAdmin()}
           <div class="flex gap-2 shrink-0">
-            <button class="btn-secondary btn-sm" onclick={openEditGroup}><Pencil size={14} /> Editar</button>
+            <button class="btn-secondary btn-sm" onclick={openEditGroup}><Pencil size={14} /> {$t('group.edit')}</button>
           </div>
         {/if}
       </div>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span class="text-xs text-gray-300 flex items-center gap-1">
-          <Users size={12} /> {nonAdminMembers.length} jogador{nonAdminMembers.length !== 1 ? 'es' : ''}
+          <Users size={12} /> {nonAdminMembers.length === 1 ? $t('group.player_count_one').replace('{n}', '1') : $t('group.player_count_other').replace('{n}', String(nonAdminMembers.length))}
         </span>
         {#if group.per_match_amount != null || group.monthly_amount != null}
           {#each fmtPricingParts(group.per_match_amount, group.monthly_amount) as part}
             <span class="text-xs text-amber-700 dark:text-amber-400 font-medium">{part}</span>
           {/each}
         {:else}
-          <span class="text-xs text-green-600 dark:text-green-400">Gratuito</span>
+          <span class="text-xs text-green-600 dark:text-green-400">{$t('group.free')}</span>
         {/if}
         {#if group.recurrence_enabled}
-          <span class="text-xs text-primary-600 dark:text-primary-400">Recorrência semanal</span>
+          <span class="text-xs text-primary-600 dark:text-primary-400">{$t('group.weekly_recurrence')}</span>
         {/if}
         <span class="text-xs flex items-center gap-1 {group.is_public ? 'text-green-400' : 'text-gray-400'}">
-          {#if group.is_public}<Globe size={11} /> Público{:else}<Lock size={11} /> Fechado{/if}
+          {#if group.is_public}<Globe size={11} /> {$t('group.public')}{:else}<Lock size={11} /> {$t('group.private')}{/if}
         </span>
         {#if isGroupAdmin()}
           <div class="flex items-center gap-1.5 text-xs text-gray-300 bg-white/10 rounded-lg px-2.5 py-1 w-full sm:w-auto">
             <span>🗳️</span>
-            <span class="text-gray-400">Votação</span>
+            <span class="text-gray-400">{$t('group.vote_settings')}</span>
             <span class="text-white/30">·</span>
             <span>
-              {group.vote_open_delay_minutes === 0 ? 'inicia imediatamente' : `inicia em ${group.vote_open_delay_minutes}min`}
+              {group.vote_open_delay_minutes === 0 ? $t('group.vote_immediate') : $t('group.vote_delay').replace('{n}', String(group.vote_open_delay_minutes))}
             </span>
             <span class="text-white/30">·</span>
-            <span>encerra em {group.vote_duration_hours}h</span>
+            <span>{$t('group.vote_closes').replace('{n}', String(group.vote_duration_hours))}</span>
             <span class="text-white/30">·</span>
-            <span>após o final de cada rachão</span>
+            <span>{$t('group.vote_after_match')}</span>
           </div>
         {/if}
       </div>
@@ -604,7 +610,7 @@
             class="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
             <span class="text-xl shrink-0">🏆</span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Vote nos melhores do Rachão #{m.number}</p>
+              <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">{$t('group.vote_banner').replace('{number}', String(m.number))}</p>
               <p class="text-xs text-amber-600 dark:text-amber-400">{vs.time_label} · {vs.voter_count} de {vs.eligible_count} já votaram</p>
             </div>
             <ChevronRight size={16} class="text-amber-600 dark:text-amber-400 shrink-0" />
@@ -618,30 +624,30 @@
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'upcoming' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => tab = 'upcoming'}>
-        Próximos ({upcomingMatches.length})
+        {$t('group.tab_upcoming').replace('{n}', String(upcomingMatches.length))}
       </button>
       {#if pastMatches.length > 0}
         <button
           class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'past' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
           onclick={() => tab = 'past'}>
-          Últimos ({pastMatches.length})
+          {$t('group.tab_past').replace('{n}', String(pastMatches.length))}
         </button>
       {/if}
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'members' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => tab = 'members'}>
-        Jogadores ({nonAdminMembers.length})
+        {$t('group.tab_members').replace('{n}', String(nonAdminMembers.length))}
       </button>
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'stats' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => { tab = 'stats'; }}>
-        Estatísticas
+        {$t('group.tab_stats')}
       </button>
       {#if group?.monthly_amount || group?.per_match_amount}
       <button
         class="px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {tab === 'finance' ? 'border-primary-400 text-primary-400' : 'border-transparent text-gray-300 hover:text-white'}"
         onclick={() => { tab = 'finance'; }}>
-        Financeiro
+        {$t('group.tab_finance')}
       </button>
       {/if}
     </div>
@@ -650,14 +656,14 @@
     {#if tab === 'upcoming' || tab === 'past'}
       {#if isGroupAdmin() && tab === 'upcoming'}
         <div class="flex justify-end mb-4">
-          <button class="btn-primary btn-sm" onclick={() => showMatch = true}><Plus size={14} /> Novo Rachão</button>
+          <button class="btn-primary btn-sm" onclick={() => showMatch = true}><Plus size={14} /> {$t('group.new_match')}</button>
         </div>
       {/if}
       {@const subList = tab === 'upcoming' ? upcomingMatches : pastMatches}
       {#if subList.length === 0}
         <div class="card p-12 text-center">
           <Calendar size={40} class="text-gray-300 mx-auto mb-3" />
-          <p class="text-gray-500">{tab === 'upcoming' ? 'Nenhum rachão agendado.' : 'Nenhum rachão encerrado ainda.'}</p>
+          <p class="text-gray-500">{tab === 'upcoming' ? $t('group.no_upcoming') : $t('group.no_past')}</p>
         </div>
       {:else}
         <div class="space-y-3">
@@ -674,11 +680,11 @@
                   {#if m.status === 'in_progress'}
                     <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
                       <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                      Bola rolando
+                      {$t('group.status_in_progress')}
                     </span>
                   {:else}
                     <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0">
-                      {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                      {m.status === 'open' ? $t('group.status_open') : $t('group.status_closed')}
                     </span>
                   {/if}
                 </div>
@@ -693,8 +699,8 @@
                 {#if m.court_type || m.players_per_team || m.max_players || group.per_match_amount != null || group.monthly_amount != null}
                   <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     {[
-                      m.court_type ? COURT_LABELS[m.court_type] : null,
-                      m.players_per_team ? `${m.players_per_team} na linha + gol` : null,
+                      m.court_type ? courtLabels[m.court_type] : null,
+                      m.players_per_team ? $t('group.line_players').replace('{n}', String(m.players_per_team)) : null,
                       m.max_players ? `máx. ${m.max_players}` : null,
                       ...fmtPricingParts(group.per_match_amount, group.monthly_amount),
                     ].filter(Boolean).join(' · ')}
@@ -704,14 +710,14 @@
                 <!-- Actions -->
                 <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                   <a href="/match/{m.hash}" class="btn-sm btn-secondary shrink-0">
-                    Detalhes <ChevronRight size={14} />
+                    {$t('group.details')} <ChevronRight size={14} />
                   </a>
                   {#if isGroupAdmin()}
                     <button onclick={() => openEditMatch(m)} class="btn-sm btn-ghost shrink-0">
-                      <Pencil size={14} /> Editar
+                      <Pencil size={14} /> {$t('group.edit_btn')}
                     </button>
                     <button onclick={() => deleteMatch(m)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
-                      <Trash2 size={14} /> Excluir
+                      <Trash2 size={14} /> {$t('group.delete_btn')}
                     </button>
                   {/if}
                 </div>
@@ -741,14 +747,14 @@
         {#if myWaitlistEntry}
           <div class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
             <span>⏳</span>
-            <span class="font-medium">Candidatura enviada — aguardando aprovação do admin</span>
+            <span class="font-medium">{$t('group.waitlist_pending')}</span>
           </div>
         {:else}
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Você não é membro deste grupo. Solicite uma vaga para o próximo rachão.</p>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{$t('group.not_member')}</p>
           <button
             onclick={openWaitlistModal}
             class="btn btn-primary w-full justify-center gap-2">
-            <UserPlus size={15} /> Quero jogar!
+            <UserPlus size={15} /> {$t('group.want_to_play')}
           </button>
         {/if}
       </div>
@@ -762,12 +768,12 @@
           <button
             class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {statsPeriod === 'annual' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
             onclick={() => { statsPeriod = 'annual'; }}>
-            Anual
+            {$t('group.stats_annual')}
           </button>
           <button
             class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {statsPeriod === 'monthly' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
             onclick={() => { statsPeriod = 'monthly'; }}>
-            Mensal
+            {$t('group.stats_monthly')}
           </button>
         </div>
         {#if statsPeriod === 'monthly'}
@@ -789,7 +795,7 @@
         </div>
       {:else if !stats || stats.length === 0}
         <div class="card p-12 text-center">
-          <p class="text-gray-400 dark:text-gray-500 text-sm">Nenhuma estatística disponível ainda.<br>As estatísticas aparecem após o encerramento das votações.</p>
+          <p class="text-gray-400 dark:text-gray-500 text-sm">{$t('group.stats_empty')}</p>
         </div>
       {:else}
         <div class="card overflow-x-auto">
@@ -797,10 +803,10 @@
             <thead>
               <tr class="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
                 <th class="px-4 py-2 text-left w-8">#</th>
-                <th class="px-4 py-2 text-left">Jogador</th>
-                <th class="px-4 py-2 text-right">Pts</th>
-                <th class="px-4 py-2 text-right hidden sm:table-cell">Decepções</th>
-                <th class="px-4 py-2 text-right hidden sm:table-cell">Horas</th>
+                <th class="px-4 py-2 text-left">{$t('group.stats_player')}</th>
+                <th class="px-4 py-2 text-right">{$t('group.stats_pts')}</th>
+                <th class="px-4 py-2 text-right hidden sm:table-cell">{$t('group.stats_flops')}</th>
+                <th class="px-4 py-2 text-right hidden sm:table-cell">{$t('group.stats_hours')}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -826,7 +832,7 @@
           </table>
         </div>
         <p class="mt-2 text-xs text-gray-300 text-center">
-          {statsPeriodLabel} · Pontos acumulados nas votações encerradas · Horas apenas em partidas com término registrado
+          {$t('group.stats_footer').replace('{period}', statsPeriodLabel)}
         </p>
       {/if}
     {/if}
@@ -835,17 +841,17 @@
     {#if tab === 'members'}
       {#if isGroupAdmin()}
         <div class="flex justify-end gap-2 mb-4">
-          <button class="btn-secondary btn-sm" onclick={generateInvite}><Link size={14} /> Convidar</button>
-          <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar</button>
+          <button class="btn-secondary btn-sm" onclick={generateInvite}><Link size={14} /> {$t('group.invite_btn')}</button>
+          <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> {$t('group.add_member_btn')}</button>
         </div>
       {/if}
       <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
         {#if nonAdminMembers.length === 0}
           <div class="px-6 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
             <Users size={32} class="mx-auto mb-2 opacity-40" />
-            <p>Nenhum jogador no grupo ainda.</p>
+            <p>{$t('group.no_players')}</p>
             {#if isGroupAdmin()}
-              <button class="btn-primary mt-4 btn-sm" onclick={openAddMember}><UserPlus size={14} /> Adicionar jogador</button>
+              <button class="btn-primary mt-4 btn-sm" onclick={openAddMember}><UserPlus size={14} /> {$t('group.add_player')}</button>
             {/if}
           </div>
         {/if}
@@ -864,10 +870,10 @@
               {#if m.role === 'admin' || (isGroupAdmin() && m.is_goalkeeper)}
                 <div class="flex items-center gap-1 mt-0.5 flex-wrap">
                   {#if m.role === 'admin'}
-                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Presidente</span>
+                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{$t('group.role_president')}</span>
                   {/if}
                   {#if isGroupAdmin() && m.is_goalkeeper}
-                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Goleiro</span>
+                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{$t('group.role_goalkeeper')}</span>
                   {/if}
                 </div>
               {/if}
@@ -877,7 +883,7 @@
               <button
                 onclick={() => { selectedMember = m; showMemberDetail = true; }}
                 class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
-                <ChevronRight size={12} /> Detalhes
+                <ChevronRight size={12} /> {$t('group.member_details')}
               </button>
             {/if}
           </div>
@@ -908,19 +914,19 @@
         <!-- Summary cards -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           <div class="card p-4 text-center">
-            <p class="text-xs text-gray-400 mb-1">Recebido</p>
+            <p class="text-xs text-gray-400 mb-1">{$t('group.finance_received')}</p>
             <p class="text-lg font-bold text-green-500">{fmtCents(financePeriod.summary.received_cents)}</p>
           </div>
           <div class="card p-4 text-center">
-            <p class="text-xs text-gray-400 mb-1">Pendente</p>
-            <p class="text-lg font-bold text-amber-400">{financePeriod.summary.pending_count} jogador{financePeriod.summary.pending_count !== 1 ? 'es' : ''}</p>
+            <p class="text-xs text-gray-400 mb-1">{$t('group.finance_pending')}</p>
+            <p class="text-lg font-bold text-amber-400">{financePeriod.summary.pending_count !== 1 ? $t('group.finance_pending_players_plural').replace('{n}', String(financePeriod.summary.pending_count)) : $t('group.finance_pending_players').replace('{n}', '1')}</p>
           </div>
           <div class="card p-4 text-center">
-            <p class="text-xs text-gray-400 mb-1">Pagos</p>
+            <p class="text-xs text-gray-400 mb-1">{$t('group.finance_paid')}</p>
             <p class="text-lg font-bold text-white">{financePeriod.summary.paid_count}/{financePeriod.summary.total_members}</p>
           </div>
           <div class="card p-4 text-center">
-            <p class="text-xs text-gray-400 mb-1">Adimplência</p>
+            <p class="text-xs text-gray-400 mb-1">{$t('group.finance_compliance')}</p>
             <p class="text-lg font-bold {financePeriod.summary.compliance_pct >= 80 ? 'text-green-400' : financePeriod.summary.compliance_pct >= 50 ? 'text-amber-400' : 'text-red-400'}">
               {financePeriod.summary.compliance_pct}%
             </p>
@@ -931,7 +937,7 @@
         {#if financePeriod.payments.length === 0}
           <div class="card p-10 text-center">
             <Wallet size={32} class="text-gray-400 mx-auto mb-2" />
-            <p class="text-sm text-gray-400">Nenhum jogador neste período.</p>
+            <p class="text-sm text-gray-400">{$t('group.finance_no_players')}</p>
           </div>
         {:else}
           {@const pendingList = financePeriod.payments.filter(p => p.status === 'pending')}
@@ -941,10 +947,10 @@
             <!-- Pendentes -->
             <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
               <div class="px-4 py-2 bg-amber-50/5">
-                <span class="text-xs font-semibold text-amber-400 uppercase tracking-wide">Pendente ({pendingList.length})</span>
+                <span class="text-xs font-semibold text-amber-400 uppercase tracking-wide">{$t('group.finance_pending_section').replace('{n}', String(pendingList.length))}</span>
               </div>
               {#if pendingList.length === 0}
-                <div class="px-4 py-6 text-center text-xs text-gray-400">Nenhum pendente</div>
+                <div class="px-4 py-6 text-center text-xs text-gray-400">{$t('group.finance_none_pending')}</div>
               {:else}
                 {#each pendingList as p (p.id)}
                   <div class="flex items-center gap-3 px-4 py-3">
@@ -953,7 +959,7 @@
                     {#if isGroupAdmin()}
                       <button onclick={() => openPaymentSheet(p)}
                         class="btn-sm btn-primary py-1 text-xs">
-                        Marcar pago
+                        {$t('group.finance_mark_paid')}
                       </button>
                     {/if}
                   </div>
@@ -964,10 +970,10 @@
             <!-- Pagos -->
             <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
               <div class="px-4 py-2 bg-green-50/5">
-                <span class="text-xs font-semibold text-green-400 uppercase tracking-wide">Pago ({paidList.length})</span>
+                <span class="text-xs font-semibold text-green-400 uppercase tracking-wide">{$t('group.finance_paid_section').replace('{n}', String(paidList.length))}</span>
               </div>
               {#if paidList.length === 0}
-                <div class="px-4 py-6 text-center text-xs text-gray-400">Nenhum pago ainda</div>
+                <div class="px-4 py-6 text-center text-xs text-gray-400">{$t('group.finance_none_paid')}</div>
               {:else}
                 {#each paidList as p (p.id)}
                   <div class="flex items-center gap-3 px-4 py-3">
@@ -975,14 +981,14 @@
                     <div class="flex-1 min-w-0">
                       <span class="text-sm text-gray-900 dark:text-gray-100">{p.player_name}</span>
                       <span class="ml-2 text-xs text-gray-400">
-                        {p.payment_type === 'monthly' ? 'Mensal' : 'Avulso'}
+                        {p.payment_type === 'monthly' ? $t('group.finance_monthly') : $t('group.finance_per_match')}
                         {p.amount_due != null ? `· ${fmtCents(p.amount_due)}` : ''}
                       </span>
                     </div>
                     {#if isGroupAdmin()}
                       <button onclick={() => markPending(p)}
                         class="text-xs text-gray-400 hover:text-red-400 transition-colors px-2 py-1">
-                        Desfazer
+                        {$t('group.finance_undo')}
                       </button>
                     {/if}
                   </div>
@@ -999,38 +1005,38 @@
 
 <!-- Payment type bottom sheet -->
 {#if showPaymentSheet && paymentTarget}
-  <button class="fixed inset-0 z-40 bg-black/50" onclick={() => showPaymentSheet = false} aria-label="Fechar" type="button"></button>
+  <button class="fixed inset-0 z-40 bg-black/50" onclick={() => showPaymentSheet = false} aria-label={$t('aria.close')} type="button"></button>
   <div class="fixed z-50 left-0 right-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center pointer-events-none">
     <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-xs pointer-events-auto">
       <div class="px-5 pt-5 pb-3">
         <h2 class="font-semibold text-gray-900 dark:text-gray-100 text-base">{paymentTarget.player_name}</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Selecione o tipo de pagamento</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{$t('group.payment_type_title')}</p>
       </div>
       <div class="px-5 pb-5 space-y-3">
         <button
           onclick={() => markPaid('monthly')}
           disabled={markingPayment || !group?.monthly_amount}
           class="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 border-primary-500 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-          <span class="font-semibold text-primary-700 dark:text-primary-300 text-sm">Mensalidade</span>
+          <span class="font-semibold text-primary-700 dark:text-primary-300 text-sm">{$t('group.payment_monthly')}</span>
           <span class="text-primary-600 dark:text-primary-400 font-bold text-sm">
-            {group?.monthly_amount != null ? `R$ ${Number(group.monthly_amount).toFixed(2).replace('.', ',')}` : 'não configurado'}
+            {group?.monthly_amount != null ? `R$ ${Number(group.monthly_amount).toFixed(2).replace('.', ',')}` : $t('group.finance_not_configured')}
           </span>
         </button>
         <button
           onclick={() => markPaid('per_match')}
           disabled={markingPayment || !group?.per_match_amount}
           class="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-          <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm">Avulso</span>
+          <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm">{$t('group.payment_per_match')}</span>
           <span class="text-gray-600 dark:text-gray-400 font-bold text-sm">
-            {group?.per_match_amount != null ? `R$ ${Number(group.per_match_amount).toFixed(2).replace('.', ',')}` : 'não configurado'}
+            {group?.per_match_amount != null ? `R$ ${Number(group.per_match_amount).toFixed(2).replace('.', ',')}` : $t('group.finance_not_configured')}
           </span>
         </button>
         {#if !group?.monthly_amount && !group?.per_match_amount}
-          <p class="text-xs text-amber-600 dark:text-amber-400 text-center">Configure os valores do grupo para registrar pagamentos.</p>
+          <p class="text-xs text-amber-600 dark:text-amber-400 text-center">{$t('group.finance_configure_hint')}</p>
         {/if}
         <button type="button" onclick={() => showPaymentSheet = false}
           class="w-full text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 py-2 transition-colors">
-          Cancelar
+          {$t('group.cancel')}
         </button>
       </div>
     </div>
@@ -1038,139 +1044,139 @@
 {/if}
 
 <!-- Create match modal -->
-<Modal bind:open={showMatch} title="Novo Rachão">
+<Modal bind:open={showMatch} title={$t('group.new_match_title')}>
   <form onsubmit={(e) => { e.preventDefault(); createMatch(); }} class="space-y-4">
     <div class="form-group">
-      <label class="label" for="mdate">Data *</label>
+      <label class="label" for="mdate">{$t('group.match_date_label')}</label>
       <DatePicker id="mdate" bind:value={matchForm.match_date} required />
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="mtime">Início *</label>
+        <label class="label" for="mtime">{$t('group.match_start_label')}</label>
         <TimePicker id="mtime" bind:value={matchForm.start_time} required />
       </div>
       <div class="form-group">
-        <label class="label" for="mendtime">Término <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
+        <label class="label" for="mendtime">{$t('group.match_end_label')} <span class="text-gray-400 dark:text-gray-500 font-normal">{$t('group.match_optional')}</span></label>
         <TimePicker id="mendtime" bind:value={matchForm.end_time} />
       </div>
     </div>
     <div class="form-group">
-      <label class="label" for="mloc">Local *</label>
-      <input id="mloc" class="input" bind:value={matchForm.location} placeholder="Ex: Arena GQC — Quadra 3" required />
+      <label class="label" for="mloc">{$t('group.match_location_label')}</label>
+      <input id="mloc" class="input" bind:value={matchForm.location} placeholder={$t('group.match_location_placeholder')} required />
     </div>
     <div class="form-group">
-      <label class="label" for="maddr">Endereço <span class="text-gray-400 font-normal">(opcional — para abrir no Maps)</span></label>
-      <input id="maddr" class="input" bind:value={matchForm.address} placeholder="Ex: Rua das Flores, 123 — São Paulo, SP" />
+      <label class="label" for="maddr">{$t('group.match_address_label')} <span class="text-gray-400 font-normal">{$t('group.match_address_hint')}</span></label>
+      <input id="maddr" class="input" bind:value={matchForm.address} placeholder={$t('group.match_address_placeholder')} />
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="mcourt">Tipo de quadra</label>
+        <label class="label" for="mcourt">{$t('group.court_type_label')}</label>
         <select id="mcourt" class="input" bind:value={matchForm.court_type}>
-          <option value="">— selecione —</option>
-          <option value="campo">Campo</option>
-          <option value="sintetico">Sintético</option>
-          <option value="terrao">Terrão</option>
-          <option value="quadra">Quadra</option>
+          <option value="">{$t('group.court_select')}</option>
+          <option value="campo">{$t('group.court_campo')}</option>
+          <option value="sintetico">{$t('group.court_sintetico')}</option>
+          <option value="terrao">{$t('group.court_terrao')}</option>
+          <option value="quadra">{$t('group.court_quadra')}</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="label" for="mplayers">Jogadores por time <span class="text-gray-400 font-normal">(sem goleiro)</span></label>
+        <label class="label" for="mplayers">{$t('group.players_per_team_label')} <span class="text-gray-400 font-normal">{$t('group.players_per_team_no_gk')}</span></label>
         <select id="mplayers" class="input" bind:value={matchForm.players_per_team}>
-          <option value="">— selecione —</option>
+          <option value="">{$t('group.court_select')}</option>
           {#each [4, 5, 6, 7, 8, 9, 10] as n}
-            <option value={n}>{n} na linha</option>
+            <option value={n}>{$t('group.line_players').replace('{n}', String(n))}</option>
           {/each}
         </select>
       </div>
     </div>
     <div class="form-group">
-      <label class="label" for="mmaxp">Máximo de jogadores <span class="text-gray-400 font-normal">(opcional — limita confirmações)</span></label>
-      <input id="mmaxp" class="input" type="number" min="2" bind:value={matchForm.max_players} placeholder="Ex: 14" />
+      <label class="label" for="mmaxp">{$t('group.max_players_label')} <span class="text-gray-400 font-normal">{$t('group.max_players_hint')}</span></label>
+      <input id="mmaxp" class="input" type="number" min="2" bind:value={matchForm.max_players} placeholder={$t('group.max_players_placeholder')} />
     </div>
     <div class="form-group">
-      <label class="label" for="mnotes">Observações</label>
-      <textarea id="mnotes" class="input resize-none" rows="2" bind:value={matchForm.notes} placeholder="Opcional…"></textarea>
+      <label class="label" for="mnotes">{$t('group.notes_label')}</label>
+      <textarea id="mnotes" class="input resize-none" rows="2" bind:value={matchForm.notes} placeholder={$t('group.notes_placeholder')}></textarea>
     </div>
     <div class="flex gap-3 justify-end pt-2">
-      <button type="button" class="btn-secondary" onclick={() => showMatch = false}>Cancelar</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Criando…' : 'Criar Partida'}</button>
+      <button type="button" class="btn-secondary" onclick={() => showMatch = false}>{$t('group.cancel')}</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('group.create_loading') : $t('group.create_btn')}</button>
     </div>
   </form>
 </Modal>
 
 <!-- Edit match modal -->
-<Modal bind:open={showEditMatch} title="Editar Rachão">
+<Modal bind:open={showEditMatch} title={$t('group.edit_match_title')}>
   <form onsubmit={(e) => { e.preventDefault(); saveEditMatch(); }} class="space-y-4">
     <div class="form-group">
-      <label class="label" for="emdate">Data *</label>
+      <label class="label" for="emdate">{$t('group.match_date_label')}</label>
       <DatePicker id="emdate" bind:value={editMatchForm.match_date} required />
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="emtime">Início *</label>
+        <label class="label" for="emtime">{$t('group.match_start_label')}</label>
         <TimePicker id="emtime" bind:value={editMatchForm.start_time} required />
       </div>
       <div class="form-group">
-        <label class="label" for="emendtime">Término <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
+        <label class="label" for="emendtime">{$t('group.match_end_label')} <span class="text-gray-400 dark:text-gray-500 font-normal">{$t('group.match_optional')}</span></label>
         <TimePicker id="emendtime" bind:value={editMatchForm.end_time} />
       </div>
     </div>
     <div class="form-group">
-      <label class="label" for="emloc">Local *</label>
+      <label class="label" for="emloc">{$t('group.match_location_label')}</label>
       <input id="emloc" class="input" bind:value={editMatchForm.location} required />
     </div>
     <div class="form-group">
-      <label class="label" for="emaddr">Endereço <span class="text-gray-400 dark:text-gray-500 font-normal">(opcional)</span></label>
-      <input id="emaddr" class="input" bind:value={editMatchForm.address} placeholder="Ex: Rua das Flores, 123" />
+      <label class="label" for="emaddr">{$t('group.match_address_label')} <span class="text-gray-400 dark:text-gray-500 font-normal">{$t('group.match_optional')}</span></label>
+      <input id="emaddr" class="input" bind:value={editMatchForm.address} placeholder={$t('group.match_address_placeholder')} />
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="emcourt">Tipo de quadra</label>
+        <label class="label" for="emcourt">{$t('group.court_type_label')}</label>
         <select id="emcourt" class="input" bind:value={editMatchForm.court_type}>
-          <option value="">— selecione —</option>
-          <option value="campo">Campo</option>
-          <option value="sintetico">Sintético</option>
-          <option value="terrao">Terrão</option>
-          <option value="quadra">Quadra</option>
+          <option value="">{$t('group.court_select')}</option>
+          <option value="campo">{$t('group.court_campo')}</option>
+          <option value="sintetico">{$t('group.court_sintetico')}</option>
+          <option value="terrao">{$t('group.court_terrao')}</option>
+          <option value="quadra">{$t('group.court_quadra')}</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="label" for="emplayers">Jogadores por time</label>
+        <label class="label" for="emplayers">{$t('group.players_per_team_label')}</label>
         <select id="emplayers" class="input" bind:value={editMatchForm.players_per_team}>
-          <option value="">— selecione —</option>
+          <option value="">{$t('group.court_select')}</option>
           {#each [4, 5, 6, 7, 8, 9, 10] as n}
-            <option value="{n}">{n} na linha</option>
+            <option value="{n}">{$t('group.line_players').replace('{n}', String(n))}</option>
           {/each}
         </select>
       </div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="emmaxp">Máximo de jogadores</label>
-        <input id="emmaxp" class="input" type="number" min="2" bind:value={editMatchForm.max_players} placeholder="Ex: 14" />
+        <label class="label" for="emmaxp">{$t('group.max_players_label')}</label>
+        <input id="emmaxp" class="input" type="number" min="2" bind:value={editMatchForm.max_players} placeholder={$t('group.max_players_placeholder')} />
       </div>
       <div class="form-group">
-        <label class="label" for="emstatus">Status</label>
+        <label class="label" for="emstatus">{$t('group.match_status_label')}</label>
         <select id="emstatus" class="input" bind:value={editMatchForm.status}>
-          <option value="open">Aberta</option>
-          <option value="in_progress">Bola rolando</option>
-          <option value="closed">Encerrada</option>
+          <option value="open">{$t('group.status_open')}</option>
+          <option value="in_progress">{$t('group.status_in_progress')}</option>
+          <option value="closed">{$t('group.status_closed')}</option>
         </select>
       </div>
     </div>
     <div class="form-group">
-      <label class="label" for="emnotes">Observações</label>
-      <textarea id="emnotes" class="input resize-none" rows="2" bind:value={editMatchForm.notes} placeholder="Opcional…"></textarea>
+      <label class="label" for="emnotes">{$t('group.notes_label')}</label>
+      <textarea id="emnotes" class="input resize-none" rows="2" bind:value={editMatchForm.notes} placeholder={$t('group.notes_placeholder')}></textarea>
     </div>
     <div class="flex gap-3 justify-end pt-2">
-      <button type="button" class="btn-secondary" onclick={() => showEditMatch = false}>Cancelar</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
+      <button type="button" class="btn-secondary" onclick={() => showEditMatch = false}>{$t('group.cancel')}</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('group.save_loading') : $t('group.save_btn')}</button>
     </div>
   </form>
 </Modal>
 
 <!-- Invite modal -->
-<Modal bind:open={showInvite} title="Convidar Jogador">
+<Modal bind:open={showInvite} title={$t('group.invite_modal_title')}>
   <div class="space-y-4">
 
     <!-- QR Code -->
@@ -1180,12 +1186,12 @@
           <img src={inviteQr} alt="QR Code de convite" width="220" height="220" class="block" />
         </div>
         <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Aponte a câmera do celular para escanear
+          {$t('group.invite_qr_hint')}
         </p>
       </div>
     {/if}
 
-    <div class="alert-info text-xs">⏱ Este link expira em <strong>30 minutos</strong> e só pode ser usado <strong>uma vez</strong>.</div>
+    <div class="alert-info text-xs">{@html $t('group.invite_expires')}</div>
 
     <!-- Link + copy -->
     <div class="flex gap-2">
@@ -1203,74 +1209,74 @@
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
         <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.558 4.121 1.533 5.853L.036 23.964l6.252-1.639A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-4.998-1.366l-.358-.213-3.712.974 1.014-3.598-.233-.371A9.818 9.818 0 1 1 12 21.818z"/>
       </svg>
-      Enviar pelo WhatsApp
+      {$t('group.invite_whatsapp')}
     </a>
 
-    <button class="btn-secondary w-full justify-center" onclick={() => showInvite = false}>Fechar</button>
+    <button class="btn-secondary w-full justify-center" onclick={() => showInvite = false}>{$t('group.invite_close')}</button>
   </div>
 </Modal>
 
 <!-- Add member modal -->
-<Modal bind:open={showAddMember} title="Adicionar Membro">
+<Modal bind:open={showAddMember} title={$t('group.add_member_modal_title')}>
   {@const available = allPlayers.filter(p => p.role !== 'admin' && !group?.members.some(m => m.player.id === p.id))}
   <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-    Selecione um jogador cadastrado no sistema que ainda não faça parte deste grupo.
+    {$t('group.add_member_modal_desc')}
   </p>
   {#if available.length === 0}
     <div class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
       <UserPlus size={32} class="mx-auto mb-2 opacity-40" />
-      <p>Todos os jogadores cadastrados já fazem parte deste grupo.</p>
+      <p>{$t('group.all_players_in_group')}</p>
     </div>
     <div class="flex justify-end mt-4">
-      <button class="btn-secondary" onclick={() => showAddMember = false}>Fechar</button>
+      <button class="btn-secondary" onclick={() => showAddMember = false}>{$t('group.close')}</button>
     </div>
   {:else}
     <form onsubmit={(e) => { e.preventDefault(); addMember(); }} class="space-y-4">
       <div class="form-group">
-        <label class="label" for="pid">Jogador</label>
+        <label class="label" for="pid">{$t('group.player_select_label')}</label>
         <select id="pid" class="input" bind:value={addMemberId} required>
-          <option value="">— selecione —</option>
+          <option value="">{$t('group.player_select_placeholder')}</option>
           {#each available as p}
             <option value={p.id}>{p.name}{p.nickname ? ` (${p.nickname})` : ''}</option>
           {/each}
         </select>
       </div>
       <div class="flex gap-3 justify-end">
-        <button type="button" class="btn-secondary" onclick={() => showAddMember = false}>Cancelar</button>
-        <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Adicionando…' : 'Adicionar'}</button>
+        <button type="button" class="btn-secondary" onclick={() => showAddMember = false}>{$t('group.cancel')}</button>
+        <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('group.adding') : $t('group.add')}</button>
       </div>
     </form>
   {/if}
 </Modal>
 
 <!-- Member detail modal -->
-<Modal bind:open={showMemberDetail} title="Detalhes do Jogador">
+<Modal bind:open={showMemberDetail} title={$t('group.member_detail_modal')}>
   {#if selectedMember}
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <p class="text-xs text-gray-400 mb-0.5">Nome</p>
+          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_name')}</p>
           <p class="font-medium">{selectedMember.player.name}</p>
         </div>
         <div>
-          <p class="text-xs text-gray-400 mb-0.5">Apelido</p>
+          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_nickname')}</p>
           <p class="font-medium">{selectedMember.player.nickname || '—'}</p>
         </div>
         <div>
-          <p class="text-xs text-gray-400 mb-0.5">Função no grupo</p>
+          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_role')}</p>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold {selectedMember.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}">
-            {selectedMember.role === 'admin' ? 'Presidente' : 'Membro'}
+            {selectedMember.role === 'admin' ? $t('group.detail_role_president') : $t('group.detail_role_member')}
           </span>
         </div>
         <div>
-          <p class="text-xs text-gray-400 mb-0.5">Posição</p>
+          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_position')}</p>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold {selectedMember.is_goalkeeper ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}">
-            {selectedMember.is_goalkeeper ? 'Goleiro' : 'Linha'}
+            {selectedMember.is_goalkeeper ? $t('group.detail_goalkeeper') : $t('group.detail_line')}
           </span>
         </div>
         {#if selectedMember.skill_stars != null}
           <div class="col-span-2">
-            <p class="text-xs text-gray-400 mb-1">Habilidade</p>
+            <p class="text-xs text-gray-400 mb-1">{$t('group.detail_skill')}</p>
             <StarRating rating={selectedMember.skill_stars} readonly size={18} />
           </div>
         {/if}
@@ -1284,7 +1290,7 @@
               showMemberDetail = false;
             }}
             class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
-            <Pencil size={14} /> Editar habilidade
+            <Pencil size={14} /> {$t('group.edit_skill')}
           </button>
           <button
             onclick={() => {
@@ -1293,9 +1299,9 @@
             }}
             class="btn-sm btn-ghost flex items-center gap-1 border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400">
             {#if selectedMember.role === 'admin'}
-              <ShieldOff size={14} /> Remover presidência
+              <ShieldOff size={14} /> {$t('group.remove_president')}
             {:else}
-              <ShieldCheck size={14} /> Tornar Presidente
+              <ShieldCheck size={14} /> {$t('group.make_president')}
             {/if}
           </button>
           <button
@@ -1304,7 +1310,7 @@
               showMemberDetail = false;
             }}
             class="btn-sm btn-ghost flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400">
-            <Trash2 size={14} /> Remover do grupo
+            <Trash2 size={14} /> {$t('group.remove_from_group')}
           </button>
         </div>
       {/if}
@@ -1314,14 +1320,14 @@
 
 <!-- Member edit bottom sheet -->
 {#if roleEditMember}
-  <button class="fixed inset-0 z-40 bg-black/40" onclick={() => roleEditMember = null} aria-label="Cancelar" />
+  <button class="fixed inset-0 z-40 bg-black/40" onclick={() => roleEditMember = null} aria-label={$t('aria.close')} />
   <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
     <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto space-y-5">
       <p class="text-gray-800 dark:text-gray-200 font-semibold text-center text-base">{roleEditMember.name}</p>
 
       <!-- Skill stars -->
       <div>
-        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Nível de habilidade</p>
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('group.skill_level')}</p>
         <div class="flex justify-center">
           <StarRating
             bind:rating={roleEditMember.skill_stars}
@@ -1332,7 +1338,7 @@
 
       <!-- Goalkeeper toggle -->
       <label class="flex items-center justify-between cursor-pointer select-none">
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Goleiro (GK)</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('group.goalkeeper_gk')}</span>
         <div class="relative">
           <input type="checkbox" class="sr-only peer" bind:checked={roleEditMember.is_goalkeeper} />
           <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
@@ -1348,7 +1354,7 @@
           await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.is_goalkeeper);
           roleEditMember = null;
         }}>
-        {skillSaving ? 'Salvando…' : 'Salvar habilidade'}
+        {skillSaving ? $t('group.saving') : $t('group.save_skill')}
       </button>
 
       <div class="border-t border-gray-100 dark:border-gray-700 pt-3 flex flex-col gap-2">
@@ -1356,13 +1362,13 @@
           class="btn btn-secondary justify-center py-2.5"
           onclick={() => { toggleRole(roleEditMember!.id, roleEditMember!.role, roleEditMember!.name); roleEditMember = null; }}>
           {#if roleEditMember.role === 'admin'}
-            <ShieldOff size={15} /> Remover presidência
+            <ShieldOff size={15} /> {$t('group.remove_president')}
           {:else}
-            <ShieldCheck size={15} /> Tornar Presidente
+            <ShieldCheck size={15} /> {$t('group.make_president')}
           {/if}
         </button>
         <button class="btn btn-secondary justify-center py-2.5" onclick={() => roleEditMember = null}>
-          Cancelar
+          {$t('group.cancel')}
         </button>
       </div>
     </div>
@@ -1378,28 +1384,28 @@
 />
 
 <!-- Edit group modal -->
-<Modal bind:open={showEditGroup} title="Editar Grupo">
+<Modal bind:open={showEditGroup} title={$t('group.edit_group_title')}>
   <form onsubmit={(e) => { e.preventDefault(); saveEditGroup(); }} class="space-y-4">
     <div class="form-group">
-      <label class="label" for="egname">Nome *</label>
+      <label class="label" for="egname">{$t('group.edit_name_label')}</label>
       <input id="egname" class="input" bind:value={editForm.name} required minlength="2" maxlength="100" />
     </div>
     <div class="form-group">
-      <label class="label" for="egdesc">Descrição</label>
-      <textarea id="egdesc" class="input resize-none" rows="2" bind:value={editForm.description} placeholder="Opcional…"></textarea>
+      <label class="label" for="egdesc">{$t('group.edit_desc_label')}</label>
+      <textarea id="egdesc" class="input resize-none" rows="2" bind:value={editForm.description} placeholder={$t('group.edit_desc_placeholder')}></textarea>
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div class="form-group">
-        <label class="label" for="egpermatch">Valor avulso (R$)</label>
+        <label class="label" for="egpermatch">{$t('group.edit_permatch_label')}</label>
         <input id="egpermatch" class="input" type="number" min="0" step="0.01"
-          bind:value={editForm.per_match_amount} placeholder="Ex: 25,00" />
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Deixe vazio se não cobrar por partida</p>
+          bind:value={editForm.per_match_amount} placeholder={$t('group.edit_permatch_placeholder')} />
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{$t('group.edit_permatch_hint')}</p>
       </div>
       <div class="form-group">
-        <label class="label" for="egmonthly">Mensalidade (R$)</label>
+        <label class="label" for="egmonthly">{$t('group.edit_monthly_label')}</label>
         <input id="egmonthly" class="input" type="number" min="0" step="0.01"
-          bind:value={editForm.monthly_amount} placeholder="Ex: 75,00" />
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Deixe vazio se não cobrar mensalidade</p>
+          bind:value={editForm.monthly_amount} placeholder={$t('group.edit_permatch_placeholder')} />
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{$t('group.edit_permatch_hint')}</p>
       </div>
     </div>
     <div class="form-group">
@@ -1409,7 +1415,7 @@
           <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
           <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
         </div>
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Recorrência semanal</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('group.weekly_recurrence')}</span>
       </label>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         Quando ativa, uma nova partida é criada automaticamente após o encerramento da atual, herdando os convidados com presença pendente.
@@ -1422,42 +1428,42 @@
           <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
           <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
         </div>
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Grupo público</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('new_group.public_title')}</span>
       </label>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         Quando ativo, qualquer pessoa com o link pode solicitar entrada no próximo rachão via lista de espera.
       </p>
     </div>
     <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
-      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Configurações de votação</p>
+      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{$t('new_group.vote_settings')}</p>
       <div class="space-y-3">
         <div class="form-group">
-          <label class="label" for="egvotedelay">Ao final de cada rachão inicia em:</label>
+          <label class="label" for="egvotedelay">{$t('new_group.vote_delay_label')}</label>
           <select id="egvotedelay" class="input" bind:value={editForm.vote_open_delay_minutes}>
-            <option value={0}>Imediato (sem atraso)</option>
-            <option value={10}>10 minutos</option>
-            <option value={20}>20 minutos (padrão)</option>
-            <option value={30}>30 minutos</option>
-            <option value={60}>1 hora</option>
+            <option value={0}>{$t('new_group.vote_immediate')}</option>
+            <option value={10}>{$t('new_group.vote_10min')}</option>
+            <option value={20}>{$t('new_group.vote_20min')}</option>
+            <option value={30}>{$t('new_group.vote_30min')}</option>
+            <option value={60}>{$t('new_group.vote_1h')}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="label" for="egvotedur">Votação encerrada após:</label>
+          <label class="label" for="egvotedur">{$t('new_group.vote_duration_label')}</label>
           <select id="egvotedur" class="input" bind:value={editForm.vote_duration_hours}>
-            <option value={2}>2 horas</option>
-            <option value={4}>4 horas</option>
-            <option value={6}>6 horas</option>
-            <option value={12}>12 horas</option>
-            <option value={24}>24 horas (padrão)</option>
-            <option value={48}>48 horas</option>
-            <option value={72}>72 horas</option>
+            <option value={2}>{$t('new_group.vote_2h')}</option>
+            <option value={4}>{$t('new_group.vote_4h')}</option>
+            <option value={6}>{$t('new_group.vote_6h')}</option>
+            <option value={12}>{$t('new_group.vote_12h')}</option>
+            <option value={24}>{$t('new_group.vote_24h')}</option>
+            <option value={48}>{$t('new_group.vote_48h')}</option>
+            <option value={72}>{$t('new_group.vote_72h')}</option>
           </select>
         </div>
       </div>
     </div>
     <div class="flex gap-3 justify-end pt-2">
-      <button type="button" class="btn-secondary" onclick={() => showEditGroup = false}>Cancelar</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
+      <button type="button" class="btn-secondary" onclick={() => showEditGroup = false}>{$t('group.cancel')}</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('group.save_loading') : $t('group.save_btn')}</button>
     </div>
   </form>
 </Modal>

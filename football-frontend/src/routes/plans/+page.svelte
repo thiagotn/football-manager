@@ -7,6 +7,7 @@
   import { billingEnabled } from '$lib/billing';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { CreditCard, Check, Zap } from 'lucide-svelte';
+  import { t } from '$lib/i18n';
 
   if (!billingEnabled) goto('/');
 
@@ -22,7 +23,7 @@
 
   function price(planKey: string): string {
     const p = PLANS[planKey as keyof typeof PLANS];
-    if (!p || p.price_monthly === null) return 'Grátis';
+    if (!p || p.price_monthly === null) return $t('plans.free');
     const cents = cycle === 'yearly'
       ? (p.price_yearly ?? p.price_monthly * 10)
       : p.price_monthly;
@@ -30,7 +31,7 @@
   }
 
   function priceSuffix(): string {
-    return cycle === 'yearly' ? '/ano' : '/mês';
+    return cycle === 'yearly' ? $t('plans.per_year') : $t('plans.per_month');
   }
 
   function yearlySaving(planKey: string): string | null {
@@ -74,9 +75,9 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <CreditCard size={24} class="text-primary-400" /> Planos
+          <CreditCard size={24} class="text-primary-400" /> {$t('plans.title')}
         </h1>
-        <p class="text-sm text-white/60 mt-0.5">Escolha o plano ideal para o seu rachão.</p>
+        <p class="text-sm text-white/60 mt-0.5">{$t('plans.subtitle')}</p>
       </div>
     </div>
 
@@ -86,13 +87,13 @@
         <button
           class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {cycle === 'monthly' ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white'}"
           onclick={() => cycle = 'monthly'}>
-          Mensal
+          {$t('plans.monthly')}
         </button>
         <button
           class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors {cycle === 'yearly' ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white'}"
           onclick={() => cycle = 'yearly'}>
-          Anual
-          <span class="ml-1 text-xs font-semibold text-green-400">economia anual</span>
+          {$t('plans.yearly')}
+          <span class="ml-1 text-xs font-semibold text-green-400">{$t('plans.yearly_saving')}</span>
         </button>
       </div>
     </div>
@@ -107,12 +108,12 @@
 
           {#if isCurrent}
             <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-500 text-white text-xs font-bold px-3 py-0.5 rounded-full whitespace-nowrap">
-              Seu plano
+              {$t('plans.current_plan')}
             </span>
           {/if}
           {#if planKey === 'basic' && !isCurrent}
             <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-gray-900 text-xs font-bold px-3 py-0.5 rounded-full whitespace-nowrap">
-              Mais popular
+              {$t('plans.most_popular')}
             </span>
           {/if}
 
@@ -120,12 +121,12 @@
 
           <div class="mt-2 mb-4">
             {#if plan.price_monthly === null}
-              <span class="text-3xl font-black text-gray-900 dark:text-gray-100">Grátis</span>
+              <span class="text-3xl font-black text-gray-900 dark:text-gray-100">{$t('plans.free')}</span>
             {:else}
               <span class="text-3xl font-black text-gray-900 dark:text-gray-100">{price(planKey)}</span>
               <span class="text-sm text-gray-400 dark:text-gray-500">{priceSuffix()}</span>
               {#if saving}
-                <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">Economia no plano anual</p>
+                <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">{$t('plans.yearly_saving_hint')}</p>
               {/if}
             {/if}
           </div>
@@ -141,19 +142,19 @@
 
           {#if planKey === 'free'}
             <button class="btn-secondary w-full justify-center" disabled>
-              {isCurrent ? 'Plano atual' : 'Gratuito'}
+              {isCurrent ? $t('plans.current_btn') : $t('plans.free_btn')}
             </button>
           {:else if isCurrent}
-            <button class="btn-secondary w-full justify-center" disabled>Plano atual</button>
+            <button class="btn-secondary w-full justify-center" disabled>{$t('plans.current_btn')}</button>
           {:else}
             <button
               class="btn-primary w-full justify-center"
               onclick={() => handleSelect(planKey)}
               disabled={checkoutLoading === planKey}>
               {#if checkoutLoading === planKey}
-                <Zap size={15} class="animate-pulse" /> Aguarde…
+                <Zap size={15} class="animate-pulse" /> {$t('plans.subscribe_loading')}
               {:else}
-                <Zap size={15} /> Assinar {plan.name}
+                <Zap size={15} /> {$t('plans.subscribe').replace('{name}', plan.name)}
               {/if}
             </button>
           {/if}
@@ -162,7 +163,7 @@
     </div>
 
     <p class="text-center text-sm text-white/80 mt-8 bg-white/10 rounded-xl px-4 py-3 max-w-sm mx-auto">
-      🔒 Pagamentos processados com segurança via Stripe. Cancele a qualquer momento.
+      {$t('plans.security_note')}
     </p>
 
   </main>

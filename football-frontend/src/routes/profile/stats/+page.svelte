@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { Users, Trophy, Clock, ThumbsDown, Flame, Shield, BarChart2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import { t } from '$lib/i18n';
 
   let stats = $state<PlayerFullStats | null>(null);
   let loading = $state(true);
@@ -75,9 +76,9 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <BarChart2 size={24} class="text-primary-400" /> Rachão Score
+          <BarChart2 size={24} class="text-primary-400" /> {$t('stats.title')}
         </h1>
-        <p class="text-sm text-white/60 mt-0.5">Seus dados, de acordo com a plataforma de dados Rachão Score.</p>
+        <p class="text-sm text-white/60 mt-0.5">{$t('stats.subtitle')}</p>
       </div>
     </div>
 
@@ -121,21 +122,21 @@
               {/if}
               {#if memberSince($currentPlayer?.created_at)}
                 <p class="text-xs text-green-300 mt-1.5">
-                  Membro desde {memberSince($currentPlayer?.created_at)}
+                  {$t('stats.member_since').replace('{date}', memberSince($currentPlayer?.created_at))}
                 </p>
               {/if}
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0">
               {#if hasGoalkeeper(stats.groups)}
-                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900">Goleiro</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900">{$t('stats.goalkeeper')}</span>
               {/if}
               <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
-                ⚽ {stats.total_matches_confirmed} partidas
+                ⚽ {stats.total_matches_confirmed} {$t('stats.matches')}
               </span>
             </div>
           </div>
           <div class="mt-3 pt-3 border-t border-white/20 flex items-center gap-2 min-w-0">
-            <span class="text-xs text-green-200 shrink-0">💰 Valor de mercado:</span>
+            <span class="text-xs text-green-200 shrink-0">{$t('stats.market_value')}</span>
             <span class="text-xs font-bold text-white truncate min-w-0">{marketValue(stats, $currentPlayer?.id ?? $currentPlayer?.name ?? '')}</span>
           </div>
         </div>
@@ -149,7 +150,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none">{stats.total_matches_confirmed}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Partidas</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.matches')}</p>
           </div>
         </div>
 
@@ -159,7 +160,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none">{formatMinutes(stats.total_minutes_played)}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Em campo</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.on_field')}</p>
           </div>
         </div>
 
@@ -169,7 +170,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none">{stats.total_vote_points}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pontos</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.points')}</p>
           </div>
         </div>
 
@@ -179,7 +180,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none">{stats.total_flop_votes}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Decepções</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.flops')}</p>
           </div>
         </div>
       </div>
@@ -192,7 +193,7 @@
 
           <!-- Bloco 3: Presença -->
           <div class="card card-body">
-            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Presença</h2>
+            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{$t('stats.section_attendance')}</h2>
             <div class="flex items-center gap-5">
               <div class="relative w-20 h-20 rounded-full shrink-0"
                 style="background: conic-gradient(#22c55e {stats.attendance_rate}%, #e5e7eb 0%);">
@@ -202,14 +203,14 @@
               </div>
               <div class="flex-1 space-y-2.5">
                 <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Sequência atual</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{$t('stats.current_streak')}</span>
                   <span class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1">
                     {#if stats.current_streak >= 3}<Flame size={13} class="text-orange-500" />{/if}
-                    {stats.current_streak} seguidas
+                    {$t('stats.streak_consecutive').replace('{n}', String(stats.current_streak))}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Maior sequência</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{$t('stats.best_streak')}</span>
                   <span class="text-sm font-bold text-primary-600 dark:text-primary-400">{stats.best_streak}</span>
                 </div>
                 <div class="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -223,24 +224,24 @@
           {#if stats.total_matches_confirmed > 0}
             {@const approvalPct = Math.min(100, Math.round((stats.top5_count / Math.max(1, stats.total_matches_confirmed)) * 100))}
             <div class="card card-body">
-              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Reputação</h2>
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{$t('stats.section_reputation')}</h2>
               <div class="grid grid-cols-3 gap-2 mb-3">
                 <div class="text-center p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
                   <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{stats.top1_count}</p>
-                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">🥇 Melhor<br>da partida</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">{$t('stats.best_of_match')}</p>
                 </div>
                 <div class="text-center p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20">
                   <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.top5_count}</p>
-                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">🏅 Vezes<br>no Top 5</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">{$t('stats.top5')}</p>
                 </div>
                 <div class="text-center p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20">
                   <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{stats.total_vote_points}</p>
-                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">⭐ Total<br>de pontos</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">{$t('stats.total_points')}</p>
                 </div>
               </div>
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Aprovação (Top 5 / partidas)</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{$t('stats.approval')}</span>
                   <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{approvalPct}%</span>
                 </div>
                 <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -255,7 +256,7 @@
           {#if stats.monthly_stats.some(m => m.matches_confirmed > 0)}
             {@const maxVal = Math.max(1, ...stats.monthly_stats.map(m => m.matches_confirmed))}
             <div class="card card-body">
-              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Frequência nos últimos 6 meses</h2>
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{$t('stats.section_frequency')}</h2>
               <div class="flex items-end gap-1 h-24">
                 {#each stats.monthly_stats as m}
                   <div class="flex-1 flex flex-col items-center gap-1">
@@ -280,23 +281,23 @@
           {#if stats.recent_matches.length > 0}
             <div class="card card-body">
               <div class="flex items-center justify-between mb-3">
-                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Histórico recente</h2>
-                <span class="text-xs text-gray-400">{stats.recent_matches.length} partidas</span>
+                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">{$t('stats.section_history')}</h2>
+                <span class="text-xs text-gray-400">{$t('stats.history_matches').replace('{n}', String(stats.recent_matches.length))}</span>
               </div>
               <div class="flex flex-wrap gap-1.5">
                 {#each stats.recent_matches as m}
                   <div
                     class="w-3.5 h-3.5 rounded-full shrink-0 {m.status === 'confirmed' ? 'bg-green-500' : 'bg-red-400'}"
-                    title="{m.match_date} — {m.group_name} — {m.status === 'confirmed' ? 'Confirmado' : 'Faltou'}"
+                    title="{m.match_date} — {m.group_name} — {m.status === 'confirmed' ? $t('stats.history_confirmed') : $t('stats.history_missed')}"
                   ></div>
                 {/each}
               </div>
               <div class="flex items-center gap-4 mt-2.5">
                 <span class="flex items-center gap-1.5 text-[10px] text-gray-400">
-                  <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> Confirmado
+                  <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span> {$t('stats.history_confirmed')}
                 </span>
                 <span class="flex items-center gap-1.5 text-[10px] text-gray-400">
-                  <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> Faltou
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> {$t('stats.history_missed')}
                 </span>
               </div>
             </div>
@@ -306,7 +307,7 @@
           {#if stats.groups.length > 0}
             <div class="card overflow-hidden">
               <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Meus Grupos</h2>
+                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">{$t('stats.section_my_groups')}</h2>
               </div>
               <ul class="divide-y divide-gray-100 dark:divide-gray-700">
                 {#each stats.groups as g}
@@ -320,7 +321,7 @@
                       {#if g.role === 'admin'}
                         <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>
                       {/if}
-                      <span class="text-xs text-gray-400">{g.matches_confirmed} jogos</span>
+                      <span class="text-xs text-gray-400">{$t('stats.group_matches').replace('{n}', String(g.matches_confirmed))}</span>
                       <span class="text-xs text-amber-500 tracking-tighter">{'★'.repeat(g.skill_stars)}</span>
                     </div>
                   </li>

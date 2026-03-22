@@ -7,6 +7,7 @@
   import { Trophy, Calendar, Clock, MapPin, ChevronRight, Users, UserPlus, Compass } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate, formatWhatsapp } from '$lib/utils.js';
+  import { t, locale } from '$lib/i18n';
 
   type MatchWithGroup = Match & { group_name: string; group_slug: string; group_id: string };
 
@@ -110,14 +111,18 @@
   });
 
   function fmtDate(d: string) {
-    return relativeDate(d, { weekday: 'short', day: '2-digit', month: 'short' });
+    return relativeDate(d, { weekday: 'short', day: '2-digit', month: 'short' }, $locale, {
+      today: $t('date.today'),
+      tomorrow: $t('date.tomorrow'),
+      yesterday: $t('date.yesterday')
+    });
   }
 
   function daysAgo(iso: string): string {
     const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-    if (diff === 0) return 'hoje';
-    if (diff === 1) return 'ontem';
-    return `${diff}d atrás`;
+    if (diff === 0) return $t('date.today').toLowerCase();
+    if (diff === 1) return $t('date.yesterday').toLowerCase();
+    return `${diff}d`;
   }
 </script>
 
@@ -127,9 +132,9 @@
   <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
   <div class="mb-8">
     <h1 class="text-2xl font-bold text-white">
-      Olá, {$currentPlayer?.name?.split(' ')[0]} 👋
+      {$t('dash.greeting').replace('{name}', $currentPlayer?.name?.split(' ')[0] ?? '')}
     </h1>
-    <p class="text-gray-300 text-sm mt-1">Veja os próximos rachões e seus grupos.</p>
+    <p class="text-gray-300 text-sm mt-1">{$t('dash.subtitle')}</p>
   </div>
 
   <!-- Stats row -->
@@ -141,7 +146,7 @@
         <Calendar size={16} class="text-blue-600 dark:text-blue-400" />
       </div>
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{$isAdmin ? platformTotalMatches : upcomingMatches.length}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">{$isAdmin ? 'Rachões' : 'Próximos'}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{$isAdmin ? $t('dash.platform_matches') : $t('dash.upcoming')}</p>
     </svelte:element>
     <a href="/groups" class="card p-4 flex flex-col items-center text-center gap-1.5 hover:shadow-md transition-shadow"
       title="Grupos que você participa">
@@ -149,7 +154,7 @@
         <Trophy size={16} class="text-primary-600 dark:text-primary-400" />
       </div>
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{myGroups.length}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">{myGroups.length === 1 ? 'Grupo' : 'Grupos'}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{myGroups.length === 1 ? $t('dash.groups_one') : $t('dash.groups_other')}</p>
     </a>
     {#if $isAdmin}
       <div class="card p-4 flex flex-col items-center text-center gap-1.5"
@@ -158,10 +163,7 @@
           <Users size={16} class="text-green-600 dark:text-green-400" />
         </div>
         <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">{playerCount}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          <span class="hidden sm:inline">Jogadores</span>
-          <span class="sm:hidden">Jogadores</span>
-        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{$t('dash.players')}</p>
       </div>
     {/if}
     <svelte:element this={$isAdmin ? 'div' : 'a'} href={$isAdmin ? undefined : '/profile/stats'}
@@ -173,7 +175,7 @@
       <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">
         {fmtPlaytime($isAdmin ? platformMinutesPlayed : minutesPlayed)}
       </p>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Jogadas</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{$t('dash.played')}</p>
     </svelte:element>
   </div>
 
@@ -186,7 +188,7 @@
           class="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
           <span class="text-xl shrink-0">🏆</span>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Vote nos melhores do Rachão #{pv.match_number}</p>
+            <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">{$t('dash.vote_banner').replace('{number}', String(pv.match_number))}</p>
             <p class="text-xs text-amber-600 dark:text-amber-400">{pv.group_name} · {pv.time_label} · {pv.voter_count} de {pv.eligible_count} já votaram</p>
           </div>
           <span class="text-amber-600 dark:text-amber-400 text-sm font-bold shrink-0">→</span>
@@ -203,12 +205,12 @@
           <button
             class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {matchTab === 'upcoming' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
             onclick={() => matchTab = 'upcoming'}>
-            Próximos Rachões
+            {$t('dash.upcoming_matches')}
           </button>
           <button
             class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {matchTab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
             onclick={() => matchTab = 'past'}>
-            Últimos Rachões
+            {$t('dash.past_matches')}
           </button>
         </div>
       </div>
@@ -219,7 +221,7 @@
           {/each}
         {:else}
           {@const list = matchTab === 'past' ? pastMatches : upcomingMatches}
-          {@const empty = matchTab === 'past' ? 'Nenhum rachão encerrado ainda.' : 'Nenhum rachão agendado.'}
+          {@const empty = matchTab === 'past' ? $t('dash.no_past') : $t('dash.no_upcoming')}
           {#if list.length === 0}
             <div class="px-6 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">{empty}</div>
           {:else}
@@ -237,11 +239,11 @@
                     {#if m.status === 'in_progress'}
                       <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
                         <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                        Bola rolando
+                        {$t('dash.live')}
                       </span>
                     {:else}
                       <span class="badge shrink-0 {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
-                        {m.status === 'open' ? 'Aberta' : 'Encerrada'}
+                        {m.status === 'open' ? $t('dash.open') : $t('dash.closed')}
                       </span>
                     {/if}
                   </div>
@@ -261,8 +263,8 @@
     <!-- Groups — segundo no mobile -->
     <div class="card">
       <div class="card-header flex items-center justify-between">
-        <h2 class="font-semibold flex items-center gap-2"><Trophy size={16} class="text-primary-600" /> Meus Grupos</h2>
-        <a href="/groups" class="text-xs text-primary-600 hover:underline font-medium">Ver todos</a>
+        <h2 class="font-semibold flex items-center gap-2"><Trophy size={16} class="text-primary-600" /> {$t('dash.my_groups')}</h2>
+        <a href="/groups" class="text-xs text-primary-600 hover:underline font-medium">{$t('dash.see_all')}</a>
       </div>
       <div class="divide-y divide-gray-100 dark:divide-gray-700">
         {#if loading}
@@ -270,7 +272,7 @@
             <div class="px-6 py-4 animate-pulse"><div class="h-4 bg-gray-100 dark:bg-gray-700 rounded w-3/4"></div></div>
           {/each}
         {:else if myGroups.length === 0}
-          <div class="px-6 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">Você não pertence a nenhum grupo ainda.</div>
+          <div class="px-6 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">{$t('dash.no_groups')}</div>
         {:else}
           {#each myGroups.slice(0, 5) as g}
             <a href="/groups/{g.id}" class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -290,16 +292,16 @@
     <div class="mt-6">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-base font-semibold text-white flex items-center gap-2">
-          <Compass size={16} class="text-primary-400" /> Descobrir Rachões
+          <Compass size={16} class="text-primary-400" /> {$t('dash.discover_title')}
         </h2>
-        <a href="/discover" class="text-xs text-primary-400 hover:text-primary-300 font-medium">Ver todos →</a>
+        <a href="/discover" class="text-xs text-primary-400 hover:text-primary-300 font-medium">{$t('dash.discover_see_all')}</a>
       </div>
       {#if discoverMatches.length === 0}
         <a href="/discover" class="card px-4 py-6 flex flex-col items-center gap-2 text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
           <Compass size={28} class="text-primary-400" />
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Encontre um rachão para você</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500">Veja grupos públicos com vagas abertas e peça para entrar</p>
-          <span class="text-xs text-primary-600 dark:text-primary-400 font-semibold mt-1">Explorar →</span>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('dash.discover_cta')}</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">{$t('dash.discover_cta_sub')}</p>
+          <span class="text-xs text-primary-600 dark:text-primary-400 font-semibold mt-1">{$t('dash.discover_explore')}</span>
         </a>
       {:else}
         <div class="space-y-2">
@@ -311,18 +313,20 @@
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{dm.group_name}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2 mt-0.5">
-                  <span class="flex items-center gap-1"><Calendar size={11} />{new Date(dm.match_date + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                  <span class="flex items-center gap-1"><Calendar size={11} />{new Date(dm.match_date + 'T12:00').toLocaleDateString($locale, { weekday: 'short', day: '2-digit', month: 'short' })}</span>
                   <span class="flex items-center gap-1"><Clock size={11} />{dm.start_time.slice(0,5)}</span>
                   <span class="flex items-center gap-1"><MapPin size={11} /><span class="truncate">{dm.location}</span></span>
                 </p>
                 <p class="text-xs mt-1 {dm.spots_left !== null && dm.spots_left <= 3 ? 'text-amber-500 dark:text-amber-400 font-medium' : 'text-gray-400 dark:text-gray-500'}">
-                  {dm.spots_left !== null ? `${dm.spots_left} vaga${dm.spots_left !== 1 ? 's' : ''} disponível` : 'Vagas abertas'}
+                  {dm.spots_left !== null
+                    ? (dm.spots_left !== 1 ? $t('dash.spots_available_plural').replace('{n}', String(dm.spots_left)) : $t('dash.spots_available').replace('{n}', String(dm.spots_left)))
+                    : $t('dash.spots_open')}
                 </p>
               </div>
               <button
                 onclick={() => { discoverWaitlistMatch = dm; showDiscoverModal = true; }}
                 class="btn btn-sm btn-primary shrink-0 self-center">
-                Quero jogar
+                {$t('dash.want_to_play')}
               </button>
             </div>
           {/each}
@@ -357,31 +361,31 @@
   {#if $isAdmin && signupStats}
     <div class="mt-6">
       <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-3">
-        <UserPlus size={16} class="text-primary-400" /> Novos Cadastros
+        <UserPlus size={16} class="text-primary-400" /> {$t('dash.admin_signups')}
       </h2>
 
       <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
         <div class="card p-4 text-center">
           <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">{signupStats.total}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('dash.total')}</p>
         </div>
         <div class="card p-4 text-center">
           <p class="text-2xl font-bold text-green-600 dark:text-green-400">{signupStats.last_7_days}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimos 7 dias</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('dash.last_7_days')}</p>
         </div>
         <div class="card p-4 text-center">
           <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{signupStats.last_30_days}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimos 30 dias</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('dash.last_30_days')}</p>
         </div>
       </div>
 
       <div class="card overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Registros recentes</span>
-          <a href="/players" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">Ver todos →</a>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('dash.recent_registrations')}</span>
+          <a href="/players" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">{$t('dash.see_all_players')}</a>
         </div>
         {#if signupStats.recent.length === 0}
-          <div class="px-4 py-8 text-center text-sm text-gray-400">Nenhum cadastro ainda.</div>
+          <div class="px-4 py-8 text-center text-sm text-gray-400">{$t('dash.no_registrations')}</div>
         {:else}
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             {#each signupStats.recent as p}
@@ -394,7 +398,7 @@
                 </div>
                 <div class="text-right shrink-0">
                   <span class="text-xs {p.active ? 'text-green-600 dark:text-green-400' : 'text-red-500'} font-medium">
-                    {p.active ? 'Ativo' : 'Inativo'}
+                    {p.active ? $t('dash.active') : $t('dash.inactive')}
                   </span>
                   <p class="text-xs text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
                     <Clock size={10} />

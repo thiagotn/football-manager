@@ -8,6 +8,7 @@
   import UpsellModal from '$lib/components/UpsellModal.svelte';
   import { Plus, Trophy, ChevronRight, Trash2, Lock } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import { t } from '$lib/i18n';
 
   let groupList: Group[] = $state([]);
   let sub: SubscriptionInfo | null = $state(null);
@@ -51,7 +52,7 @@
         if (!cancelled) {
           console.error('[groups] erro ao carregar:', e);
           loadError = e instanceof ApiError ? `${e.status}: ${e.message}` : String(e);
-          toastError('Erro ao carregar grupos');
+          toastError($t('groups.load_error_toast'));
         }
       }
       if (!cancelled) loading = false;
@@ -61,7 +62,11 @@
 
   function openCreateOrUpsell() {
     if (atGroupLimit) {
-      upsellMessage = `Você já possui ${sub!.groups_used} grupo${sub!.groups_used !== 1 ? 's' : ''} ativo${sub!.groups_used !== 1 ? 's' : ''}, o máximo do plano Grátis. Planos com mais grupos estarão disponíveis em breve.`;
+      const n = sub!.groups_used;
+      const plural = n !== 1 ? 's' : '';
+      upsellMessage = $t('groups.upsell_limit')
+        .replace('{n}', String(n))
+        .replace(/{plural}/g, plural);
       showUpsell = true;
     } else {
       showCreate = true;
@@ -76,28 +81,28 @@
       if (sub) sub = { ...sub, groups_used: sub.groups_used + 1 };
       showCreate = false;
       form = { name: '', description: '', slug: '' };
-      toastSuccess('Grupo criado com sucesso!');
+      toastSuccess($t('groups.create_success'));
     } catch (e) {
       if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
         showCreate = false;
-        upsellMessage = 'Você atingiu o limite de grupos do plano Grátis.';
+        upsellMessage = $t('groups.upsell_exceeded');
         showUpsell = true;
       } else {
-        toastError(e instanceof ApiError ? e.message : 'Erro ao criar grupo');
+        toastError(e instanceof ApiError ? e.message : $t('groups.create_error_generic'));
       }
     }
     saving = false;
   }
 
   async function deleteGroup(g: Group) {
-    askConfirm(`Excluir "${g.name}"? Esta ação não pode ser desfeita.`, async () => {
+    askConfirm($t('groups.delete_confirm').replace('{name}', g.name), async () => {
       try {
         await groupsApi.delete(g.id);
         groupList = groupList.filter(x => x.id !== g.id);
         if (sub) sub = { ...sub, groups_used: Math.max(0, sub.groups_used - 1) };
-        toastSuccess('Grupo excluído');
+        toastSuccess($t('groups.delete_success'));
       } catch (e) {
-        toastError('Erro ao excluir grupo');
+        toastError($t('groups.delete_error'));
       }
     });
   }
@@ -110,9 +115,9 @@
   <div class="flex items-center justify-between mb-6">
     <div>
       <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-        <Trophy size={24} class="text-primary-400" /> Grupos
+        <Trophy size={24} class="text-primary-400" /> {$t('groups.title')}
       </h1>
-      <p class="text-sm text-gray-300 mt-0.5">Grupos de futebol que você participa</p>
+      <p class="text-sm text-white/60 mt-0.5">{$t('groups.subtitle')}</p>
     </div>
     <div class="flex flex-col items-end gap-1">
       {#if !$isAdmin && sub}
@@ -122,16 +127,16 @@
       {/if}
       <button class="btn-primary {atGroupLimit ? 'opacity-80' : ''}" onclick={openCreateOrUpsell}>
         {#if atGroupLimit}
-          <Lock size={15} /> Novo Grupo
+          <Lock size={15} /> {$t('groups.new')}
         {:else}
-          <Plus size={16} /> Novo Grupo
+          <Plus size={16} /> {$t('groups.new')}
         {/if}
       </button>
     </div>
   </div>
 
   {#if loadError}
-    <div class="alert-error mb-4">Erro ao carregar grupos: <strong>{loadError}</strong></div>
+    <div class="alert-error mb-4">{$t('groups.load_error')}<strong>{loadError}</strong></div>
   {/if}
 
   {#if loading}
@@ -146,10 +151,10 @@
   {:else if groupList.length === 0}
     <div class="card p-12 text-center">
       <Trophy size={40} class="text-gray-300 mx-auto mb-3" />
-      <p class="text-gray-500">Nenhum grupo encontrado.</p>
+      <p class="text-gray-500">{$t('groups.empty_title')}</p>
       <button class="btn-primary mt-4" onclick={openCreateOrUpsell}>
         {#if atGroupLimit}<Lock size={15} />{:else}<Plus size={16} />{/if}
-        Criar primeiro grupo
+        {$t('groups.create_first')}
       </button>
     </div>
   {:else}
@@ -169,7 +174,7 @@
           {#if $isAdmin}
             <div class="px-6 pb-4 flex justify-end">
               <button onclick={() => deleteGroup(g)} class="btn-sm btn-ghost text-red-500 hover:bg-red-50">
-                <Trash2 size={14} /> Excluir
+                <Trash2 size={14} /> {$t('groups.delete_label')}
               </button>
             </div>
           {/if}
@@ -180,24 +185,24 @@
 </main>
 </PageBackground>
 
-<Modal bind:open={showCreate} title="Novo Grupo">
+<Modal bind:open={showCreate} title={$t('groups.modal_title')}>
   <form onsubmit={(e) => { e.preventDefault(); createGroup(); }} class="space-y-4">
     <div class="form-group">
-      <label class="label" for="name">Nome do Grupo *</label>
-      <input id="name" class="input" bind:value={form.name} placeholder="Ex: Futebol GQC" required />
+      <label class="label" for="name">{$t('groups.name_label')}</label>
+      <input id="name" class="input" bind:value={form.name} placeholder={$t('groups.name_placeholder')} required />
     </div>
     <div class="form-group">
-      <label class="label" for="desc">Descrição</label>
-      <textarea id="desc" class="input resize-none" rows="2" bind:value={form.description} placeholder="Descrição opcional…"></textarea>
+      <label class="label" for="desc">{$t('groups.desc_label')}</label>
+      <textarea id="desc" class="input resize-none" rows="2" bind:value={form.description} placeholder={$t('groups.desc_placeholder')}></textarea>
     </div>
     <div class="form-group">
-      <label class="label" for="slug">Slug (URL)</label>
-      <input id="slug" class="input" bind:value={form.slug} placeholder="futebol-gqc (gerado automaticamente)" />
-      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Apenas letras, números e hífens</p>
+      <label class="label" for="slug">{$t('groups.slug_label')}</label>
+      <input id="slug" class="input" bind:value={form.slug} placeholder={$t('groups.slug_placeholder')} />
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{$t('groups.slug_hint')}</p>
     </div>
     <div class="flex gap-3 justify-end pt-2">
-      <button type="button" class="btn-secondary" onclick={() => showCreate = false}>Cancelar</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Criando…' : 'Criar Grupo'}</button>
+      <button type="button" class="btn-secondary" onclick={() => showCreate = false}>{$t('groups.cancel')}</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('groups.creating') : $t('groups.create_btn')}</button>
     </div>
   </form>
 </Modal>
@@ -205,7 +210,7 @@
 <ConfirmDialog
   bind:open={confirmOpen}
   message={confirmMessage}
-  confirmLabel="Excluir"
+  confirmLabel={$t('groups.delete_label')}
   onConfirm={confirmAction}
 />
 

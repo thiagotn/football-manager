@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { UserPlus, CheckCircle, Eye, EyeOff, ArrowLeft } from 'lucide-svelte';
   import PhoneInput from '$lib/components/PhoneInput.svelte';
+  import { t } from '$lib/i18n';
 
   const token = $page.params.token;
 
@@ -59,7 +60,7 @@
         step = 'register';
       }
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Erro ao verificar WhatsApp';
+      error = e instanceof ApiError ? e.message : $t('invite.verify_whatsapp_error');
     }
     checking = false;
   }
@@ -81,7 +82,7 @@
       done = true;
       setTimeout(() => goto('/'), 2000);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Erro ao aceitar convite';
+      error = e instanceof ApiError ? e.message : $t('invite.accept_error');
     }
     submitting = false;
   }
@@ -93,7 +94,7 @@
   }
 
   function fmtExpiry(s: string) {
-    return new Date(s).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 </script>
 
@@ -103,7 +104,7 @@
   <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
     <div class="text-center mb-6">
       <div class="text-4xl mb-2">⚽</div>
-      <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Convite para Grupo</h1>
+      <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">{$t('invite.title')}</h1>
     </div>
 
     {#if loading}
@@ -114,34 +115,34 @@
 
     {:else if errorReason === 'expired'}
       <div class="alert-error text-center">
-        <p class="font-semibold">Convite expirado</p>
-        <p class="mt-1 text-xs">Os convites são válidos por 30 minutos. Peça um novo link ao administrador.</p>
+        <p class="font-semibold">{$t('invite.expired_title')}</p>
+        <p class="mt-1 text-xs">{$t('invite.expired_desc')}</p>
       </div>
 
     {:else if errorReason === 'used'}
       <div class="alert-error text-center">
-        <p class="font-semibold">Convite já utilizado</p>
-        <p class="mt-1 text-xs">Este link já foi usado por outra pessoa. Peça um novo convite ao administrador.</p>
+        <p class="font-semibold">{$t('invite.used_title')}</p>
+        <p class="mt-1 text-xs">{$t('invite.used_desc')}</p>
       </div>
 
     {:else if errorReason === 'not_found'}
       <div class="alert-error text-center">
-        <p class="font-semibold">Convite inválido</p>
-        <p class="mt-1 text-xs">Este link não é válido. Verifique se copiou corretamente ou solicite um novo convite.</p>
+        <p class="font-semibold">{$t('invite.invalid_title')}</p>
+        <p class="mt-1 text-xs">{$t('invite.invalid_desc')}</p>
       </div>
 
     {:else if done}
       <div class="text-center py-4">
         <CheckCircle size={48} class="text-green-500 mx-auto mb-3" />
-        <p class="font-semibold text-gray-900 dark:text-gray-100">Você entrou no grupo!</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Redirecionando…</p>
+        <p class="font-semibold text-gray-900 dark:text-gray-100">{$t('invite.joined')}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{$t('invite.redirecting')}</p>
       </div>
 
     {:else if info}
       <div class="alert-info mb-5 text-center">
-        <p class="font-semibold">Você foi convidado para:</p>
+        <p class="font-semibold">{$t('invite.invited_to')}</p>
         <p class="text-lg font-bold text-blue-800 mt-0.5">{info.group_name}</p>
-        <p class="text-xs mt-1 text-blue-600">Expira às {fmtExpiry(info.expires_at)}</p>
+        <p class="text-xs mt-1 text-blue-600">{$t('invite.expires_at').replace('{time}', fmtExpiry(info.expires_at))}</p>
       </div>
 
       {#if error}
@@ -152,12 +153,12 @@
       {#if step === 'whatsapp'}
         <form onsubmit={(e) => { e.preventDefault(); checkWhatsapp(); }} class="space-y-4">
           <div class="form-group">
-            <label class="label" for="wa">Seu WhatsApp *</label>
+            <label class="label" for="wa">{$t('invite.whatsapp_label')}</label>
             <PhoneInput id="wa" bind:value={whatsapp} placeholder="11999990000" required />
-            <p class="text-xs text-gray-400 mt-1">Usado para identificar se você já tem conta.</p>
+            <p class="text-xs text-gray-400 mt-1">{$t('invite.whatsapp_hint')}</p>
           </div>
           <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={checking}>
-            {checking ? 'Verificando…' : 'Continuar'}
+            {checking ? $t('invite.checking') : $t('invite.continue')}
           </button>
         </form>
 
@@ -166,21 +167,21 @@
         <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-4">
           <div class="alert-info text-sm">
             {#if firstName}
-              Olá, <strong>{firstName}</strong>! Você já tem uma conta.
+              {$t('invite.existing_user_with_name').replace('{name}', firstName)}
             {:else}
-              Você já tem uma conta cadastrada.
+              {$t('invite.existing_user')}
             {/if}
-            Entre com sua senha para entrar no grupo.
+            {$t('invite.enter_group')}
           </div>
           <div class="form-group">
             <label class="label" for="wa-ro">WhatsApp</label>
             <input id="wa-ro" class="input bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" value={whatsapp} readonly />
           </div>
           <div class="form-group">
-            <label class="label" for="pw">Senha *</label>
+            <label class="label" for="pw">{$t('invite.password_label')}</label>
             <div class="relative">
               <input id="pw" class="input pr-10" type={showPw ? 'text' : 'password'}
-                bind:value={form.password} placeholder="Sua senha" required />
+                bind:value={form.password} placeholder={$t('invite.password_placeholder')} required />
               <button type="button" onclick={() => showPw = !showPw}
                 class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 {#if showPw}<EyeOff size={16} />{:else}<Eye size={16} />{/if}
@@ -189,31 +190,31 @@
           </div>
           <button type="submit" class="btn-primary w-full justify-center py-2.5" disabled={submitting}>
             <UserPlus size={16} />
-            {submitting ? 'Entrando…' : 'Entrar no Grupo'}
+            {submitting ? $t('invite.joining') : $t('invite.join_group')}
           </button>
           <button type="button" onclick={back}
             class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 mt-1">
-            <ArrowLeft size={13} /> Usar outro número
+            <ArrowLeft size={13} /> {$t('invite.use_other_number')}
           </button>
         </form>
 
       <!-- ETAPA 2b: Novo usuário — cadastro completo -->
       {:else if step === 'register'}
         <form onsubmit={(e) => { e.preventDefault(); accept(); }} class="space-y-3">
-          <p class="text-sm text-gray-500 dark:text-gray-400 -mt-1">Preencha seus dados para criar a conta.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 -mt-1">{$t('invite.fill_data')}</p>
           <div class="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-3 text-xs text-primary-700 dark:text-primary-300 space-y-1">
-            <p class="font-semibold text-primary-800 dark:text-primary-200 mb-1.5">Com o rachao.app você tem:</p>
-            <p>✅ Confirmação de presença com um clique</p>
-            <p>🏆 Votação de destaque pós-partida</p>
-            <p>🎲 Sorteio equilibrado de times por habilidade</p>
-            <p>📲 Compartilhamento fácil via WhatsApp</p>
+            <p class="font-semibold text-primary-800 dark:text-primary-200 mb-1.5">{$t('invite.benefits_title')}</p>
+            <p>{$t('invite.benefit_1')}</p>
+            <p>{$t('invite.benefit_2')}</p>
+            <p>{$t('invite.benefit_3')}</p>
+            <p>{$t('invite.benefit_4')}</p>
           </div>
           <div class="form-group">
-            <label class="label" for="name">Nome completo *</label>
+            <label class="label" for="name">{$t('invite.full_name_label')}</label>
             <input id="name" class="input" bind:value={form.name} placeholder="Seu nome" required minlength="2" />
           </div>
           <div class="form-group">
-            <label class="label" for="nick">Apelido</label>
+            <label class="label" for="nick">{$t('invite.nickname_label')}</label>
             <input id="nick" class="input" bind:value={form.nickname} placeholder="Como te chamam no campo?" />
           </div>
           <div class="form-group">
@@ -221,10 +222,10 @@
             <input id="wa-ro2" class="input bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" value={whatsapp} readonly />
           </div>
           <div class="form-group">
-            <label class="label" for="pw2">Criar senha *</label>
+            <label class="label" for="pw2">{$t('invite.create_password_label')}</label>
             <div class="relative">
               <input id="pw2" class="input pr-10" type={showPw ? 'text' : 'password'}
-                bind:value={form.password} placeholder="Mínimo 6 caracteres" required minlength="6" />
+                bind:value={form.password} placeholder={$t('invite.create_password_placeholder')} required minlength="6" />
               <button type="button" onclick={() => showPw = !showPw}
                 class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 {#if showPw}<EyeOff size={16} />{:else}<Eye size={16} />{/if}
@@ -233,11 +234,11 @@
           </div>
           <button type="submit" class="btn-primary w-full justify-center py-2.5 mt-1" disabled={submitting}>
             <UserPlus size={16} />
-            {submitting ? 'Criando conta…' : 'Criar conta e entrar'}
+            {submitting ? $t('invite.creating') : $t('invite.create_and_join')}
           </button>
           <button type="button" onclick={back}
             class="w-full flex items-center justify-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
-            <ArrowLeft size={13} /> Usar outro número
+            <ArrowLeft size={13} /> {$t('invite.use_other_number')}
           </button>
         </form>
       {/if}

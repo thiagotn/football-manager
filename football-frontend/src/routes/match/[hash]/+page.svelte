@@ -15,9 +15,15 @@
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { relativeDate } from '$lib/utils.js';
   import { goto } from '$app/navigation';
+  import { t, locale } from '$lib/i18n';
 
   const matchHash = $page.params.hash;
-  const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
+  let courtLabels = $derived<Record<string, string>>({
+    campo: $t('matches.court_campo'),
+    sintetico: $t('matches.court_sintetico'),
+    terrao: $t('matches.court_terrao'),
+    quadra: $t('matches.court_quadra'),
+  });
 
   let match: MatchDetail | null = $state(null);
   let loading = $state(true);
@@ -127,7 +133,6 @@
   });
 
   // Polling: atualiza dados a cada 60s enquanto a partida não estiver encerrada.
-  // Guards: tab visível + status ativo (open/in_progress). Para ao ficar closed.
   onMount(() => {
     function refresh() {
       if (document.visibilityState !== 'visible') return;
@@ -159,7 +164,7 @@
     try {
       const result = await teamsApi.generate(match.id);
       teamsData = result;
-      toastSuccess('Times sorteados!');
+      toastSuccess($t('match.teams_generated'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao montar times');
     } finally {
@@ -199,7 +204,11 @@
   }
 
   function fmtDate(d: string) {
-    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    return relativeDate(d, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }, $locale, {
+      today: $t('date.today'),
+      tomorrow: $t('date.tomorrow'),
+      yesterday: $t('date.yesterday'),
+    });
   }
 
   function fmtPricingParts(perMatch: number | string | null, monthly: number | string | null): string[] {
@@ -215,7 +224,7 @@
     try {
       await matchesApi.setAttendance(match.group_id, match.id, $currentPlayer.id, status);
       match = await matchesApi.getByHash(matchHash);
-      toastSuccess(status === 'confirmed' ? '✅ Presença confirmada!' : '❌ Falta registrada');
+      toastSuccess(status === 'confirmed' ? $t('match.confirmed_toast') : $t('match.declined_toast'));
       lastStatus = status;
       responded = true;
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
@@ -228,7 +237,7 @@
     try {
       await matchesApi.setAttendance(match.group_id, match.id, playerId, status);
       match = await matchesApi.getByHash(matchHash);
-      toastSuccess(status === 'confirmed' ? '✅ Presença confirmada!' : '❌ Falta registrada');
+      toastSuccess(status === 'confirmed' ? $t('match.confirmed_toast') : $t('match.declined_toast'));
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro'); }
     adminResponding = null;
   }
@@ -249,16 +258,16 @@
     if (!match) return;
     const confirmedList = match.confirmed_count > 0
       ? confirmed.map((a, i) => `${i + 1} - ${a.player.nickname || a.player.name}`).join('\n')
-      : 'Nenhum confirmado ainda';
+      : $t('match.share_confirmed');
     const declinedList = match.declined_count > 0
       ? declined.map(a => `- ${a.player.nickname || a.player.name}`).join('\n')
-      : 'Nenhum';
+      : $t('match.share_none');
     const pendingList = match.pending_count > 0
       ? pending.map(a => `- ${a.player.nickname || a.player.name}`).join('\n')
-      : 'Nenhum';
+      : $t('match.share_none');
     const confirmedHeader = match.max_players
-      ? `Confirmados (${match.confirmed_count}/${match.max_players}):`
-      : `Confirmados (${match.confirmed_count}):`;
+      ? $t('match.share_confirmed_header_max').replace('{n}', String(match.confirmed_count)).replace('{max}', String(match.max_players))
+      : $t('match.share_confirmed_header').replace('{n}', String(match.confirmed_count));
     const lines = [
       `*Rachão ${match.group_name}*`,
       fmtDateShare(match.match_date),
@@ -267,10 +276,10 @@
       confirmedHeader,
       confirmedList,
       '',
-      `Não vão (${match.declined_count}):`,
+      $t('match.share_declined').replace('{n}', String(match.declined_count)),
       declinedList,
       '',
-      `Pendentes (${match.pending_count}):`,
+      $t('match.share_pending').replace('{n}', String(match.pending_count)),
       pendingList,
       '',
       window.location.href,
@@ -281,7 +290,7 @@
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
-    toastSuccess('Link copiado!');
+    toastSuccess($t('match.link_copied'));
   }
 
   async function toggleStatus(newStatus: 'open' | 'closed') {
@@ -290,7 +299,7 @@
     try {
       await matchesApi.update(match.group_id, match.id, { status: newStatus });
       match = await matchesApi.getByHash(matchHash);
-      toastSuccess(newStatus === 'open' ? 'Partida reaberta!' : 'Partida encerrada.');
+      toastSuccess(newStatus === 'open' ? $t('match.reopened') : $t('match.closed_toast'));
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao atualizar status'); }
     togglingStatus = false;
   }
@@ -314,7 +323,6 @@
     const player = $currentPlayer;
     if (!m || !player || $isAdmin) return;
     if (m.status === 'closed') return;
-    // Only check if user is not already in attendances
     const alreadyInAttendances = m.attendances.some(a => a.player.id === player.id);
     if (alreadyInAttendances) return;
     groupsApi.getMyWaitlistEntry(m.group_id)
@@ -329,14 +337,11 @@
     const joinWaitlist = $page.url.searchParams.get('join_waitlist');
     if (joinWaitlist !== '1') return;
     if (m.status !== 'open') return;
-    // Check if not already a member (not in attendances)
     const alreadyMember = m.attendances.some(a => a.player.id === $currentPlayer?.id);
     if (alreadyMember) return;
-    // Remove the param from URL without navigation
     const url = new URL(window.location.href);
     url.searchParams.delete('join_waitlist');
     history.replaceState({}, '', url.toString());
-    // Open modal
     showWaitlistModal = true;
   });
 
@@ -347,7 +352,7 @@
       const entry = await groupsApi.joinWaitlist(match.group_id, { agreed: data.agreed, intro: data.intro || undefined });
       waitlistEntry = entry;
       showWaitlistModal = false;
-      toastSuccess('Candidatura enviada! Você será notificado quando um admin revisar.');
+      toastSuccess($t('match.waitlist_submitted'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao enviar candidatura');
     } finally {
@@ -370,7 +375,7 @@
   );
 
   function askCloseMatch() {
-    confirmMessage = 'Encerrar esta partida? Os jogadores não poderão mais confirmar presença.';
+    confirmMessage = $t('match.close_confirm');
     confirmAction = () => toggleStatus('closed');
     confirmOpen = true;
   }
@@ -394,7 +399,7 @@
       <button
         onclick={goBack}
         class="mb-3 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-        ← Voltar
+        {$t('match.back')}
       </button>
     {/if}
 
@@ -407,8 +412,8 @@
     {:else if !match}
       <div class="card p-12 text-center">
         <Calendar size={48} class="text-gray-300 mx-auto mb-4" />
-        <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">Rachão não encontrado</h2>
-        <p class="text-gray-400 dark:text-gray-500 mt-2">O link pode estar errado ou o rachão foi removido.</p>
+        <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">{$t('match.not_found_title')}</h2>
+        <p class="text-gray-400 dark:text-gray-500 mt-2">{$t('match.not_found_desc')}</p>
       </div>
 
     {:else}
@@ -436,11 +441,11 @@
               {#if match.status === 'in_progress'}
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
                   <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                  Bola rolando
+                  {$t('match.live')}
                 </span>
               {:else}
                 <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
-                  {match.status === 'open' ? 'Aberta' : 'Encerrada'}
+                  {match.status === 'open' ? $t('match.open') : $t('match.closed')}
                 </span>
               {/if}
               {#if isGroupAdmin}
@@ -449,7 +454,7 @@
                     onclick={() => toggleStatus('open')}
                     disabled={togglingStatus}
                     class="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Reabrir partida">
+                    title={$t('match.reopen_title')}>
                     <LockOpen size={14} />
                   </button>
                 {:else}
@@ -457,7 +462,7 @@
                     onclick={askCloseMatch}
                     disabled={togglingStatus}
                     class="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Encerrar partida">
+                    title={$t('match.close_title')}>
                     <Lock size={14} />
                   </button>
                 {/if}
@@ -482,14 +487,14 @@
           {#if match.court_type || match.players_per_team || match.max_players || match.group_per_match_amount != null || match.group_monthly_amount != null}
             <div class="flex flex-wrap gap-3 mt-2 text-primary-200 text-xs">
               {#if match.court_type}
-                <span class="bg-primary-800/40 rounded px-2 py-0.5">{COURT_LABELS[match.court_type]}</span>
+                <span class="bg-primary-800/40 rounded px-2 py-0.5">{courtLabels[match.court_type]}</span>
               {/if}
               {#if match.players_per_team}
-                <span class="bg-primary-800/40 rounded px-2 py-0.5">{match.players_per_team} na linha + goleiro</span>
+                <span class="bg-primary-800/40 rounded px-2 py-0.5">{$t('match.line_plus_goalkeeper').replace('{n}', String(match.players_per_team))}</span>
               {/if}
               {#if match.max_players}
                 <span class="bg-primary-800/40 rounded px-2 py-0.5 {match.confirmed_count >= match.max_players ? 'text-red-300 font-semibold' : ''}">
-                  {match.confirmed_count}/{match.max_players} vagas
+                  {$t('match.spots').replace('{n}', String(match.confirmed_count)).replace('{max}', String(match.max_players))}
                 </span>
               {/if}
               {#each fmtPricingParts(match.group_per_match_amount, match.group_monthly_amount) as part}
@@ -511,19 +516,19 @@
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1">
               <CheckCircle size={11} />
-              {match.max_players && match.confirmed_count >= match.max_players ? 'Lotada!' : 'Confirmados'}
+              {match.max_players && match.confirmed_count >= match.max_players ? $t('match.full_label') : $t('match.confirmed_label')}
             </p>
           </div>
           <div class="px-3 py-3 text-center">
             <p class="text-xl font-bold text-red-500">{match.declined_count}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1">
-              <XCircle size={11} /> Recusaram
+              <XCircle size={11} /> {$t('match.declined_label')}
             </p>
           </div>
           <div class="px-3 py-3 text-center">
             <p class="text-xl font-bold text-gray-400">{match.pending_count}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-center gap-1">
-              <Clock3 size={11} /> Pendentes
+              <Clock3 size={11} /> {$t('match.pending_label')}
             </p>
           </div>
         </div>
@@ -532,18 +537,18 @@
       <!-- CTA for non-logged users on public groups with open spots -->
       {#if !$isLoggedIn && match.group_is_public && match.status === 'open' && (!match.max_players || match.confirmed_count < match.max_players)}
         <div class="card mb-4 p-5 border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20">
-          <p class="text-sm font-semibold text-primary-800 dark:text-primary-200 mb-1">Quer jogar?</p>
-          <p class="text-xs text-primary-600 dark:text-primary-400 mb-4">Crie sua conta grátis e entre na fila de espera do rachão.</p>
+          <p class="text-sm font-semibold text-primary-800 dark:text-primary-200 mb-1">{$t('match.want_to_play_title')}</p>
+          <p class="text-xs text-primary-600 dark:text-primary-400 mb-4">{$t('match.want_to_play_desc')}</p>
           <div class="flex flex-col sm:flex-row gap-2">
             <a
               href="/register?next=/match/{matchHash}&join_waitlist=1"
               class="btn btn-primary flex-1 justify-center text-sm">
-              Criar conta e participar
+              {$t('match.create_account')}
             </a>
             <a
               href="/login?next=/match/{matchHash}&join_waitlist=1"
               class="btn btn-secondary flex-1 justify-center text-sm">
-              Já tenho conta
+              {$t('match.already_have_account')}
             </a>
           </div>
         </div>
@@ -555,18 +560,18 @@
           {#if waitlistEntry}
             <div class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
               <Clock3 size={15} class="shrink-0" />
-              <span class="font-medium">Candidatura enviada — aguardando aprovação do admin</span>
+              <span class="font-medium">{$t('match.waitlist_pending')}</span>
             </div>
           {:else if isWaitlistFull}
             <div class="text-sm text-red-500 dark:text-red-400 font-medium text-center py-1">
-              ⛔ Rachão lotado — não há vagas disponíveis no momento
+              {$t('match.waitlist_full')}
             </div>
           {:else}
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Você não é membro deste grupo. Solicite uma vaga para o admin.</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{$t('match.not_member')}</p>
             <button
               onclick={() => showWaitlistModal = true}
               class="btn btn-primary w-full justify-center gap-2">
-              <UserPlus size={15} /> Quero jogar!
+              <UserPlus size={15} /> {$t('match.want_to_play')}
             </button>
           {/if}
         </div>
@@ -578,15 +583,15 @@
           onclick={() => showVoteModal = true}
           class="mb-3 w-full card px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors text-left">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-            🏆 Votação pós-partida
+            {$t('match.vote_post_match')}
             <span class="text-xs font-normal px-2 py-0.5 rounded-full
               {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-              {voteStatus.status === 'open' ? 'Aberta' : voteStatus.status === 'closed' ? 'Encerrada' : 'Em breve'}
+              {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
             </span>
           </span>
-          <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">Ver →</span>
+          <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">{$t('match.vote_see')}</span>
         </button>
       {/if}
 
@@ -594,23 +599,23 @@
       {#if voteStatus && match.status === 'closed' && $isAdmin}
         <div class="mb-3 card px-4 py-3 flex items-center justify-between gap-3">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-            🏆 Votação
+            {$t('match.vote_label')}
             <span class="text-xs font-normal px-2 py-0.5 rounded-full
               {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-              {voteStatus.status === 'open' ? 'Aberta' : voteStatus.status === 'closed' ? 'Encerrada' : 'Em breve'}
+              {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
             </span>
           </span>
           <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-            {voteStatus.voter_count}/{voteStatus.eligible_count} votos
+            {$t('match.vote_votes').replace('{voted}', String(voteStatus.voter_count)).replace('{eligible}', String(voteStatus.eligible_count))}
           </span>
           {#if voteStatus.status === 'open'}
             <button
               onclick={closeVotingEarly}
               disabled={closingVote}
               class="btn btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 shrink-0">
-              {closingVote ? 'Encerrando…' : 'Encerrar agora'}
+              {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
             </button>
           {/if}
         </div>
@@ -623,14 +628,14 @@
             <span class="text-xl">⚽</span>
             <div class="flex-1 min-w-0">
               {#if teamsData && teamsData.teams.length > 0}
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Times sorteados</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{teamsData.teams.length} times</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('match.teams_sorted')}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{$t('match.teams_count').replace('{n}', String(teamsData.teams.length))}</p>
               {:else}
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Sorteio de times</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('match.teams_sort')}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {!match.players_per_team ? 'Configure jogadores por time no grupo' :
-                   match.confirmed_count < (match.players_per_team + 1) * 2 ? 'Aguardando confirmações suficientes' :
-                   'Pronto para sortear'}
+                  {!match.players_per_team ? $t('match.teams_configure') :
+                   match.confirmed_count < (match.players_per_team + 1) * 2 ? $t('match.teams_waiting') :
+                   $t('match.teams_ready')}
                 </p>
               {/if}
             </div>
@@ -638,20 +643,20 @@
               {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')}
                 {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
                   <button class="btn-sm btn-secondary gap-1 opacity-50" disabled>
-                    <Shuffle size={12} /> {teamsData ? 'Remontar' : 'Montar'}
+                    <Shuffle size={12} /> {teamsData ? $t('match.teams_rebuild') : $t('match.teams_build')}
                   </button>
                 {:else}
                   <button
                     onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
                     disabled={generatingTeams}
                     class="btn-sm btn-primary gap-1">
-                    <Shuffle size={12} /> {generatingTeams ? 'Sorteando…' : teamsData ? 'Remontar' : 'Montar'}
+                    <Shuffle size={12} /> {generatingTeams ? $t('match.teams_generating') : teamsData ? $t('match.teams_rebuild') : $t('match.teams_build')}
                   </button>
                 {/if}
               {/if}
               {#if teamsData && teamsData.teams.length > 0}
                 <a href="/match/{matchHash}/teams" class="btn-sm btn-secondary gap-1">
-                  <ExternalLink size={12} /> Ver Times
+                  <ExternalLink size={12} /> {$t('match.teams_view')}
                 </a>
               {/if}
             </div>
@@ -667,24 +672,24 @@
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl mx-4 p-5 w-full max-w-sm">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                  <Users size={16} class="text-primary-600" /> Confirme sua presença
+                  <Users size={16} class="text-primary-600" /> {$t('match.rsvp_title')}
                 </h3>
                 <button
                   onclick={() => showRsvpBanner = false}
                   class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  aria-label="Fechar">
+                  aria-label={$t('aria.close')}>
                   <X size={16} />
                 </button>
               </div>
               {#if isFull}
-                <p class="text-sm text-red-500 font-medium text-center py-2">⛔ Partida lotada — {match.max_players} jogadores já confirmados.</p>
+                <p class="text-sm text-red-500 font-medium text-center py-2">{$t('match.rsvp_full').replace('{n}', String(match.max_players))}</p>
               {/if}
               <div class="flex gap-3">
                 <button class="flex-1 btn btn-primary justify-center" onclick={() => { respond('confirmed'); showRsvpBanner = false; }} disabled={responding || isFull}>
-                  <CheckCircle size={16} /> Vou jogar!
+                  <CheckCircle size={16} /> {$t('match.rsvp_confirm')}
                 </button>
                 <button class="flex-1 btn btn-danger justify-center" onclick={() => { respond('declined'); showRsvpBanner = false; }} disabled={responding}>
-                  <XCircle size={16} /> Não posso
+                  <XCircle size={16} /> {$t('match.rsvp_decline')}
                 </button>
               </div>
             </div>
@@ -697,7 +702,7 @@
           <div class="card overflow-hidden">
             <div class="px-4 py-2 bg-green-50 dark:bg-green-900/20 border-b border-gray-100 dark:border-gray-700">
               <h3 class="text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-1.5">
-                <CheckCircle size={14} /> Confirmados ({confirmed.length})
+                <CheckCircle size={14} /> {$t('match.confirmed_section').replace('{n}', String(confirmed.length))}
               </h3>
             </div>
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -715,14 +720,14 @@
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 flex items-center gap-1 shrink-0"
                       onclick={() => respond('declined')}
                       disabled={responding}>
-                      <XCircle size={11} /> Recusar
+                      <XCircle size={11} /> {$t('match.decline_btn')}
                     </button>
                   {:else if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 shrink-0"
                       onclick={() => respondFor(a.player.id, 'declined')}
                       disabled={adminResponding === a.player.id}>
-                      ✕ Recusar
+                      ✕ {$t('match.decline_btn')}
                     </button>
                   {/if}
                 </li>
@@ -736,7 +741,7 @@
           <div class="card overflow-hidden">
             <div class="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-gray-100 dark:border-gray-700">
               <h3 class="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-1.5">
-                <XCircle size={14} /> Recusaram ({declined.length})
+                <XCircle size={14} /> {$t('match.declined_section').replace('{n}', String(declined.length))}
               </h3>
             </div>
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -749,14 +754,14 @@
                       class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1 shrink-0"
                       onclick={() => respond('confirmed')}
                       disabled={responding || isFull}>
-                      <CheckCircle size={11} /> Confirmar
+                      <CheckCircle size={11} /> {$t('match.confirm_btn')}
                     </button>
                   {:else if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40 shrink-0"
                       onclick={() => respondFor(a.player.id, 'confirmed')}
                       disabled={adminResponding === a.player.id}>
-                      ✓ Confirmar
+                      ✓ {$t('match.confirm_btn')}
                     </button>
                   {/if}
                 </li>
@@ -770,7 +775,7 @@
           <div class="card overflow-hidden">
             <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
               <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                <Clock3 size={14} /> Aguardando ({pending.length})
+                <Clock3 size={14} /> {$t('match.pending_section').replace('{n}', String(pending.length))}
               </h3>
             </div>
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -784,13 +789,13 @@
                         class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1"
                         onclick={() => respond('confirmed')}
                         disabled={responding || isFull}>
-                        <CheckCircle size={11} /> Confirmar
+                        <CheckCircle size={11} /> {$t('match.confirm_btn')}
                       </button>
                       <button
                         class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 flex items-center gap-1"
                         onclick={() => respond('declined')}
                         disabled={responding}>
-                        <XCircle size={11} /> Recusar
+                        <XCircle size={11} /> {$t('match.decline_btn')}
                       </button>
                     </div>
                   {:else if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress') && a.player.id !== $currentPlayer?.id}
@@ -799,13 +804,13 @@
                         class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 disabled:opacity-40"
                         onclick={() => respondFor(a.player.id, 'confirmed')}
                         disabled={adminResponding === a.player.id}>
-                        ✓ Confirmar
+                        ✓ {$t('match.confirm_btn')}
                       </button>
                       <button
                         class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40"
                         onclick={() => respondFor(a.player.id, 'declined')}
                         disabled={adminResponding === a.player.id}>
-                        ✕ Recusar
+                        ✕ {$t('match.decline_btn')}
                       </button>
                     </div>
                   {/if}
@@ -820,7 +825,7 @@
           <div class="card overflow-hidden">
             <div class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700">
               <h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
-                <UserPlus size={14} /> Adicionar ao rachão ({absentMembers.length})
+                <UserPlus size={14} /> {$t('match.add_to_match').replace('{n}', String(absentMembers.length))}
               </h3>
             </div>
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -832,13 +837,13 @@
                       class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1"
                       onclick={() => respondFor(mb.player.id, 'confirmed')}
                       disabled={adminResponding === mb.player.id}>
-                      <CheckCircle size={11} /> Confirmar
+                      <CheckCircle size={11} /> {$t('match.confirm_btn')}
                     </button>
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 flex items-center gap-1"
                       onclick={() => respondFor(mb.player.id, 'declined')}
                       disabled={adminResponding === mb.player.id}>
-                      <XCircle size={11} /> Recusar
+                      <XCircle size={11} /> {$t('match.decline_btn')}
                     </button>
                   </div>
                 </li>
@@ -857,10 +862,10 @@
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.558 4.121 1.533 5.853L.036 23.964l6.252-1.639A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-4.998-1.366l-.358-.213-3.712.974 1.014-3.598-.233-.371A9.818 9.818 0 1 1 12 21.818z"/>
           </svg>
-          WhatsApp
+          {$t('match.whatsapp_share')}
         </button>
         <button onclick={copyLink} class="flex-1 btn btn-secondary justify-center gap-2">
-          <Link2 size={16} /> Copiar link
+          <Link2 size={16} /> {$t('match.copy_link')}
         </button>
       </div>
       <div class="mt-4 text-center">
@@ -875,17 +880,17 @@
   <div class="fixed inset-0 z-50 backdrop-blur-sm bg-black/40 flex items-center justify-center px-6">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
       <p class="text-4xl mb-3">🏆</p>
-      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Votação encerrada!</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Confira quem foram os melhores desta partida.</p>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{$t('match.results_promo_title')}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">{$t('match.results_promo_desc')}</p>
       <a
         href="/match/{matchHash}/results"
         class="btn btn-primary w-full justify-center mb-3">
-        Ver resultado completo
+        {$t('match.results_promo_btn')}
       </a>
       <button
         onclick={() => { showResultsPromo = false; }}
         class="btn btn-secondary w-full justify-center">
-        <X size={15} /> Fechar
+        <X size={15} /> {$t('match.results_promo_close')}
       </button>
     </div>
   </div>
@@ -906,18 +911,18 @@
       <!-- Header (sticky) -->
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
         <p class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-          🏆 Votação pós-partida
+          {$t('match.vote_post_match')}
           <span class="text-xs font-normal px-2 py-0.5 rounded-full
             {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
              voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
              'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-            {voteStatus.status === 'open' ? 'Aberta' : voteStatus.status === 'closed' ? 'Encerrada' : 'Em breve'}
+            {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
           </span>
         </p>
         <button
           onclick={() => showVoteModal = false}
           class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-          aria-label="Fechar">
+          aria-label={$t('aria.close')}>
           <X size={18} />
         </button>
       </div>
@@ -930,8 +935,8 @@
             <p class="text-base font-semibold text-gray-700 dark:text-gray-200">{voteStatus.time_label}</p>
             <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
               {voteStatus.vote_open_delay_minutes === 0
-                ? 'Imediatamente após o término da partida'
-                : `${voteStatus.vote_open_delay_minutes} min após o término da partida`}
+                ? $t('match.vote_not_open_soon')
+                : $t('match.vote_not_open_delay').replace('{n}', String(voteStatus.vote_open_delay_minutes))}
             </p>
           </div>
 
@@ -939,14 +944,14 @@
           {#if voteStatus.current_player_voted || voteSubmitted}
             <div class="text-center py-6">
               <p class="text-4xl mb-3">✅</p>
-              <p class="text-base font-semibold text-gray-700 dark:text-gray-200">Voto registrado!</p>
+              <p class="text-base font-semibold text-gray-700 dark:text-gray-200">{$t('match.vote_registered')}</p>
               <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                {voteStatus.voter_count} de {voteStatus.eligible_count} jogador{voteStatus.eligible_count !== 1 ? 'es' : ''} votaram
+                {$t('match.vote_registered_desc').replace('{voted}', String(voteStatus.voter_count)).replace('{eligible}', String(voteStatus.eligible_count)).replace('{plural}', voteStatus.eligible_count !== 1 ? 'es' : '')}
               </p>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Resultados: {voteStatus.time_label}</p>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">{$t('match.vote_results_time').replace('{time}', voteStatus.time_label)}</p>
             </div>
           {:else if voteEligible.length === 0}
-            <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">Nenhum jogador elegível para votar.</p>
+            <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">{$t('match.vote_no_eligible')}</p>
           {:else}
             <VoteForm eligiblePlayers={voteEligible} onsubmit={submitVote} saving={voteSaving} />
           {/if}
@@ -956,14 +961,14 @@
             {#if voteResults.total_voters === 0}
               <div class="text-center py-6">
                 <p class="text-3xl mb-3">😶</p>
-                <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">Ninguém votou nesta partida</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">A votação encerrou sem votos registrados.</p>
+                <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">{$t('match.vote_no_votes')}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{$t('match.vote_no_votes_desc')}</p>
               </div>
             {:else}
               <VoteResults results={voteResults} />
             {/if}
           {:else}
-            <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">Carregando resultados…</p>
+            <p class="text-sm text-center text-gray-400 dark:text-gray-500 py-6">{$t('match.vote_loading_results')}</p>
           {/if}
         {/if}
       </div>
@@ -975,7 +980,7 @@
 <ConfirmDialog
   bind:open={confirmOpen}
   message={confirmMessage}
-  confirmLabel="Encerrar"
+  confirmLabel={$t('match.close_label')}
   danger={true}
   onConfirm={confirmAction}
 />
@@ -992,8 +997,8 @@
 
 <ConfirmDialog
   bind:open={confirmTeamsOpen}
-  message="Remontar os times vai substituir o sorteio atual. Continuar?"
-  confirmLabel="Remontar"
+  message={$t('match.teams_confirm')}
+  confirmLabel={$t('match.teams_confirm_label')}
   danger={false}
   onConfirm={generateTeams}
 />
