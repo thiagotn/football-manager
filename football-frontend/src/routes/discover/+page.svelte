@@ -8,7 +8,7 @@
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { toastError, toastSuccess } from '$lib/stores/toast';
   import { t, locale } from '$lib/i18n';
-  import { untrack } from 'svelte';
+  import { onMount } from 'svelte';
 
   // Filters
   let selectedCourts = $state<string[]>([]);
@@ -67,8 +67,8 @@
     }
   }
 
-  $effect(() => {
-    if ($isLoggedIn && !$isAdmin) untrack(() => load(true));
+  onMount(() => {
+    if ($isLoggedIn && !$isAdmin) load(true);
   });
 
   function toggleCourt(c: string) {
