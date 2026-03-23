@@ -9,6 +9,15 @@ from app.models.group import GroupMemberRole
 from app.schemas.player import PlayerPublic, PlayerMemberView
 
 
+def _validate_iana_timezone(v: str) -> str:
+    import zoneinfo
+    try:
+        zoneinfo.ZoneInfo(v)
+    except (KeyError, Exception):
+        raise ValueError(f"Timezone inválido: {v!r}")
+    return v
+
+
 def _make_slug(name: str) -> str:
     slug = name.lower().strip()
     slug = re.sub(r"[^\w\s-]", "", slug)
@@ -26,6 +35,7 @@ class GroupCreate(BaseModel):
     is_public: bool = True
     vote_open_delay_minutes: int = Field(20, ge=0, le=120)
     vote_duration_hours: int = Field(24, ge=2, le=72)
+    timezone: str = Field("America/Sao_Paulo", max_length=60)
 
     @field_validator("slug", mode="before")
     @classmethod
@@ -33,6 +43,11 @@ class GroupCreate(BaseModel):
         if v:
             return re.sub(r"[^a-z0-9-]", "", v.lower())
         return v
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:
+        return _validate_iana_timezone(v)
 
 
 class GroupUpdate(BaseModel):
@@ -44,6 +59,14 @@ class GroupUpdate(BaseModel):
     is_public: bool | None = None
     vote_open_delay_minutes: int | None = Field(None, ge=0, le=120)
     vote_duration_hours: int | None = Field(None, ge=2, le=72)
+    timezone: str | None = Field(None, max_length=60)
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        return _validate_iana_timezone(v)
 
 
 class GroupMemberResponse(BaseModel):
@@ -70,6 +93,7 @@ class GroupResponse(BaseModel):
     is_public: bool
     vote_open_delay_minutes: int
     vote_duration_hours: int
+    timezone: str = "America/Sao_Paulo"
     created_at: datetime
     updated_at: datetime
 

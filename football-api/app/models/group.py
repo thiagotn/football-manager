@@ -35,6 +35,7 @@ class Group(Base, UUIDMixin, TimestampMixin):
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     vote_open_delay_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
     vote_duration_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=24)
+    timezone: Mapped[str] = mapped_column(String(60), nullable=False, default="America/Sao_Paulo", server_default="America/Sao_Paulo")
 
     # Relationships
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")

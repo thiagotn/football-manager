@@ -27,9 +27,10 @@ async def get_my_matches(db: DB, current: CurrentPlayer):
         PlayerMatchItem(
             **MatchResponse.model_validate(match).model_dump(),
             group_name=group_name,
+            group_timezone=group_timezone,
             my_attendance=my_attendance,
         )
-        for match, group_name, my_attendance in rows
+        for match, group_name, group_timezone, my_attendance in rows
     ]
 
 

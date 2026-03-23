@@ -72,11 +72,13 @@ class MatchDetailResponse(MatchResponse):
     group_per_match_amount: Decimal | None = None
     group_monthly_amount: Decimal | None = None
     group_is_public: bool = True
+    group_timezone: str = "America/Sao_Paulo"
 
 
 class PlayerMatchItem(MatchResponse):
     group_name: str
     my_attendance: AttendanceStatus | None = None
+    group_timezone: str = "America/Sao_Paulo"
 
 
 class SetAttendanceRequest(BaseModel):
@@ -103,3 +105,4 @@ class DiscoverMatchResponse(BaseModel):
     group_name: str
     confirmed_count: int
     spots_left: int | None  # None = sem limite de vagas
+    group_timezone: str = "America/Sao_Paulo"

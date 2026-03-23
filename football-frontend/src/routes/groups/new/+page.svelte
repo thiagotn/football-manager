@@ -3,12 +3,14 @@
   import { groups as groupsApi } from '$lib/api';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { t } from '$lib/i18n';
+  import { TIMEZONE_OPTIONS, TIMEZONE_GROUPS } from '$lib/timezones';
 
   let name = $state('');
   let description = $state('');
   let isPublic = $state(true);
   let voteOpenDelay = $state(20);
   let voteDuration = $state(24);
+  let timezone = $state('America/Sao_Paulo');
   let loading = $state(false);
   let error = $state('');
 
@@ -22,6 +24,7 @@
         is_public: isPublic,
         vote_open_delay_minutes: voteOpenDelay,
         vote_duration_hours: voteDuration,
+        timezone,
       });
       toastSuccess($t('new_group.success'));
       goto(`/groups/${g.id}`);
@@ -63,6 +66,20 @@
           placeholder={$t('new_group.desc_placeholder')}
           maxlength="500"
         ></textarea>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">{$t('new_group.timezone_label')}</label>
+        <p class="text-xs text-gray-500 mb-2">{$t('new_group.timezone_desc')}</p>
+        <select bind:value={timezone} class="input">
+          {#each TIMEZONE_GROUPS as group}
+            <optgroup label={group}>
+              {#each TIMEZONE_OPTIONS.filter(tz => tz.group === group) as tz}
+                <option value={tz.value}>{tz.label} ({tz.offset})</option>
+              {/each}
+            </optgroup>
+          {/each}
+        </select>
       </div>
 
       <div class="border-t border-gray-100 pt-4">

@@ -39,8 +39,10 @@ def _make_group(name: str = "Grupo Teste") -> MagicMock:
     g.per_match_amount = None
     g.monthly_amount = None
     g.recurrence_enabled = False
+    g.is_public = True
     g.vote_open_delay_minutes = 20
     g.vote_duration_hours = 24
+    g.timezone = "America/Sao_Paulo"
     g.created_at = "2026-01-01T00:00:00"
     g.updated_at = "2026-01-01T00:00:00"
     return g

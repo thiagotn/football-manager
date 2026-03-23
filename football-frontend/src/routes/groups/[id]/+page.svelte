@@ -17,6 +17,7 @@
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
   import { relativeDate } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
+  import { TIMEZONE_OPTIONS, TIMEZONE_GROUPS } from '$lib/timezones';
 
   const groupId = $page.params.id;
 
@@ -137,7 +138,7 @@
   let allPlayers: Player[] = $state([]);
   let addMemberId = $state('');
 
-  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, vote_open_delay_minutes: 20, vote_duration_hours: 24 });
+  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, vote_open_delay_minutes: 20, vote_duration_hours: 24, timezone: 'America/Sao_Paulo' });
 
   // Waitlist
   let waitlistEntries = $state<WaitlistEntry[]>([]);
@@ -252,6 +253,7 @@
       is_public: group.is_public,
       vote_open_delay_minutes: group.vote_open_delay_minutes ?? 20,
       vote_duration_hours: group.vote_duration_hours ?? 24,
+      timezone: group.timezone ?? 'America/Sao_Paulo',
     };
     showEditGroup = true;
   }
@@ -268,6 +270,7 @@
         is_public: editForm.is_public,
         vote_open_delay_minutes: editForm.vote_open_delay_minutes,
         vote_duration_hours: editForm.vote_duration_hours,
+        timezone: editForm.timezone,
       });
       group = await groupsApi.get(groupId);
       showEditGroup = false;
@@ -1433,6 +1436,19 @@
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         Quando ativo, qualquer pessoa com o link pode solicitar entrada no próximo rachão via lista de espera.
       </p>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+      <label class="label" for="egtimezone">{$t('new_group.timezone_label')}</label>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">{$t('new_group.timezone_desc')}</p>
+      <select id="egtimezone" class="input" bind:value={editForm.timezone}>
+        {#each TIMEZONE_GROUPS as tzGroup}
+          <optgroup label={tzGroup}>
+            {#each TIMEZONE_OPTIONS.filter(tz => tz.group === tzGroup) as tz}
+              <option value={tz.value}>{tz.label} ({tz.offset})</option>
+            {/each}
+          </optgroup>
+        {/each}
+      </select>
     </div>
     <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
       <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{$t('new_group.vote_settings')}</p>

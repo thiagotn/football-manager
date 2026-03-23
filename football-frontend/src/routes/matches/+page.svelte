@@ -7,6 +7,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { relativeDate } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
+  import { formatMatchTimeRange } from '$lib/timezoneUtils';
 
   let allMatches = $state<PlayerMatchItem[]>([]);
   let loading = $state(true);
@@ -48,17 +49,6 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  function fmtTimeRange(start: string, end: string | null): string {
-    const s = start.slice(0, 5);
-    if (!end) return s;
-    const e = end.slice(0, 5);
-    const [sh, sm] = s.split(':').map(Number);
-    const [eh, em] = e.split(':').map(Number);
-    const mins = (eh * 60 + em) - (sh * 60 + sm);
-    if (mins <= 0) return `${s} – ${e}`;
-    const h = Math.floor(mins / 60), m = mins % 60;
-    return `${s} – ${e} (${h > 0 ? `${h}h` : ''}${m > 0 ? `${m}min` : ''})`;
-  }
 
   let courtLabels = $derived<Record<string, string>>({
     campo: $t('matches.court_campo'),
@@ -148,7 +138,7 @@
 
                 <!-- Time + Location -->
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  <span class="flex items-center gap-1 whitespace-nowrap"><Clock size={12} />{fmtTimeRange(m.start_time, m.end_time)}</span>
+                  <span class="flex items-center gap-1 whitespace-nowrap"><Clock size={12} />{formatMatchTimeRange(m.start_time, m.end_time, m.group_timezone)}</span>
                   <span class="flex items-center gap-1 min-w-0"><MapPin size={12} /><span class="truncate">{m.location}</span></span>
                 </div>
 

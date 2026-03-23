@@ -57,6 +57,7 @@ def _make_match(hash_: str = "abc123", with_admin: bool = False) -> MagicMock:
     m.group.name = "Pelada"
     m.group.per_match_amount = None
     m.group.monthly_amount = None
+    m.group.timezone = "America/Sao_Paulo"
 
     attendances = [_make_attendance(AttendanceStatus.CONFIRMED)]
     if with_admin:

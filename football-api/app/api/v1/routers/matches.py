@@ -69,6 +69,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         group_per_match_amount=match.group.per_match_amount if match.group else None,
         group_monthly_amount=match.group.monthly_amount if match.group else None,
         group_is_public=match.group.is_public if match.group else True,
+        group_timezone=match.group.timezone if match.group else "America/Sao_Paulo",
     )
 
 
@@ -119,6 +120,7 @@ async def discover_matches(
             group_name=row["group_name"],
             confirmed_count=confirmed,
             spots_left=(m.max_players - confirmed) if m.max_players else None,
+            group_timezone=row.get("group_timezone", "America/Sao_Paulo"),
         ))
     return result
 

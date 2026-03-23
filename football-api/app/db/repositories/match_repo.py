@@ -61,18 +61,18 @@ class MatchRepository(BaseRepository[Match]):
         )
         return list(result.scalars().all())
 
-    async def get_player_matches(self, player_id: UUID) -> list[tuple[Match, str, AttendanceStatus | None]]:
-        """All matches from groups the player belongs to, with group name and their attendance status."""
+    async def get_player_matches(self, player_id: UUID) -> list[tuple[Match, str, str, AttendanceStatus | None]]:
+        """All matches from groups the player belongs to, with group name, group timezone and their attendance status."""
         from app.models.group import Group
         stmt = (
-            select(Match, Group.name.label("group_name"), Attendance.status.label("my_attendance"))
+            select(Match, Group.name.label("group_name"), Group.timezone.label("group_timezone"), Attendance.status.label("my_attendance"))
             .join(Group, Match.group_id == Group.id)
             .join(GroupMember, and_(GroupMember.group_id == Match.group_id, GroupMember.player_id == player_id))
             .outerjoin(Attendance, and_(Attendance.match_id == Match.id, Attendance.player_id == player_id))
             .order_by(Match.match_date.desc(), Match.start_time.desc())
         )
         result = await self.session.execute(stmt)
-        return [(row.Match, row.group_name, row.my_attendance) for row in result.all()]
+        return [(row.Match, row.group_name, row.group_timezone, row.my_attendance) for row in result.all()]
 
     async def get_attendance(self, match_id: UUID, player_id: UUID) -> Attendance | None:
         result = await self.session.execute(
@@ -249,6 +249,7 @@ class MatchRepository(BaseRepository[Match]):
             select(
                 Match,
                 Group.name.label("group_name"),
+                Group.timezone.label("group_timezone"),
                 func.coalesce(confirmed_sub.c.cnt, 0).label("confirmed_count"),
             )
             .join(Group, Group.id == Match.group_id)
@@ -279,7 +280,7 @@ class MatchRepository(BaseRepository[Match]):
 
         result = await self.session.execute(stmt)
         return [
-            {"match": row.Match, "group_name": row.group_name, "confirmed_count": row.confirmed_count}
+            {"match": row.Match, "group_name": row.group_name, "group_timezone": row.group_timezone, "confirmed_count": row.confirmed_count}
             for row in result.all()
         ]
 

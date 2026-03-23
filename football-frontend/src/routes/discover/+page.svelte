@@ -9,6 +9,7 @@
   import { toastError, toastSuccess } from '$lib/stores/toast';
   import { t, locale } from '$lib/i18n';
   import { untrack } from 'svelte';
+  import { formatMatchTimeRange } from '$lib/timezoneUtils';
 
   // Filters
   let selectedCourts = $state<string[]>([]);
@@ -268,7 +269,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5">
                   <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <Clock size={11} />{dm.start_time.slice(0,5)}{dm.end_time ? ` – ${dm.end_time.slice(0,5)}` : ''}
+                    <Clock size={11} />{formatMatchTimeRange(dm.start_time, dm.end_time, dm.group_timezone)}
                   </span>
                   <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 min-w-0">
                     <MapPin size={11} /><span class="truncate">{dm.location}</span>

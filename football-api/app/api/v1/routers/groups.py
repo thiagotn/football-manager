@@ -99,6 +99,7 @@ async def create_group(body: GroupCreate, db: DB, current: CurrentPlayer):
         is_public=body.is_public,
         vote_open_delay_minutes=body.vote_open_delay_minutes,
         vote_duration_hours=body.vote_duration_hours,
+        timezone=body.timezone,
     )
 
     # Creator becomes group admin
@@ -143,6 +144,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         is_public=group.is_public,
         vote_open_delay_minutes=group.vote_open_delay_minutes,
         vote_duration_hours=group.vote_duration_hours,
+        timezone=group.timezone,
         created_at=group.created_at,
         updated_at=group.updated_at,
         members=[_member_response(m, caller_is_admin) for m in group.members],

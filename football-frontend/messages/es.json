@@ -785,6 +785,8 @@
   "new_group.vote_24h": "24 horas (predeterminado)",
   "new_group.vote_48h": "48 horas",
   "new_group.vote_72h": "72 horas",
+  "new_group.timezone_label": "Zona horaria",
+  "new_group.timezone_desc": "Define la zona horaria de los partidos de este grupo",
   "new_group.cancel": "Cancelar",
   "new_group.creating": "Creando...",
   "new_group.create": "Crear Grupo",

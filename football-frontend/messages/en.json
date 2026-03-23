@@ -785,6 +785,8 @@
   "new_group.vote_24h": "24 hours (default)",
   "new_group.vote_48h": "48 hours",
   "new_group.vote_72h": "72 hours",
+  "new_group.timezone_label": "Time zone",
+  "new_group.timezone_desc": "Sets the time zone for this group's matches",
   "new_group.cancel": "Cancel",
   "new_group.creating": "Creating...",
   "new_group.create": "Create Group",

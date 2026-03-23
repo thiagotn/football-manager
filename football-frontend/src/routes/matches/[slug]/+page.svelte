@@ -4,6 +4,7 @@
   import { matches as matchesApi } from '$lib/api';
   import { authStore, isLoggedIn, currentPlayer } from '$lib/stores/auth';
   import { formatDate, formatTime, whatsappLink } from '$lib/utils.js';
+  import { formatMatchTimeRange } from '$lib/timezoneUtils';
 
   const slug = $page.params.slug;
   let match = null;
@@ -111,7 +112,7 @@
           </div>
           <div>
             <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Horário</p>
-            <p class="font-medium">{formatTime(match.start_time)}{match.end_time ? ` – ${formatTime(match.end_time)}` : ''}</p>
+            <p class="font-medium">{formatMatchTimeRange(match.start_time, match.end_time, match.group_timezone)}</p>
           </div>
           <div class="col-span-2 sm:col-span-1">
             <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Local</p>
