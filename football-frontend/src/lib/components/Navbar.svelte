@@ -3,12 +3,20 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
   import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
-  import { t } from '$lib/i18n';
+  import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from '$lib/i18n';
+
+  const LANG_LABELS: Record<Locale, { full: string; flag: string }> = {
+    'pt-BR': { full: 'Português (BR)', flag: '🇧🇷' },
+    'en':    { full: 'English',        flag: '🇺🇸' },
+    'es':    { full: 'Español',        flag: '🇪🇸' },
+  };
+
+  let showLangModal = $state(false);
 
   function logout() {
     authStore.logout();
@@ -30,7 +38,7 @@
 
   let menuOpen = $state(false);
 
-  function closeMenu() { menuOpen = false; }
+  function closeMenu() { menuOpen = false; showLangModal = false; }
 
   // Fecha ao navegar
   $effect(() => {
@@ -38,11 +46,29 @@
     menuOpen = false;
   });
 
-  // Trava scroll do body quando o drawer está aberto
+  // Trava scroll do body quando o drawer está aberto (iOS-safe: position fixed)
   $effect(() => {
     if (typeof document === 'undefined') return;
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    const locked = menuOpen || showLangModal;
+    if (locked) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      const top = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (top) window.scrollTo(0, -parseInt(top));
+    }
+    return () => {
+      const top = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (top) window.scrollTo(0, -parseInt(top));
+    };
   });
 
   function getBackHref(pathname: string): string | null {
@@ -192,7 +218,14 @@
             {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
           <HelpCircle size={18} /> {$t('nav.faq')}
         </a>
-        <LanguageSwitcher variant="drawer" />
+        <button
+          onclick={() => showLangModal = true}
+          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors w-full text-left text-primary-100 hover:bg-primary-700"
+          aria-label="Language / Idioma"
+        >
+          <Globe size={18} />
+          <span>{LANG_LABELS[$locale].flag} {LANG_LABELS[$locale].full}</span>
+        </button>
         <PwaInstallButton />
       </div>
     </div>
@@ -239,9 +272,52 @@
   </div>
 {/if}
 
+<!-- Bottom sheet de seleção de idioma (mobile) -->
+{#if showLangModal}
+  <button
+    class="fixed inset-0 z-[60] bg-black/60"
+    onclick={() => showLangModal = false}
+    aria-label={$t('aria.close')}
+  ></button>
+  <div
+    class="fixed bottom-0 left-0 right-0 z-[60] bg-primary-800 rounded-t-2xl shadow-2xl"
+    style="animation: slideInUp 0.2s ease-out; padding-bottom: env(safe-area-inset-bottom);"
+  >
+    <div class="flex items-center justify-between px-4 py-4 border-b border-primary-700">
+      <p class="text-sm font-semibold text-white flex items-center gap-2">
+        <Globe size={16} class="text-primary-300" /> Language / Idioma
+      </p>
+      <button onclick={() => showLangModal = false} class="p-1.5 rounded-lg hover:bg-primary-700 transition-colors" aria-label={$t('aria.close')}>
+        <X size={18} class="text-primary-200" />
+      </button>
+    </div>
+    <div class="px-3 py-3 space-y-1">
+      {#each SUPPORTED_LOCALES as l}
+        <button
+          onclick={() => { setLocale(l); showLangModal = false; }}
+          class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors
+            {$locale === l
+              ? 'bg-primary-900 text-white'
+              : 'text-primary-100 hover:bg-primary-700'}"
+        >
+          <span class="text-xl">{LANG_LABELS[l].flag}</span>
+          <span>{LANG_LABELS[l].full}</span>
+          {#if $locale === l}
+            <span class="ml-auto text-primary-400 text-base">✓</span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  </div>
+{/if}
+
 <style>
   @keyframes slideInRight {
     from { transform: translateX(100%); }
     to   { transform: translateX(0); }
+  }
+  @keyframes slideInUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
   }
 </style>
