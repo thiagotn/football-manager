@@ -547,9 +547,14 @@ async def review_waitlist_entry(
                 group_id, entry.player_id, candidate_player.nickname or candidate_player.name
             )
 
-        # Confirm attendance
+        # Confirm attendance for the waitlist match and add as pending to all other active matches
         m_repo = MatchRepository(db)
         await m_repo.upsert_attendance(match.id, entry.player_id, AttendanceStatus.CONFIRMED)
+        for active in await m_repo.get_active_matches(group_id):
+            if active.id != match.id:
+                existing_att = await m_repo.get_attendance(active.id, entry.player_id)
+                if not existing_att:
+                    await m_repo.create_pending_attendances(active.id, [entry.player_id])
 
         await w_repo.accept(entry, current.id)
 
