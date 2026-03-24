@@ -70,6 +70,7 @@
   "login.cancel": "Cancel",
   "login.pw_mismatch": "Passwords do not match.",
   "login.pw_too_short": "Password must be at least 6 characters.",
+  "auth.same_password_error": "The new password cannot be the same as your current password.",
   "login.reset_success": "Password reset! Log in with the new password.",
   "login.connect_error": "Connection error",
 

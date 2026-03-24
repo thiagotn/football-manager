@@ -10,7 +10,10 @@ Regras de negócio cobertas:
 - change_password com senha atual correta → 204
 - change_password com senha atual errada → 401
 - change_password sem credenciais → 422
+- change_password com mesma senha (via current_password) → 422 SAME_PASSWORD
+- change_password com mesma senha (via otp_token) → 422 SAME_PASSWORD
 - forgot_password/reset com token inválido → 401
+- forgot_password/reset com mesma senha → 422 SAME_PASSWORD
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -189,6 +192,7 @@ async def test_change_password_no_credentials_returns_422(api_client):
 @pytest.mark.asyncio
 async def test_change_password_with_valid_otp_token(api_client, player_user, mocker):
     player_user.whatsapp = "+5511999990001"
+    player_user.password_hash = hash_password("senha_anterior")
     otp_token = create_otp_token("+5511999990001")
 
     db_player = MagicMock()
@@ -213,6 +217,37 @@ async def test_change_password_with_invalid_otp_token_returns_401(api_client):
     )
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_change_password_same_password_via_current_returns_422(api_client, player_user, mocker):
+    """Trocar senha pela mesma (via current_password) deve retornar 422 com SAME_PASSWORD."""
+    player_user.password_hash = hash_password("senha_atual")
+    player_user.whatsapp = "+5511999990001"
+
+    response = await api_client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "senha_atual", "new_password": "senha_atual"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "SAME_PASSWORD"
+
+
+@pytest.mark.asyncio
+async def test_change_password_same_password_via_otp_returns_422(api_client, player_user, mocker):
+    """Trocar senha pela mesma (via otp_token) deve retornar 422 com SAME_PASSWORD."""
+    player_user.password_hash = hash_password("senha_atual")
+    player_user.whatsapp = "+5511999990001"
+    otp_token = create_otp_token("+5511999990001")
+
+    response = await api_client.post(
+        "/api/v1/auth/change-password",
+        json={"otp_token": otp_token, "new_password": "senha_atual"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "SAME_PASSWORD"
 
 
 # ── forgot-password/reset ─────────────────────────────────────────────────────
@@ -245,3 +280,25 @@ async def test_forgot_password_reset_valid_token(api_client, mocker):
     )
 
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_reset_same_password_returns_422(api_client, mocker):
+    """Redefinir com a mesma senha atual deve retornar 422 com SAME_PASSWORD."""
+    whatsapp = "+5511999990001"
+    otp_token = create_otp_token(whatsapp)
+    player = _make_player(whatsapp=whatsapp)
+    # player já tem hash de "senha123" via _make_player
+
+    mocker.patch(
+        "app.api.v1.routers.auth.PlayerRepository.get_by_whatsapp",
+        new=AsyncMock(return_value=player),
+    )
+
+    response = await api_client.post(
+        "/api/v1/auth/forgot-password/reset",
+        json={"whatsapp": whatsapp, "otp_token": otp_token, "new_password": "senha123"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "SAME_PASSWORD"

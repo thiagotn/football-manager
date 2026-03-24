@@ -176,6 +176,12 @@ async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
     if not player:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
 
+    if verify_password(body.new_password, player.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="SAME_PASSWORD",
+        )
+
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
     await db.flush()
@@ -221,6 +227,12 @@ async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentP
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Informe a senha atual ou verifique via SMS.",
+        )
+
+    if verify_password(body.new_password, current.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="SAME_PASSWORD",
         )
 
     repo = PlayerRepository(db)

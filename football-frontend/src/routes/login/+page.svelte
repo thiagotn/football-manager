@@ -129,7 +129,11 @@
       toastSuccess($t('login.reset_success'));
       cancelForgot();
     } catch (e) {
-      forgotError = e instanceof ApiError ? e.message : $t('login.connect_error');
+      if (e instanceof ApiError && e.message === 'SAME_PASSWORD') {
+        forgotError = $t('auth.same_password_error');
+      } else {
+        forgotError = e instanceof ApiError ? e.message : $t('login.connect_error');
+      }
     }
     forgotLoading = false;
   }

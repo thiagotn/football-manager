@@ -201,17 +201,26 @@
     if (otpCountdownTimer) clearInterval(otpCountdownTimer);
   }
 
+  let pwServerError = $state('');
+
   let validationError = $derived(
     newPw && confirmPw && newPw !== confirmPw ? $t('profile.pw_mismatch') :
     newPw && newPw.length < 6 ? $t('profile.pw_too_short') :
     null
   );
 
+  $effect(() => {
+    // Limpa erro de servidor quando usuário altera a nova senha
+    newPw;
+    pwServerError = '';
+  });
+
   async function submit() {
     if (validationError || !newPw) return;
     if (pwMode === 'normal' && !currentPw) return;
     if (pwMode === 'otp-verified' && !otpToken) return;
     saving = true;
+    pwServerError = '';
     try {
       if (pwMode === 'otp-verified') {
         await authApi.changePassword(newPw, { otp_token: otpToken });
@@ -222,7 +231,11 @@
       toastSuccess($t('profile.pw_changed'));
       goto('/');
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : 'Erro ao alterar senha');
+      if (e instanceof ApiError && e.message === 'SAME_PASSWORD') {
+        pwServerError = $t('auth.same_password_error');
+      } else {
+        toastError(e instanceof ApiError ? e.message : 'Erro ao alterar senha');
+      }
     }
     saving = false;
   }
@@ -478,6 +491,9 @@
             {#if validationError}
               <div class="alert-error text-sm">{validationError}</div>
             {/if}
+            {#if pwServerError}
+              <div class="alert-error text-sm">{pwServerError}</div>
+            {/if}
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5"
               disabled={saving || !!validationError || !currentPw || !newPw || !confirmPw}>
@@ -554,6 +570,9 @@
 
             {#if validationError}
               <div class="alert-error text-sm">{validationError}</div>
+            {/if}
+            {#if pwServerError}
+              <div class="alert-error text-sm">{pwServerError}</div>
             {/if}
 
             <button type="submit" class="btn-primary w-full justify-center py-2.5"

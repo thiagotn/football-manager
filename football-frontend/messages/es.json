@@ -70,6 +70,7 @@
   "login.cancel": "Cancelar",
   "login.pw_mismatch": "Las contraseñas no coinciden.",
   "login.pw_too_short": "La contraseña debe tener al menos 6 caracteres.",
+  "auth.same_password_error": "La nueva contraseña no puede ser igual a la contraseña actual.",
   "login.reset_success": "¡Contraseña restablecida! Inicia sesión con la nueva contraseña.",
   "login.connect_error": "Error de conexión",
 
