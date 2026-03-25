@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | Aguardando aprovação |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 
 ---

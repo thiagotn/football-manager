@@ -1,6 +1,6 @@
 # PRD — Observabilidade (rachao.app)
 
-**Status:** Implementado (pendente: bot Telegram)
+**Status:** ✅ Implementado — Março 2026
 **Data:** 2026-03-17
 **Atualizado:** 2026-03-18
 **Contexto:** VPS único (Hostinger KVM1, 1 vCPU, 4 GB RAM, 50 GB disco, Ubuntu 24.04 LTS), Docker Compose + Traefik.
@@ -283,7 +283,7 @@ sed -i 's|admin:\$apr1\$.*|admin:HASH_GERADO|' /opt/football-manager/traefik-dyn
 **Configurar Uptime Kuma** (primeiro acesso — criar conta admin):
 - [x] Adicionar monitor: `https://rachao.app` — tipo HTTPS, intervalo 60s
 - [x] Adicionar monitor: `https://api.rachao.app/api/v1/health` — tipo HTTPS, intervalo 60s
-- [ ] **PENDENTE:** Configurar notificação: Telegram (criar bot via @BotFather, gratuito)
+- [x] Configurar notificação: Telegram (bot via @BotFather)
 
 **Importar dashboards no Grafana** (Dashboards → Import):
 - [x] ID `1860` — Node Exporter Full (métricas do host)
@@ -291,7 +291,7 @@ sed -i 's|admin:\$apr1\$.*|admin:HASH_GERADO|' /opt/football-manager/traefik-dyn
 - [x] ID `22676` — FastAPI Observability (latência e erros por rota) _(dados disponíveis após próximo deploy da API)_
 
 **Configurar alertas no Grafana** (Alerting → Alert rules):
-- [ ] RAM > 85% por 5 minutos
-- [ ] Disco > 80%
-- [ ] CPU > 90% por 10 minutos
-- [ ] Taxa de erros 5xx > 1% das requisições por 5 minutos
+- [x] RAM > 85% por 5 minutos
+- [x] Disco > 80%
+- [x] CPU > 90% por 10 minutos
+- [x] Taxa de erros 5xx > 1% das requisições por 5 minutos

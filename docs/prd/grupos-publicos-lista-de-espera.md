@@ -1,8 +1,8 @@
 # PRD — Grupos Públicos e Lista de Espera
 
-**Status:** Proposta
+**Status:** ✅ Implementado — Março 2026
 **Data:** 2026-03-19
-**Atualizado:** 2026-03-19
+**Atualizado:** 2026-03-25
 **Contexto:** Hoje todos os grupos são fechados — só participam membros convidados pelo admin. Esta feature adiciona visibilidade pública opcional e um mecanismo de entrada por lista de espera, permitindo crescimento orgânico dos grupos.
 
 ---
@@ -482,10 +482,10 @@ GET /api/v1/matches/discover
 - [x] Membro/admin não vê botão "Quero jogar!" (apenas não-membros devem ver)
 - [x] Usuário não logado vê CTA na página da partida de grupo público
 - [x] Link "Criar conta e participar" contém `?join_waitlist=1` e `?next=` corretos
-- [ ] Jogador logado → entra na fila via página do grupo → admin aceita → aparece como confirmado
-- [ ] Jogador logado → entra na fila via página da partida → admin rejeita → não adicionado ao grupo
-- [ ] Jogador sem conta → acessa link da partida → vê CTA → cadastra → modal abre automaticamente → entra na fila
-- [ ] Jogador com conta sem login → acessa link da partida → vê CTA → faz login → modal abre automaticamente
-- [ ] Tentativa de entrar na fila em grupo fechado → botão não exibido
-- [ ] Tentativa de aceitar candidato com rachão lotado → erro claro
-- [ ] Partida encerrada ao retornar pós-cadastro → modal não abre, mensagem informativa exibida
+- [x] Jogador logado → entra na fila via página do grupo → admin aceita → aparece como confirmado
+- [x] Jogador logado → entra na fila via página da partida → admin rejeita → não adicionado ao grupo
+- [x] Jogador sem conta → acessa link da partida → vê CTA → cadastra → modal abre automaticamente → entra na fila
+- [x] Jogador com conta sem login → acessa link da partida → vê CTA → faz login → modal abre automaticamente
+- [x] Tentativa de entrar na fila em grupo fechado → botão não exibido
+- [x] Tentativa de aceitar candidato com rachão lotado → erro claro
+- [x] Partida encerrada ao retornar pós-cadastro → modal não abre, mensagem informativa exibida

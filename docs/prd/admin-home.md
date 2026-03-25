@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.1 |
-| **Status** | Planejado |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -253,20 +253,20 @@ Novo endpoint de listagem global de grupos. Requer `players.role = 'admin'`.
 
 ## 7. Critérios de Aceitação
 
-- [ ] Acesso a `/admin` por usuário não-admin redireciona para `/dashboard`
-- [ ] Acesso a `/dashboard` por super admin redireciona para `/admin`
-- [ ] Os 5 big numbers de plataforma são carregados em uma única requisição (`/admin/stats`)
-- [ ] Cards de Rachões, Grupos, Jogadores e Avaliações são clicáveis e navegam para as listagens corretas
-- [ ] Card "Avaliações" navega para `/admin/reviews`
-- [ ] Card de Horas não é clicável
-- [ ] Horas exibidas no formato `Xh Ymin`; zero exibe "—"
-- [ ] "Meus Grupos" não aparece em `/admin`
-- [ ] "Registros recentes" não aparece em `/admin`
-- [ ] Novos Cadastros exibe 3 contadores (Total, 7 dias, 30 dias) sem lista de jogadores
-- [ ] `/admin/matches` lista todos os rachões da plataforma com filtro por status
-- [ ] `/admin/groups` lista todos os grupos da plataforma
-- [ ] Colunas secundárias ocultas em mobile nas listagens
-- [ ] Loading skeleton nos cards enquanto os dados carregam
+- [x] Acesso a `/admin` por usuário não-admin redireciona para `/dashboard`
+- [x] Acesso a `/dashboard` por super admin redireciona para `/admin`
+- [x] Os 5 big numbers de plataforma são carregados em uma única requisição (`/admin/stats`)
+- [x] Cards de Rachões, Grupos, Jogadores e Avaliações são clicáveis e navegam para as listagens corretas
+- [x] Card "Avaliações" navega para `/admin/reviews`
+- [x] Card de Horas não é clicável
+- [x] Horas exibidas no formato `Xh Ymin`; zero exibe "—"
+- [x] "Meus Grupos" não aparece em `/admin`
+- [x] "Registros recentes" não aparece em `/admin`
+- [x] Novos Cadastros exibe 3 contadores (Total, 7 dias, 30 dias) sem lista de jogadores
+- [x] `/admin/matches` lista todos os rachões da plataforma com filtro por status
+- [x] `/admin/groups` lista todos os grupos da plataforma
+- [x] Colunas secundárias ocultas em mobile nas listagens
+- [x] Loading skeleton nos cards enquanto os dados carregam
 
 ---
 

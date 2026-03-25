@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.2 |
-| **Status** | Proposta — aguardando aprovação |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -325,18 +325,18 @@ O upsell ocorre ao tentar navegar para períodos além do limite do plano:
 
 ## 11. Critérios de Aceitação
 
-- [ ] Admin configura o modelo de cobrança do grupo
-- [ ] Período do mês atual é criado automaticamente ao acessar o Financeiro
-- [ ] Todos os membros ativos aparecem no período com status "Pendente"
-- [ ] Admin seleciona o tipo (Mensal ou Avulso) ao marcar um membro como pago
-- [ ] `amount_due` é preenchido automaticamente com o valor da config do grupo conforme o tipo selecionado
-- [ ] `paid_at` é preenchido automaticamente ao marcar como pago e limpo ao reverter
-- [ ] Resumo considera apenas membros com `status = paid` no cálculo do "Recebido"
-- [ ] Todos os membros do grupo visualizam a tela (somente admin edita)
-- [ ] Resumo (esperado / recebido / pendente / adimplência) é calculado corretamente
-- [ ] Admin e membros navegam entre meses anteriores
-- [ ] Membro removido do grupo mantém histórico com nome preservado
-- [ ] Limite de histórico por plano é respeitado com mensagem de upsell
+- [x] Admin configura o modelo de cobrança do grupo
+- [x] Período do mês atual é criado automaticamente ao acessar o Financeiro
+- [x] Todos os membros ativos aparecem no período com status "Pendente"
+- [x] Admin seleciona o tipo (Mensal ou Avulso) ao marcar um membro como pago
+- [x] `amount_due` é preenchido automaticamente com o valor da config do grupo conforme o tipo selecionado
+- [x] `paid_at` é preenchido automaticamente ao marcar como pago e limpo ao reverter
+- [x] Resumo considera apenas membros com `status = paid` no cálculo do "Recebido"
+- [x] Todos os membros do grupo visualizam a tela (somente admin edita)
+- [x] Resumo (esperado / recebido / pendente / adimplência) é calculado corretamente
+- [x] Admin e membros navegam entre meses anteriores
+- [x] Membro removido do grupo mantém histórico com nome preservado
+- [x] Limite de histórico por plano é respeitado com mensagem de upsell
 
 ---
 

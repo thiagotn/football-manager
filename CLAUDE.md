@@ -74,21 +74,155 @@ Páginas de configuração/detalhe com múltiplas seções devem usar grid two-c
 
 ---
 
-## Backend — Padrões
+## Frontend — i18n
+
+### Fluxo obrigatório ao adicionar qualquer texto visível
+
+Sempre que adicionar ou alterar texto visível ao usuário:
+
+1. Adicionar a chave em **todos os 3 arquivos**:
+   - `football-frontend/messages/pt-BR.json`
+   - `football-frontend/messages/en.json`
+   - `football-frontend/messages/es.json`
+2. Usar `$t('chave')` no template — nunca string literal
+
+```svelte
+<!-- ❌ Errado -->
+<p>Confirmar presença</p>
+
+<!-- ✅ Correto -->
+<p>{$t('match.confirm_attendance')}</p>
+```
+
+### Estrutura das chaves
+
+Prefixo pelo contexto da página ou domínio:
+
+| Prefixo | Uso |
+|---------|-----|
+| `login.*` | Tela de login e recuperação de senha |
+| `register.*` | Fluxo de cadastro |
+| `match.*` | Página de partida |
+| `groups.*` | Listagem e gestão de grupos |
+| `account.*` | Conta / assinatura |
+| `plans.*` | Planos e preços |
+| `plan.*` | Nomes e bullets de planos (`plans.ts`) |
+| `auth.*` | Erros de autenticação compartilhados |
+
+### Planos (`src/lib/plans.ts`)
+
+Os campos `name` e `highlights` de `PlanConfig` armazenam **chaves i18n**, não strings literais. Sempre usar `$t(plan.name)` e `$t(item)` nos templates — nunca `{plan.name}` diretamente.
+
+---
+
+## Frontend — Svelte 5
+
+### `$effect` vs `onMount`
+
+- **`onMount`**: correto apenas quando a lógica deve rodar ao montar um **componente filho dedicado**
+- **`$effect`**: correto quando a lógica depende de uma **variável de estado** (ex: step de um fluxo multi-etapa)
+
+```typescript
+// ✅ Correto para lógica condicional por step
+$effect(() => {
+  if (currentStep !== 'otp') return;
+  // lógica que só deve rodar quando o step for 'otp'
+});
+
+// ❌ onMount não re-executa quando o step muda
+onMount(() => {
+  // roda uma única vez — antes do step OTP aparecer
+});
+```
+
+---
+
+## Backend — Estrutura de um novo endpoint
+
+### Localização dos arquivos
+
+| Camada | Localização |
+|--------|-------------|
+| Router | `football-api/app/api/v1/routers/<dominio>.py` |
+| Repository | `football-api/app/db/repositories/<dominio>_repo.py` |
+| Schema (request/response) | `football-api/app/schemas/<dominio>.py` |
+| Model (ORM) | `football-api/app/models/<dominio>.py` |
+| Migration | `football-api/migrations/NNN_descricao.sql` |
+
+### Padrão de imports num router
+
+```python
+from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
+from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError
+from app.models.player import PlayerRole
+```
+
+### Dependências FastAPI
+
+| Dependência | Uso |
+|-------------|-----|
+| `DB` | Sessão async do banco |
+| `CurrentPlayer` | Jogador autenticado (qualquer role) |
+| `AdminPlayer` | Restringe rota a super-admins |
+
+### Erros padrão
+
+| Exceção | HTTP | Quando usar |
+|---------|------|-------------|
+| `NotFoundError("msg")` | 404 | Recurso não encontrado |
+| `ForbiddenError("msg")` | 403 | Sem permissão |
+| `ConflictError("msg")` | 409 | Conflito de unicidade |
+| `PlanLimitError()` | 403 | Limite do plano atingido (`detail="PLAN_LIMIT_EXCEEDED"`) |
+| `ValidationError("msg")` | 422 | Validação de negócio |
+| `UnauthorizedError()` | 401 | Não autenticado |
 
 ### Limite de plano por recurso
 - Verificar sempre o plano real da `PlayerSubscription` (nunca hardcodar limites)
-- Retornar `403` com `detail="PLAN_LIMIT_EXCEEDED"` via `PlanLimitError`
-- Admins globais (`PlayerRole.ADMIN`) são sempre isentos de limites
+- `PlayerRole.ADMIN` (super admin) é **sempre isento** de limites de plano
 
-### Migrations
+---
+
+## Backend — Migrations
+
 - Numeradas sequencialmente: `NNN_descricao.sql` em `football-api/migrations/`
 - Sempre usar `IF NOT EXISTS` / `ON CONFLICT DO NOTHING` para idempotência
 - Aplicadas automaticamente no startup via `app/db/migrate.py`
+- Verificar o número da última migration antes de criar uma nova: `ls football-api/migrations/`
 
-### Rotas da API
+---
+
+## Backend — Testes unitários
+
+### Estrutura
+
+```
+football-api/tests/unit/
+  test_security.py
+  routers/          ← testes de endpoints (usa httpx ASGITransport)
+  services/         ← testes de serviços (ex: twilio_verify)
+```
+
+### Rodar localmente
+
+```bash
+cd football-api
+docker compose run --rm api poetry run pytest tests/unit/ -q
+```
+
+### Regras
+
+- **Todo novo endpoint** deve ter ao menos: 1 teste caminho feliz + testes dos erros esperados
+- **Sempre rodar antes de commitar** qualquer alteração no backend
+- Usar `pytest-mock` para mockar dependências externas (Twilio, Stripe, etc.)
+- Não mockar o banco em testes de router — usar ASGITransport com DB real ou fixtures
+
+---
+
+## Backend — Rotas da API
+
 - Sempre em inglês, lowercase, hyphen-separated
 - Nunca em português
+- Prefixo: `/api/v1/`
 
 ---
 

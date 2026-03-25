@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | Referência · Preços a confirmar antes do lançamento |
+| **Status** | ✅ Referência · Preços confirmados e implementados (Basic R$19,90/mês · Pro R$39,90/mês) |
 | **Data** | Março de 2026 |
 | **Relacionado** | `docs/prd/planos-assinatura.md` |
 

@@ -1,5 +1,12 @@
 # PRD — Internacionalização e Suporte a WhatsApp Internacional
 
+| | |
+|---|---|
+| **Status** | ✅ Implementado — Março 2026 |
+| **Data** | Março de 2026 |
+
+---
+
 ## 1. Contexto
 
 O rachao.app foi construído exclusivamente para o mercado brasileiro. Toda a lógica de telefone assume o formato nacional (DDD + 9 dígitos), a interface está em português e strings de data/hora usam `pt-BR` hardcoded. Este PRD define o escopo técnico e de produto para expandir o suporte a jogadores internacionais, cobrindo dois eixos independentes mas relacionados:
@@ -304,16 +311,16 @@ Os dois eixos são **independentes** e podem ser implementados em paralelo ou em
 6. ✅ `formatWhatsapp()` e `whatsappLink()` em `utils.js` suportam E.164 e legado
 7. ✅ Testes unitários atualizados para formato E.164 (`+5511999990001` etc.)
 
-### Fase 2 — Infraestrutura i18n (Eixo B, parte 1)
-1. Instalar e configurar Paraglide + `@inlang/paraglide-sveltekit`
-2. Extrair todas as strings hardcoded para `messages/pt-BR.json`
-3. Substituir `'pt-BR'` hardcoded por locale dinâmico em funções de data
-4. Implementar seletor de idioma na UI + persistência em cookie/perfil
-5. Adicionar campo `locale` na tabela `players`
+### Fase 2 — Infraestrutura i18n (Eixo B, parte 1) ✅ Implementado
+1. ✅ Instalar e configurar Paraglide + `@inlang/paraglide-sveltekit`
+2. ✅ Extrair todas as strings hardcoded para `messages/pt-BR.json`
+3. ✅ Substituir `'pt-BR'` hardcoded por locale dinâmico em funções de data
+4. ✅ Implementar seletor de idioma na UI + persistência em cookie/perfil
+5. ✅ Adicionar campo `locale` na tabela `players`
 
-### Fase 3 — Traduções (Eixo B, parte 2)
-1. Traduzir fluxos críticos para `en` e `es`
-2. Padronizar códigos de erro da API em snake_case inglês
-3. Implementar push notifications multilíngue
-4. Remover `_MONTHS_PT` hardcoded do backend
-5. Atualizar testes E2E para seletores agnósticos de idioma
+### Fase 3 — Traduções (Eixo B, parte 2) ✅ Implementado
+1. ✅ Traduzir fluxos críticos para `en` e `es`
+2. ✅ Padronizar códigos de erro da API em snake_case inglês
+3. ✅ Implementar push notifications multilíngue
+4. ✅ Remover `_MONTHS_PT` hardcoded do backend
+5. ✅ Atualizar testes E2E para seletores agnósticos de idioma

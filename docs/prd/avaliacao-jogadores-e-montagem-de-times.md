@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | Aguardando implementação |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -495,28 +495,28 @@ def montar_times(confirmados, players_per_team):
 
 ## 10. Critérios de Aceitação
 
-- [ ] Jogador que aceita convite entra no grupo com `skill_stars = 2` e `is_goalkeeper = false`.
-- [ ] Admin do grupo consegue editar nota (1–5) e flag de goleiro de qualquer membro.
-- [ ] Membro comum não visualiza notas nem flags de outros jogadores.
-- [ ] Botão "Montar times" só aparece para admin do grupo na página da partida.
-- [ ] Times gerados têm soma de estrelas a mais equilibrada possível (desvio máximo de 1 estrela entre times em cenário ideal).
-- [ ] Cada time recebe no máximo um goleiro (quando há goleiros suficientes).
-- [ ] Jogadores excedentes aparecem como reservas, não atribuídos a nenhum time.
-- [ ] Times recebem nomes distintos entre si na mesma partida.
-- [ ] Página `/match/[hash]/teams` é acessível sem login.
-- [ ] Admin consegue remontar os times, sobrescrevendo o sorteio anterior (com confirmação via `ConfirmDialog`).
-- [ ] Link para `/match/[hash]/teams` aparece na página da partida após a geração dos times.
-- [ ] Card "Primeiro jogo do rachão" é exibido no topo da página de times, mostrando o confronto entre o time de posição 1 e o de posição 2.
-- [ ] Grupos existentes não são afetados — membros atuais recebem `skill_stars = 2` via valor padrão da migration.
-- [ ] Após encerramento da votação, card "🏆 Ver os melhores do Rachão" aparece em `/match/[hash]` para todos os visitantes.
-- [ ] Página `/match/[hash]/results` é acessível sem login.
-- [ ] Pódio exibe corretamente os 3 primeiros colocados com altura visual proporcional à posição.
-- [ ] Se menos de 3 jogadores receberam votos, pódio exibe apenas as posições disponíveis.
-- [ ] Ranking completo lista todos os jogadores votados em ordem decrescente com barra de progresso.
-- [ ] Rodapé exibe contagem de votantes (`X de Y jogadores votaram`).
-- [ ] Botão "Compartilhar" copia a URL para clipboard com feedback toast.
-- [ ] Meta tags Open Graph renderizadas no servidor para preview correto no WhatsApp.
-- [ ] Se votação ainda aberta, página exibe mensagem informativa sem revelar o ranking parcial.
+- [x] Jogador que aceita convite entra no grupo com `skill_stars = 2` e `is_goalkeeper = false`.
+- [x] Admin do grupo consegue editar nota (1–5) e flag de goleiro de qualquer membro.
+- [x] Membro comum não visualiza notas nem flags de outros jogadores.
+- [x] Botão "Montar times" só aparece para admin do grupo na página da partida.
+- [x] Times gerados têm soma de estrelas a mais equilibrada possível (desvio máximo de 1 estrela entre times em cenário ideal).
+- [x] Cada time recebe no máximo um goleiro (quando há goleiros suficientes).
+- [x] Jogadores excedentes aparecem como reservas, não atribuídos a nenhum time.
+- [x] Times recebem nomes distintos entre si na mesma partida.
+- [x] Página `/match/[hash]/teams` é acessível sem login.
+- [x] Admin consegue remontar os times, sobrescrevendo o sorteio anterior (com confirmação via `ConfirmDialog`).
+- [x] Link para `/match/[hash]/teams` aparece na página da partida após a geração dos times.
+- [x] Card "Primeiro jogo do rachão" é exibido no topo da página de times, mostrando o confronto entre o time de posição 1 e o de posição 2.
+- [x] Grupos existentes não são afetados — membros atuais recebem `skill_stars = 2` via valor padrão da migration.
+- [x] Após encerramento da votação, card "🏆 Ver os melhores do Rachão" aparece em `/match/[hash]` para todos os visitantes.
+- [x] Página `/match/[hash]/results` é acessível sem login.
+- [x] Pódio exibe corretamente os 3 primeiros colocados com altura visual proporcional à posição.
+- [x] Se menos de 3 jogadores receberam votos, pódio exibe apenas as posições disponíveis.
+- [x] Ranking completo lista todos os jogadores votados em ordem decrescente com barra de progresso.
+- [x] Rodapé exibe contagem de votantes (`X de Y jogadores votaram`).
+- [x] Botão "Compartilhar" copia a URL para clipboard com feedback toast.
+- [x] Meta tags Open Graph renderizadas no servidor para preview correto no WhatsApp.
+- [x] Se votação ainda aberta, página exibe mensagem informativa sem revelar o ranking parcial.
 
 ---
 

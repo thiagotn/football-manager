@@ -2,7 +2,7 @@
 
 **Versão:** 1.1
 **Data:** 2026-03-14
-**Status:** Proposta
+**Status:** ✅ Implementado — Março 2026
 
 ---
 

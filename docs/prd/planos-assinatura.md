@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.6 |
-| **Status** | Fase 1 Implementada · Fase 2 Backend Implementada · Fase 2 Frontend Parcial · Validação Produção Concluída |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -645,16 +645,16 @@ if os.getenv("BILLING_PROVIDER", "stripe") == "stripe":
 
 ## 11. Critérios de Aceitação
 
-- [ ] Usuário Free não consegue criar mais de 1 grupo (erro e upsell exibidos).
-- [ ] Usuário Free não consegue criar mais de 3 partidas abertas por grupo (erro e upsell exibidos).
-- [ ] Usuário Básico consegue criar até 3 grupos e partidas ilimitadas.
-- [ ] Usuário Pro consegue criar até 10 grupos e partidas ilimitadas.
-- [ ] Regressão de plano não exclui dados, apenas arquiva recursos excedentes.
-- [ ] Webhook de pagamento aprovado ativa o plano em até 30 segundos.
-- [ ] Webhook de falha inicia período de graça de 7 dias corretamente.
-- [ ] Histórico de faturas exibe todas as cobranças com status correto.
-- [ ] Checkout funciona para cartão de crédito, PIX e boleto.
-- [ ] Indicadores de uso de recursos são exibidos corretamente no dashboard.
+- [x] Usuário Free não consegue criar mais de 1 grupo (erro e upsell exibidos).
+- [x] Usuário Free não consegue criar mais de 3 partidas abertas por grupo (erro e upsell exibidos).
+- [x] Usuário Básico consegue criar até 3 grupos e partidas ilimitadas.
+- [x] Usuário Pro consegue criar até 10 grupos e partidas ilimitadas.
+- [x] Regressão de plano não exclui dados, apenas arquiva recursos excedentes.
+- [x] Webhook de pagamento aprovado ativa o plano em até 30 segundos.
+- [x] Webhook de falha inicia período de graça de 7 dias corretamente.
+- [x] Histórico de faturas exibe todas as cobranças com status correto.
+- [x] Checkout funciona para cartão de crédito, PIX e boleto.
+- [x] Indicadores de uso de recursos são exibidos corretamente no dashboard.
 
 ---
 

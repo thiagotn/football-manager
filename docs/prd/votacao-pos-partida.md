@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.3 |
-| **Status** | Implementado (v1.2) · Aba de Estatísticas pendente |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -555,25 +555,25 @@ Na página de detalhes do grupo (`/groups/[id]`), exibir um banner entre os deta
 
 ## 11. Critérios de Aceitação
 
-- [ ] Votação não aparece antes de 20 minutos após o fim da partida
-- [ ] Votação encerra automaticamente após 24 horas da abertura
-- [ ] Apenas participantes com presença confirmada conseguem votar
-- [ ] Jogador não consegue votar em si mesmo (frontend e backend)
-- [ ] Voto submetido não pode ser alterado — segunda submissão retorna `409`
-- [ ] Resultados parciais não são expostos enquanto a votação está aberta
-- [ ] Pontuação do Top 5 é calculada corretamente: 1º=10, 2º=8, 3º=6, 4º=4, 5º=2
-- [ ] Empates no Top 5 e na Decepção são exibidos corretamente
-- [ ] Todas as posições visíveis são obrigatórias; Decepção obrigatória quando elegíveis > 5
-- [ ] Jogador escolhido no Top 5 não aparece como opção de Decepção (e vice-versa)
-- [ ] Contador "X de Y jogadores votaram" atualiza a cada acesso à página
-- [ ] Push notification de abertura é enviada apenas uma vez por partida
-- [ ] Partida sem `end_time` usa `match_date 23:59` como referência
-- [ ] Aba "Estatísticas" exibe ranking correto de pontos acumulados de votação
-- [ ] Coluna "Decepções" reflete o total de vezes eleito em todas as partidas do grupo
-- [ ] Coluna "Horas" soma apenas partidas com `end_time` definido; exibe "—" se zero
-- [ ] Super-admins globais não aparecem na tabela de estatísticas
-- [ ] Em mobile, colunas "Decepções" e "Horas" são ocultadas
-- [ ] Estado vazio exibido quando não há partidas encerradas
+- [x] Votação não aparece antes de 20 minutos após o fim da partida
+- [x] Votação encerra automaticamente após 24 horas da abertura
+- [x] Apenas participantes com presença confirmada conseguem votar
+- [x] Jogador não consegue votar em si mesmo (frontend e backend)
+- [x] Voto submetido não pode ser alterado — segunda submissão retorna `409`
+- [x] Resultados parciais não são expostos enquanto a votação está aberta
+- [x] Pontuação do Top 5 é calculada corretamente: 1º=10, 2º=8, 3º=6, 4º=4, 5º=2
+- [x] Empates no Top 5 e na Decepção são exibidos corretamente
+- [x] Todas as posições visíveis são obrigatórias; Decepção obrigatória quando elegíveis > 5
+- [x] Jogador escolhido no Top 5 não aparece como opção de Decepção (e vice-versa)
+- [x] Contador "X de Y jogadores votaram" atualiza a cada acesso à página
+- [x] Push notification de abertura é enviada apenas uma vez por partida
+- [x] Partida sem `end_time` usa `match_date 23:59` como referência
+- [x] Aba "Estatísticas" exibe ranking correto de pontos acumulados de votação
+- [x] Coluna "Decepções" reflete o total de vezes eleito em todas as partidas do grupo
+- [x] Coluna "Horas" soma apenas partidas com `end_time` definido; exibe "—" se zero
+- [x] Super-admins globais não aparecem na tabela de estatísticas
+- [x] Em mobile, colunas "Decepções" e "Horas" são ocultadas
+- [x] Estado vazio exibido quando não há partidas encerradas
 
 ---
 

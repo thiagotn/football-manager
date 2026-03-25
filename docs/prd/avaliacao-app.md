@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.5 |
-| **Status** | Implementado (v1.2) · Aba de Estatísticas pendente |
+| **Status** | ✅ Implementado — Março 2026 |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
@@ -652,36 +652,36 @@ Na página de detalhes do grupo (`/groups/[id]`), exibir banner entre os detalhe
 
 ## 11. Critérios de Aceitação
 
-- [ ] Votação não aparece antes de 20 minutos após o fim da partida
-- [ ] Votação encerra automaticamente após 24 horas da abertura
-- [ ] Apenas participantes com presença confirmada conseguem votar
-- [ ] Jogador não consegue votar em si mesmo (frontend e backend)
-- [ ] Voto submetido não pode ser alterado — segunda submissão retorna `409`
-- [ ] Resultados parciais (em quem cada um votou) não são expostos durante a votação
-- [ ] Pontuação do Top 5 calculada corretamente: 1º=10, 2º=8, 3º=6, 4º=4, 5º=2
-- [ ] Empates no Top 5 e na Decepção são exibidos corretamente
-- [ ] Todas as posições visíveis obrigatórias; Decepção obrigatória quando elegíveis > 5
-- [ ] Jogador no Top 5 não aparece como opção de Decepção (e vice-versa)
-- [ ] Contador "X de Y jogadores votaram" atualiza a cada acesso
-- [ ] Push notification de abertura enviada apenas uma vez por partida
-- [ ] Partida sem `end_time` usa `match_date 23:59` como referência
-- [ ] Indicador "votou / não votou" aparece na listagem de confirmados quando `voting_status = 'open'` ou `'closed'`
-- [ ] Indicador não aparece antes da votação abrir
-- [ ] Votos individuais nunca são expostos
-- [ ] Banner de votações pendentes aparece na home abaixo dos big numbers quando há pendências
-- [ ] Banner não é exibido para super-admins
-- [ ] Banner desaparece quando não há mais votações pendentes
-- [ ] Cada item do banner linka corretamente para `/match/[hash]`
-- [ ] Aba "Estatísticas" exibe ranking anual por padrão
-- [ ] Seletor de período permite alternar entre anual e mensal (meses do ano corrente)
-- [ ] Troca de período atualiza a tabela sem recarregar a página
-- [ ] `period_label` exibido corretamente no cabeçalho da aba ("2026" ou "Março 2026")
-- [ ] Aba computa pontos e decepções apenas de partidas com `voting_status = 'closed'`
-- [ ] Horas jogadas computadas independentemente do status da votação
-- [ ] Ranking não muda durante votação em andamento
-- [ ] Mensagem de estado vazio exibida quando não há partidas elegíveis no período
-- [ ] Super-admins globais não aparecem na tabela de estatísticas
-- [ ] Em mobile, colunas "Decepções" e "Horas" são ocultadas
+- [x] Votação não aparece antes de 20 minutos após o fim da partida
+- [x] Votação encerra automaticamente após 24 horas da abertura
+- [x] Apenas participantes com presença confirmada conseguem votar
+- [x] Jogador não consegue votar em si mesmo (frontend e backend)
+- [x] Voto submetido não pode ser alterado — segunda submissão retorna `409`
+- [x] Resultados parciais (em quem cada um votou) não são expostos durante a votação
+- [x] Pontuação do Top 5 calculada corretamente: 1º=10, 2º=8, 3º=6, 4º=4, 5º=2
+- [x] Empates no Top 5 e na Decepção são exibidos corretamente
+- [x] Todas as posições visíveis obrigatórias; Decepção obrigatória quando elegíveis > 5
+- [x] Jogador no Top 5 não aparece como opção de Decepção (e vice-versa)
+- [x] Contador "X de Y jogadores votaram" atualiza a cada acesso
+- [x] Push notification de abertura enviada apenas uma vez por partida
+- [x] Partida sem `end_time` usa `match_date 23:59` como referência
+- [x] Indicador "votou / não votou" aparece na listagem de confirmados quando `voting_status = 'open'` ou `'closed'`
+- [x] Indicador não aparece antes da votação abrir
+- [x] Votos individuais nunca são expostos
+- [x] Banner de votações pendentes aparece na home abaixo dos big numbers quando há pendências
+- [x] Banner não é exibido para super-admins
+- [x] Banner desaparece quando não há mais votações pendentes
+- [x] Cada item do banner linka corretamente para `/match/[hash]`
+- [x] Aba "Estatísticas" exibe ranking anual por padrão
+- [x] Seletor de período permite alternar entre anual e mensal (meses do ano corrente)
+- [x] Troca de período atualiza a tabela sem recarregar a página
+- [x] `period_label` exibido corretamente no cabeçalho da aba ("2026" ou "Março 2026")
+- [x] Aba computa pontos e decepções apenas de partidas com `voting_status = 'closed'`
+- [x] Horas jogadas computadas independentemente do status da votação
+- [x] Ranking não muda durante votação em andamento
+- [x] Mensagem de estado vazio exibida quando não há partidas elegíveis no período
+- [x] Super-admins globais não aparecem na tabela de estatísticas
+- [x] Em mobile, colunas "Decepções" e "Horas" são ocultadas
 
 ---
 

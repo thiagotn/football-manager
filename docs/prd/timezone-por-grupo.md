@@ -1,5 +1,12 @@
 # PRD — Timezone por Grupo
 
+| | |
+|---|---|
+| **Status** | ✅ Implementado — Março 2026 |
+| **Data** | Março de 2026 |
+
+---
+
 ## 1. Contexto
 
 O rachao.app armazena `match_date` como `DATE` e `start_time`/`end_time` como `TIME` no PostgreSQL — valores sem informação de fuso horário. Isso funciona corretamente enquanto todos os participantes de um grupo estão no mesmo fuso, pois o admin digita "20:00" e todos entendem como "20:00 horário local".
@@ -186,14 +193,14 @@ ALTER TABLE groups
 
 ## 8. Critérios de Aceite
 
-- [ ] Admin pode definir o timezone ao criar um grupo
-- [ ] Admin pode alterar o timezone nas configurações do grupo
-- [ ] O timezone é exibido na tela de edição com o valor atual
-- [ ] Horários de partidas são exibidos no fuso do grupo
-- [ ] Quando o fuso do grupo difere do dispositivo, o nome do fuso aparece ao lado do horário
-- [ ] Grupos existentes mantêm `America/Sao_Paulo` e continuam funcionando sem alteração
-- [ ] Timezone inválido é rejeitado pelo backend com erro 422
-- [ ] O seletor de timezone é responsivo e usável em mobile
+- [x] Admin pode definir o timezone ao criar um grupo
+- [x] Admin pode alterar o timezone nas configurações do grupo
+- [x] O timezone é exibido na tela de edição com o valor atual
+- [x] Horários de partidas são exibidos no fuso do grupo
+- [x] Quando o fuso do grupo difere do dispositivo, o nome do fuso aparece ao lado do horário
+- [x] Grupos existentes mantêm `America/Sao_Paulo` e continuam funcionando sem alteração
+- [x] Timezone inválido é rejeitado pelo backend com erro 422
+- [x] O seletor de timezone é responsivo e usável em mobile
 
 ---
 
