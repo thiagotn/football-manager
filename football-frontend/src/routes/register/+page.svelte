@@ -46,6 +46,34 @@
   let loading = $state(false);
   let error = $state('');
 
+  // ── WebOTP (Android/Chrome) ─────────────────────────────────
+  let webOtpController = $state<AbortController | null>(null);
+
+  $effect(() => {
+    if (step !== 'otp') {
+      webOtpController?.abort();
+      return;
+    }
+    if (!('OTPCredential' in window)) return;
+
+    webOtpController = new AbortController();
+    const ac = webOtpController;
+    const timeout = setTimeout(() => ac.abort(), 60_000);
+
+    navigator.credentials.get({
+      otp: { transport: ['sms'] },
+      signal: ac.signal,
+    } as CredentialRequestOptions)
+      .then((otp) => {
+        clearTimeout(timeout);
+        if (otp && 'code' in otp) {
+          digits = (otp as OTPCredential).code.split('');
+          handleVerifyOtp();
+        }
+      })
+      .catch(() => {});
+  });
+
   const maskedWhatsapp = $derived(
     // Show country code + masked local number: +55 (11) ••••• 0000
     whatsapp.replace(/(\+\d{1,3})(\d{2})(\d+)(\d{4})$/, '$1 ($2) ••••• $4') || whatsapp
