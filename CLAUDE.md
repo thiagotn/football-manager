@@ -5,6 +5,9 @@
 - **Frontend**: SvelteKit 2 + Svelte 5 + Tailwind CSS
 - **Testes E2E**: Playwright + pytest (`football-e2e/`)
 
+> **Estado corrente do código** (rotas, routers, próxima migration, componentes disponíveis):
+> consulte `football-api/CLAUDE.md` e `football-frontend/CLAUDE.md` antes de implementar qualquer feature.
+
 ---
 
 ## Frontend — Padrões de Página
@@ -187,7 +190,8 @@ from app.models.player import PlayerRole
 - Numeradas sequencialmente: `NNN_descricao.sql` em `football-api/migrations/`
 - Sempre usar `IF NOT EXISTS` / `ON CONFLICT DO NOTHING` para idempotência
 - Aplicadas automaticamente no startup via `app/db/migrate.py`
-- Verificar o número da última migration antes de criar uma nova: `ls football-api/migrations/`
+- **Número da próxima migration**: consultar `football-api/CLAUDE.md` (mantido atualizado)
+- Atualizar `football-api/CLAUDE.md` após criar cada nova migration
 
 ---
 
