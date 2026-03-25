@@ -29,7 +29,7 @@ export async function load({ params }) {
     return {
       og: {
         title: `Rachão ${match.group_name} — ${dateLabel}`,
-        description: `${match.location} · ${match.start_time?.slice(0, 5)}${match.end_time ? ` – ${match.end_time.slice(0, 5)}` : ''} · ${match.confirmed_count} confirmado(s). Confirme sua presença!`,
+        description: `${match.location} · ${match.start_time?.slice(0, 5)}${match.end_time ? ` – ${match.end_time.slice(0, 5)}` : ''} · Confirme sua presença!`,
       },
     };
   } catch {
