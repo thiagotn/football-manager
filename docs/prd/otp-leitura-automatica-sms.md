@@ -226,17 +226,17 @@ $effect(() => {
 
 ### 7.2 Backend — Template SMS Twilio
 
-Customizar o corpo do SMS no painel da Twilio Verify para incluir a âncora de domínio:
+> ⚠️ **Limitação identificada:** o Twilio Verify não oferece campo de texto livre para o corpo do SMS — apenas templates pré-aprovados, nenhum deles compatível com o formato `@dominio #codigo` exigido pela WebOTP API. Consulte a seção 12 para opções de resolução.
+
+O formato necessário seria:
 
 ```
-Seu código rachao.app: {{code}}. Válido por 10 minutos.
+O seu código de verificação para Rachão App é: {{code}}.
 
 @rachao.app #{{code}}
 ```
 
-> **Nota:** a linha `@dominio #codigo` **deve ser a última linha do SMS** para a WebOTP API funcionar. Espaços ou linhas em branco após ela quebram o reconhecimento pelo Chrome.
-
-**Configuração:** Twilio Console → Verify → Services → `[serviço]` → Messaging → Custom Message Body → habilitar e inserir o template acima.
+> A linha `@dominio #codigo` **deve ser a última linha do SMS** para a WebOTP API funcionar no Android/Chrome.
 
 ---
 
@@ -264,11 +264,13 @@ Seu código rachao.app: {{code}}. Válido por 10 minutos.
 
 ## 10. Critérios de Aceitação
 
-- [ ] No Android/Chrome, ao chegar o SMS, o bottom sheet do Chrome exibe o código e o campo é preenchido automaticamente após confirmação
-- [ ] No iOS/Safari, ao tocar na sugestão do teclado, o campo OTP é preenchido
+> ⚠️ **Implementação revertida em 2026-03-25.** O `$effect` WebOTP foi removido de `/register` e `/login` pois o bottom sheet do Chrome no Android interferia no foco dos inputs de dígitos, quebrando o fluxo de digitação manual. O `autocomplete="one-time-code"` foi mantido (inofensivo, ativa sugestão no iOS). A retomada desta feature depende da aprovação do template SMS pela Twilio (seção 12).
+
+- [ ] No Android/Chrome, ao chegar o SMS, o bottom sheet do Chrome exibe o código e o campo é preenchido automaticamente após confirmação *(bloqueado: template SMS pendente de aprovação Twilio + implementação revertida)*
+- [ ] No iOS/Safari, ao tocar na sugestão do teclado, o campo OTP é preenchido *(`autocomplete="one-time-code"` mantido — sugestão aparece, mas sem auto-submit)*
 - [ ] Se a WebOTP API lançar `AbortError` ou `NotSupportedError`, nenhum erro é exibido ao usuário
-- [ ] O campo OTP sempre permite digitação manual como fallback
-- [ ] O template do SMS inclui a linha `@rachao.app #codigo` ao final
+- [x] O campo OTP sempre permite digitação manual como fallback
+- [ ] O template do SMS inclui a linha `@rachao.app #codigo` ao final *(aguardando resposta do chamado Twilio)*
 - [ ] Telas afetadas: `/register` (etapa 2) e `/login` (recuperação de senha)
 - [ ] O submit automático ocorre apenas no Android (WebOTP) — no iOS aguarda ação do usuário
 
@@ -279,6 +281,22 @@ Seu código rachao.app: {{code}}. Válido por 10 minutos.
 - Login via OTP (autenticação sem senha) — feature separada
 - Leitura de SMS em apps nativos (não é PWA/browser — não se aplica)
 - Suporte ao Firefox (não implementa WebOTP API — usuário digita manualmente)
+
+---
+
+## 12. Limitação: Twilio Verify não suporta template livre
+
+O Twilio Verify oferece apenas templates pré-aprovados no painel — nenhum deles inclui o formato `@dominio #codigo` exigido pela WebOTP API. Isso bloqueia o preenchimento automático no Android/Chrome.
+
+**Opções disponíveis:**
+
+| Opção | Esforço | Resultado |
+|---|---|---|
+| **A — Twilio Content Template Builder** | Médio | Criar template customizado via Console → Messaging → Content Template Builder, submetê-lo para aprovação da Twilio e vinculá-lo ao Verify Service. Processo pode levar dias e sem garantia de aprovação. |
+| **B — Twilio Programmable SMS** | Alto | Abandonar o Verify e enviar SMS diretamente via API de Mensagens, com controle total do corpo. Exige implementar no backend: geração de código, armazenamento com TTL, hash e rate limiting (o que o Verify faz hoje automaticamente). |
+| **C — Aceitar limitação (recomendado agora)** | Nenhum | O código frontend já está pronto e o fallback para digitação manual funciona sem erros. iOS já recebe a melhoria via `autocomplete="one-time-code"`. Android pode ser revisitado ao migrar para Programmable SMS. |
+
+**Decisão atual:** seguir com a **Opção C**. O frontend está implementado e não há regressão — a WebOTP API silenciosamente não detecta o código e o usuário digita normalmente.
 
 ---
 

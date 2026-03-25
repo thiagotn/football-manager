@@ -78,33 +78,6 @@
   let otpCountdown = $state(0);
   let otpTimer: ReturnType<typeof setInterval> | null = null;
 
-  // ── WebOTP (Android/Chrome) ─────────────────────────────────
-  let webOtpController = $state<AbortController | null>(null);
-
-  $effect(() => {
-    if (forgotMode !== 'otp-pending') {
-      webOtpController?.abort();
-      return;
-    }
-    if (!('OTPCredential' in window)) return;
-
-    webOtpController = new AbortController();
-    const ac = webOtpController;
-    const timeout = setTimeout(() => ac.abort(), 60_000);
-
-    navigator.credentials.get({
-      otp: { transport: ['sms'] },
-      signal: ac.signal,
-    } as CredentialRequestOptions)
-      .then((otp) => {
-        clearTimeout(timeout);
-        if (otp && 'code' in otp) {
-          forgotOtpCode = (otp as OTPCredential).code;
-          verifyForgotOtp();
-        }
-      })
-      .catch(() => {});
-  });
 
   function startCountdown() {
     otpCountdown = 60;
