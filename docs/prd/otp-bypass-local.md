@@ -114,27 +114,28 @@ Documentar a variável como **comentada** nos exemplos de produção, para deixa
 
 ## 6. Critérios de Aceitação
 
-- [ ] `app/core/config.py` lê `OTP_BYPASS_CODE` como `otp_bypass_code: str = ""`
-- [ ] `send_otp()` em bypass loga e retorna sem chamar Twilio
-- [ ] `check_otp()` em bypass retorna `True` somente para o código exato configurado
-- [ ] O bypass **nunca** é ativado quando `APP_ENV=production`, independente de `OTP_BYPASS_CODE`
-- [ ] `.env.docker` inclui `OTP_BYPASS_CODE=000000` por padrão
-- [ ] `.env.example` documenta a variável como comentada/ausente
-- [ ] O comportamento de produção (Twilio real) permanece inalterado
-- [ ] Os testes unitários existentes de OTP continuam passando
+- [x] `app/core/config.py` lê `OTP_BYPASS_CODE` como `otp_bypass_code: str = ""`
+- [x] `send_otp()` em bypass loga e retorna sem chamar Twilio
+- [x] `check_otp()` em bypass retorna `True` somente para o código exato configurado
+- [x] O bypass **nunca** é ativado quando `APP_ENV=production`, independente de `OTP_BYPASS_CODE`
+- [x] `.env.docker` inclui `OTP_BYPASS_CODE=000000` por padrão
+- [x] `.env.example` documenta a variável como comentada/ausente
+- [x] O comportamento de produção (Twilio real) permanece inalterado
+- [x] Os testes unitários existentes de OTP continuam passando
 
 ---
 
 ## 7. Testes Unitários
 
-Os testes unitários de OTP (`test_auth.py`) usam mocks para `twilio_verify.send_otp` e `twilio_verify.check_otp` — não chamam Twilio nem dependem do bypass. Não há necessidade de novos testes unitários para este PRD.
+Os testes unitários de OTP (`test_auth.py`) usam mocks para `twilio_verify.send_otp` e `twilio_verify.check_otp` — não chamam Twilio nem dependem do bypass.
 
-Opcionalmente, pode-se adicionar testes para o módulo `twilio_verify.py` diretamente:
+Testes implementados em `tests/unit/services/test_twilio_verify.py` ✅:
 
 - `test_send_otp_bypass_skips_twilio` — verifica que Twilio não é chamado quando bypass ativo
 - `test_check_otp_bypass_accepts_correct_code` — verifica que o código correto retorna `True`
 - `test_check_otp_bypass_rejects_wrong_code` — verifica que código errado retorna `False`
 - `test_bypass_disabled_in_production` — verifica que `is_prod=True` desativa o bypass
+- `test_bypass_disabled_when_code_empty` — verifica que código vazio desativa o bypass
 
 ---
 
