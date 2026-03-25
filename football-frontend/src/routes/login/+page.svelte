@@ -8,7 +8,19 @@
   import { Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-svelte';
   import PwaSmartBanner from '$lib/components/PwaSmartBanner.svelte';
   import PhoneInput from '$lib/components/PhoneInput.svelte';
-  import { t } from '$lib/i18n';
+  import { t, setLocale, isLocaleUserChosen, type Locale } from '$lib/i18n';
+
+  // ── Auto locale by country ──────────────────────────────────
+  const SPANISH_COUNTRIES = new Set(['ES','AR','MX','CL','CO','PE','UY','PY','BO','VE','EC']);
+
+  function handleCountryChange(countryCode: string) {
+    if (isLocaleUserChosen()) return;
+    let newLocale: Locale;
+    if (countryCode === 'BR') newLocale = 'pt-BR';
+    else if (SPANISH_COUNTRIES.has(countryCode)) newLocale = 'es';
+    else newLocale = 'en';
+    setLocale(newLocale, 'auto');
+  }
 
   // ── Login ──────────────────────────────────────────────────
   let whatsapp = $state('');
@@ -139,7 +151,7 @@
   }
 </script>
 
-<svelte:head><title>Login — rachao.app</title></svelte:head>
+<svelte:head><title>{$t('login.page_title')}</title></svelte:head>
 
 <PwaSmartBanner />
 
@@ -167,7 +179,7 @@
       <form onsubmit={(e) => { e.preventDefault(); handleLogin(); }} class="space-y-4">
         <div class="form-group">
           <label class="label" for="whatsapp">WhatsApp</label>
-          <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required />
+          <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required oncountrychange={handleCountryChange} />
         </div>
 
         <div class="form-group">
@@ -215,7 +227,7 @@
 
         <div class="form-group">
           <label class="label" for="forgot-whatsapp">{$t('login.phone_label')}</label>
-          <PhoneInput id="forgot-whatsapp" bind:value={forgotWhatsapp} placeholder="11999990000" disabled={forgotLoading} />
+          <PhoneInput id="forgot-whatsapp" bind:value={forgotWhatsapp} placeholder="11999990000" disabled={forgotLoading} oncountrychange={handleCountryChange} />
           <p class="text-xs text-gray-400 mt-1">{$t('login.phone_hint')}</p>
         </div>
 

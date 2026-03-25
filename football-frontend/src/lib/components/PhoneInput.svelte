@@ -45,6 +45,7 @@
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
+    oncountrychange?: (countryCode: string) => void;
   }
 
   let {
@@ -53,10 +54,13 @@
     placeholder = '',
     required = false,
     disabled = false,
+    oncountrychange,
   }: Props = $props();
 
   let selectedDial = $state('55');
   let localNumber = $state('');
+
+  let selectedCountry = $derived(COUNTRIES.find(c => c.dial === selectedDial) ?? COUNTRIES[0]);
 
   $effect(() => {
     const digits = localNumber.replace(/\D/g, '');
@@ -73,6 +77,7 @@
 <div class="flex gap-2">
   <select
     bind:value={selectedDial}
+    onchange={() => oncountrychange?.(selectedCountry.code)}
     {disabled}
     class="px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 shrink-0"
     style="max-width: 7rem;"

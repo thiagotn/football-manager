@@ -34,6 +34,7 @@
   "aria.close_menu": "Close menu",
   "aria.lang": "Language",
 
+  "login.page_title": "Login — rachao.app",
   "login.subtitle": "Group and match management",
   "login.session_expired": "Your session has expired. Please log in again.",
   "login.password_label": "Password",

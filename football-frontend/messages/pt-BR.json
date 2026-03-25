@@ -34,6 +34,7 @@
   "aria.close_menu": "Fechar menu",
   "aria.lang": "Idioma",
 
+  "login.page_title": "Login — rachao.app",
   "login.subtitle": "Gestão de grupos e partidas",
   "login.session_expired": "Sua sessão expirou. Por favor, faça login novamente.",
   "login.password_label": "Senha",

@@ -8,6 +8,8 @@ export const SUPPORTED_LOCALES: Locale[] = ['pt-BR', 'en', 'es'];
 export const DEFAULT_LOCALE: Locale = 'pt-BR';
 
 const LOCALE_KEY = 'rachao_locale';
+const LOCALE_SOURCE_KEY = 'rachao_locale_source';
+type LocaleSource = 'user' | 'auto';
 
 type Messages = Record<string, string>;
 
@@ -56,13 +58,25 @@ async function loadMessages(l: Locale): Promise<void> {
 
 /**
  * Switch locale, persist to localStorage, reload messages.
+ * source='user'  → explicit choice via language switcher (won't be overridden by auto-detect)
+ * source='auto'  → inferred from navigator.language or country selector (can be overridden)
  */
-export async function setLocale(newLocale: Locale): Promise<void> {
+export async function setLocale(newLocale: Locale, source: LocaleSource = 'user'): Promise<void> {
   await loadMessages(newLocale);
   locale.set(newLocale);
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(LOCALE_KEY, newLocale);
+    localStorage.setItem(LOCALE_SOURCE_KEY, source);
   }
+}
+
+/**
+ * Returns true if the user explicitly chose a locale via the language switcher.
+ * When true, automatic locale changes (e.g. from country selector) should be skipped.
+ */
+export function isLocaleUserChosen(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem(LOCALE_SOURCE_KEY) === 'user';
 }
 
 /**
@@ -75,7 +89,9 @@ export async function initLocale(): Promise<void> {
   const saved = localStorage.getItem(LOCALE_KEY) as Locale | null;
 
   if (saved && SUPPORTED_LOCALES.includes(saved)) {
-    await setLocale(saved);
+    // Restore without changing the source — keep whatever was persisted
+    await loadMessages(saved);
+    locale.set(saved);
     return;
   }
 
@@ -85,5 +101,5 @@ export async function initLocale(): Promise<void> {
   else if (nav.startsWith('es')) detected = 'es';
   else if (nav.startsWith('en')) detected = 'en';
 
-  await setLocale(detected);
+  await setLocale(detected, 'auto');
 }
