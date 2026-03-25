@@ -75,6 +75,7 @@
   "login.reset_success": "Password reset! Log in with the new password.",
   "login.connect_error": "Connection error",
 
+  "register.page_title": "Free sign up — rachao.app",
   "register.title": "Free sign up",
   "register.plan_selected": "Selected plan",
   "register.step_whatsapp": "WhatsApp",
@@ -626,6 +627,36 @@
   "plans.subscribe_loading": "Please wait…",
   "plans.subscribe": "Subscribe to {name}",
   "plans.security_note": "🔒 Payments securely processed via Stripe. Cancel anytime.",
+
+  "plan.free.name": "Free",
+  "plan.basic.name": "Basic",
+  "plan.pro.name": "Pro",
+
+  "plan.highlight.invites": "Invites via link and QR Code",
+  "plan.highlight.attendance": "Attendance confirmation",
+  "plan.highlight.team_draw": "Automatic team draw",
+  "plan.highlight.voting": "Post-match voting (Top 5 + Disappointment)",
+  "plan.highlight.stats": "Personal stats per player",
+
+  "plan.free.highlight.groups": "1 active group",
+  "plan.free.highlight.players": "Up to 30 players per group",
+  "plan.free.highlight.matches": "Up to 3 open matches",
+  "plan.free.highlight.history": "30-day history",
+  "plan.free.highlight.finance": "Group financial control (3-month history)",
+
+  "plan.basic.highlight.groups": "Up to 3 active groups",
+  "plan.basic.highlight.players": "Up to 50 players per group",
+  "plan.basic.highlight.matches": "Unlimited matches",
+  "plan.basic.highlight.history": "6-month history",
+  "plan.basic.highlight.finance": "Group financial control (12-month history)",
+  "plan.basic.highlight.support": "Email support",
+
+  "plan.pro.highlight.groups": "Up to 10 active groups",
+  "plan.pro.highlight.players": "Unlimited players per group",
+  "plan.pro.highlight.matches": "Unlimited matches",
+  "plan.pro.highlight.history": "Unlimited history",
+  "plan.pro.highlight.finance": "Group financial control (unlimited history)",
+  "plan.pro.highlight.support": "Priority support",
 
   "players.title": "Players",
   "players.subtitle": "{n} registered players",

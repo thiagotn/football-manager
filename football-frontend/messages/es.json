@@ -75,6 +75,7 @@
   "login.reset_success": "¡Contraseña restablecida! Inicia sesión con la nueva contraseña.",
   "login.connect_error": "Error de conexión",
 
+  "register.page_title": "Registro gratuito — rachao.app",
   "register.title": "Registro gratuito",
   "register.plan_selected": "Plan seleccionado",
   "register.step_whatsapp": "WhatsApp",
@@ -626,6 +627,36 @@
   "plans.subscribe_loading": "Espera…",
   "plans.subscribe": "Suscribirse a {name}",
   "plans.security_note": "🔒 Pagos procesados de forma segura vía Stripe. Cancela en cualquier momento.",
+
+  "plan.free.name": "Gratis",
+  "plan.basic.name": "Básico",
+  "plan.pro.name": "Pro",
+
+  "plan.highlight.invites": "Invitaciones por enlace y código QR",
+  "plan.highlight.attendance": "Confirmación de asistencia",
+  "plan.highlight.team_draw": "Sorteo automático de equipos",
+  "plan.highlight.voting": "Votación post-partido (Top 5 + Decepción)",
+  "plan.highlight.stats": "Estadísticas personales por jugador",
+
+  "plan.free.highlight.groups": "1 grupo activo",
+  "plan.free.highlight.players": "Hasta 30 jugadores por grupo",
+  "plan.free.highlight.matches": "Hasta 3 partidos abiertos",
+  "plan.free.highlight.history": "Historial de 30 días",
+  "plan.free.highlight.finance": "Control financiero del grupo (3 meses de historial)",
+
+  "plan.basic.highlight.groups": "Hasta 3 grupos activos",
+  "plan.basic.highlight.players": "Hasta 50 jugadores por grupo",
+  "plan.basic.highlight.matches": "Partidos ilimitados",
+  "plan.basic.highlight.history": "Historial de 6 meses",
+  "plan.basic.highlight.finance": "Control financiero del grupo (12 meses de historial)",
+  "plan.basic.highlight.support": "Soporte por correo electrónico",
+
+  "plan.pro.highlight.groups": "Hasta 10 grupos activos",
+  "plan.pro.highlight.players": "Jugadores ilimitados por grupo",
+  "plan.pro.highlight.matches": "Partidos ilimitados",
+  "plan.pro.highlight.history": "Historial ilimitado",
+  "plan.pro.highlight.finance": "Control financiero del grupo (historial ilimitado)",
+  "plan.pro.highlight.support": "Soporte prioritario",
 
   "players.title": "Jugadores",
   "players.subtitle": "{n} jugadores registrados",

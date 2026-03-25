@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PLAN_ORDER, PLANS, formatPrice, formatCents } from '$lib/plans';
   import PwaSmartBanner from '$lib/components/PwaSmartBanner.svelte';
+  import { t } from '$lib/i18n';
 </script>
 
 <PwaSmartBanner />
@@ -432,17 +433,16 @@
           {/if}
 
           <div class="mb-4">
-            <h3 class="text-lg font-bold text-gray-900">{plan.name}</h3>
+            <h3 class="text-lg font-bold text-gray-900">{$t(plan.name)}</h3>
           </div>
 
           <div class="{plan.key !== 'free' ? 'blur-sm select-none pointer-events-none' : ''} flex-1 flex flex-col">
             <div class="mb-4">
               {#if plan.price_monthly === null}
-                <span class="text-3xl font-extrabold text-primary-600">R$ 0</span>
-                <span class="text-sm text-gray-400">/mês</span>
+                <span class="text-3xl font-extrabold text-primary-600">{$t('plans.free')}</span>
               {:else}
                 <span class="text-3xl font-extrabold text-gray-900">{formatCents(plan.price_monthly)}</span>
-                <span class="text-sm text-gray-400">/mês</span>
+                <span class="text-sm text-gray-400">{$t('plans.per_month')}</span>
               {/if}
             </div>
 
@@ -450,7 +450,7 @@
               {#each plan.highlights as item}
                 <li class="flex items-start gap-2 text-sm text-gray-600">
                   <span class="text-primary-500 mt-0.5 shrink-0">✓</span>
-                  {item}
+                  {$t(item)}
                 </li>
               {/each}
             </ul>

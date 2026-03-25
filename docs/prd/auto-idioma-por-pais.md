@@ -1,8 +1,8 @@
-# PRD — Troca Automática de Idioma pelo Código de País no Login
+# PRD — Troca Automática de Idioma pelo Código de País no Login e Cadastro
 
 ## 1. Contexto
 
-A tela `/login` usa o componente `PhoneInput.svelte`, que exibe um seletor de código de país antes do campo de número. O app já suporta três idiomas (`pt-BR`, `en`, `es`) via `i18n.ts`, com persistência em `localStorage` e detecção inicial via `navigator.language`.
+As telas `/login` e `/register` usam o componente `PhoneInput.svelte`, que exibe um seletor de código de país antes do campo de número. O app já suporta três idiomas (`pt-BR`, `en`, `es`) via `i18n.ts`, com persistência em `localStorage` e detecção inicial via `navigator.language`.
 
 No estado atual, selecionar um país no PhoneInput não tem nenhum efeito sobre o idioma da interface — o usuário precisa usar o seletor de idioma explicitamente após o login.
 
@@ -23,7 +23,7 @@ No estado atual, selecionar um país no PhoneInput não tem nenhum efeito sobre 
 
 ## 3. Solução Proposta
 
-Quando o usuário altera o código de país no `PhoneInput` da tela de login, o idioma da interface muda automaticamente com base no país selecionado, de acordo com a tabela de mapeamento abaixo.
+Quando o usuário altera o código de país no `PhoneInput` das telas de login **ou cadastro**, o idioma da interface muda automaticamente com base no país selecionado, de acordo com a tabela de mapeamento abaixo.
 
 ### Tabela de mapeamento: país → idioma
 
@@ -58,10 +58,13 @@ A distinção é feita por uma flag de origem no `localStorage`:
 ## 4. Escopo
 
 ### Onde se aplica
-- **Apenas `/login`** — o PhoneInput também aparece no fluxo de cadastro (`/register` ou dentro do modal de cadastro), mas ali o usuário já está interagindo com o app e pode já ter trocado o idioma manualmente. O gatilho de país só faz sentido na tela inicial de acesso.
+- **`/login`** — campo de telefone no formulário de login e nos dois campos do fluxo "Esqueci minha senha"
+- **`/register`** — campo de telefone no passo de informar o WhatsApp (step `whatsapp`)
+
+A regra de ativação é idêntica em ambas as telas: respeita preferência explícita do usuário (`source: 'user'`), e a função `handleCountryChange` pode ser extraída para um módulo compartilhado ou duplicada em cada página (dado o tamanho reduzido).
 
 ### Fora do escopo
-- PhoneInput em outros contextos (registro, configuração de conta)
+- PhoneInput em outros contextos (configuração de conta, etc.)
 - Mudança retroativa de idioma após o login
 - Adicionar novos locales (`pt-PT`, por exemplo)
 
@@ -114,9 +117,9 @@ Acionar o callback no `$effect` ou via `onchange` do `<select>`:
 
 > O `PhoneInput` atualmente trabalha com `dial` (ex: `"55"`) como `value` do select. Para expor o código ISO (ex: `"BR"`), é preciso rastrear o `code` do país selecionado — não apenas o `dial`.
 
-### `/login/+page.svelte`
+### `/login/+page.svelte` e `/register/+page.svelte`
 
-Adicionar a lógica de mapeamento e chamar `setLocale` quando a prop callback for acionada:
+A mesma lógica de mapeamento se aplica em ambas as páginas. Cada uma importa `setLocale`, `isLocaleUserChosen` e `type Locale` de `$lib/i18n` e define `handleCountryChange` localmente:
 
 ```typescript
 const SPANISH_COUNTRIES = new Set(['ES','AR','MX','CL','CO','PE','UY','PY','BO','VE','EC']);
@@ -131,6 +134,13 @@ function handleCountryChange(countryCode: string) {
 
   setLocale(newLocale, 'auto');
 }
+```
+
+Em `/register`, o `PhoneInput` fica no step `whatsapp` — o callback deve ser passado somente nesse campo:
+
+```svelte
+<PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required
+  oncountrychange={handleCountryChange} />
 ```
 
 ---
@@ -159,49 +169,45 @@ E acionar o callback com `selectedCountry.code`. Atenção: `dial: '1'` é compa
 
 ## 7. Critérios de Aceitação
 
-- [ ] Selecionar `BR` no PhoneInput do login muda o idioma para `pt-BR`
+- [ ] Selecionar `BR` no PhoneInput do login **ou cadastro** muda o idioma para `pt-BR`
 - [ ] Selecionar `AR`, `MX`, `CL`, `CO`, `PE`, `UY`, `PY`, `BO`, `VE` ou `EC` muda o idioma para `es`
 - [ ] Selecionar `ES` (Espanha) muda o idioma para `es`
 - [ ] Selecionar qualquer outro país (US, GB, DE, JP, etc.) muda o idioma para `en`
 - [ ] Se o usuário já tiver trocado o idioma manualmente via seletor, a troca automática **não** ocorre
 - [ ] A mudança automática persiste na próxima visita como qualquer outra troca de idioma (salva em `localStorage`)
 - [ ] Após trocar de idioma manualmente, uma nova seleção de país **não** sobrescreve a preferência
-- [ ] O comportamento se aplica **apenas à tela `/login`** — outros usos do PhoneInput não são afetados
+- [ ] O comportamento **não** se aplica a outros usos do PhoneInput fora de `/login` e `/register`
 
 ---
 
-## 8. Status de Internacionalização da Tela de Login
+## 8. Status de Internacionalização
 
-Antes de implementar a troca automática de idioma, é relevante confirmar se a própria tela de login já responde corretamente a uma mudança de locale.
+### `/login` — já implementado ✅
 
-### Conclusão: a tela já está completamente internacionalizada
+Todos os campos, labels, botões e mensagens da tela de login já usam `$t()` com traduções completas nos 3 idiomas. O `<title>` foi corrigido para `$t('login.page_title')` na implementação anterior.
 
-Todos os campos, labels, botões, mensagens de erro e textos de apoio da tela `/login` já usam `$t()` e possuem traduções completas nos 3 idiomas (`pt-BR`, `en`, `es`). Ao chamar `setLocale()` durante a seleção do país, a interface toda atualiza imediatamente e de forma correta.
+### `/register` — completamente internacionalizada, exceto o `<title>`
+
+Todos os campos, labels, botões, mensagens de erro e os 3 steps do fluxo de cadastro já usam `$t()` com chaves `register.*` traduzidas nos 3 idiomas.
 
 | Elemento | Status |
 |----------|--------|
-| Subtítulo da tela | ✅ `$t('login.subtitle')` |
-| Label "Senha" | ✅ `$t('login.password_label')` |
-| Botão "Entrar" | ✅ `$t('login.submit')` |
-| Fluxo "Esqueci minha senha" (todos os passos) | ✅ internacionalizado |
-| Mensagens de erro e validação | ✅ internacionalizadas |
-| Label "WhatsApp" (campo de telefone) | ℹ️ hardcoded — é nome de marca, não requer tradução |
-| `<title>` da página (`Login — rachao.app`) | ⚠️ hardcoded — ajuste menor recomendado (ver abaixo) |
+| Todos os labels, botões e mensagens (`register.*`) | ✅ internacionalizados |
+| Label "WhatsApp" e nome de marca | ℹ️ hardcoded — correto, é nome de marca |
+| `<title>` da página (`Cadastro gratuito — rachao.app`) | ⚠️ hardcoded — ajuste necessário |
 
-### Ajuste menor recomendado: `<title>` da página
-
-A tag `<svelte:head><title>Login — rachao.app</title></svelte:head>` está hardcoded. Com a troca de idioma ocorrendo antes do login, o título da aba do navegador seria o único elemento fora do locale. Correção trivial:
+### Ajuste: `<title>` da tela de cadastro
 
 ```typescript
-// Adicionar chave nos 3 arquivos de mensagens:
-"login.page_title": "Login — rachao.app"  // igual nos 3 (nome próprio)
+// Adicionar nos 3 arquivos de mensagens:
+"register.page_title": "Cadastro gratuito — rachao.app"  // pt-BR
+"register.page_title": "Free sign up — rachao.app"       // en
+"register.page_title": "Registro gratuito — rachao.app"  // es
 ```
 
 ```svelte
-<svelte:head><title>{$t('login.page_title')}</title></svelte:head>
+<svelte:head><title>{$t('register.page_title')}</title></svelte:head>
 ```
-
-> O título em si não precisa de tradução (nome da marca), mas envolvê-lo em `$t()` garante consistência arquitetural e evita que ele fique "fora do sistema" de i18n.
 
 Esse ajuste **faz parte do escopo desta implementação**.
 
@@ -210,6 +216,6 @@ Esse ajuste **faz parte do escopo desta implementação**.
 ## 9. O que NÃO está no escopo
 
 - **Detecção de idioma pelo IP/geolocalização** — desnecessário, o país já é informado pelo usuário
-- **Troca de idioma no fluxo de cadastro** — pode ser adicionado em iteração futura
 - **Locale `pt-PT`** — Portugal permanece mapeado para `en` até que um novo locale seja adicionado
 - **Alteração do seletor de idioma pós-login** — o comportamento atual já funciona corretamente
+- **PhoneInput em configuração de conta** — o usuário já está autenticado e pode usar o seletor de idioma diretamente

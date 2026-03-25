@@ -117,7 +117,7 @@
             </span>
           {/if}
 
-          <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h2>
+          <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{$t(plan.name)}</h2>
 
           <div class="mt-2 mb-4">
             {#if plan.price_monthly === null}
@@ -135,7 +135,7 @@
             {#each plan.highlights as item}
               <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Check size={14} class="text-primary-500 shrink-0 mt-0.5" />
-                {item}
+                {$t(item)}
               </li>
             {/each}
           </ul>
@@ -154,7 +154,7 @@
               {#if checkoutLoading === planKey}
                 <Zap size={15} class="animate-pulse" /> {$t('plans.subscribe_loading')}
               {:else}
-                <Zap size={15} /> {$t('plans.subscribe').replace('{name}', plan.name)}
+                <Zap size={15} /> {$t('plans.subscribe').replace('{name}', $t(plan.name))}
               {/if}
             </button>
           {/if}

@@ -6,7 +6,19 @@
   import { Eye, EyeOff, UserPlus, MessageCircle, RotateCcw, ShieldCheck } from 'lucide-svelte';
   import { getPlan, formatCents } from '$lib/plans';
   import PhoneInput from '$lib/components/PhoneInput.svelte';
-  import { t } from '$lib/i18n';
+  import { t, setLocale, isLocaleUserChosen, type Locale } from '$lib/i18n';
+
+  // ── Auto locale by country ──────────────────────────────────
+  const SPANISH_COUNTRIES = new Set(['ES','AR','MX','CL','CO','PE','UY','PY','BO','VE','EC']);
+
+  function handleCountryChange(countryCode: string) {
+    if (isLocaleUserChosen()) return;
+    let newLocale: Locale;
+    if (countryCode === 'BR') newLocale = 'pt-BR';
+    else if (SPANISH_COUNTRIES.has(countryCode)) newLocale = 'es';
+    else newLocale = 'en';
+    setLocale(newLocale, 'auto');
+  }
 
   const planKey = $derived($page.url.searchParams.get('plan') ?? 'free');
   const plan = $derived(getPlan(planKey));
@@ -160,7 +172,7 @@
   }
 </script>
 
-<svelte:head><title>Cadastro gratuito — rachao.app</title></svelte:head>
+<svelte:head><title>{$t('register.page_title')}</title></svelte:head>
 
 <div class="min-h-screen flex items-center justify-center p-4 relative bg-primary-900"
   style="background-image: url('/background-login.png'); background-size: cover; background-position: center;">
@@ -187,14 +199,14 @@
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-semibold text-primary-300 uppercase tracking-wide">{$t('register.plan_selected')}</span>
                   <span class="text-sm font-bold text-primary-300">
-                    {plan.price_monthly === null ? 'R$ 0/mês' : `${formatCents(plan.price_monthly)}/mês`}
+                    {plan.price_monthly === null ? $t('plans.free') : `${formatCents(plan.price_monthly)}${$t('plans.per_month')}`}
                   </span>
                 </div>
-                <p class="text-base font-semibold text-white">{plan.name}</p>
+                <p class="text-base font-semibold text-white">{$t(plan.name)}</p>
                 <ul class="space-y-1">
                   {#each plan.highlights as item}
                     <li class="text-xs text-primary-200/80 flex items-start gap-2">
-                      <span class="text-primary-400 shrink-0 mt-0.5">✓</span>{item}
+                      <span class="text-primary-400 shrink-0 mt-0.5">✓</span>{$t(item)}
                     </li>
                   {/each}
                 </ul>
@@ -258,7 +270,7 @@
           <form onsubmit={(e) => { e.preventDefault(); handleSendOtp(); }} class="space-y-5">
             <div class="form-group">
               <label class="label" for="whatsapp">{$t('register.phone_label')}</label>
-              <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required />
+              <PhoneInput id="whatsapp" bind:value={whatsapp} placeholder="11999990000" required oncountrychange={handleCountryChange} />
               <p class="text-xs text-gray-400 mt-1">{$t('register.phone_hint')}</p>
             </div>
 

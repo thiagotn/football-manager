@@ -93,7 +93,7 @@
             <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">{$t('account.current_plan')}</h2>
             <div class="flex items-center gap-2 mb-4">
               <span class="text-2xl font-black text-gray-900 dark:text-gray-100 capitalize">
-                {PLANS[sub.plan as keyof typeof PLANS]?.name ?? sub.plan}
+                {$t(PLANS[sub.plan as keyof typeof PLANS]?.name ?? sub.plan)}
               </span>
               <span class="badge {statusLabel(sub.status ?? sub.plan).cls}">
                 {statusLabel(sub.status ?? sub.plan).label}
@@ -169,7 +169,7 @@
                     {#if selectedPlan === pk}<Check size={12} class="text-white" />{/if}
                   </span>
                   <span class="flex-1 min-w-0">
-                    <span class="font-semibold text-gray-900 dark:text-gray-100 text-sm">{plan.name}</span>
+                    <span class="font-semibold text-gray-900 dark:text-gray-100 text-sm">{$t(plan.name)}</span>
                     <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{$t('account.members_hint').replace('{groups}', String(plan.groups)).replace('{members}', plan.members === -1 ? $t('account.members_unlimited') : String(plan.members))}</span>
                   </span>
                   <span class="text-sm font-bold text-primary-600 dark:text-primary-400 shrink-0">{price(pk, cycle)}</span>

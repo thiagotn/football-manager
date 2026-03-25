@@ -94,6 +94,7 @@
     type="tel"
     inputmode="numeric"
     autocomplete="tel-national"
+    maxlength="13"
     value={localNumber}
     oninput={onNumberInput}
     {placeholder}

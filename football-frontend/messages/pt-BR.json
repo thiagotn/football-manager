@@ -75,6 +75,7 @@
   "login.reset_success": "Senha redefinida! Faça login com a nova senha.",
   "login.connect_error": "Erro ao conectar",
 
+  "register.page_title": "Cadastro gratuito — rachao.app",
   "register.title": "Cadastro gratuito",
   "register.plan_selected": "Plano selecionado",
   "register.step_whatsapp": "WhatsApp",
@@ -626,6 +627,36 @@
   "plans.subscribe_loading": "Aguarde…",
   "plans.subscribe": "Assinar {name}",
   "plans.security_note": "🔒 Pagamentos processados com segurança via Stripe. Cancele a qualquer momento.",
+
+  "plan.free.name": "Grátis",
+  "plan.basic.name": "Básico",
+  "plan.pro.name": "Pro",
+
+  "plan.highlight.invites": "Convites por link e QR Code",
+  "plan.highlight.attendance": "Confirmação de presença",
+  "plan.highlight.team_draw": "Sorteio automático de times",
+  "plan.highlight.voting": "Votação pós-partida (Top 5 + Decepção)",
+  "plan.highlight.stats": "Estatísticas pessoais por jogador",
+
+  "plan.free.highlight.groups": "1 grupo ativo",
+  "plan.free.highlight.players": "Até 30 jogadores por grupo",
+  "plan.free.highlight.matches": "Até 3 partidas abertas",
+  "plan.free.highlight.history": "Histórico de 30 dias",
+  "plan.free.highlight.finance": "Controle financeiro do grupo (3 meses de histórico)",
+
+  "plan.basic.highlight.groups": "Até 3 grupos ativos",
+  "plan.basic.highlight.players": "Até 50 jogadores por grupo",
+  "plan.basic.highlight.matches": "Partidas ilimitadas",
+  "plan.basic.highlight.history": "Histórico de 6 meses",
+  "plan.basic.highlight.finance": "Controle financeiro do grupo (12 meses de histórico)",
+  "plan.basic.highlight.support": "Suporte por e-mail",
+
+  "plan.pro.highlight.groups": "Até 10 grupos ativos",
+  "plan.pro.highlight.players": "Jogadores ilimitados por grupo",
+  "plan.pro.highlight.matches": "Partidas ilimitadas",
+  "plan.pro.highlight.history": "Histórico ilimitado",
+  "plan.pro.highlight.finance": "Controle financeiro do grupo (histórico ilimitado)",
+  "plan.pro.highlight.support": "Suporte prioritário",
 
   "players.title": "Jogadores",
   "players.subtitle": "{n} jogadores cadastrados",

@@ -16,7 +16,7 @@ export interface PlanConfig {
 export const PLANS: Record<PlanKey, PlanConfig> = {
   free: {
     key: 'free',
-    name: 'Grátis',
+    name: 'plan.free.name',
     price_monthly: null,
     price_yearly: null,
     groups: 1,
@@ -24,22 +24,22 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     matches_open: 3,
     history_days: 30,
     highlights: [
-      '1 grupo ativo',
-      'Até 30 jogadores por grupo',
-      'Até 3 partidas abertas',
-      'Histórico de 30 dias',
-      'Convites por link e QR Code',
-      'Confirmação de presença',
-      'Sorteio automático de times',
-      'Votação pós-partida (Top 5 + Decepção)',
-      'Estatísticas pessoais por jogador',
-      'Controle financeiro do grupo (3 meses de histórico)',
+      'plan.free.highlight.groups',
+      'plan.free.highlight.players',
+      'plan.free.highlight.matches',
+      'plan.free.highlight.history',
+      'plan.highlight.invites',
+      'plan.highlight.attendance',
+      'plan.highlight.team_draw',
+      'plan.highlight.voting',
+      'plan.highlight.stats',
+      'plan.free.highlight.finance',
     ],
     available: true,
   },
   basic: {
     key: 'basic',
-    name: 'Básico',
+    name: 'plan.basic.name',
     price_monthly: 1990,   // centavos → R$ 19,90
     price_yearly: 19900,   // centavos → R$ 199,00 (~2 meses grátis)
     groups: 3,
@@ -47,23 +47,23 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     matches_open: -1,
     history_days: 180,
     highlights: [
-      'Até 3 grupos ativos',
-      'Até 50 jogadores por grupo',
-      'Partidas ilimitadas',
-      'Histórico de 6 meses',
-      'Convites por link e QR Code',
-      'Confirmação de presença',
-      'Sorteio automático de times',
-      'Votação pós-partida (Top 5 + Decepção)',
-      'Estatísticas pessoais por jogador',
-      'Controle financeiro do grupo (12 meses de histórico)',
-      'Suporte por e-mail',
+      'plan.basic.highlight.groups',
+      'plan.basic.highlight.players',
+      'plan.basic.highlight.matches',
+      'plan.basic.highlight.history',
+      'plan.highlight.invites',
+      'plan.highlight.attendance',
+      'plan.highlight.team_draw',
+      'plan.highlight.voting',
+      'plan.highlight.stats',
+      'plan.basic.highlight.finance',
+      'plan.basic.highlight.support',
     ],
     available: true,
   },
   pro: {
     key: 'pro',
-    name: 'Pro',
+    name: 'plan.pro.name',
     price_monthly: 3990,   // centavos → R$ 39,90
     price_yearly: 39900,   // centavos → R$ 399,00 (~2 meses grátis)
     groups: 10,
@@ -71,17 +71,17 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     matches_open: -1,
     history_days: -1,
     highlights: [
-      'Até 10 grupos ativos',
-      'Jogadores ilimitados por grupo',
-      'Partidas ilimitadas',
-      'Histórico ilimitado',
-      'Convites por link e QR Code',
-      'Confirmação de presença',
-      'Sorteio automático de times',
-      'Votação pós-partida (Top 5 + Decepção)',
-      'Estatísticas pessoais por jogador',
-      'Controle financeiro do grupo (histórico ilimitado)',
-      'Suporte prioritário',
+      'plan.pro.highlight.groups',
+      'plan.pro.highlight.players',
+      'plan.pro.highlight.matches',
+      'plan.pro.highlight.history',
+      'plan.highlight.invites',
+      'plan.highlight.attendance',
+      'plan.highlight.team_draw',
+      'plan.highlight.voting',
+      'plan.highlight.stats',
+      'plan.pro.highlight.finance',
+      'plan.pro.highlight.support',
     ],
     available: true,
   },
@@ -98,6 +98,10 @@ export function formatCents(cents: number): string {
   return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
 }
 
+/**
+ * @deprecated Pass a $t function and format in the template using formatCents + plans.per_month/per_year keys.
+ * Kept for backward compatibility; hardcoded suffixes are in Portuguese.
+ */
 export function formatPrice(plan: PlanConfig, cycle: 'monthly' | 'yearly' = 'monthly'): string {
   if (plan.price_monthly === null) return 'Grátis';
   const cents = cycle === 'yearly' ? (plan.price_yearly ?? plan.price_monthly * 10) : plan.price_monthly;
