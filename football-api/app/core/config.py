@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_verify_sid: str = ""
+    # OTP bypass — define um código fixo para aceitar em lugar do OTP real.
+    # Ativo apenas quando não-vazio E APP_ENV != "production".
+    # Usar somente em desenvolvimento local ou staging. Jamais definir em produção.
+    otp_bypass_code: str = ""
 
     # Billing (Stripe)
     billing_provider: str = "stripe"
