@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { PUBLIC_LEGAL_CONTACT_EMAIL } from '$env/static/public';
   import { themeStore } from '$lib/stores/theme';
   import { Sun, Moon, Link2 } from 'lucide-svelte';
@@ -69,8 +69,8 @@
     setTimeout(() => { copiedId = null; }, 2000);
   }
 
-  onMount(() => {
-    const hash = location.hash.slice(1);
+  $effect(() => {
+    const hash = $page.url.hash.slice(1);
     if (hash) {
       const idx = FAQ_IDS.indexOf(hash);
       if (idx !== -1) {
