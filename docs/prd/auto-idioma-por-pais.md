@@ -169,14 +169,14 @@ E acionar o callback com `selectedCountry.code`. Atenção: `dial: '1'` é compa
 
 ## 7. Critérios de Aceitação
 
-- [ ] Selecionar `BR` no PhoneInput do login **ou cadastro** muda o idioma para `pt-BR`
-- [ ] Selecionar `AR`, `MX`, `CL`, `CO`, `PE`, `UY`, `PY`, `BO`, `VE` ou `EC` muda o idioma para `es`
-- [ ] Selecionar `ES` (Espanha) muda o idioma para `es`
-- [ ] Selecionar qualquer outro país (US, GB, DE, JP, etc.) muda o idioma para `en`
-- [ ] Se o usuário já tiver trocado o idioma manualmente via seletor, a troca automática **não** ocorre
-- [ ] A mudança automática persiste na próxima visita como qualquer outra troca de idioma (salva em `localStorage`)
-- [ ] Após trocar de idioma manualmente, uma nova seleção de país **não** sobrescreve a preferência
-- [ ] O comportamento **não** se aplica a outros usos do PhoneInput fora de `/login` e `/register`
+- [x] Selecionar `BR` no PhoneInput do login **ou cadastro** muda o idioma para `pt-BR`
+- [x] Selecionar `AR`, `MX`, `CL`, `CO`, `PE`, `UY`, `PY`, `BO`, `VE` ou `EC` muda o idioma para `es`
+- [x] Selecionar `ES` (Espanha) muda o idioma para `es`
+- [x] Selecionar qualquer outro país (US, GB, DE, JP, etc.) muda o idioma para `en`
+- [x] Se o usuário já tiver trocado o idioma manualmente via seletor, a troca automática **não** ocorre
+- [x] A mudança automática persiste na próxima visita como qualquer outra troca de idioma (salva em `localStorage`)
+- [x] Após trocar de idioma manualmente, uma nova seleção de país **não** sobrescreve a preferência
+- [x] O comportamento **não** se aplica a outros usos do PhoneInput fora de `/login` e `/register`
 
 ---
 
@@ -186,30 +186,15 @@ E acionar o callback com `selectedCountry.code`. Atenção: `dial: '1'` é compa
 
 Todos os campos, labels, botões e mensagens da tela de login já usam `$t()` com traduções completas nos 3 idiomas. O `<title>` foi corrigido para `$t('login.page_title')` na implementação anterior.
 
-### `/register` — completamente internacionalizada, exceto o `<title>`
+### `/register` — completamente internacionalizada ✅
 
-Todos os campos, labels, botões, mensagens de erro e os 3 steps do fluxo de cadastro já usam `$t()` com chaves `register.*` traduzidas nos 3 idiomas.
+Todos os campos, labels, botões, mensagens de erro e os 3 steps do fluxo de cadastro usam `$t()` com chaves `register.*` traduzidas nos 3 idiomas.
 
 | Elemento | Status |
 |----------|--------|
 | Todos os labels, botões e mensagens (`register.*`) | ✅ internacionalizados |
 | Label "WhatsApp" e nome de marca | ℹ️ hardcoded — correto, é nome de marca |
-| `<title>` da página (`Cadastro gratuito — rachao.app`) | ⚠️ hardcoded — ajuste necessário |
-
-### Ajuste: `<title>` da tela de cadastro
-
-```typescript
-// Adicionar nos 3 arquivos de mensagens:
-"register.page_title": "Cadastro gratuito — rachao.app"  // pt-BR
-"register.page_title": "Free sign up — rachao.app"       // en
-"register.page_title": "Registro gratuito — rachao.app"  // es
-```
-
-```svelte
-<svelte:head><title>{$t('register.page_title')}</title></svelte:head>
-```
-
-Esse ajuste **faz parte do escopo desta implementação**.
+| `<title>` da página | ✅ usando `$t('register.page_title')` |
 
 ---
 
