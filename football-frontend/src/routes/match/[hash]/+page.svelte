@@ -421,12 +421,13 @@
             />
           </picture>
           <div class="absolute inset-0 bg-primary-900/80"></div>
-          <div class="relative">
-          <div class="flex items-center justify-between mb-1">
+          <div class="relative flex items-stretch gap-4">
+          <!-- Left: match details -->
+          <div class="flex-1 min-w-0">
+          <div class="flex items-center flex-wrap gap-x-2 gap-y-1 mb-1">
             <p class="text-sm font-bold text-white">
               #{match.number} {match.group_name}
             </p>
-            <div class="flex items-center gap-1.5">
               {#if match.status === 'in_progress'}
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
                   <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
@@ -456,7 +457,6 @@
                   </button>
                 {/if}
               {/if}
-            </div>
           </div>
           <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
           <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
@@ -494,7 +494,19 @@
           {#if match.notes}
             <p class="text-sm text-primary-200 mt-2 bg-primary-800/30 rounded-lg px-3 py-1.5">{match.notes}</p>
           {/if}
-          </div><!-- /relative content -->
+          </div><!-- /left column -->
+          <!-- Right: logo -->
+          <div class="flex items-center shrink-0 -mt-4 -mb-4 -mr-4">
+            <img
+              src="/logo.png"
+              alt="rachao.app"
+              width="320"
+              height="174"
+              aria-hidden="true"
+              class="w-52 drop-shadow-lg pointer-events-none select-none"
+            />
+          </div>
+          </div><!-- /flex row -->
         </div><!-- /banner header -->
 
         <!-- Scoreboard summary -->
