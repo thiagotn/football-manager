@@ -13,7 +13,9 @@ Aplicação web para gerenciamento de grupos de futebol: agendamento de partidas
 
 ## Arquitetura
 
-![Arquitetura rachao.app](docs/arquitetura_rachao_app.svg)
+<p align="center">
+  <img src="docs/arquitetura_rachao_app.svg" alt="Arquitetura rachao.app" />
+</p>
 
 ### Desenvolvimento local
 
