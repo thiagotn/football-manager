@@ -7,20 +7,18 @@
   <a href="https://codecov.io/gh/thiagotn/football-manager"><img src="https://codecov.io/gh/thiagotn/football-manager/branch/main/graph/badge.svg" alt="codecov" /></a>
 </p>
 
-PWA para gerenciamento de grupos de futebol.
+<p align="center">PWA para gerenciamento de grupos de futebol.</p>
 
----
-
-## Índice
-
-- [Arquitetura](#arquitetura)
-- [Pré-requisitos](#pré-requisitos)
-- [Executar localmente](#executar-localmente)
-- [Comandos úteis](#comandos-úteis)
-- [Estrutura do repositório](#estrutura-do-repositório)
-- [Variáveis de ambiente](#variáveis-de-ambiente)
-- [Deploy em produção](#deploy-em-produção-vps)
-- [Funcionalidades](#funcionalidades)
+<p align="center">
+  <a href="#arquitetura">Arquitetura</a> ·
+  <a href="#pré-requisitos">Pré-requisitos</a> ·
+  <a href="#executar-localmente">Executar localmente</a> ·
+  <a href="#comandos-úteis">Comandos úteis</a> ·
+  <a href="#estrutura-do-repositório">Estrutura</a> ·
+  <a href="#variáveis-de-ambiente">Variáveis de ambiente</a> ·
+  <a href="#deploy-em-produção-vps">Deploy</a> ·
+  <a href="#funcionalidades">Funcionalidades</a>
+</p>
 
 ---
 
