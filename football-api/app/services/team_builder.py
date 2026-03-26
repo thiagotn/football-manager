@@ -63,25 +63,31 @@ def build_teams(
     if n_times < 2:
         raise ValueError("Confirmados insuficientes para montar times.")
 
-    # Reservas são os jogadores excedentes (últimos da lista original)
-    useful = confirmed[: n_times * team_size]
-    reserves = confirmed[n_times * team_size :]
+    total_in_teams = n_times * team_size
 
-    goleiros = [p for p in useful if p["is_goalkeeper"]]
-    nao_goleiros = [p for p in useful if not p["is_goalkeeper"]]
+    # Separa goleiros e não-goleiros de TODOS os confirmados
+    goleiros = [p for p in confirmed if p["is_goalkeeper"]]
+    nao_goleiros = [p for p in confirmed if not p["is_goalkeeper"]]
 
     times: list[list[dict]] = [[] for _ in range(n_times)]
 
-    # 1. Distribui um goleiro por time
-    for i, g in enumerate(goleiros[:n_times]):
+    # 1. Distribui um goleiro por time (máximo 1 por time)
+    gk_para_times = goleiros[:n_times]
+    gk_excedentes = goleiros[n_times:]
+    for i, g in enumerate(gk_para_times):
         times[i].append(g)
 
-    # Goleiros excedentes voltam ao pool de não-goleiros
-    pool = sorted(
-        nao_goleiros + goleiros[n_times:],
+    # 2. Pool para snake draft: não-goleiros + goleiros excedentes, ordenados por skill
+    pool_todos = sorted(
+        nao_goleiros + gk_excedentes,
         key=lambda p: p["skill_stars"],
         reverse=True,
     )
+
+    # 3. Reservas = jogadores que não caberão nos times (os mais fracos do pool)
+    spots_restantes = total_in_teams - len(gk_para_times)
+    pool = pool_todos[:spots_restantes]
+    reserves = pool_todos[spots_restantes:]
 
     # 2. Snake draft respeitando a capacidade restante de cada time
     # Cada time precisa de exatamente (team_size - jogadores já atribuídos) picks

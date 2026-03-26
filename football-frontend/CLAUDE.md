@@ -58,6 +58,7 @@
 | Componente | Uso |
 |------------|-----|
 | `ConfirmDialog.svelte` | Confirmações destrutivas — bottom sheet mobile / modal desktop. Props: `bind:open`, `message`, `confirmLabel`, `danger`, `onConfirm` |
+| `MatchBannerCard.svelte` | Banner do card de partida (campo + logo + dados). Props: `match`, `isGroupAdmin?`, `togglingStatus?`, `onToggleOpen?`, `onAskClose?`. Aceita `children` (slot) para conteúdo extra dentro do card (ex: scoreboard). Usado em `/match/[hash]` e `/match/[hash]/teams`. |
 | `DatePicker.svelte` | Seletor de data |
 | `LanguageSwitcher.svelte` | Seletor de idioma (pt-BR / en / es) |
 | `Modal.svelte` | Modal genérico |
