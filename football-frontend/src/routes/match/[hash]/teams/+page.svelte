@@ -77,14 +77,14 @@
     const dateStr = `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${dt.getDate()} de ${MONTHS_PT[dt.getMonth()]}`;
 
     const lines: string[] = [
-      `⚽ *Times do Rachão — ${match.group_name}*`,
+      `*Times do Rachão — ${match.group_name}*`,
       `${dateStr} · ${match.location}`,
       '',
     ];
 
     if (teamsData.teams.length >= 2) {
-      lines.push(`🏆 *1º Jogo do Rachão*`);
-      lines.push(`${teamsData.teams[0].name} × ${teamsData.teams[1].name}`);
+      lines.push(`*1º Jogo do Rachão*`);
+      lines.push(`${teamsData.teams[0].name} x ${teamsData.teams[1].name}`);
       lines.push('');
     }
 
