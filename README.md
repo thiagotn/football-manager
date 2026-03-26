@@ -1,5 +1,3 @@
-# rachao.app
-
 <p align="center">
   <img src="football-frontend/static/logo.png" alt="rachao.app" width="280" />
 </p>
