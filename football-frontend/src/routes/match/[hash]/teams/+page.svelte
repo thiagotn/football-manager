@@ -6,15 +6,10 @@
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-  import { ChevronLeft, Copy, RefreshCw, Shield, Clock, MapPin } from 'lucide-svelte';
+  import { Copy, RefreshCw, Shield } from 'lucide-svelte';
   import { t } from '$lib/i18n';
-  import { formatMatchTimeRange } from '$lib/timezoneUtils';
-
-  const courtLabels: Record<string, string> = {
-    society: 'Society', futsal: 'Futsal', campo: 'Campo',
-    quadra: 'Quadra', beach: 'Beach Soccer', sintetico: 'Sintético',
-  };
 
   const matchHash = $page.params.hash;
 
@@ -73,11 +68,6 @@
     toastSuccess($t('teams.link_copied'));
   }
 
-  const MONTHS_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  function fmtDate(d: string) {
-    const dt = new Date(d + 'T12:00:00');
-    return `${dt.getDate()} de ${MONTHS_PT[dt.getMonth()]}`;
-  }
 </script>
 
 <svelte:head>
@@ -96,81 +86,7 @@
 
     <!-- Match banner card -->
     {#if match}
-      <div class="card mb-4 overflow-hidden">
-        <div class="relative overflow-hidden px-4 py-4 text-white" style="min-height:100px;">
-          <picture>
-            <source srcset="/banners/banner-{match.court_type ?? 'default'}.webp" type="image/webp" />
-            <img
-              src="/banners/banner-{match.court_type ?? 'default'}.jpg"
-              alt=""
-              aria-hidden="true"
-              width="1920"
-              height="600"
-              class="absolute inset-0 w-full h-full object-cover object-center"
-            />
-          </picture>
-          <div class="absolute inset-0 bg-primary-900/80"></div>
-          <div class="relative flex items-stretch gap-4">
-            <!-- Left: match details -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center flex-wrap gap-x-2 gap-y-1 mb-1">
-                <p class="text-sm font-bold text-white">#{match.number} {match.group_name}</p>
-                {#if match.status === 'in_progress'}
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                    {$t('match.live')}
-                  </span>
-                {:else}
-                  <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
-                    {match.status === 'open' ? $t('match.open') : $t('match.closed')}
-                  </span>
-                {/if}
-              </div>
-              <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
-              <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
-                <span class="flex items-center gap-1.5"><Clock size={14} />{formatMatchTimeRange(match.start_time, match.end_time, match.group_timezone)}</span>
-                {#if match.address}
-                  <a
-                    href="https://maps.google.com/?q={encodeURIComponent(match.address)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors">
-                    <MapPin size={14} />{match.location}
-                  </a>
-                {:else}
-                  <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
-                {/if}
-              </div>
-              {#if match.court_type || match.players_per_team || match.max_players}
-                <div class="flex flex-wrap gap-3 mt-2 text-primary-200 text-xs">
-                  {#if match.court_type}
-                    <span class="bg-primary-800/40 rounded px-2 py-0.5">{courtLabels[match.court_type] ?? match.court_type}</span>
-                  {/if}
-                  {#if match.players_per_team}
-                    <span class="bg-primary-800/40 rounded px-2 py-0.5">{$t('match.line_plus_goalkeeper').replace('{n}', String(match.players_per_team))}</span>
-                  {/if}
-                  {#if match.max_players}
-                    <span class="bg-primary-800/40 rounded px-2 py-0.5 {match.confirmed_count >= match.max_players ? 'text-red-300 font-semibold' : ''}">
-                      {$t('match.spots').replace('{n}', String(match.confirmed_count)).replace('{max}', String(match.max_players))}
-                    </span>
-                  {/if}
-                </div>
-              {/if}
-            </div>
-            <!-- Right: logo -->
-            <div class="flex items-center shrink-0 -mt-4 -mb-4 -mr-4">
-              <img
-                src="/logo.png"
-                alt="rachao.app"
-                width="320"
-                height="174"
-                aria-hidden="true"
-                class="w-52 drop-shadow-lg pointer-events-none select-none"
-              />
-            </div>
-          </div><!-- /flex row -->
-        </div><!-- /banner header -->
-      </div>
+      <MatchBannerCard {match} {isGroupAdmin} />
     {/if}
 
     <!-- Title + admin action -->

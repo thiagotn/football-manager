@@ -9,6 +9,7 @@
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X, Shuffle, ExternalLink, UserPlus } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import VoteForm from '$lib/components/VoteForm.svelte';
   import VoteResults from '$lib/components/VoteResults.svelte';
@@ -406,109 +407,13 @@
       </div>
 
     {:else}
-      <!-- Match card -->
-      <div class="card mb-4 overflow-hidden">
-        <div class="relative overflow-hidden px-4 py-4 text-white" style="min-height:100px;">
-          <picture>
-            <source srcset="/banners/banner-{match.court_type ?? 'default'}.webp" type="image/webp" />
-            <img
-              src="/banners/banner-{match.court_type ?? 'default'}.jpg"
-              alt=""
-              aria-hidden="true"
-              width="1920"
-              height="600"
-              class="absolute inset-0 w-full h-full object-cover object-center"
-            />
-          </picture>
-          <div class="absolute inset-0 bg-primary-900/80"></div>
-          <div class="relative flex items-stretch gap-4">
-          <!-- Left: match details -->
-          <div class="flex-1 min-w-0">
-          <div class="flex items-center flex-wrap gap-x-2 gap-y-1 mb-1">
-            <p class="text-sm font-bold text-white">
-              #{match.number} {match.group_name}
-            </p>
-              {#if match.status === 'in_progress'}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
-                  <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                  {$t('match.live')}
-                </span>
-              {:else}
-                <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
-                  {match.status === 'open' ? $t('match.open') : $t('match.closed')}
-                </span>
-              {/if}
-              {#if isGroupAdmin}
-                {#if match.status === 'closed'}
-                  <button
-                    onclick={() => toggleStatus('open')}
-                    disabled={togglingStatus}
-                    class="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                    title={$t('match.reopen_title')}>
-                    <LockOpen size={14} />
-                  </button>
-                {:else}
-                  <button
-                    onclick={askCloseMatch}
-                    disabled={togglingStatus}
-                    class="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                    title={$t('match.close_title')}>
-                    <Lock size={14} />
-                  </button>
-                {/if}
-              {/if}
-          </div>
-          <h1 class="text-xl font-bold capitalize">{fmtDate(match.match_date)}</h1>
-          <div class="flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
-            <span class="flex items-center gap-1.5"><Clock size={14} />{formatMatchTimeRange(match.start_time, match.end_time, match.group_timezone)}</span>
-            {#if match.address}
-              <a
-                href="https://maps.google.com/?q={encodeURIComponent(match.address)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors">
-                <MapPin size={14} />{match.location}
-              </a>
-            {:else}
-              <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
-            {/if}
-          </div>
-          {#if match.court_type || match.players_per_team || match.max_players || match.group_per_match_amount != null || match.group_monthly_amount != null}
-            <div class="flex flex-wrap gap-3 mt-2 text-primary-200 text-xs">
-              {#if match.court_type}
-                <span class="bg-primary-800/40 rounded px-2 py-0.5">{courtLabels[match.court_type]}</span>
-              {/if}
-              {#if match.players_per_team}
-                <span class="bg-primary-800/40 rounded px-2 py-0.5">{$t('match.line_plus_goalkeeper').replace('{n}', String(match.players_per_team))}</span>
-              {/if}
-              {#if match.max_players}
-                <span class="bg-primary-800/40 rounded px-2 py-0.5 {match.confirmed_count >= match.max_players ? 'text-red-300 font-semibold' : ''}">
-                  {$t('match.spots').replace('{n}', String(match.confirmed_count)).replace('{max}', String(match.max_players))}
-                </span>
-              {/if}
-              {#each fmtPricingParts(match.group_per_match_amount, match.group_monthly_amount) as part}
-                <span class="bg-amber-500/30 text-amber-200 rounded px-2 py-0.5 font-medium">{part}</span>
-              {/each}
-            </div>
-          {/if}
-          {#if match.notes}
-            <p class="text-sm text-primary-200 mt-2 bg-primary-800/30 rounded-lg px-3 py-1.5">{match.notes}</p>
-          {/if}
-          </div><!-- /left column -->
-          <!-- Right: logo -->
-          <div class="flex items-center shrink-0 -mt-4 -mb-4 -mr-4">
-            <img
-              src="/logo.png"
-              alt="rachao.app"
-              width="320"
-              height="174"
-              aria-hidden="true"
-              class="w-52 drop-shadow-lg pointer-events-none select-none"
-            />
-          </div>
-          </div><!-- /flex row -->
-        </div><!-- /banner header -->
-
+      <MatchBannerCard
+        {match}
+        {isGroupAdmin}
+        {togglingStatus}
+        onToggleOpen={() => toggleStatus('open')}
+        onAskClose={askCloseMatch}
+      >
         <!-- Scoreboard summary -->
         <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
           <div class="px-3 py-3 text-center">
@@ -533,7 +438,7 @@
             </p>
           </div>
         </div>
-      </div>
+      </MatchBannerCard>
 
       <!-- CTA for non-logged users on public groups with open spots -->
       {#if !$isLoggedIn && match.group_is_public && match.status === 'open' && (!match.max_players || match.confirmed_count < match.max_players)}
