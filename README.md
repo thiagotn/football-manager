@@ -1,4 +1,8 @@
-# Football Manager
+# rachao.app
+
+<p align="center">
+  <img src="football-frontend/static/logo.png" alt="rachao.app" width="280" />
+</p>
 
 [![CI / CD](https://github.com/thiagotn/football-manager/actions/workflows/main.yml/badge.svg)](https://github.com/thiagotn/football-manager/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/thiagotn/football-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/thiagotn/football-manager)
