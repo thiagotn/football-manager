@@ -7,7 +7,20 @@
   <a href="https://codecov.io/gh/thiagotn/football-manager"><img src="https://codecov.io/gh/thiagotn/football-manager/branch/main/graph/badge.svg" alt="codecov" /></a>
 </p>
 
-Aplicação web para gerenciamento de grupos de futebol: agendamento de partidas, controle de presenças e convites por link.
+PWA para gerenciamento de grupos de futebol.
+
+---
+
+## Índice
+
+- [Arquitetura](#arquitetura)
+- [Pré-requisitos](#pré-requisitos)
+- [Executar localmente](#executar-localmente)
+- [Comandos úteis](#comandos-úteis)
+- [Estrutura do repositório](#estrutura-do-repositório)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Deploy em produção](#deploy-em-produção-vps)
+- [Funcionalidades](#funcionalidades)
 
 ---
 
