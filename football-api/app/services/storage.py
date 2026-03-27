@@ -1,4 +1,6 @@
 """Supabase Storage — wrapper para upload/remoção de avatares."""
+import json
+
 import httpx
 import structlog
 
@@ -87,7 +89,7 @@ async def delete_avatar_by_url(avatar_url: str) -> None:
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.delete(
             delete_url,
-            json={"prefixes": [path]},
+            content=json.dumps({"prefixes": [path]}),
             headers={**_headers(), "Content-Type": "application/json"},
         )
         if resp.status_code not in (200, 204, 400):
