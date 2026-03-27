@@ -8,6 +8,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
   import { Copy, RefreshCw, Shield } from 'lucide-svelte';
   import { t } from '$lib/i18n';
   import { playerDisplayName } from '$lib/utils';
@@ -124,7 +125,7 @@
 </svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-2xl mx-auto px-3 pb-6 pt-3">
+  <main class="relative z-10 max-w-2xl mx-auto px-3 pt-3 {$isLoggedIn ? 'pb-6' : 'pb-24'}">
 
     <!-- Back button -->
     <button
@@ -256,6 +257,8 @@
 
   </main>
 </PageBackground>
+
+<JoinCTABanner />
 
 <ConfirmDialog
   bind:open={confirmOpen}

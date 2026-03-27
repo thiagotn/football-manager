@@ -52,7 +52,7 @@
         const joinWaitlist = $page.url.searchParams.get('join_waitlist');
         if (nextUrl) {
           const dest = joinWaitlist ? `${nextUrl}?join_waitlist=${joinWaitlist}` : nextUrl;
-          goto(dest);
+          goto(dest, { replaceState: true });
         } else {
           goto('/');
         }

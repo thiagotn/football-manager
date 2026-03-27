@@ -995,5 +995,9 @@
   "profile.avatar_upload_success": "Photo updated!",
   "profile.avatar_remove_success": "Photo removed.",
   "profile.avatar_policy": "By uploading a photo you agree to our image policy. Offensive content may result in profile deactivation.",
-  "profile.avatar_format": "JPG, PNG or WebP · Max. 5 MB"
+  "profile.avatar_format": "JPG, PNG or WebP · Max. 5 MB",
+
+  "cta.banner_title": "Manage your football game",
+  "cta.login": "Sign in",
+  "cta.register": "Sign up"
 }

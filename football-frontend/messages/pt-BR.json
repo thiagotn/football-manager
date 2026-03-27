@@ -995,5 +995,9 @@
   "profile.avatar_upload_success": "Foto atualizada!",
   "profile.avatar_remove_success": "Foto removida.",
   "profile.avatar_policy": "Ao enviar uma foto você concorda com nossa política de imagens. Conteúdo ofensivo pode resultar na desativação do perfil.",
-  "profile.avatar_format": "JPG, PNG ou WebP · Máx. 5 MB"
+  "profile.avatar_format": "JPG, PNG ou WebP · Máx. 5 MB",
+
+  "cta.banner_title": "Gerencie o seu rachão",
+  "cta.login": "Entrar",
+  "cta.register": "Cadastrar"
 }

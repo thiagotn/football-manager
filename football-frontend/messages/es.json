@@ -995,5 +995,9 @@
   "profile.avatar_upload_success": "¡Foto actualizada!",
   "profile.avatar_remove_success": "Foto eliminada.",
   "profile.avatar_policy": "Al subir una foto aceptas nuestra política de imágenes. El contenido ofensivo puede resultar en la desactivación del perfil.",
-  "profile.avatar_format": "JPG, PNG o WebP · Máx. 5 MB"
+  "profile.avatar_format": "JPG, PNG o WebP · Máx. 5 MB",
+
+  "cta.banner_title": "Gestiona tu pachanga",
+  "cta.login": "Entrar",
+  "cta.register": "Registrarse"
 }

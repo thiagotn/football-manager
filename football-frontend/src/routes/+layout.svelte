@@ -35,7 +35,6 @@
     $isLoggedIn
     && !$page.url.pathname.startsWith('/login')
     && !$page.url.pathname.startsWith('/invite')
-    && !$page.url.pathname.startsWith('/match/')
     && !$page.url.pathname.startsWith('/lp')
     && !$page.url.pathname.startsWith('/terms')
     && !$page.url.pathname.startsWith('/privacy')
