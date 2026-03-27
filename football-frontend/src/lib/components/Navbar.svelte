@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -26,6 +26,7 @@
   const links = [
     { href: '/',                      icon: Home,       labelKey: 'nav.dashboard' },
     { href: '/groups',                icon: Trophy,     labelKey: 'nav.groups' },
+    { href: '/ranking',               icon: Award,      labelKey: 'nav.ranking' },
     { href: '/discover',              icon: Compass,    labelKey: 'nav.discover',       playerOnly: true },
     { href: '/matches',               icon: Calendar,   labelKey: 'nav.matches',        playerOnly: true },
     { href: '/profile/stats',         icon: BarChart2,  labelKey: 'nav.score',          playerOnly: true },
@@ -74,6 +75,7 @@
   function getBackHref(pathname: string): string | null {
     if (pathname.startsWith('/groups/')) return '/groups';
     if (pathname === '/groups')   return '/';
+    if (pathname === '/ranking')  return '/';
     if (pathname === '/players')  return '/';
     if (pathname === '/profile')        return '/';
     if (pathname === '/matches')        return '/';

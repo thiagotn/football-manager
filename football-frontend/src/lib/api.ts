@@ -537,6 +537,36 @@ export const finance = {
     patch<FinancePayment>(`/finance/payments/${paymentId}`, data),
 };
 
+// ── Ranking ───────────────────────────────────────────────────
+export type RankingTopItem = {
+  position: number;
+  player_id: string;
+  name: string;
+  nickname: string | null;
+  avatar_url: string | null;
+  total_points: number;
+};
+
+export type RankingFlopItem = {
+  position: number;
+  player_id: string;
+  name: string;
+  nickname: string | null;
+  avatar_url: string | null;
+  total_flop_votes: number;
+};
+
+export type RankingResponse = {
+  period: 'month' | 'year' | 'all';
+  type: 'top' | 'flop';
+  items: RankingTopItem[] | RankingFlopItem[];
+};
+
+export const ranking = {
+  get: (period: 'month' | 'year' | 'all', type: 'top' | 'flop'): Promise<RankingResponse> =>
+    get<RankingResponse>(`/ranking?period=${period}&type=${type}`),
+};
+
 // ── Invites ───────────────────────────────────────────────────
 export const invites = {
   create: (groupId: string) => post<{ id: string; token: string; expires_at: string }>('/invites', { group_id: groupId }),

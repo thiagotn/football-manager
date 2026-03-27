@@ -96,10 +96,10 @@
 
   function shareResults() {
     if (!results || !match) return;
-    const top3 = results.top5.filter(p => p.position <= 3).map(p => `${MEDALS[p.position]} ${p.name} (${p.points} pts)`).join('\n');
-    const rest = results.top5.filter(p => p.position > 3).map(p => `#${p.position} ${p.name} (${p.points} pts)`).join('\n');
+    const top3 = results.top5.filter(p => p.position <= 3).map(p => `${MEDALS[p.position]} ${playerDisplayName(p.name, p.nickname)} (${p.points} pts)`).join('\n');
+    const rest = results.top5.filter(p => p.position > 3).map(p => `#${p.position} ${playerDisplayName(p.name, p.nickname)} (${p.points} pts)`).join('\n');
     const flop = results.flop.length > 0
-      ? results.flop.map(p => `😬 ${p.name} (${p.votes} voto${p.votes !== 1 ? 's' : ''})`).join('\n')
+      ? results.flop.map(p => `😬 ${playerDisplayName(p.name, p.nickname)} (${p.votes} voto${p.votes !== 1 ? 's' : ''})`).join('\n')
       : null;
     const time = match.start_time.slice(0, 5) + (match.end_time ? ` – ${match.end_time.slice(0, 5)}` : '');
     const lines = [

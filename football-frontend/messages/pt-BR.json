@@ -999,5 +999,19 @@
 
   "cta.banner_title": "Gerencie o seu rachão",
   "cta.login": "Entrar",
-  "cta.register": "Cadastrar"
+  "cta.register": "Cadastrar",
+
+  "nav.ranking": "Ranking",
+  "ranking.title": "Ranking Geral",
+  "ranking.subtitle": "Os melhores de toda a plataforma",
+  "ranking.tab_top": "Melhores",
+  "ranking.tab_flop": "Decepções",
+  "ranking.period_month": "Mês",
+  "ranking.period_year": "Ano",
+  "ranking.period_all": "Todos os tempos",
+  "ranking.points_label": "pts",
+  "ranking.votes_label": "votos",
+  "ranking.you_badge": "Você",
+  "ranking.empty": "Nenhuma votação registrada para este período.",
+  "ranking.empty_sub": "As partidas precisam ter ao menos 10 jogadores para contar no ranking."
 }

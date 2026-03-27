@@ -23,6 +23,7 @@
 | `/match/[hash]` | Detalhe da partida (público + autenticado) |
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
+| `/ranking` | Ranking geral da plataforma — top 10 melhores e decepções (público) |
 
 ### Autenticadas
 | Rota | Descrição |
@@ -93,7 +94,7 @@
 
 ## Namespaces de `api.ts`
 
-`auth` · `players` · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites`
+`auth` · `players` · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking`
 
 ---
 

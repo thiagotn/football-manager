@@ -12,7 +12,7 @@
   import Toast from '$lib/components/Toast.svelte';
   import { initLocale, t } from '$lib/i18n';
 
-  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy'];
+  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy', '/ranking'];
 
   onMount(() => {
     themeStore.init();

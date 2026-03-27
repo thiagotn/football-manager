@@ -999,5 +999,19 @@
 
   "cta.banner_title": "Gestiona tu pachanga",
   "cta.login": "Entrar",
-  "cta.register": "Registrarse"
+  "cta.register": "Registrarse",
+
+  "nav.ranking": "Ranking",
+  "ranking.title": "Ranking General",
+  "ranking.subtitle": "Los mejores de toda la plataforma",
+  "ranking.tab_top": "Mejores",
+  "ranking.tab_flop": "Decepciones",
+  "ranking.period_month": "Mes",
+  "ranking.period_year": "Año",
+  "ranking.period_all": "Todos los tiempos",
+  "ranking.points_label": "pts",
+  "ranking.votes_label": "votos",
+  "ranking.you_badge": "Tú",
+  "ranking.empty": "No hay votaciones registradas para este período.",
+  "ranking.empty_sub": "Los partidos necesitan al menos 10 jugadores para contar en el ranking."
 }

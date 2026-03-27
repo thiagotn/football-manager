@@ -30,6 +30,7 @@ A última migration criada é `033_player_avatar_url.sql`.
 | `push.py` | Web Push (VAPID) |
 | `reviews.py` | Avaliações do app |
 | `subscriptions.py` | Planos e assinaturas |
+| `ranking.py` | Ranking geral da plataforma (público) |
 | `teams.py` | Sorteio de times |
 | `votes.py` | Votação pós-partida |
 | `webhooks.py` | Webhooks do Stripe |
@@ -38,7 +39,7 @@ A última migration criada é `033_player_avatar_url.sql`.
 
 ## Repositories existentes (`app/db/repositories/`)
 
-`base`, `finance_repo`, `group_repo`, `group_stats_repo`, `invite_repo`, `match_repo`, `player_repo`, `player_stats_repo`, `review_repo`, `subscription_repo`, `team_repo`, `vote_repo`, `waitlist_repo`
+`base`, `finance_repo`, `group_repo`, `group_stats_repo`, `invite_repo`, `match_repo`, `player_repo`, `player_stats_repo`, `ranking_repo`, `review_repo`, `subscription_repo`, `team_repo`, `vote_repo`, `waitlist_repo`
 
 ---
 
@@ -50,7 +51,7 @@ A última migration criada é `033_player_avatar_url.sql`.
 
 ## Schemas existentes (`app/schemas/`)
 
-`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `player`, `player_stats`, `review`, `subscription`, `team`, `vote`
+`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `player`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
 
 ---
 

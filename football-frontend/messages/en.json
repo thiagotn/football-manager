@@ -999,5 +999,19 @@
 
   "cta.banner_title": "Manage your football game",
   "cta.login": "Sign in",
-  "cta.register": "Sign up"
+  "cta.register": "Sign up",
+
+  "nav.ranking": "Ranking",
+  "ranking.title": "Overall Ranking",
+  "ranking.subtitle": "The best players across the platform",
+  "ranking.tab_top": "Top Players",
+  "ranking.tab_flop": "Worst Players",
+  "ranking.period_month": "Month",
+  "ranking.period_year": "Year",
+  "ranking.period_all": "All time",
+  "ranking.points_label": "pts",
+  "ranking.votes_label": "votes",
+  "ranking.you_badge": "You",
+  "ranking.empty": "No votes recorded for this period.",
+  "ranking.empty_sub": "Matches need at least 10 players to count in the ranking."
 }
