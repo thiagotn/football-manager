@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { ranking as rankingApi } from '$lib/api';
   import type { RankingTopItem, RankingFlopItem } from '$lib/api';
   import { currentPlayer } from '$lib/stores/auth';
@@ -44,7 +43,10 @@
     }
   }
 
-  onMount(() => {
+  let _initialized = false;
+  $effect(() => {
+    if (_initialized) return;
+    _initialized = true;
     loadRanking(selectedPeriod);
   });
 
@@ -183,6 +185,15 @@
             {/each}
           </div>
         {/each}
+      </div>
+
+    {:else if error}
+      <div class="card p-8 text-center">
+        <p class="text-3xl mb-3">⚠️</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{error}</p>
+        <button onclick={() => loadRanking(selectedPeriod)} class="mt-4 btn btn-secondary btn-sm">
+          Tentar novamente
+        </button>
       </div>
 
     {:else}
