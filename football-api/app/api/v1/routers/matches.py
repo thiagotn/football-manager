@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.core.dependencies import DB, CurrentPlayer
+from app.core.dependencies import DB, CurrentPlayer, OptionalPlayer
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.match_repo import MatchRepository
@@ -78,7 +78,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
 @router.get("/matches/discover", response_model=list[DiscoverMatchResponse])
 async def discover_matches(
     db: DB,
-    current: CurrentPlayer,
+    current: OptionalPlayer,
     date_from: Annotated[date | None, Query()] = None,
     date_to: Annotated[date | None, Query()] = None,
     court_type: Annotated[list[str] | None, Query()] = None,
@@ -86,12 +86,14 @@ async def discover_matches(
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    """Partidas abertas de grupos públicos onde o jogador não é membro."""
-    if current.role == PlayerRole.ADMIN:
+    """Partidas abertas de grupos públicos. Não requer autenticação.
+    Jogadores autenticados não veem partidas de grupos onde já são membros."""
+    if current is not None and current.role == PlayerRole.ADMIN:
         return []
+    player_id = current.id if current is not None else None
     m_repo = MatchRepository(db)
     rows = await m_repo.get_discover_matches(
-        player_id=current.id,
+        player_id=player_id,
         date_from=date_from,
         date_to=date_to,
         court_types=court_type,

@@ -220,7 +220,7 @@ class MatchRepository(BaseRepository[Match]):
 
     async def get_discover_matches(
         self,
-        player_id: UUID,
+        player_id: UUID | None,
         date_from: date_type | None = None,
         date_to: date_type | None = None,
         court_types: list[str] | None = None,
@@ -228,15 +228,13 @@ class MatchRepository(BaseRepository[Match]):
         limit: int = 20,
         offset: int = 0,
     ) -> list[dict]:
-        """Partidas abertas de grupos públicos que o jogador não integra, com vagas disponíveis."""
+        """Partidas abertas de grupos públicos. Se player_id fornecido, exclui grupos
+        onde o jogador já é membro e partidas em que já está na lista de espera."""
         from app.models.group import Group
         from app.models.waitlist import MatchWaitlist
 
         BRAZIL = timezone(timedelta(hours=-3))
         today = datetime.now(BRAZIL).date()
-
-        member_group_ids = select(GroupMember.group_id).where(GroupMember.player_id == player_id)
-        waitlisted_match_ids = select(MatchWaitlist.match_id).where(MatchWaitlist.player_id == player_id)
 
         confirmed_sub = (
             select(Attendance.match_id, func.count().label("cnt"))
@@ -244,6 +242,22 @@ class MatchRepository(BaseRepository[Match]):
             .group_by(Attendance.match_id)
             .subquery()
         )
+
+        base_conditions = [
+            Group.is_public.is_(True),
+            Match.status == MatchStatus.OPEN,
+            Match.match_date >= today,
+            or_(
+                Match.max_players.is_(None),
+                func.coalesce(confirmed_sub.c.cnt, 0) < Match.max_players,
+            ),
+        ]
+
+        if player_id is not None:
+            member_group_ids = select(GroupMember.group_id).where(GroupMember.player_id == player_id)
+            waitlisted_match_ids = select(MatchWaitlist.match_id).where(MatchWaitlist.player_id == player_id)
+            base_conditions.append(Match.group_id.not_in(member_group_ids))
+            base_conditions.append(Match.id.not_in(waitlisted_match_ids))
 
         stmt = (
             select(
@@ -254,17 +268,7 @@ class MatchRepository(BaseRepository[Match]):
             )
             .join(Group, Group.id == Match.group_id)
             .outerjoin(confirmed_sub, confirmed_sub.c.match_id == Match.id)
-            .where(
-                Group.is_public.is_(True),
-                Match.status == MatchStatus.OPEN,
-                Match.match_date >= today,
-                Match.group_id.not_in(member_group_ids),
-                Match.id.not_in(waitlisted_match_ids),
-                or_(
-                    Match.max_players.is_(None),
-                    func.coalesce(confirmed_sub.c.cnt, 0) < Match.max_players,
-                ),
-            )
+            .where(*base_conditions)
         )
 
         if date_from:

@@ -51,7 +51,7 @@ A última migration criada é `033_player_avatar_url.sql`.
 
 ## Schemas existentes (`app/schemas/`)
 
-`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `player`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
+`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `player`, `player_public`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
 
 ---
 

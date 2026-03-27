@@ -9,6 +9,7 @@ Regras de negócio cobertas:
 - POST /groups/{id}/matches não-admin do grupo → 403
 - DELETE /groups/{id}/matches/{id} não-admin do grupo → 403
 - _build_detail exclui super admin das listas de presença
+- GET /matches/discover sem token → 200 (público)
 """
 from datetime import time
 from unittest.mock import AsyncMock, MagicMock
@@ -317,3 +318,20 @@ async def test_create_match_group_not_found_returns_404(api_client, mocker):
     )
 
     assert response.status_code == 404
+
+
+# ── GET /matches/discover — público (sem autenticação) ────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_discover_matches_without_auth_returns_200(anon_client, mocker):
+    """Discover é público — sem token retorna 200 com lista vazia."""
+    mocker.patch(
+        "app.api.v1.routers.matches.MatchRepository.get_discover_matches",
+        new=AsyncMock(return_value=[]),
+    )
+
+    response = await anon_client.get("/api/v1/matches/discover")
+
+    assert response.status_code == 200
+    assert response.json() == []

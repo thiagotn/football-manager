@@ -116,6 +116,22 @@ export type SignupStats = {
   recent: Array<{ id: string; name: string; nickname: string | null; whatsapp: string; active: boolean; created_at: string }>;
 };
 
+export interface PlayerPublicStats {
+  player_id: string;
+  name: string;
+  nickname: string | null;
+  avatar_url: string | null;
+  skill_stars: number;
+  total_matches_confirmed: number;
+  attendance_rate: number;
+  current_streak: number;
+  best_streak: number;
+  top1_count: number;
+  top5_count: number;
+  total_vote_points: number;
+  total_flop_votes: number;
+}
+
 export const players = {
   list: () => get<Player[]>('/players'),
   get: (id: string) => get<Player>(`/players/${id}`),
@@ -146,6 +162,7 @@ export const players = {
     });
   },
   removeAvatar: () => request<Player>('/players/me/avatar', { method: 'DELETE' }),
+  getPublicStats: (id: string): Promise<PlayerPublicStats> => get(`/players/${id}/public-stats`),
 };
 
 // ── Groups ────────────────────────────────────────────────────

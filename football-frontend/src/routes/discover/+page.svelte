@@ -6,6 +6,7 @@
   import { Compass, Calendar, Clock, MapPin, Filter, X } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
+  import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
   import { toastError, toastSuccess } from '$lib/stores/toast';
   import { t, locale } from '$lib/i18n';
   import { untrack } from 'svelte';
@@ -30,8 +31,7 @@
   let submitting = $state(false);
 
   $effect(() => {
-    if (!$isLoggedIn) { goto('/login?next=/discover'); return; }
-    if ($isAdmin) { goto('/'); return; }
+    if ($isLoggedIn && $isAdmin) { goto('/'); return; }
   });
 
   function dateParams(): { date_from?: string; date_to?: string } {
@@ -70,7 +70,7 @@
 
   let _loaded = false;
   $effect(() => {
-    if ($isLoggedIn && !$isAdmin && !_loaded) {
+    if (!$isAdmin && !_loaded) {
       _loaded = true;
       untrack(() => load(true));
     }
@@ -148,7 +148,7 @@
 <svelte:head><title>Descobrir Rachões — rachao.app</title></svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8 {!$isLoggedIn ? 'pb-24' : ''}"  >
     <div class="flex items-start justify-between mb-6 gap-3">
       <div class="min-w-0">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
@@ -290,11 +290,19 @@
               <a href="/match/{dm.hash}" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">
                 {$t('discover.see_details')}
               </a>
-              <button
-                onclick={() => { waitlistMatch = dm; showModal = true; }}
-                class="btn btn-sm btn-primary">
-                {$t('discover.want_to_play')}
-              </button>
+              {#if $isLoggedIn}
+                <button
+                  onclick={() => { waitlistMatch = dm; showModal = true; }}
+                  class="btn btn-sm btn-primary">
+                  {$t('discover.want_to_play')}
+                </button>
+              {:else}
+                <a
+                  href="/register?next=/discover"
+                  class="btn btn-sm btn-primary">
+                  {$t('discover.want_to_play')}
+                </a>
+              {/if}
             </div>
           </div>
         {/each}
@@ -315,6 +323,8 @@
     {/if}
   </main>
 </PageBackground>
+
+<JoinCTABanner />
 
 {#if waitlistMatch && showModal}
   <WaitlistModal

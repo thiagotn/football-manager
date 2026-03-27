@@ -88,6 +88,7 @@
     if (pathname === '/terms')    return '/';
     if (pathname === '/privacy')  return '/';
     if (pathname.startsWith('/admin/')) return '/';
+    if (pathname.startsWith('/players/')) return '/ranking';
     return null;
   }
 

@@ -13,6 +13,7 @@
 |------|-----------|
 | `/` | Redirect para `/dashboard` ou `/login` |
 | `/lp` | Landing page |
+| `/jogar` | Landing page para jogadores (SEO) |
 | `/faq` | FAQ público |
 | `/plans` | Comparativo de planos |
 | `/privacy` | Política de privacidade |
@@ -24,12 +25,13 @@
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
 | `/ranking` | Ranking geral da plataforma — top 10 melhores e decepções (público) |
+| `/discover` | Rachões públicos abertos com filtros (público + autenticado) |
+| `/players/[id]` | Perfil público do jogador com Rachão Score |
 
 ### Autenticadas
 | Rota | Descrição |
 |------|-----------|
 | `/dashboard` | Home do jogador (redireciona admin para `/admin`) |
-| `/discover` | Rachões públicos abertos com filtros |
 | `/groups` | Listagem de grupos do usuário |
 | `/groups/new` | Criação de grupo |
 | `/groups/[id]` | Detalhe do grupo (abas: Próximos / Últimos / Jogadores / Estatísticas / Financeiro) |
@@ -94,7 +96,7 @@
 
 ## Namespaces de `api.ts`
 
-`auth` · `players` · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking`
+`auth` · `players` (inclui `getPublicStats`) · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking`
 
 ---
 

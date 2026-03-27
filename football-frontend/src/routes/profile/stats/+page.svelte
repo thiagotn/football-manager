@@ -4,10 +4,11 @@
   import { currentPlayer, isLoggedIn } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { playerDisplayName } from '$lib/utils.js';
-  import { Users, Trophy, Clock, ThumbsDown, Flame, Shield, BarChart2 } from 'lucide-svelte';
+  import { Users, Trophy, Clock, ThumbsDown, Flame, Shield, BarChart2, Share2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import { t } from '$lib/i18n';
+  import { toastSuccess, toastError } from '$lib/stores/toast';
 
   let stats = $state<PlayerFullStats | null>(null);
   let loading = $state(true);
@@ -53,6 +54,27 @@
     return groups.some(g => g.is_goalkeeper);
   }
 
+  async function shareScore() {
+    const url = `https://rachao.app/players/${$currentPlayer?.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Rachão Score — ' + ($currentPlayer?.nickname || $currentPlayer?.name),
+          url,
+        });
+      } catch {
+        /* user cancelled */
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toastSuccess($t('stats.share_copied'));
+      } catch {
+        toastError($t('stats.share_error'));
+      }
+    }
+  }
+
   const MARKET_VALUE_TIERS = [
     ['1 camisa do Brasil made in thailand', '1 meião furado', '1 litrão de guaraná genérico', '1 bombom Sonho de Valsa'],
     ['3 litrão de Heineken', '1 par de Kichute novo', '1 frango assado + refri', '1 chuteira de couro legítimo'],
@@ -82,6 +104,11 @@
         </h1>
         <p class="text-sm text-white/60 mt-0.5">{$t('stats.subtitle')}</p>
       </div>
+      <button
+        onclick={shareScore}
+        class="btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <Share2 size={14} /> {$t('stats.share_score')}
+      </button>
     </div>
 
     {#if loading}

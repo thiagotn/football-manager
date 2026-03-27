@@ -58,7 +58,24 @@ async def require_group_admin(
     return current_player
 
 
+async def get_optional_player(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> Player | None:
+    if not credentials:
+        return None
+    player_id = decode_access_token(credentials.credentials)
+    if not player_id:
+        return None
+    repo = PlayerRepository(db)
+    player = await repo.get(UUID(player_id))
+    if not player or not player.active:
+        return None
+    return player
+
+
 # Type aliases for cleaner signatures
 CurrentPlayer = Annotated[Player, Depends(get_current_player)]
 AdminPlayer = Annotated[Player, Depends(require_admin)]
+OptionalPlayer = Annotated[Player | None, Depends(get_optional_player)]
 DB = Annotated[AsyncSession, Depends(get_db)]

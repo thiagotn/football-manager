@@ -11,6 +11,9 @@ Regras de negócio cobertas:
 - PATCH /players/{id} player tenta alterar role → 403
 - DELETE /players/{id} não encontrado → 404
 - POST /players/{id}/reset-password não encontrado → 404
+- GET /players/{id}/public-stats jogador válido → 200
+- GET /players/{id}/public-stats jogador inativo → 404
+- GET /players/{id}/public-stats não encontrado → 404
 """
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -175,5 +178,95 @@ async def test_reset_password_player_not_found_returns_404(admin_client, mocker)
     )
 
     response = await admin_client.post(f"/api/v1/players/{uuid4()}/reset-password")
+
+    assert response.status_code == 404
+
+
+# ── GET /players/{id}/public-stats ───────────────────────────────────────────
+
+
+def _make_full_stats_mock():
+    """Cria mock de PlayerFullStats com dados mínimos."""
+    from app.schemas.player_stats import PlayerFullStats, GroupStatItem
+
+    return PlayerFullStats(
+        total_matches_confirmed=42,
+        total_minutes_played=2520,
+        total_vote_points=115,
+        top1_count=3,
+        top5_count=18,
+        total_flop_votes=2,
+        current_streak=4,
+        best_streak=9,
+        attendance_rate=87,
+        monthly_stats=[],
+        recent_matches=[],
+        groups=[
+            GroupStatItem(
+                group_id=str(uuid4()),
+                group_name="Pelada dos Amigos",
+                skill_stars=4,
+                is_goalkeeper=False,
+                role="member",
+                matches_confirmed=42,
+            )
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_player_public_stats_returns_200(api_client, mocker):
+    """Endpoint público retorna 200 com campos corretos."""
+    player_id = uuid4()
+    player = _make_player_db(player_id)
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerStatsRepository.get_full_stats",
+        new=AsyncMock(return_value=_make_full_stats_mock()),
+    )
+
+    response = await api_client.get(f"/api/v1/players/{player_id}/public-stats")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["player_id"] == str(player_id)
+    assert data["name"] == player.name
+    assert data["total_matches_confirmed"] == 42
+    assert data["attendance_rate"] == 87
+    assert data["skill_stars"] == 4
+    assert data["top5_count"] == 18
+    assert data["total_flop_votes"] == 2
+    # Campos sensíveis não devem aparecer
+    assert "whatsapp" not in data
+    assert "role" not in data
+
+
+@pytest.mark.asyncio
+async def test_get_player_public_stats_not_found_returns_404(api_client, mocker):
+    """Jogador não encontrado retorna 404."""
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get(f"/api/v1/players/{uuid4()}/public-stats")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_player_public_stats_inactive_returns_404(api_client, mocker):
+    """Jogador inativo retorna 404."""
+    player = _make_player_db()
+    player.active = False
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+
+    response = await api_client.get(f"/api/v1/players/{uuid4()}/public-stats")
 
     assert response.status_code == 404

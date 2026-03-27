@@ -24,6 +24,7 @@ from app.models.player import Player, PlayerRole
 from app.schemas.match import MatchResponse, PlayerMatchItem
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
 from app.schemas.player_stats import PlayerFullStats
+from app.schemas.player_public import PlayerPublicStats
 from app.services import storage as storage_service
 
 router = APIRouter(prefix="/players", tags=["players"])
@@ -164,6 +165,37 @@ async def get_signup_stats(db: DB, _: AdminPlayer, limit: int = Query(30, le=100
             for p in recent
         ],
     }
+
+
+@router.get("/{player_id}/public-stats", response_model=PlayerPublicStats)
+async def get_player_public_stats(player_id: uuid.UUID, db: DB):
+    """Public endpoint — no auth required. Returns player public stats."""
+    repo = PlayerRepository(db)
+    player = await repo.get(player_id)
+    if not player or not player.active:
+        raise NotFoundError("Jogador não encontrado")
+
+    stats_repo = PlayerStatsRepository(db)
+    full_stats = await stats_repo.get_full_stats(player_id)
+
+    # Best skill_stars across all groups (max), default to 3 if no groups
+    skill_stars = max((g.skill_stars for g in full_stats.groups), default=3)
+
+    return PlayerPublicStats(
+        player_id=player.id,
+        name=player.name,
+        nickname=player.nickname,
+        avatar_url=player.avatar_url,
+        skill_stars=skill_stars,
+        total_matches_confirmed=full_stats.total_matches_confirmed,
+        attendance_rate=full_stats.attendance_rate,
+        current_streak=full_stats.current_streak,
+        best_streak=full_stats.best_streak,
+        top1_count=full_stats.top1_count,
+        top5_count=full_stats.top5_count,
+        total_vote_points=full_stats.total_vote_points,
+        total_flop_votes=full_stats.total_flop_votes,
+    )
 
 
 @router.get("/{player_id}", response_model=PlayerResponse)
