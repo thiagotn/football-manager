@@ -37,6 +37,7 @@ def _make_player(active: bool = True, whatsapp: str = "+5511999990001") -> Magic
     p.role = PlayerRole.PLAYER
     p.active = active
     p.must_change_password = False
+    p.avatar_url = None
     return p
 
 

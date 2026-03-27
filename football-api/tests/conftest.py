@@ -35,6 +35,7 @@ def player_user() -> Player:
     p.role = PlayerRole.PLAYER
     p.active = True
     p.must_change_password = False
+    p.avatar_url = None
     return p
 
 
@@ -47,6 +48,7 @@ def admin_user() -> Player:
     p.role = PlayerRole.ADMIN
     p.active = True
     p.must_change_password = False
+    p.avatar_url = None
     return p
 
 

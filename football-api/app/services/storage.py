@@ -24,16 +24,30 @@ def _is_configured() -> bool:
     return bool(s.supabase_url and s.supabase_service_role_key)
 
 
-async def upload_avatar(player_id: str, webp_data: bytes) -> str:
+def extract_storage_path(avatar_url: str) -> str | None:
+    """Extrai o path relativo do arquivo a partir da URL pública do Supabase Storage.
+
+    Ex: ".../object/public/avatars/uuid-token.webp" → "uuid-token.webp"
+    Retorna None se a URL não corresponder ao padrão esperado.
+    """
+    marker = f"/public/{BUCKET}/"
+    idx = avatar_url.find(marker)
+    if idx == -1:
+        return None
+    return avatar_url[idx + len(marker):]
+
+
+async def upload_avatar(player_id: str, webp_data: bytes, token: str) -> str:
     """Faz upload do avatar (WebP) para o Supabase Storage.
 
+    O nome do arquivo inclui um token aleatório para evitar enumeração por player_id.
     Retorna a URL pública do arquivo.
     Lança RuntimeError se o Storage não estiver configurado.
     """
     if not _is_configured():
         raise RuntimeError("Supabase Storage não configurado (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).")
 
-    path = f"{player_id}.webp"
+    path = f"{player_id}-{token}.webp"
     upload_url = f"{_base_url()}/storage/v1/object/{BUCKET}/{path}"
 
     async with httpx.AsyncClient(timeout=20) as client:
@@ -55,12 +69,19 @@ async def upload_avatar(player_id: str, webp_data: bytes) -> str:
     return public_url
 
 
-async def delete_avatar(player_id: str) -> None:
-    """Remove o avatar do Supabase Storage. Silencioso se não configurado ou não encontrado."""
+async def delete_avatar_by_url(avatar_url: str) -> None:
+    """Remove o avatar do Supabase Storage a partir da URL pública armazenada.
+
+    Silencioso se o Storage não estiver configurado ou o arquivo não existir.
+    """
     if not _is_configured():
         return
 
-    path = f"{player_id}.webp"
+    path = extract_storage_path(avatar_url)
+    if not path:
+        logger.warning("avatar_delete_invalid_url", url=avatar_url)
+        return
+
     delete_url = f"{_base_url()}/storage/v1/object/{BUCKET}"
 
     async with httpx.AsyncClient(timeout=10) as client:
@@ -70,7 +91,6 @@ async def delete_avatar(player_id: str) -> None:
             headers={**_headers(), "Content-Type": "application/json"},
         )
         if resp.status_code not in (200, 204, 400):
-            # 400 pode ocorrer se o arquivo não existir — ignorar
             logger.warning("storage_delete_warning", status=resp.status_code, body=resp.text)
 
-    logger.info("avatar_deleted", player_id=player_id)
+    logger.info("avatar_deleted", path=path)

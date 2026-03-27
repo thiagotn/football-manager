@@ -3,9 +3,15 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Query, Request, UploadFile, File
+from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, status
 from PIL import Image, UnidentifiedImageError
+from PIL.Image import DecompressionBombError
 from sqlalchemy import select, text
+
+# Limita o tamanho máximo de imagem aceito pelo Pillow globalmente para evitar
+# decompression bombs (e.g. PNG de 2MB que expande para GBs em RAM).
+# 4M pixels ≈ 2000×2000 — mais que suficiente para um avatar de 256×256.
+Image.MAX_IMAGE_PIXELS = 4_000_000
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, ValidationError
@@ -20,6 +26,22 @@ from app.schemas.player_stats import PlayerFullStats
 from app.services import storage as storage_service
 
 router = APIRouter(prefix="/players", tags=["players"])
+
+AVATAR_RATE_LIMIT = 5        # uploads por janela
+AVATAR_RATE_WINDOW = "1 hour"  # janela de tempo
+
+
+def _real_ip(request: Request) -> str:
+    """Retorna o IP real do cliente.
+
+    Lê X-Forwarded-For (primeiro hop) quando disponível — útil atrás de proxy/nginx.
+    O X-Forwarded-For ainda pode ser forjado se o proxy não sanitizar o header;
+    a mitigação definitiva é configurar o proxy para sobrescrever o header.
+    """
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 @router.get("/me/matches", response_model=list[PlayerMatchItem])
@@ -211,15 +233,53 @@ async def upload_my_avatar(
 ):
     """Faz upload de avatar para o jogador autenticado. Aceita JPG, PNG ou WebP (máx. 5 MB)."""
     MAX_BYTES = 5 * 1024 * 1024
-    content = await file.read()
-    if len(content) > MAX_BYTES:
-        raise ValidationError("Imagem muito grande. Máximo 5 MB.")
 
+    # Rejeita antes de ler qualquer byte se o Content-Length já excede o limite
+    raw_cl = request.headers.get("content-length")
+    if raw_cl:
+        try:
+            if int(raw_cl) > MAX_BYTES:
+                raise ValidationError("Imagem muito grande. Máximo 5 MB.")
+        except ValueError:
+            pass
+
+    # Rate limiting: máximo AVATAR_RATE_LIMIT uploads por AVATAR_RATE_WINDOW
+    recent = await db.execute(
+        text(f"""
+            SELECT COUNT(*) FROM avatar_upload_logs
+            WHERE player_id = :pid
+              AND created_at > NOW() - INTERVAL '{AVATAR_RATE_WINDOW}'
+        """),
+        {"pid": current.id},
+    )
+    if (recent.scalar() or 0) >= AVATAR_RATE_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas. Aguarde antes de enviar outro avatar.",
+        )
+
+    # Lê em chunks para não carregar arquivo enorme em memória de uma vez
+    CHUNK = 64 * 1024
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(CHUNK)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_BYTES:
+            raise ValidationError("Imagem muito grande. Máximo 5 MB.")
+        chunks.append(chunk)
+    content = b"".join(chunks)
+
+    # Valida formato e protege contra decompression bomb
     ALLOWED = {"JPEG", "PNG", "WEBP"}
     try:
         img = Image.open(io.BytesIO(content))
         if img.format not in ALLOWED:
             raise ValidationError("Formato inválido. Use JPG, PNG ou WebP.")
+    except DecompressionBombError:
+        raise ValidationError("Imagem muito grande para processar.")
     except UnidentifiedImageError:
         raise ValidationError("Arquivo não reconhecido como imagem.")
 
@@ -233,16 +293,21 @@ async def upload_my_avatar(
     img.save(buf, format="WEBP", quality=85)
     webp_data = buf.getvalue()
 
+    # Remove avatar anterior antes de fazer upload do novo (evita arquivos órfãos)
+    if current.avatar_url:
+        await storage_service.delete_avatar_by_url(current.avatar_url)
+
+    # Token aleatório no nome do arquivo para evitar enumeração por player_id
+    token = secrets.token_urlsafe(16)
     try:
-        avatar_url = await storage_service.upload_avatar(str(current.id), webp_data)
+        avatar_url = await storage_service.upload_avatar(str(current.id), webp_data, token)
     except RuntimeError as e:
         raise ValidationError(str(e))
 
-    # Log de auditoria
-    client_ip = request.client.host if request.client else "unknown"
+    # Log de auditoria com IP real
     await db.execute(
         text("INSERT INTO avatar_upload_logs (player_id, ip_address) VALUES (:pid, :ip)"),
-        {"pid": current.id, "ip": client_ip},
+        {"pid": current.id, "ip": _real_ip(request)},
     )
 
     current.avatar_url = avatar_url
@@ -254,7 +319,9 @@ async def upload_my_avatar(
 @router.delete("/me/avatar", response_model=PlayerResponse)
 async def remove_my_avatar(db: DB, current: CurrentPlayer):
     """Remove o avatar do jogador autenticado."""
-    await storage_service.delete_avatar(str(current.id))
+    if not current.avatar_url:
+        return current
+    await storage_service.delete_avatar_by_url(current.avatar_url)
     current.avatar_url = None
     await db.flush()
     await db.refresh(current)

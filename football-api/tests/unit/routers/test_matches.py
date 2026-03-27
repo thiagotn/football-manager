@@ -32,6 +32,7 @@ def _make_attendance(status: AttendanceStatus, is_admin: bool = False) -> MagicM
     a.player.id = uuid4()
     a.player.name = "Jogador"
     a.player.nickname = None
+    a.player.avatar_url = None
     return a
 
 

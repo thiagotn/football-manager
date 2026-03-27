@@ -33,6 +33,7 @@ def _make_player_db(player_id=None) -> MagicMock:
     p.role = PlayerRole.PLAYER
     p.active = True
     p.must_change_password = False
+    p.avatar_url = None
     p.created_at = datetime(2026, 1, 1)
     p.updated_at = datetime(2026, 1, 1)
     return p

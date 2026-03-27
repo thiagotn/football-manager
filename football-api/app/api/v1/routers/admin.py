@@ -384,7 +384,8 @@ async def remove_player_avatar(player_id: UUID, db: DB, _: AdminPlayer):
     player = await repo.get(player_id)
     if not player:
         raise NotFoundError("Jogador não encontrado")
-    await storage_service.delete_avatar(str(player_id))
+    if player.avatar_url:
+        await storage_service.delete_avatar_by_url(player.avatar_url)
     player.avatar_url = None
     await db.flush()
     logger.info("admin_avatar_removed", player_id=str(player_id))
