@@ -63,12 +63,13 @@ class VoteRepository:
             select(
                 MatchVoteTop5.player_id,
                 Player.name,
+                Player.nickname,
                 func.sum(MatchVoteTop5.points).label("total_points"),
             )
             .join(MatchVote, MatchVote.id == MatchVoteTop5.vote_id)
             .join(Player, Player.id == MatchVoteTop5.player_id)
             .where(MatchVote.match_id == match_id)
-            .group_by(MatchVoteTop5.player_id, Player.name)
+            .group_by(MatchVoteTop5.player_id, Player.name, Player.nickname)
             .order_by(func.sum(MatchVoteTop5.points).desc())
         )
         top5_rows = top5_q.all()
@@ -87,6 +88,7 @@ class VoteRepository:
                 "position": pos,
                 "player_id": row.player_id,
                 "name": row.name,
+                "nickname": row.nickname,
                 "points": row.total_points,
             })
 
@@ -95,19 +97,20 @@ class VoteRepository:
             select(
                 MatchVoteFlop.player_id,
                 Player.name,
+                Player.nickname,
                 func.count().label("vote_count"),
             )
             .join(MatchVote, MatchVote.id == MatchVoteFlop.vote_id)
             .join(Player, Player.id == MatchVoteFlop.player_id)
             .where(MatchVote.match_id == match_id)
-            .group_by(MatchVoteFlop.player_id, Player.name)
+            .group_by(MatchVoteFlop.player_id, Player.name, Player.nickname)
             .order_by(func.count().desc())
         )
         flop_rows = flop_q.all()
 
         max_flop = flop_rows[0].vote_count if flop_rows else 0
         flop_results = [
-            {"player_id": r.player_id, "name": r.name, "votes": r.vote_count}
+            {"player_id": r.player_id, "name": r.name, "nickname": r.nickname, "votes": r.vote_count}
             for r in flop_rows if r.vote_count == max_flop
         ]
 

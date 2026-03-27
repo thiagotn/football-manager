@@ -9,6 +9,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import { Users, Search, Eye, Pencil, KeyRound, Trash2, Copy, EyeOff, ChevronLeft, ChevronRight, ImageOff } from 'lucide-svelte';
+  import { playerDisplayName } from '$lib/utils.js';
 
   const PAGE_SIZE = 20;
 
@@ -229,8 +230,8 @@
           {#each items as p}
             <tr>
               <td>
-                <p class="font-medium">{p.nickname || p.name}</p>
-                {#if p.nickname}<p class="text-xs text-gray-400">{p.name}</p>{/if}
+                <p class="font-medium">{playerDisplayName(p.name, p.nickname)}</p>
+                <p class="text-xs text-gray-400">{p.name}</p>
               </td>
               <td class="font-mono text-xs text-gray-600 hidden sm:table-cell">{p.whatsapp}</td>
               <td class="hidden md:table-cell">
@@ -296,8 +297,8 @@
       <div class="flex items-center gap-3">
         <AvatarImage name={selected.name} avatarUrl={selected.avatar_url} size={52} />
         <div>
-          <p class="font-semibold text-gray-900 dark:text-gray-100">{selected.nickname || selected.name}</p>
-          {#if selected.nickname}<p class="text-xs text-gray-400">{selected.name}</p>{/if}
+          <p class="font-semibold text-gray-900 dark:text-gray-100">{playerDisplayName(selected.name, selected.nickname)}</p>
+          <p class="text-xs text-gray-400">{selected.name}</p>
         </div>
       </div>
 

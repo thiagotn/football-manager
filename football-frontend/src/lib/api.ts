@@ -255,8 +255,8 @@ export type VoteStatusResponse = {
   vote_open_delay_minutes: number;
 };
 
-export type VoteTop5ResultItem = { position: number; player_id: string; name: string; points: number };
-export type VoteFlopResultItem = { player_id: string; name: string; votes: number };
+export type VoteTop5ResultItem = { position: number; player_id: string; name: string; nickname: string | null; points: number };
+export type VoteFlopResultItem = { player_id: string; name: string; nickname: string | null; votes: number };
 export type VoteResultsResponse = {
   top5: VoteTop5ResultItem[];
   flop: VoteFlopResultItem[];

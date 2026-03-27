@@ -16,7 +16,7 @@
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
-  import { relativeDate } from '$lib/utils.js';
+  import { relativeDate, playerDisplayName } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
   import { TIMEZONE_OPTIONS, TIMEZONE_GROUPS } from '$lib/timezones';
 
@@ -194,7 +194,7 @@
 
   let nonAdminMembers = $derived(
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
-      .sort((a, b) => (a.player.nickname || a.player.name).localeCompare(b.player.nickname || b.player.name, 'pt-BR', { sensitivity: 'base' }))
+      .sort((a, b) => playerDisplayName(a.player.name, a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
   );
   let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; is_goalkeeper: boolean } | null>(null);
   let skillSaving = $state(false);
@@ -865,7 +865,7 @@
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                {m.player.nickname || m.player.name}
+                {playerDisplayName(m.player.name, m.player.nickname)}
               </p>
               {#if isGroupAdmin() && m.skill_stars != null}
                 <div class="mt-0.5">
@@ -1242,7 +1242,7 @@
         <select id="pid" class="input" bind:value={addMemberId} required>
           <option value="">{$t('group.player_select_placeholder')}</option>
           {#each available as p}
-            <option value={p.id}>{p.name}{p.nickname ? ` (${p.nickname})` : ''}</option>
+            <option value={p.id}>{playerDisplayName(p.name, p.nickname)}</option>
           {/each}
         </select>
       </div>
@@ -1264,11 +1264,9 @@
         <AvatarImage name={selectedMember.player.name} avatarUrl={selectedMember.player.avatar_url} size={52} />
         <div>
           <p class="font-semibold text-gray-900 dark:text-gray-100">
-            {selectedMember.player.nickname || selectedMember.player.name}
+            {playerDisplayName(selectedMember.player.name, selectedMember.player.nickname)}
           </p>
-          {#if selectedMember.player.nickname}
-            <p class="text-xs text-gray-400">{selectedMember.player.name}</p>
-          {/if}
+          <p class="text-xs text-gray-400">{selectedMember.player.name}</p>
         </div>
       </div>
 

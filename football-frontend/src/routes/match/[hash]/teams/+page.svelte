@@ -10,6 +10,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Copy, RefreshCw, Shield } from 'lucide-svelte';
   import { t } from '$lib/i18n';
+  import { playerDisplayName } from '$lib/utils';
 
   const matchHash = $page.params.hash;
 
@@ -91,7 +92,7 @@
     for (const team of teamsData.teams) {
       lines.push(`*${team.name}*`);
       team.players.forEach((p, i) => {
-        const name = p.nickname || p.name;
+        const name = playerDisplayName(p.name, p.nickname);
         lines.push(`${i + 1}. ${name}${p.is_goalkeeper ? ' (GK)' : ''}`);
       });
       lines.push('');
@@ -100,7 +101,7 @@
     if (teamsData.reserves.length > 0) {
       lines.push(`*Reservas*`);
       teamsData.reserves.forEach(p => {
-        lines.push(`- ${p.nickname || p.name}${p.is_goalkeeper ? ' (GK)' : ''}`);
+        lines.push(`- ${playerDisplayName(p.name, p.nickname)}${p.is_goalkeeper ? ' (GK)' : ''}`);
       });
       lines.push('');
     }
@@ -207,7 +208,7 @@
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each team.players as p}
                 <li class="px-2 py-1 flex items-center gap-1">
-                  <span class="flex-1 text-xs text-gray-800 dark:text-gray-200 truncate">{p.nickname || p.name}</span>
+                  <span class="flex-1 text-xs text-gray-800 dark:text-gray-200 truncate">{playerDisplayName(p.name, p.nickname)}</span>
                   {#if p.is_goalkeeper}
                     <span class="text-[9px] px-1 leading-tight rounded font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">GK</span>
                   {/if}
@@ -232,7 +233,7 @@
           <div class="px-3 py-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
             {#each teamsData.reserves as p}
               <span class="text-xs text-gray-600 dark:text-gray-400">
-                {p.nickname || p.name}{p.is_goalkeeper ? ' (GK)' : ''}
+                {playerDisplayName(p.name, p.nickname)}{p.is_goalkeeper ? ' (GK)' : ''}
               </span>
             {/each}
           </div>

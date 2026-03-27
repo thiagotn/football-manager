@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { VoteResultsResponse } from '$lib/api';
+  import { playerDisplayName } from '$lib/utils.js';
 
   interface Props { results: VoteResultsResponse }
   let { results }: Props = $props();
@@ -18,7 +19,7 @@
         {#each results.top5 as item}
           <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50">
             <span class="w-6 text-lg shrink-0">{MEDALS[item.position] ?? '  '}</span>
-            <span class="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{item.name}</span>
+            <span class="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{playerDisplayName(item.name, item.nickname)}</span>
             <span class="text-xs font-bold text-primary-600 dark:text-primary-400 shrink-0">{item.points} pts</span>
           </div>
         {/each}
@@ -33,7 +34,7 @@
       <div class="space-y-1.5">
         {#each results.flop as item}
           <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20">
-            <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{item.name}</span>
+            <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{playerDisplayName(item.name, item.nickname)}</span>
             <span class="text-xs text-red-600 dark:text-red-400 shrink-0">{item.votes} voto{item.votes !== 1 ? 's' : ''}</span>
           </div>
         {/each}

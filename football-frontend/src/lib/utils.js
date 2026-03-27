@@ -1,3 +1,16 @@
+/**
+ * Retorna o nome de exibição do jogador no formato "PrimeiroNome (Apelido)".
+ * Se não houver apelido, retorna apenas o primeiro nome.
+ *
+ * Exemplos:
+ *   playerDisplayName("Thiago Teixeira Nogueira", "Thiagol") → "Thiago (Thiagol)"
+ *   playerDisplayName("Thiago Teixeira Nogueira")             → "Thiago"
+ */
+export function playerDisplayName(name, nickname) {
+  const firstName = (name ?? '').trim().split(/\s+/)[0];
+  return nickname ? `${firstName} (${nickname})` : firstName;
+}
+
 export function formatDate(dateStr, locale = 'pt-BR') {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');

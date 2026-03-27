@@ -4,7 +4,7 @@
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { groups, players as playersApi } from '$lib/api';
   import type { SignupStats } from '$lib/api';
-  import { formatWhatsapp } from '$lib/utils.js';
+  import { formatWhatsapp, playerDisplayName } from '$lib/utils.js';
   import { Users, Plus, UserPlus, Clock } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
@@ -167,7 +167,7 @@
                   <div class="flex items-center justify-between px-4 py-3 gap-3">
                     <div class="min-w-0">
                       <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                        {p.nickname ? `${p.nickname} (${p.name})` : p.name}
+                        {playerDisplayName(p.name, p.nickname)}
                       </p>
                       <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">{formatWhatsapp(p.whatsapp)}</p>
                     </div>

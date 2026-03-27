@@ -64,12 +64,14 @@ class Top5ResultItem(BaseModel):
     position: int
     player_id: UUID
     name: str
+    nickname: str | None = None
     points: int
 
 
 class FlopResultItem(BaseModel):
     player_id: UUID
     name: str
+    nickname: str | None = None
     votes: int
 
 

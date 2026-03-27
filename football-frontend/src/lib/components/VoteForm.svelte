@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Attendance } from '$lib/api';
+  import { playerDisplayName } from '$lib/utils.js';
 
   interface Props {
     eligiblePlayers: Attendance[];   // jogadores confirmados (exceto o próprio)
@@ -76,7 +77,7 @@
             <option value="">Selecionar *</option>
             {#each eligiblePlayers as a}
               {#if !unavailable(pos).has(a.player.id)}
-                <option value={a.player.id}>{a.player.nickname || a.player.name}</option>
+                <option value={a.player.id}>{playerDisplayName(a.player.name, a.player.nickname)}</option>
               {/if}
             {/each}
           </select>
@@ -97,7 +98,7 @@
         <option value="">Selecionar *</option>
         {#each eligiblePlayers as a}
           {#if !flopUnavailable.has(a.player.id)}
-            <option value={a.player.id}>{a.player.nickname || a.player.name}</option>
+            <option value={a.player.id}>{playerDisplayName(a.player.name, a.player.nickname)}</option>
           {/if}
         {/each}
       </select>

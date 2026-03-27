@@ -3,6 +3,7 @@
   import type { PlayerFullStats } from '$lib/api';
   import { currentPlayer, isLoggedIn } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
+  import { playerDisplayName } from '$lib/utils.js';
   import { Users, Trophy, Clock, ThumbsDown, Flame, Shield, BarChart2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
@@ -124,7 +125,7 @@
               />
               <div class="min-w-0">
                 <p class="text-xl font-bold leading-tight truncate">
-                  {$currentPlayer?.nickname || $currentPlayer?.name}
+                  {playerDisplayName($currentPlayer?.name ?? '', $currentPlayer?.nickname)}
                 </p>
                 {#if $currentPlayer?.nickname}
                   <p class="text-sm text-green-200 truncate">{$currentPlayer.name}</p>

@@ -4,7 +4,7 @@
   import type { VoteResultsResponse, MatchDetail } from '$lib/api';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { Trophy, Share2, Clock, MapPin } from 'lucide-svelte';
-  import { relativeDate } from '$lib/utils.js';
+  import { relativeDate, playerDisplayName } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
 
   const COURT_LABELS: Record<string, string> = { campo: 'Campo', sintetico: 'Sintético', terrao: 'Terrão', quadra: 'Quadra' };
@@ -225,7 +225,7 @@
               {@const pos = item.position}
               <div class="flex flex-col items-center gap-1 flex-1">
                 <!-- Name + medal above podium block -->
-                <p class="text-center text-xs font-semibold text-gray-800 dark:text-gray-100 leading-tight line-clamp-2 px-1">{item.name}</p>
+                <p class="text-center text-xs font-semibold text-gray-800 dark:text-gray-100 leading-tight line-clamp-2 px-1">{playerDisplayName(item.name, item.nickname)}</p>
                 <span class="text-xl">{MEDALS[pos]}</span>
                 <span class="text-xs font-bold {podiumTextColor(pos)}">{item.points} pts</span>
                 <!-- Podium block -->
@@ -249,7 +249,7 @@
                 <div class="px-4 py-3">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-sm font-semibold text-gray-500 dark:text-gray-400 w-6 shrink-0">{item.position}º</span>
-                    <span class="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{item.name}</span>
+                    <span class="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{playerDisplayName(item.name, item.nickname)}</span>
                     <span class="text-xs font-bold text-primary-600 dark:text-primary-400 shrink-0">{item.points} pts</span>
                   </div>
                   <div class="ml-8 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -270,7 +270,7 @@
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each results.flop as item}
                 <div class="px-4 py-3 flex items-center gap-2">
-                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{item.name}</span>
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{playerDisplayName(item.name, item.nickname)}</span>
                   <span class="text-xs text-red-600 dark:text-red-400 shrink-0">{item.votes} voto{item.votes !== 1 ? 's' : ''}</span>
                 </div>
               {/each}
