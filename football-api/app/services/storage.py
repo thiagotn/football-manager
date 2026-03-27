@@ -87,7 +87,8 @@ async def delete_avatar_by_url(avatar_url: str) -> None:
     delete_url = f"{_base_url()}/storage/v1/object/{BUCKET}"
 
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.delete(
+        resp = await client.request(
+            "DELETE",
             delete_url,
             content=json.dumps({"prefixes": [path]}),
             headers={**_headers(), "Content-Type": "application/json"},
