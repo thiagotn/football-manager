@@ -14,20 +14,8 @@
 </svelte:head>
 
 <!-- HERO -->
-<section class="relative overflow-hidden text-white" style="min-height:540px;">
-  <picture>
-    <source srcset="/banner-lp.webp" type="image/webp" />
-    <img
-      src="/banner-lp.jpg"
-      alt=""
-      aria-hidden="true"
-      width="1920"
-      height="600"
-      class="absolute inset-0 w-full h-full object-cover object-center"
-      fetchpriority="high"
-    />
-  </picture>
-  <div class="absolute inset-0 bg-primary-900/78"></div>
+<section class="relative overflow-hidden text-white" style="min-height:540px; background-image: url('/background-login.png'); background-size: cover; background-position: center top;">
+  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/85 via-gray-900/70 to-gray-900/60"></div>
   <div class="relative max-w-4xl mx-auto px-6 py-16 text-center">
     <img
       src="/logo.png"
@@ -35,15 +23,14 @@
       width="320"
       height="174"
       class="w-56 sm:w-72 block mx-auto mb-8"
-      fetchpriority="high"
     />
     <h1 class="text-2xl sm:text-3xl font-bold text-white max-w-xl mx-auto mb-4 leading-tight">
       {$t('jogar.hero_title')}
     </h1>
-    <p class="text-primary-200 max-w-lg mx-auto mb-6 text-sm leading-relaxed">
+    <p class="text-white/85 max-w-lg mx-auto mb-6 text-sm leading-relaxed">
       {$t('jogar.hero_subtitle')}
     </p>
-    <p class="text-xs font-semibold text-primary-300 mb-8 tracking-wide">
+    <p class="text-xs font-semibold text-white/70 mb-8 tracking-wide">
       {$t('jogar.hero_badges')}
     </p>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -269,7 +256,7 @@
         {$t('jogar.cta_register')}
       </a>
       <a href="/discover"
-        class="inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary-500/60 text-white rounded-xl font-semibold hover:bg-primary-500/80 transition-colors border border-primary-400">
+        class="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white/15 text-white rounded-xl font-semibold hover:bg-white/25 transition-colors border border-white/50">
         {$t('jogar.cta_discover')}
       </a>
     </div>

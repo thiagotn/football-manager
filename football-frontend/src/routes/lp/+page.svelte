@@ -40,33 +40,20 @@
 </svelte:head>
 
 <!-- HERO -->
-<section class="relative overflow-hidden text-white" style="min-height:600px;">
-  <picture>
-    <source srcset="/banner-lp.webp" type="image/webp" />
-    <img
-      src="/banner-lp.jpg"
-      alt=""
-      aria-hidden="true"
-      width="1920"
-      height="600"
-      class="absolute inset-0 w-full h-full object-cover object-center"
-      fetchpriority="high"
-    />
-  </picture>
-  <div class="absolute inset-0 bg-primary-900/75"></div>
+<section class="relative overflow-hidden text-white" style="min-height:600px; background-image: url('/background-login.png'); background-size: cover; background-position: center top;">
+  <div class="absolute inset-0 bg-gradient-to-b from-gray-900/85 via-gray-900/70 to-gray-900/60"></div>
   <div class="relative max-w-4xl mx-auto px-6 py-16 text-center">
     <img
       src="/logo.png"
       alt="rachao.app"
       width="320"
       height="174"
-      class="w-72 sm:w-96 block mx-auto mb-6"
-      fetchpriority="high"
+      class="w-56 sm:w-72 block mx-auto mb-6"
     />
-    <h1 class="text-xl text-primary-100 max-w-xl mx-auto mb-3">
+    <h1 class="text-xl text-white/90 max-w-xl mx-auto mb-3">
       Organize suas partidas de futebol sem complicação.
     </h1>
-    <p class="text-primary-200 max-w-lg mx-auto mb-10 text-sm leading-relaxed">
+    <p class="text-white/75 max-w-lg mx-auto mb-10 text-sm leading-relaxed">
       Convide jogadores, confirme presenças e compartilhe os detalhes da partida —
       tudo direto pelo celular, sem precisar instalar nada.
     </p>
@@ -480,7 +467,7 @@
 <section class="bg-gradient-to-br from-primary-700 to-primary-900 text-white py-16 px-6 text-center">
   <div class="max-w-xl mx-auto">
     <h2 class="text-2xl sm:text-3xl font-bold mb-3">Pronto para o rachão?</h2>
-    <p class="text-primary-200 mb-8 text-sm">
+    <p class="text-white/75 mb-8 text-sm">
       Peça ao organizador do seu grupo um link de convite, ou entre se já tiver conta.
     </p>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
