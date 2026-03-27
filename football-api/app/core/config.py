@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     # Usar somente em desenvolvimento local ou staging. Jamais definir em produção.
     otp_bypass_code: str = ""
 
+    # Supabase Storage (avatares)
+    supabase_url: str = ""              # ex: https://xxxx.supabase.co
+    supabase_service_role_key: str = "" # service_role key (nunca expor ao cliente)
+
     # Billing (Stripe)
     billing_provider: str = "stripe"
     stripe_secret_key: str = ""

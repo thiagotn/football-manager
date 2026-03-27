@@ -32,7 +32,7 @@
 | `/groups` | Listagem de grupos do usuário |
 | `/groups/new` | Criação de grupo |
 | `/groups/[id]` | Detalhe do grupo (abas: Próximos / Últimos / Jogadores / Estatísticas / Financeiro) |
-| `/profile` | Perfil, troca de senha |
+| `/profile` | Perfil, troca de senha, upload/remoção de avatar |
 | `/profile/stats` | Estatísticas pessoais |
 | `/account/subscription` | Plano atual + upgrade |
 | `/account/checkout` | Retorno do checkout Stripe (success/failure) |
@@ -57,6 +57,7 @@
 
 | Componente | Uso |
 |------------|-----|
+| `AvatarImage.svelte` | Avatar do jogador: foto ou iniciais com cor determinística. Props: `name`, `avatarUrl?`, `updatedAt?`, `size?` (default 40), `class?` |
 | `ConfirmDialog.svelte` | Confirmações destrutivas — bottom sheet mobile / modal desktop. Props: `bind:open`, `message`, `confirmLabel`, `danger`, `onConfirm` |
 | `MatchBannerCard.svelte` | Banner do card de partida (campo + logo + dados). Props: `match`, `isGroupAdmin?`, `togglingStatus?`, `onToggleOpen?`, `onAskClose?`. Aceita `children` (slot) para conteúdo extra dentro do card (ex: scoreboard). Usado em `/match/[hash]` e `/match/[hash]/teams`. |
 | `DatePicker.svelte` | Seletor de data |

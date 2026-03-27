@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { Users, Trophy, Clock, ThumbsDown, Flame, Shield, BarChart2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import AvatarImage from '$lib/components/AvatarImage.svelte';
   import { t } from '$lib/i18n';
 
   let stats = $state<PlayerFullStats | null>(null);
@@ -113,18 +114,27 @@
           <div class="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white"></div>
           <div class="absolute -right-2 top-10 w-16 h-16 rounded-full opacity-10 bg-white"></div>
           <div class="relative flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="text-xl font-bold leading-tight truncate">
-                {$currentPlayer?.nickname || $currentPlayer?.name}
-              </p>
-              {#if $currentPlayer?.nickname}
-                <p class="text-sm text-green-200 truncate">{$currentPlayer.name}</p>
-              {/if}
-              {#if memberSince($currentPlayer?.created_at)}
-                <p class="text-xs text-green-300 mt-1.5">
-                  {$t('stats.member_since').replace('{date}', memberSince($currentPlayer?.created_at))}
+            <div class="flex items-start gap-3 min-w-0">
+              <AvatarImage
+                name={$currentPlayer?.name ?? ''}
+                avatarUrl={$currentPlayer?.avatar_url}
+                updatedAt={$currentPlayer?.updated_at}
+                size={48}
+                class="shrink-0 ring-2 ring-white/30"
+              />
+              <div class="min-w-0">
+                <p class="text-xl font-bold leading-tight truncate">
+                  {$currentPlayer?.nickname || $currentPlayer?.name}
                 </p>
-              {/if}
+                {#if $currentPlayer?.nickname}
+                  <p class="text-sm text-green-200 truncate">{$currentPlayer.name}</p>
+                {/if}
+                {#if memberSince($currentPlayer?.created_at)}
+                  <p class="text-xs text-green-300 mt-1.5">
+                    {$t('stats.member_since').replace('{date}', memberSince($currentPlayer?.created_at))}
+                  </p>
+                {/if}
+              </div>
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0">
               {#if hasGoalkeeper(stats.groups)}

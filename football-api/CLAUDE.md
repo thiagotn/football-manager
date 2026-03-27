@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `032_backfill_missing_pending_attendances.sql`.
+A última migration criada é `033_player_avatar_url.sql`.
 
-**A próxima deve ser numerada `033_`.**
+**A próxima deve ser numerada `034_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -26,7 +26,7 @@ A última migration criada é `032_backfill_missing_pending_attendances.sql`.
 | `groups.py` | CRUD de grupos, membros, skill, waitlist, stats |
 | `invites.py` | Convites por link |
 | `matches.py` | Partidas, presenças, discover |
-| `players.py` | CRUD de jogadores, estatísticas |
+| `players.py` | CRUD de jogadores, estatísticas, upload/remoção de avatar (`PUT/DELETE /players/me/avatar`) |
 | `push.py` | Web Push (VAPID) |
 | `reviews.py` | Avaliações do app |
 | `subscriptions.py` | Planos e assinaturas |
@@ -62,6 +62,7 @@ A última migration criada é `032_backfill_missing_pending_attendances.sql`.
 | `billing_stripe.py` | Criação de checkout, webhook handlers |
 | `push.py` | `send_push(db, player_id, title, body, url)` |
 | `recurrence.py` | Geração de próxima partida recorrente |
+| `storage.py` | Upload/remoção de avatares no Supabase Storage |
 | `team_builder.py` | Algoritmo snake-draft de times equilibrados |
 | `twilio_verify.py` | `send_otp(whatsapp)`, `check_otp(whatsapp, code)` — E.164 |
 | `voting.py` | `voting_status(match)`, `voting_window(match)` — cálculo lazy |

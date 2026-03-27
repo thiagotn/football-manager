@@ -8,7 +8,10 @@ from sqlalchemy import text
 import stripe.error
 
 from app.core.dependencies import DB, AdminPlayer
+from app.core.exceptions import NotFoundError
+from app.db.repositories.player_repo import PlayerRepository
 from app.services import billing as billing_service
+from app.services import storage as storage_service
 from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.schemas.admin import (
     AdminGroupListResponse,
@@ -357,13 +360,14 @@ async def list_admin_players(
         text(f"""
             SELECT
                 p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at,
+                p.avatar_url,
                 COALESCE(ps.plan, 'free') AS plan,
                 COUNT(DISTINCT gm.group_id)::int AS total_groups
             FROM players p
             LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
             LEFT JOIN group_members gm ON gm.player_id = p.id
             {where}
-            GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, ps.plan
+            GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
             ORDER BY p.created_at DESC
             LIMIT :limit OFFSET :offset
         """),
@@ -371,3 +375,16 @@ async def list_admin_players(
     )
     items = [dict(row._mapping) for row in rows]
     return AdminPlayerListResponse(total=total, page=page, page_size=page_size, items=items)
+
+
+@router.delete("/players/{player_id}/avatar", status_code=204)
+async def remove_player_avatar(player_id: UUID, db: DB, _: AdminPlayer):
+    """Remove o avatar de um jogador (ação administrativa)."""
+    repo = PlayerRepository(db)
+    player = await repo.get(player_id)
+    if not player:
+        raise NotFoundError("Jogador não encontrado")
+    await storage_service.delete_avatar(str(player_id))
+    player.avatar_url = None
+    await db.flush()
+    logger.info("admin_avatar_removed", player_id=str(player_id))

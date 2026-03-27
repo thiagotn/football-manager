@@ -49,6 +49,7 @@ async def login(body: LoginRequest, db: DB):
         nickname=player.nickname,
         role=player.role,
         must_change_password=player.must_change_password,
+        avatar_url=player.avatar_url,
     )
 
 
@@ -118,6 +119,7 @@ async def register(body: RegisterRequest, db: DB):
         nickname=player.nickname,
         role=player.role,
         must_change_password=False,
+        avatar_url=player.avatar_url,
     )
 
 

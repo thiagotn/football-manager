@@ -66,6 +66,7 @@ class TokenResponse(BaseModel):
     nickname: str | None = None
     role: str
     must_change_password: bool = False
+    avatar_url: str | None = None
 
 
 class ChangePasswordRequest(BaseModel):

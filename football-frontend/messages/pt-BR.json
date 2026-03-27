@@ -15,25 +15,20 @@
   "nav.my_account": "Minha Conta",
   "nav.plan": "Plano & Assinatura",
   "nav.faq": "FAQ",
-
   "date.today": "Hoje",
   "date.tomorrow": "Amanhã",
   "date.yesterday": "Ontem",
-
   "layout.session_expired": "Sua sessão expirou. Faça login novamente.",
-
   "footer.terms": "Termos de Uso",
   "footer.privacy": "Política de Privacidade",
   "footer.faq": "FAQ",
   "footer.status": "Status",
-
   "aria.back": "Voltar",
   "aria.menu": "Menu",
   "aria.close": "Fechar",
   "aria.theme": "Alternar tema",
   "aria.close_menu": "Fechar menu",
   "aria.lang": "Idioma",
-
   "login.page_title": "Login — rachao.app",
   "login.subtitle": "Gestão de grupos e partidas",
   "login.session_expired": "Sua sessão expirou. Por favor, faça login novamente.",
@@ -74,7 +69,6 @@
   "auth.same_password_error": "A nova senha não pode ser igual à senha atual.",
   "login.reset_success": "Senha redefinida! Faça login com a nova senha.",
   "login.connect_error": "Erro ao conectar",
-
   "register.page_title": "Cadastro gratuito — rachao.app",
   "register.title": "Cadastro gratuito",
   "register.plan_selected": "Plano selecionado",
@@ -127,7 +121,6 @@
   "register.already_has_account": "Você já tem uma conta. Faça login para continuar.",
   "register.session_expired": "Sessão de verificação expirada. Recomece o cadastro.",
   "register.connect_error": "Erro ao conectar",
-
   "invite.title": "Convite para Grupo",
   "invite.expired_title": "Convite expirado",
   "invite.expired_desc": "Os convites são válidos por 30 minutos. Peça um novo link ao administrador.",
@@ -165,7 +158,6 @@
   "invite.create_and_join": "Criar conta e entrar",
   "invite.verify_whatsapp_error": "Erro ao verificar WhatsApp",
   "invite.accept_error": "Erro ao aceitar convite",
-
   "dash.greeting": "Olá, {name} 👋",
   "dash.subtitle": "Veja os próximos rachões e seus grupos.",
   "dash.upcoming": "Próximos",
@@ -203,7 +195,6 @@
   "dash.live": "Bola rolando",
   "dash.open": "Aberta",
   "dash.closed": "Encerrada",
-
   "groups.title": "Grupos",
   "groups.subtitle": "Grupos de futebol que você participa",
   "groups.new": "Novo Grupo",
@@ -230,7 +221,6 @@
   "groups.cancel": "Cancelar",
   "groups.creating": "Criando…",
   "groups.create_btn": "Criar Grupo",
-
   "group.edit": "Editar",
   "group.player_count_one": "{n} jogador",
   "group.player_count_other": "{n} jogadores",
@@ -398,7 +388,6 @@
   "group.save_btn": "Salvar",
   "group.create_loading": "Criando…",
   "group.create_btn": "Criar Partida",
-
   "matches.title": "Rachões",
   "matches.subtitle": "Todas as partidas dos seus grupos.",
   "matches.tab_upcoming": "Próximos",
@@ -418,7 +407,6 @@
   "matches.closed": "Encerrada",
   "matches.line_players": "{n} na linha + gol",
   "matches.load_error": "Erro ao carregar rachões",
-
   "match.not_found_title": "Rachão não encontrado",
   "match.not_found_desc": "O link pode estar errado ou o rachão foi removido.",
   "match.back": "← Voltar",
@@ -502,7 +490,6 @@
   "match.waitlist_submitted": "Candidatura enviada! Você será notificado quando um admin revisar.",
   "match.line_plus_goalkeeper": "{n} na linha + goleiro",
   "match.spots": "{n}/{max} vagas",
-
   "profile.title": "Minha Conta",
   "profile.subtitle": "Informações do seu perfil e segurança",
   "profile.must_change_pw": "⚠️ Sua senha foi redefinida pelo administrador. Por favor, defina uma nova senha abaixo antes de continuar.",
@@ -560,7 +547,6 @@
   "profile.pw_changed": "Senha alterada com sucesso!",
   "profile.push_enabled": "Notificações ativadas!",
   "profile.push_disabled": "Notificações desativadas.",
-
   "stats.title": "Rachão Score",
   "stats.subtitle": "Seus dados, de acordo com a plataforma de dados Rachão Score.",
   "stats.member_since": "Membro desde {date}",
@@ -586,7 +572,6 @@
   "stats.history_missed": "Faltou",
   "stats.section_my_groups": "Meus Grupos",
   "stats.group_matches": "{n} jogos",
-
   "discover.title": "Descobrir Rachões",
   "discover.subtitle": "Grupos públicos com vagas abertas",
   "discover.filters": "Filtros",
@@ -610,7 +595,6 @@
   "discover.spots_plural": "{n} vagas",
   "discover.spots_open": "Vagas abertas",
   "discover.waitlist_success": "Candidatura enviada! Você será notificado assim que o admin revisar.",
-
   "plans.title": "Planos",
   "plans.subtitle": "Escolha o plano ideal para o seu rachão.",
   "plans.monthly": "Mensal",
@@ -627,37 +611,31 @@
   "plans.subscribe_loading": "Aguarde…",
   "plans.subscribe": "Assinar {name}",
   "plans.security_note": "🔒 Pagamentos processados com segurança via Stripe. Cancele a qualquer momento.",
-
   "plan.free.name": "Grátis",
   "plan.basic.name": "Básico",
   "plan.pro.name": "Pro",
-
   "plan.highlight.invites": "Convites por link e QR Code",
   "plan.highlight.attendance": "Confirmação de presença",
   "plan.highlight.team_draw": "Sorteio automático de times",
   "plan.highlight.voting": "Votação pós-partida (Top 5 + Decepção)",
   "plan.highlight.stats": "Estatísticas pessoais por jogador",
-
   "plan.free.highlight.groups": "1 grupo ativo",
   "plan.free.highlight.players": "Até 30 jogadores por grupo",
   "plan.free.highlight.matches": "Até 3 partidas abertas",
   "plan.free.highlight.history": "Histórico de 30 dias",
   "plan.free.highlight.finance": "Controle financeiro do grupo (3 meses de histórico)",
-
   "plan.basic.highlight.groups": "Até 3 grupos ativos",
   "plan.basic.highlight.players": "Até 50 jogadores por grupo",
   "plan.basic.highlight.matches": "Partidas ilimitadas",
   "plan.basic.highlight.history": "Histórico de 6 meses",
   "plan.basic.highlight.finance": "Controle financeiro do grupo (12 meses de histórico)",
   "plan.basic.highlight.support": "Suporte por e-mail",
-
   "plan.pro.highlight.groups": "Até 10 grupos ativos",
   "plan.pro.highlight.players": "Jogadores ilimitados por grupo",
   "plan.pro.highlight.matches": "Partidas ilimitadas",
   "plan.pro.highlight.history": "Histórico ilimitado",
   "plan.pro.highlight.finance": "Controle financeiro do grupo (histórico ilimitado)",
   "plan.pro.highlight.support": "Suporte prioritário",
-
   "players.title": "Jogadores",
   "players.subtitle": "{n} jogadores cadastrados",
   "players.new": "Novo Jogador",
@@ -721,7 +699,6 @@
   "players.update_error": "Erro ao atualizar.",
   "players.reset_error": "Erro ao resetar senha.",
   "players.deactivate_error": "Erro ao desativar.",
-
   "account.title": "Assinatura",
   "account.subtitle": "Gerencie seu plano e cobranças.",
   "account.current_plan": "Plano atual",
@@ -746,7 +723,6 @@
   "account.status_canceled": "Cancelada",
   "account.status_free": "Grátis",
   "account.load_error": "Erro ao carregar assinatura.",
-
   "checkout.success_title": "Assinatura confirmada!",
   "checkout.success_desc": "Seu plano foi ativado com sucesso. Aproveite todos os recursos disponíveis.",
   "checkout.go_to_dashboard": "Ir para o Dashboard",
@@ -755,12 +731,10 @@
   "checkout.failure_desc": "O pagamento foi cancelado ou não pôde ser processado. Seu plano atual permanece ativo.",
   "checkout.try_again": "Tentar novamente",
   "checkout.back_to_dashboard": "Voltar ao Dashboard",
-
   "offline.title": "Fora de campo por um momento",
   "offline.desc": "O app está temporariamente indisponível ou você está sem conexão.",
   "offline.hint": "Verifique sua internet e tente novamente em instantes.",
   "offline.retry": "Tentar novamente",
-
   "results.back": "← Voltar para a partida",
   "results.title": "Melhores do Rachão",
   "results.voters": "{voted} de {eligible} jogador{plural} votaram",
@@ -774,7 +748,6 @@
   "results.line_goalkeeper": "{n} na linha + goleiro",
   "results.not_available_desc": "Resultados não disponíveis ainda. A votação pode ainda estar aberta ou não ter ocorrido.",
   "results.load_error": "Erro ao carregar resultados.",
-
   "teams.title": "⚽ Times do Rachão",
   "teams.loading": "Carregando…",
   "teams.not_found": "Partida não encontrada.",
@@ -792,7 +765,6 @@
   "teams.rebuild_error": "Erro ao remontar times",
   "teams.players_count": "{n} jog.",
   "teams.reserves": "Reservas ({n})",
-
   "new_group.title": "Novo Grupo",
   "new_group.back": "← Voltar",
   "new_group.name_label": "Nome do grupo *",
@@ -824,7 +796,6 @@
   "new_group.creating": "Criando...",
   "new_group.create": "Criar Grupo",
   "new_group.success": "Grupo criado com sucesso!",
-
   "review.title": "Avaliar o App",
   "review.subtitle": "Sua opinião nos ajuda a melhorar o Rachao",
   "review.loading": "Carregando…",
@@ -851,7 +822,6 @@
   "review.update_btn": "Atualizar avaliação",
   "review.rated_on": "Você avaliou em {date} · pode atualizar a qualquer momento",
   "review.error_save": "Erro ao salvar avaliação",
-
   "faq.title": "Perguntas Frequentes",
   "faq.subtitle": "Tudo o que você precisa saber para jogar",
   "faq.copy_link": "Copiar link",
@@ -901,7 +871,6 @@
   "faq.q18.s2": "Toque no botão Compartilhar (ícone de caixa com seta apontando para cima, na barra inferior do Safari)",
   "faq.q18.s3": "Role a lista de opções para baixo e toque em \"Adicionar à Tela de Início\"",
   "faq.q18.s4": "Confirme o nome e toque em \"Adicionar\"",
-
   "terms.title": "Termos de Uso",
   "terms.version": "Última atualização: março de 2026 · Versão: 1.1",
   "terms.back": "← rachao.app",
@@ -950,7 +919,6 @@
   "terms.s9.h": "9. Lei aplicável e foro",
   "terms.s9.p1": "Estes Termos são regidos pela legislação brasileira. Fica eleito o foro da comarca de <strong>{city}</strong> para dirimir quaisquer controvérsias, com renúncia a qualquer outro, por mais privilegiado que seja.",
   "terms.s10.h": "10. Contato",
-
   "privacy.title": "Política de Privacidade",
   "privacy.version": "Última atualização: março de 2026 · Versão: 1.2",
   "privacy.back": "← rachao.app",
@@ -1018,5 +986,14 @@
   "privacy.s7.p1": "O rachao.app não utiliza cookies de rastreamento ou publicidade. Utilizamos localStorage do navegador exclusivamente para armazenar o token de autenticação da sessão. Esses dados ficam apenas no seu dispositivo e são removidos ao fazer logout.",
   "privacy.s8.h": "8. Alterações nesta política",
   "privacy.s8.p1": "Quando realizarmos alterações relevantes nesta política, atualizaremos a data no topo deste documento. Para mudanças que ampliem significativamente o uso dos seus dados, notificaremos os usuários ativos pelo canal de comunicação da plataforma com antecedência mínima de 15 dias.",
-  "privacy.s9.h": "9. Contato"
+  "privacy.s9.h": "9. Contato",
+  "profile.avatar_section": "Foto de Perfil",
+  "profile.avatar_upload": "Alterar foto",
+  "profile.avatar_uploading": "Enviando…",
+  "profile.avatar_remove": "Remover",
+  "profile.avatar_removing": "Removendo…",
+  "profile.avatar_upload_success": "Foto atualizada!",
+  "profile.avatar_remove_success": "Foto removida.",
+  "profile.avatar_policy": "Ao enviar uma foto você concorda com nossa política de imagens. Conteúdo ofensivo pode resultar na desativação do perfil.",
+  "profile.avatar_format": "JPG, PNG ou WebP · Máx. 5 MB"
 }

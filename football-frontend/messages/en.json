@@ -15,25 +15,20 @@
   "nav.my_account": "My Account",
   "nav.plan": "Plan & Subscription",
   "nav.faq": "FAQ",
-
   "date.today": "Today",
   "date.tomorrow": "Tomorrow",
   "date.yesterday": "Yesterday",
-
   "layout.session_expired": "Your session has expired. Please log in again.",
-
   "footer.terms": "Terms of Use",
   "footer.privacy": "Privacy Policy",
   "footer.faq": "FAQ",
   "footer.status": "Status",
-
   "aria.back": "Go back",
   "aria.menu": "Menu",
   "aria.close": "Close",
   "aria.theme": "Toggle theme",
   "aria.close_menu": "Close menu",
   "aria.lang": "Language",
-
   "login.page_title": "Login — rachao.app",
   "login.subtitle": "Group and match management",
   "login.session_expired": "Your session has expired. Please log in again.",
@@ -74,7 +69,6 @@
   "auth.same_password_error": "The new password cannot be the same as your current password.",
   "login.reset_success": "Password reset! Log in with the new password.",
   "login.connect_error": "Connection error",
-
   "register.page_title": "Free sign up — rachao.app",
   "register.title": "Free sign up",
   "register.plan_selected": "Selected plan",
@@ -127,7 +121,6 @@
   "register.already_has_account": "You already have an account. Sign in to continue.",
   "register.session_expired": "Verification session expired. Restart registration.",
   "register.connect_error": "Connection error",
-
   "invite.title": "Group Invitation",
   "invite.expired_title": "Invitation expired",
   "invite.expired_desc": "Invitations are valid for 30 minutes. Ask the admin for a new link.",
@@ -165,7 +158,6 @@
   "invite.create_and_join": "Create account and join",
   "invite.verify_whatsapp_error": "Error verifying WhatsApp",
   "invite.accept_error": "Error accepting invitation",
-
   "dash.greeting": "Hello, {name} 👋",
   "dash.subtitle": "See upcoming matches and your groups.",
   "dash.upcoming": "Upcoming",
@@ -203,7 +195,6 @@
   "dash.live": "Live",
   "dash.open": "Open",
   "dash.closed": "Closed",
-
   "groups.title": "Groups",
   "groups.subtitle": "Football groups you belong to",
   "groups.new": "New Group",
@@ -230,7 +221,6 @@
   "groups.cancel": "Cancel",
   "groups.creating": "Creating…",
   "groups.create_btn": "Create Group",
-
   "group.edit": "Edit",
   "group.player_count_one": "{n} player",
   "group.player_count_other": "{n} players",
@@ -398,7 +388,6 @@
   "group.save_btn": "Save",
   "group.create_loading": "Creating…",
   "group.create_btn": "Create Match",
-
   "matches.title": "Matches",
   "matches.subtitle": "All matches from your groups.",
   "matches.tab_upcoming": "Upcoming",
@@ -418,7 +407,6 @@
   "matches.closed": "Closed",
   "matches.line_players": "{n} outfield + GK",
   "matches.load_error": "Error loading matches",
-
   "match.not_found_title": "Match not found",
   "match.not_found_desc": "The link may be wrong or the match was removed.",
   "match.back": "← Back",
@@ -502,7 +490,6 @@
   "match.waitlist_submitted": "Application sent! You will be notified when an admin reviews it.",
   "match.line_plus_goalkeeper": "{n} outfield + goalkeeper",
   "match.spots": "{n}/{max} spots",
-
   "profile.title": "My Account",
   "profile.subtitle": "Your profile information and security",
   "profile.must_change_pw": "⚠️ Your password was reset by the administrator. Please set a new password below before continuing.",
@@ -560,7 +547,6 @@
   "profile.pw_changed": "Password changed successfully!",
   "profile.push_enabled": "Notifications enabled!",
   "profile.push_disabled": "Notifications disabled.",
-
   "stats.title": "Rachão Score",
   "stats.subtitle": "Your data, according to the Rachão Score data platform.",
   "stats.member_since": "Member since {date}",
@@ -586,7 +572,6 @@
   "stats.history_missed": "Missed",
   "stats.section_my_groups": "My Groups",
   "stats.group_matches": "{n} matches",
-
   "discover.title": "Discover Matches",
   "discover.subtitle": "Public groups with open spots",
   "discover.filters": "Filters",
@@ -610,7 +595,6 @@
   "discover.spots_plural": "{n} spots",
   "discover.spots_open": "Open spots",
   "discover.waitlist_success": "Application sent! You will be notified as soon as the admin reviews it.",
-
   "plans.title": "Plans",
   "plans.subtitle": "Choose the ideal plan for your match.",
   "plans.monthly": "Monthly",
@@ -627,37 +611,31 @@
   "plans.subscribe_loading": "Please wait…",
   "plans.subscribe": "Subscribe to {name}",
   "plans.security_note": "🔒 Payments securely processed via Stripe. Cancel anytime.",
-
   "plan.free.name": "Free",
   "plan.basic.name": "Basic",
   "plan.pro.name": "Pro",
-
   "plan.highlight.invites": "Invites via link and QR Code",
   "plan.highlight.attendance": "Attendance confirmation",
   "plan.highlight.team_draw": "Automatic team draw",
   "plan.highlight.voting": "Post-match voting (Top 5 + Disappointment)",
   "plan.highlight.stats": "Personal stats per player",
-
   "plan.free.highlight.groups": "1 active group",
   "plan.free.highlight.players": "Up to 30 players per group",
   "plan.free.highlight.matches": "Up to 3 open matches",
   "plan.free.highlight.history": "30-day history",
   "plan.free.highlight.finance": "Group financial control (3-month history)",
-
   "plan.basic.highlight.groups": "Up to 3 active groups",
   "plan.basic.highlight.players": "Up to 50 players per group",
   "plan.basic.highlight.matches": "Unlimited matches",
   "plan.basic.highlight.history": "6-month history",
   "plan.basic.highlight.finance": "Group financial control (12-month history)",
   "plan.basic.highlight.support": "Email support",
-
   "plan.pro.highlight.groups": "Up to 10 active groups",
   "plan.pro.highlight.players": "Unlimited players per group",
   "plan.pro.highlight.matches": "Unlimited matches",
   "plan.pro.highlight.history": "Unlimited history",
   "plan.pro.highlight.finance": "Group financial control (unlimited history)",
   "plan.pro.highlight.support": "Priority support",
-
   "players.title": "Players",
   "players.subtitle": "{n} registered players",
   "players.new": "New Player",
@@ -721,7 +699,6 @@
   "players.update_error": "Error updating.",
   "players.reset_error": "Error resetting password.",
   "players.deactivate_error": "Error deactivating.",
-
   "account.title": "Subscription",
   "account.subtitle": "Manage your plan and billing.",
   "account.current_plan": "Current plan",
@@ -746,7 +723,6 @@
   "account.status_canceled": "Canceled",
   "account.status_free": "Free",
   "account.load_error": "Error loading subscription.",
-
   "checkout.success_title": "Subscription confirmed!",
   "checkout.success_desc": "Your plan has been activated successfully. Enjoy all available features.",
   "checkout.go_to_dashboard": "Go to Dashboard",
@@ -755,12 +731,10 @@
   "checkout.failure_desc": "The payment was canceled or could not be processed. Your current plan remains active.",
   "checkout.try_again": "Try again",
   "checkout.back_to_dashboard": "Back to Dashboard",
-
   "offline.title": "Off the field for a moment",
   "offline.desc": "The app is temporarily unavailable or you are offline.",
   "offline.hint": "Check your internet connection and try again shortly.",
   "offline.retry": "Try again",
-
   "results.back": "← Back to match",
   "results.title": "Match MVPs",
   "results.voters": "{voted} of {eligible} player{plural} voted",
@@ -774,7 +748,6 @@
   "results.line_goalkeeper": "{n} outfield + goalkeeper",
   "results.not_available_desc": "Results not available yet. Voting may still be open or may not have occurred.",
   "results.load_error": "Error loading results.",
-
   "teams.title": "⚽ Match Teams",
   "teams.loading": "Loading…",
   "teams.not_found": "Match not found.",
@@ -792,7 +765,6 @@
   "teams.rebuild_error": "Error redrawing teams",
   "teams.players_count": "{n} players",
   "teams.reserves": "Reserves ({n})",
-
   "new_group.title": "New Group",
   "new_group.back": "← Back",
   "new_group.name_label": "Group name *",
@@ -824,7 +796,6 @@
   "new_group.creating": "Creating...",
   "new_group.create": "Create Group",
   "new_group.success": "Group created successfully!",
-
   "review.title": "Rate the App",
   "review.subtitle": "Your feedback helps us improve Rachao",
   "review.loading": "Loading…",
@@ -851,7 +822,6 @@
   "review.update_btn": "Update review",
   "review.rated_on": "You reviewed on {date} · you can update anytime",
   "review.error_save": "Error saving review",
-
   "faq.title": "Frequently Asked Questions",
   "faq.subtitle": "Everything you need to know to play",
   "faq.copy_link": "Copy link",
@@ -901,7 +871,6 @@
   "faq.q18.s2": "Tap the Share button (box icon with upward arrow, in Safari's bottom bar)",
   "faq.q18.s3": "Scroll down the options list and tap \"Add to Home Screen\"",
   "faq.q18.s4": "Confirm the name and tap \"Add\"",
-
   "terms.title": "Terms of Use",
   "terms.version": "Last updated: March 2026 · Version: 1.1",
   "terms.back": "← rachao.app",
@@ -950,7 +919,6 @@
   "terms.s9.h": "9. Applicable law and jurisdiction",
   "terms.s9.p1": "These Terms are governed by Brazilian law. The courts of <strong>{city}</strong> are elected to settle any disputes, to the exclusion of any other, however privileged.",
   "terms.s10.h": "10. Contact",
-
   "privacy.title": "Privacy Policy",
   "privacy.version": "Last updated: March 2026 · Version: 1.2",
   "privacy.back": "← rachao.app",
@@ -1018,5 +986,14 @@
   "privacy.s7.p1": "rachao.app does not use tracking or advertising cookies. We use the browser's localStorage exclusively to store the session authentication token. This data stays only on your device and is removed when you log out.",
   "privacy.s8.h": "8. Changes to this policy",
   "privacy.s8.p1": "When we make relevant changes to this policy, we will update the date at the top of this document. For changes that significantly expand the use of your data, we will notify active users via the platform's communication channel with at least 15 days' notice.",
-  "privacy.s9.h": "9. Contact"
+  "privacy.s9.h": "9. Contact",
+  "profile.avatar_section": "Profile Photo",
+  "profile.avatar_upload": "Change photo",
+  "profile.avatar_uploading": "Uploading…",
+  "profile.avatar_remove": "Remove",
+  "profile.avatar_removing": "Removing…",
+  "profile.avatar_upload_success": "Photo updated!",
+  "profile.avatar_remove_success": "Photo removed.",
+  "profile.avatar_policy": "By uploading a photo you agree to our image policy. Offensive content may result in profile deactivation.",
+  "profile.avatar_format": "JPG, PNG or WebP · Max. 5 MB"
 }

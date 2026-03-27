@@ -7,7 +7,8 @@
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
-  import { Users, Search, Eye, Pencil, KeyRound, Trash2, Copy, EyeOff, ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import AvatarImage from '$lib/components/AvatarImage.svelte';
+  import { Users, Search, Eye, Pencil, KeyRound, Trash2, Copy, EyeOff, ChevronLeft, ChevronRight, ImageOff } from 'lucide-svelte';
 
   const PAGE_SIZE = 20;
 
@@ -35,6 +36,23 @@
 
   // Confirm deactivate
   let confirmOpen = $state(false);
+
+  // Remove avatar
+  let removingAvatar = $state(false);
+
+  async function doRemoveAvatar() {
+    if (!selected) return;
+    removingAvatar = true;
+    try {
+      await adminApi.removePlayerAvatar(selected.id);
+      selected = { ...selected, avatar_url: null };
+      items = items.map(p => p.id === selected!.id ? { ...p, avatar_url: null } : p);
+      toastSuccess('Avatar removido.');
+    } catch {
+      toastError('Erro ao remover avatar.');
+    }
+    removingAvatar = false;
+  }
 
   let totalPages = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
@@ -273,6 +291,16 @@
 <Modal bind:open={showDetail} title="Detalhes do Cadastro">
   {#if selected}
     <div class="space-y-4">
+
+      <!-- Avatar -->
+      <div class="flex items-center gap-3">
+        <AvatarImage name={selected.name} avatarUrl={selected.avatar_url} size={52} />
+        <div>
+          <p class="font-semibold text-gray-900 dark:text-gray-100">{selected.nickname || selected.name}</p>
+          {#if selected.nickname}<p class="text-xs text-gray-400">{selected.name}</p>{/if}
+        </div>
+      </div>
+
       <!-- Info grid -->
       <div class="grid grid-cols-2 gap-3 text-sm">
         <div>
@@ -323,6 +351,15 @@
         <button onclick={openReset} class="btn-sm btn-ghost flex items-center gap-1 border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400">
           <KeyRound size={14} /> Resetar Senha
         </button>
+        {#if selected.avatar_url}
+          <button
+            onclick={doRemoveAvatar}
+            disabled={removingAvatar}
+            class="btn-sm btn-ghost flex items-center gap-1 border border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400"
+          >
+            <ImageOff size={14} /> {removingAvatar ? 'Removendo…' : 'Remover avatar'}
+          </button>
+        {/if}
         {#if selected.active}
           <button onclick={askDeactivate} class="btn-sm btn-ghost flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400">
             <Trash2 size={14} /> Desativar

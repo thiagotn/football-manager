@@ -40,13 +40,13 @@ const del = (path: string) => request<void>(path, { method: 'DELETE' });
 // ── Auth ──────────────────────────────────────────────────────
 export const auth = {
   login: (whatsapp: string, password: string) =>
-    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean }>('/auth/login', { whatsapp, password }),
+    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean; avatar_url: string | null }>('/auth/login', { whatsapp, password }),
   sendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/send-otp', { whatsapp }),
   verifyOtp: (whatsapp: string, otp_code: string) =>
     post<{ otp_token: string }>('/auth/verify-otp', { whatsapp, otp_code }),
   register: (data: { name: string; whatsapp: string; password: string; nickname?: string; otp_token: string }) =>
-    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean }>('/auth/register', data),
+    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean; avatar_url: string | null }>('/auth/register', data),
   me: () => get<Player>('/auth/me'),
   forgotPasswordSendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/forgot-password/send-otp', { whatsapp }),
@@ -67,9 +67,10 @@ export type Player = {
   id: string; name: string; nickname: string | null;
   whatsapp: string; role: 'admin' | 'player'; active: boolean;
   must_change_password: boolean;
+  avatar_url: string | null;
   created_at: string; updated_at: string;
 };
-export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string };
+export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string; avatar_url: string | null };
 export type PlayerMemberView = PlayerPublic & { whatsapp: string };
 export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; timezone: string; created_at: string; updated_at: string };
 export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; is_goalkeeper: boolean | null; created_at: string };
@@ -128,6 +129,23 @@ export const players = {
   myFullStats: () => get<PlayerFullStats>('/players/me/stats/full'),
   myMatches: () => get<PlayerMatchItem[]>('/players/me/matches'),
   signupStats: (limit = 30) => get<SignupStats>(`/players/signups/stats?limit=${limit}`),
+  uploadAvatar: (file: File): Promise<Player> => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    const form = new FormData();
+    form.append('file', file);
+    return fetch(`${API_BASE}/players/me/avatar`, {
+      method: 'PUT',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async res => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new ApiError(res.status, body?.detail ?? `Erro ${res.status}`);
+      }
+      return res.json();
+    });
+  },
+  removeAvatar: () => request<Player>('/players/me/avatar', { method: 'DELETE' }),
 };
 
 // ── Groups ────────────────────────────────────────────────────
@@ -366,6 +384,7 @@ export type AdminPlayerItem = {
   created_at: string;
   plan: string;
   total_groups: number;
+  avatar_url: string | null;
 };
 
 export type AdminPlayerListResponse = {
@@ -414,6 +433,8 @@ export const admin = {
     patch<{ status: string; plan: string }>(`/admin/subscriptions/${playerId}`, data),
   cancelSubscription: (playerId: string) =>
     post<{ status: string }>(`/admin/subscriptions/${playerId}/cancel`, {}),
+  removePlayerAvatar: (playerId: string) =>
+    del(`/admin/players/${playerId}/avatar`),
 };
 
 export type AdminSubscriptionBreakdownItem = { plan: string; billing_cycle: string; count: number };

@@ -105,6 +105,7 @@ class AdminPlayerItem(BaseModel):
     created_at: datetime
     plan: str
     total_groups: int
+    avatar_url: str | None = None
 
 
 class AdminPlayerListResponse(BaseModel):

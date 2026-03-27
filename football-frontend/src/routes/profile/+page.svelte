@@ -7,6 +7,7 @@
   import { goto } from '$app/navigation';
   import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck, ChevronDown } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
+  import AvatarImage from '$lib/components/AvatarImage.svelte';
   import { t } from '$lib/i18n';
 
   // Plan
@@ -31,6 +32,40 @@
     if (pct >= 1) return 'text-red-600 dark:text-red-400';
     if (pct >= 0.8) return 'text-amber-600 dark:text-amber-400';
     return 'text-primary-600 dark:text-primary-400';
+  }
+
+  // Avatar
+  let avatarUploading = $state(false);
+  let avatarRemoving = $state(false);
+  let avatarFileInput: HTMLInputElement | undefined = $state();
+
+  async function onAvatarFileSelected(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    avatarUploading = true;
+    try {
+      const updated = await playersApi.uploadAvatar(file);
+      authStore.updatePlayer(updated);
+      toastSuccess($t('profile.avatar_upload_success'));
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : $t('profile.avatar_upload_success'));
+    } finally {
+      avatarUploading = false;
+      if (avatarFileInput) avatarFileInput.value = '';
+    }
+  }
+
+  async function removeAvatar() {
+    avatarRemoving = true;
+    try {
+      const updated = await playersApi.removeAvatar();
+      authStore.updatePlayer(updated);
+      toastSuccess($t('profile.avatar_remove_success'));
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : 'Erro ao remover foto');
+    } finally {
+      avatarRemoving = false;
+    }
   }
 
   // Nickname
@@ -283,6 +318,50 @@
           <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0 group-hover:translate-x-0.5 transition-transform">→</span>
         </a>
       {/if}
+
+      <!-- Avatar -->
+      <div class="card card-body">
+        <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">{$t('profile.avatar_section')}</h2>
+        <div class="flex items-center gap-4">
+          <AvatarImage
+            name={$currentPlayer?.name ?? ''}
+            avatarUrl={$currentPlayer?.avatar_url}
+            updatedAt={$currentPlayer?.updated_at}
+            size={64}
+          />
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap gap-2 mb-2">
+              <button
+                type="button"
+                onclick={() => avatarFileInput?.click()}
+                disabled={avatarUploading}
+                class="btn-secondary btn-sm"
+              >
+                {avatarUploading ? $t('profile.avatar_uploading') : $t('profile.avatar_upload')}
+              </button>
+              {#if $currentPlayer?.avatar_url}
+                <button
+                  type="button"
+                  onclick={removeAvatar}
+                  disabled={avatarRemoving}
+                  class="btn-sm btn-ghost text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800"
+                >
+                  {avatarRemoving ? $t('profile.avatar_removing') : $t('profile.avatar_remove')}
+                </button>
+              {/if}
+            </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">{$t('profile.avatar_format')}</p>
+          </div>
+        </div>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3 leading-snug">{$t('profile.avatar_policy')}</p>
+        <input
+          bind:this={avatarFileInput}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          class="hidden"
+          onchange={onAvatarFileSelected}
+        />
+      </div>
 
       <!-- Dados do perfil (somente leitura) -->
       <div class="card card-body">

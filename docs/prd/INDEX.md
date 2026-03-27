@@ -37,6 +37,14 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 ---
 
+## Perfil do Jogador
+
+| PRD | Status | Notas |
+|-----|--------|-------|
+| [avatar-jogador.md](avatar-jogador.md) | 📋 | Upload de foto de perfil com fallback de iniciais e armazenamento no Supabase Storage |
+
+---
+
 ## Partidas e Grupos
 
 | PRD | Status | Notas |

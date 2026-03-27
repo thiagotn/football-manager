@@ -13,6 +13,7 @@
   import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
+  import AvatarImage from '$lib/components/AvatarImage.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
   import { relativeDate } from '$lib/utils.js';
@@ -860,6 +861,7 @@
         {/if}
         {#each nonAdminMembers as m}
           <div class="flex items-center gap-2 px-4 py-3">
+            <AvatarImage name={m.player.name} avatarUrl={m.player.avatar_url} size={36} class="shrink-0" />
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
@@ -1256,6 +1258,20 @@
 <Modal bind:open={showMemberDetail} title={$t('group.member_detail_modal')}>
   {#if selectedMember}
     <div class="space-y-4">
+
+      <!-- Avatar + nome -->
+      <div class="flex items-center gap-3">
+        <AvatarImage name={selectedMember.player.name} avatarUrl={selectedMember.player.avatar_url} size={52} />
+        <div>
+          <p class="font-semibold text-gray-900 dark:text-gray-100">
+            {selectedMember.player.nickname || selectedMember.player.name}
+          </p>
+          {#if selectedMember.player.nickname}
+            <p class="text-xs text-gray-400">{selectedMember.player.name}</p>
+          {/if}
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_name')}</p>

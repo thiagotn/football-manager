@@ -1,12 +1,14 @@
+import io
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request, UploadFile, File
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select, text
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
-from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError
+from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, ValidationError
 from app.core.security import hash_password
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
@@ -15,6 +17,7 @@ from app.models.player import Player, PlayerRole
 from app.schemas.match import MatchResponse, PlayerMatchItem
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
 from app.schemas.player_stats import PlayerFullStats
+from app.services import storage as storage_service
 
 router = APIRouter(prefix="/players", tags=["players"])
 
@@ -197,6 +200,65 @@ async def reset_player_password(player_id: uuid.UUID, db: DB, _: AdminPlayer):
     await db.flush()
 
     return ResetPasswordResponse(temp_password=temp_password)
+
+
+@router.put("/me/avatar", response_model=PlayerResponse)
+async def upload_my_avatar(
+    request: Request,
+    db: DB,
+    current: CurrentPlayer,
+    file: UploadFile = File(...),
+):
+    """Faz upload de avatar para o jogador autenticado. Aceita JPG, PNG ou WebP (máx. 5 MB)."""
+    MAX_BYTES = 5 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_BYTES:
+        raise ValidationError("Imagem muito grande. Máximo 5 MB.")
+
+    ALLOWED = {"JPEG", "PNG", "WEBP"}
+    try:
+        img = Image.open(io.BytesIO(content))
+        if img.format not in ALLOWED:
+            raise ValidationError("Formato inválido. Use JPG, PNG ou WebP.")
+    except UnidentifiedImageError:
+        raise ValidationError("Arquivo não reconhecido como imagem.")
+
+    # Crop quadrado centralizado + resize 256×256 + converte para WebP
+    img = img.convert("RGB")
+    w, h = img.size
+    side = min(w, h)
+    img = img.crop(((w - side) // 2, (h - side) // 2, (w + side) // 2, (h + side) // 2))
+    img = img.resize((256, 256), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="WEBP", quality=85)
+    webp_data = buf.getvalue()
+
+    try:
+        avatar_url = await storage_service.upload_avatar(str(current.id), webp_data)
+    except RuntimeError as e:
+        raise ValidationError(str(e))
+
+    # Log de auditoria
+    client_ip = request.client.host if request.client else "unknown"
+    await db.execute(
+        text("INSERT INTO avatar_upload_logs (player_id, ip_address) VALUES (:pid, :ip)"),
+        {"pid": current.id, "ip": client_ip},
+    )
+
+    current.avatar_url = avatar_url
+    await db.flush()
+    await db.refresh(current)
+    return current
+
+
+@router.delete("/me/avatar", response_model=PlayerResponse)
+async def remove_my_avatar(db: DB, current: CurrentPlayer):
+    """Remove o avatar do jogador autenticado."""
+    await storage_service.delete_avatar(str(current.id))
+    current.avatar_url = None
+    await db.flush()
+    await db.refresh(current)
+    return current
 
 
 @router.delete("/{player_id}", status_code=204)

@@ -60,6 +60,7 @@ class PlayerResponse(BaseModel):
     role: PlayerRole
     active: bool
     must_change_password: bool
+    avatar_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -76,6 +77,7 @@ class PlayerPublic(BaseModel):
     name: str
     nickname: str | None
     role: PlayerRole
+    avatar_url: str | None = None
 
 
 class PlayerMemberView(BaseModel):
@@ -87,3 +89,4 @@ class PlayerMemberView(BaseModel):
     nickname: str | None
     role: PlayerRole
     whatsapp: str
+    avatar_url: str | None = None
