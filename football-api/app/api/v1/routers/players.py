@@ -9,9 +9,10 @@ from PIL.Image import DecompressionBombError
 from sqlalchemy import select, text
 
 # Limita o tamanho máximo de imagem aceito pelo Pillow globalmente para evitar
-# decompression bombs (e.g. PNG de 2MB que expande para GBs em RAM).
-# 4M pixels ≈ 2000×2000 — mais que suficiente para um avatar de 256×256.
-Image.MAX_IMAGE_PIXELS = 4_000_000
+# decompression bombs (arquivo pequeno que expande para GBs em RAM).
+# 25M pixels ≈ 5000×5000 — cobre câmeras de até ~25MP; blocos maiores são
+# quase impossíveis com arquivos de ≤5 MB e indicam imagem sintética maliciosa.
+Image.MAX_IMAGE_PIXELS = 25_000_000
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, ValidationError
