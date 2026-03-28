@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PLAN_ORDER, PLANS, formatCents } from '$lib/plans';
   import PwaSmartBanner from '$lib/components/PwaSmartBanner.svelte';
+  import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
   import { t } from '$lib/i18n';
 
   let howTab = $state<'organize' | 'play'>('organize');
@@ -8,6 +9,12 @@
 </script>
 
 <PwaSmartBanner />
+
+<!-- Top bar: language switcher + login -->
+<div class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-gray-950/80 backdrop-blur-sm border-b border-white/10">
+  <a href="/login" class="text-sm text-white/60 hover:text-white transition-colors">{$t('lp.topbar_login')}</a>
+  <LanguageSwitcher variant="bar" />
+</div>
 
 <svelte:head>
   <title>{$t('lp.page_title')}</title>
@@ -51,7 +58,7 @@
   style="min-height:620px; background-image: url('/background-login.png'); background-size: cover; background-position: center top;"
 >
   <div class="absolute inset-0 bg-gradient-to-b from-gray-900/90 via-gray-900/80 to-gray-900/70"></div>
-  <div class="relative max-w-4xl mx-auto px-6 py-16 text-center">
+  <div class="relative max-w-4xl mx-auto px-6 pt-24 pb-16 text-center">
     <img
       src="/logo.png"
       alt="rachao.app"
@@ -131,8 +138,8 @@
       <div class="bg-gray-800 border border-gray-700 rounded-2xl p-5">
         <div class="flex items-center gap-2 mb-4">
           <span class="text-lg">🏆</span>
-          <span class="font-bold text-white text-sm">Resultado · Rachão #42</span>
-          <span class="ml-auto text-xs text-gray-400">18 votaram</span>
+          <span class="font-bold text-white text-sm">{$t('lp.mock_result_title')}</span>
+          <span class="ml-auto text-xs text-gray-400">{$t('lp.mock_result_voted')}</span>
         </div>
         <div class="space-y-2 mb-4">
           {#each [
@@ -151,10 +158,10 @@
         </div>
         <div class="bg-red-900/40 rounded-xl px-3 py-2 border border-red-700/40 flex items-center gap-2">
           <span class="text-base">😬</span>
-          <span class="text-sm text-gray-300 flex-1">Decepção: <strong class="text-white">Jo Letra</strong></span>
-          <span class="text-xs text-red-400 font-semibold">9 votos</span>
+          <span class="text-sm text-gray-300 flex-1">{$t('lp.mock_disappointment_label')} <strong class="text-white">Jo Letra</strong></span>
+          <span class="text-xs text-red-400 font-semibold">9 {$t('lp.mock_votes_label')}</span>
         </div>
-        <p class="text-xs text-gray-500 text-center mt-3">Exemplo ilustrativo</p>
+        <p class="text-xs text-gray-500 text-center mt-3">{$t('lp.mock_illustrative')}</p>
       </div>
     </div>
 
@@ -172,8 +179,13 @@
 <!-- ============================================================ -->
 <!-- SECTION 3 — PARA JOGADORES                                   -->
 <!-- ============================================================ -->
-<section id="jogar" class="bg-gray-800 py-16 px-6">
-  <div class="max-w-5xl mx-auto">
+<section
+  id="jogar"
+  class="relative py-16 px-6 overflow-hidden"
+  style="background-image: url('/drible.jpg'); background-size: cover; background-position: center;"
+>
+  <div class="absolute inset-0 bg-gray-900/80 backdrop-blur-[2px]"></div>
+  <div class="relative max-w-5xl mx-auto">
     <div class="text-center mb-12">
       <span class="text-xs font-semibold text-emerald-400 uppercase tracking-widest">{$t('lp.player_badge')}</span>
       <h2 class="text-2xl sm:text-3xl font-bold text-white mt-2">{$t('lp.player_title')}</h2>
@@ -183,7 +195,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- A) Partidas abertas -->
       <div>
-        <h3 class="text-sm font-semibold text-white/80 uppercase tracking-widest mb-4">Partidas abertas</h3>
+        <h3 class="text-sm font-semibold text-white/80 uppercase tracking-widest mb-4">{$t('lp.player_open_matches')}</h3>
         <div class="space-y-3">
           <!-- Mock card 1 -->
           <div class="bg-gray-900 border border-gray-700 rounded-2xl p-4">
@@ -193,12 +205,12 @@
               </div>
               <div>
                 <p class="text-sm font-bold text-white">Futebol GQC</p>
-                <p class="text-xs text-primary-400 font-medium">Sex, 4 abr · 20:30</p>
+                <p class="text-xs text-primary-400 font-medium">{$t('lp.mock_match1_date')}</p>
               </div>
             </div>
             <p class="text-xs text-gray-400 mb-1">📍 BarraSoccer · Sintético</p>
             <div class="flex items-center justify-between">
-              <p class="text-xs text-green-400 font-semibold">8/20 confirmados</p>
+              <p class="text-xs text-green-400 font-semibold">{$t('lp.mock_match1_confirmed')}</p>
               <span class="inline-block px-2.5 py-1 bg-primary-900/60 text-primary-400 text-xs font-semibold rounded-full border border-primary-700/50">{$t('jogar.join_card')}</span>
             </div>
           </div>
@@ -210,13 +222,13 @@
               </div>
               <div>
                 <p class="text-sm font-bold text-white">Rachão da Vila</p>
-                <p class="text-xs text-primary-400 font-medium">Sáb, 5 abr · 10:00</p>
+                <p class="text-xs text-primary-400 font-medium">{$t('lp.mock_match2_date')}</p>
               </div>
             </div>
             <p class="text-xs text-gray-400 mb-1">📍 Campo do Bosque · Campo</p>
             <div class="flex items-center justify-between">
-              <p class="text-xs text-amber-400 font-semibold">12/14 confirmados</p>
-              <span class="inline-block px-2.5 py-1 bg-amber-900/50 text-amber-400 text-xs font-semibold rounded-full border border-amber-700/50">2 vagas</span>
+              <p class="text-xs text-amber-400 font-semibold">{$t('lp.mock_match2_confirmed')}</p>
+              <span class="inline-block px-2.5 py-1 bg-amber-900/50 text-amber-400 text-xs font-semibold rounded-full border border-amber-700/50">{$t('lp.mock_match2_spots')}</span>
             </div>
           </div>
           <!-- Mock card 3 -->
@@ -227,12 +239,12 @@
               </div>
               <div>
                 <p class="text-sm font-bold text-white">Pelada dos Brothers</p>
-                <p class="text-xs text-primary-400 font-medium">Dom, 6 abr · 08:00</p>
+                <p class="text-xs text-primary-400 font-medium">{$t('lp.mock_match3_date')}</p>
               </div>
             </div>
             <p class="text-xs text-gray-400 mb-1">📍 Arena Sport · Quadra</p>
             <div class="flex items-center justify-between">
-              <p class="text-xs text-green-400 font-semibold">5/22 confirmados</p>
+              <p class="text-xs text-green-400 font-semibold">{$t('lp.mock_match3_confirmed')}</p>
               <span class="inline-block px-2.5 py-1 bg-primary-900/60 text-primary-400 text-xs font-semibold rounded-full border border-primary-700/50">{$t('jogar.join_card')}</span>
             </div>
           </div>
@@ -246,7 +258,7 @@
 
       <!-- B) Ranking mock -->
       <div>
-        <h3 class="text-sm font-semibold text-white/80 uppercase tracking-widest mb-4">Ranking</h3>
+        <h3 class="text-sm font-semibold text-white/80 uppercase tracking-widest mb-4">{$t('lp.player_ranking_label')}</h3>
         <div class="bg-gray-900 border border-gray-700 rounded-2xl p-5">
           <div class="flex items-end justify-center gap-3 mb-6">
             <!-- 2º -->
@@ -259,8 +271,8 @@
             </div>
             <!-- 1º -->
             <div class="flex-1 flex flex-col items-center">
-              <div class="w-13 h-13 rounded-full bg-amber-500 flex items-center justify-center text-xl font-bold text-amber-900 mb-1 w-12 h-12">T</div>
-              <p class="text-xs font-bold text-white truncate w-full text-center">Thiagol</p>
+              <div class="w-13 h-13 rounded-full bg-amber-500 flex items-center justify-center text-xl font-bold text-amber-900 mb-1 w-12 h-12">Z</div>
+              <p class="text-xs font-bold text-white truncate w-full text-center">Zidanilo</p>
               <p class="text-[10px] text-gray-400">312 pts</p>
               <div class="w-full bg-amber-500 rounded-t-lg mt-1" style="height:85px;"></div>
               <div class="w-full bg-amber-500 py-1 text-center text-white text-xs font-bold">🥇 1</div>
@@ -284,16 +296,16 @@
 
       <!-- C) Rachão Score -->
       <div>
-        <h3 class="text-sm font-semibold text-white/80 uppercase tracking-widest mb-4">Rachão Score</h3>
+        <h3 class="text-sm font-semibold text-white/80 uppercase tracking-widest mb-4">{$t('lp.player_score_label')}</h3>
         <div class="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden">
           <div
             class="relative px-5 py-5 text-white"
             style="background: linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%);"
           >
             <div class="flex items-center gap-3 mb-3">
-              <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold text-white">T</div>
+              <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold text-white">E</div>
               <div>
-                <p class="font-bold text-base leading-tight">Thiago (Thiagol)</p>
+                <p class="font-bold text-base leading-tight">Eduardo (Dudu)</p>
                 <div class="flex gap-0.5 mt-0.5">
                   {#each Array.from({ length: 5 }) as _}
                     <span class="text-amber-300 text-sm">★</span>
@@ -302,14 +314,14 @@
               </div>
             </div>
             <div class="flex items-center gap-3 text-xs text-green-100 flex-wrap">
-              <span>⚽ 47 rachões</span>
-              <span>89% presença</span>
-              <span>🔥 12 seguidos</span>
+              <span>{$t('lp.mock_score_games')}</span>
+              <span>{$t('lp.mock_score_attendance')}</span>
+              <span>{$t('lp.mock_score_streak')}</span>
             </div>
           </div>
           <div class="bg-gray-800 px-5 py-3 space-y-1.5">
-            <p class="text-sm text-gray-300">🏆 Top 5 em 23 partidas · <span class="font-semibold text-amber-400">312 pontos</span></p>
-            <p class="text-sm text-gray-500">😬 Decepção em 2</p>
+            <p class="text-sm text-gray-300">{$t('lp.mock_score_top')}</p>
+            <p class="text-sm text-gray-500">{$t('lp.mock_score_disappoint')}</p>
           </div>
         </div>
         <p class="text-xs text-white/50 text-center mt-3 leading-relaxed">{$t('lp.player_score_highlight')}</p>
@@ -463,7 +475,7 @@
   <div class="max-w-5xl mx-auto">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
       <div>
-        <span class="text-xs font-semibold text-primary-400 uppercase tracking-widest">Planos</span>
+        <span class="text-xs font-semibold text-primary-400 uppercase tracking-widest">{$t('lp.plans_badge')}</span>
         <h2 class="text-2xl sm:text-3xl font-bold text-white mt-2">{$t('lp.plans_title')}</h2>
         <p class="text-white/60 mt-1 text-sm">{$t('lp.plans_subtitle')}</p>
       </div>
@@ -563,7 +575,7 @@
               { label: $t('lp.compare_groups'), free: '1', basic: '3', pro: '10' },
               { label: $t('lp.compare_members'), free: '30', basic: '50', pro: $t('lp.compare_unlimited') },
               { label: $t('lp.compare_matches'), free: '3', basic: $t('lp.compare_unlimited_f'), pro: $t('lp.compare_unlimited_f') },
-              { label: $t('lp.compare_history'), free: '30 dias', basic: '6 meses', pro: $t('lp.compare_no_limit') },
+              { label: $t('lp.compare_history'), free: $t('lp.compare_history_free'), basic: $t('lp.compare_history_basic'), pro: $t('lp.compare_no_limit') },
               { label: $t('lp.compare_invites'), free: '✓', basic: '✓', pro: '✓' },
               { label: $t('lp.compare_attendance'), free: '✓', basic: '✓', pro: '✓' },
               { label: $t('lp.compare_draw'), free: '✓', basic: '✓', pro: '✓' },
@@ -621,11 +633,11 @@
     <span class="text-white font-semibold">⚽ rachao.app</span>
     <span class="text-gray-500 text-xs">© 2026</span>
     <div class="flex flex-wrap gap-5 justify-center">
-      <a href="/terms" class="hover:text-white transition-colors">Termos de Uso</a>
-      <a href="/privacy" class="hover:text-white transition-colors">Privacidade</a>
-      <a href="/faq" class="hover:text-white transition-colors">FAQ</a>
-      <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">Status</a>
-      <a href="/login" class="hover:text-white transition-colors">Entrar</a>
+      <a href="/terms" class="hover:text-white transition-colors">{$t('lp.footer_terms')}</a>
+      <a href="/privacy" class="hover:text-white transition-colors">{$t('lp.footer_privacy')}</a>
+      <a href="/faq" class="hover:text-white transition-colors">{$t('lp.footer_faq')}</a>
+      <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{$t('lp.footer_status')}</a>
+      <a href="/login" class="hover:text-white transition-colors">{$t('lp.topbar_login')}</a>
     </div>
   </div>
 </footer>
