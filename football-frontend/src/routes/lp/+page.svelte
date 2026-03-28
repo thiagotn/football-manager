@@ -263,24 +263,24 @@
           <div class="flex items-end justify-center gap-3 mb-6">
             <!-- 2º -->
             <div class="flex-1 flex flex-col items-center">
-              <div class="w-11 h-11 rounded-full bg-gray-600 flex items-center justify-center text-lg font-bold text-gray-200 mb-1">L</div>
-              <p class="text-xs font-semibold text-gray-300 truncate w-full text-center">Lucas</p>
+              <img src="/avatar-dentinho.jpg" alt="Dentinho" class="w-11 h-11 rounded-full object-cover mb-1 ring-2 ring-gray-500" />
+              <p class="text-xs font-semibold text-gray-300 truncate w-full text-center">Dentinho</p>
               <p class="text-[10px] text-gray-500">287 pts</p>
               <div class="w-full bg-gray-600 rounded-t-lg mt-1" style="height:55px;"></div>
               <div class="w-full bg-gray-600 py-1 text-center text-gray-200 text-xs font-bold">2</div>
             </div>
             <!-- 1º -->
             <div class="flex-1 flex flex-col items-center">
-              <div class="w-13 h-13 rounded-full bg-amber-500 flex items-center justify-center text-xl font-bold text-amber-900 mb-1 w-12 h-12">Z</div>
-              <p class="text-xs font-bold text-white truncate w-full text-center">Zidanilo</p>
+              <img src="/avatar-alemao.jpg" alt="Alemão" class="w-12 h-12 rounded-full object-cover mb-1 ring-2 ring-amber-400" />
+              <p class="text-xs font-bold text-white truncate w-full text-center">Alemão</p>
               <p class="text-[10px] text-gray-400">312 pts</p>
               <div class="w-full bg-amber-500 rounded-t-lg mt-1" style="height:85px;"></div>
               <div class="w-full bg-amber-500 py-1 text-center text-white text-xs font-bold">🥇 1</div>
             </div>
             <!-- 3º -->
             <div class="flex-1 flex flex-col items-center">
-              <div class="w-11 h-11 rounded-full bg-orange-600/70 flex items-center justify-center text-lg font-bold text-orange-200 mb-1">R</div>
-              <p class="text-xs font-semibold text-gray-300 truncate w-full text-center">Rafael</p>
+              <img src="/avatar-fezinha.jpg" alt="Fezinha" class="w-11 h-11 rounded-full object-cover mb-1 ring-2 ring-orange-500" />
+              <p class="text-xs font-semibold text-gray-300 truncate w-full text-center">Fezinha</p>
               <p class="text-[10px] text-gray-500">241 pts</p>
               <div class="w-full bg-orange-600/70 rounded-t-lg mt-1" style="height:40px;"></div>
               <div class="w-full bg-orange-600/70 py-1 text-center text-orange-100 text-xs font-bold">3</div>
@@ -303,9 +303,9 @@
             style="background: linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%);"
           >
             <div class="flex items-center gap-3 mb-3">
-              <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold text-white">E</div>
+              <img src="/avatar-coruja.jpg" alt="Coruja" class="w-12 h-12 rounded-full object-cover ring-2 ring-white/30" />
               <div>
-                <p class="font-bold text-base leading-tight">Eduardo (Dudu)</p>
+                <p class="font-bold text-base leading-tight">Coruja</p>
                 <div class="flex gap-0.5 mt-0.5">
                   {#each Array.from({ length: 5 }) as _}
                     <span class="text-amber-300 text-sm">★</span>
@@ -641,3 +641,12 @@
     </div>
   </div>
 </footer>
+
+<style>
+  /* Mobile: anchor background image to top so players' upper bodies are visible */
+  @media (max-width: 767px) {
+    #jogar {
+      background-position: 60% top !important;
+    }
+  }
+</style>
