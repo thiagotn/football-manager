@@ -44,7 +44,12 @@
     if (!$authStore.loading) {
       const isPublic = PUBLIC_ROUTES.some(r => $page.url.pathname.startsWith(r));
       if (!$isLoggedIn && !isPublic) {
-        goto($page.url.pathname === '/' ? '/lp' : '/login');
+        if ($page.url.pathname === '/') {
+          const isMobile = window.innerWidth < 768;
+          goto(isMobile ? '/login' : '/lp');
+        } else {
+          goto('/login');
+        }
       }
     }
   });
