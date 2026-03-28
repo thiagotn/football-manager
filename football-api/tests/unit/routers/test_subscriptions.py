@@ -93,3 +93,73 @@ async def test_create_checkout_invalid_billing_cycle_returns_400(api_client):
     )
 
     assert response.status_code == 400
+
+
+# ── GET /subscriptions/me — basic plan ───────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_subscription_basic_player_returns_correct_limits(api_client, mocker):
+    """Player com plano basic tem groups_limit=3 e members_limit=50."""
+    sub = _make_subscription("basic")
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.SubscriptionRepository.get_or_create",
+        new=AsyncMock(return_value=sub),
+    )
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.SubscriptionRepository.count_admin_groups",
+        new=AsyncMock(return_value=1),
+    )
+
+    response = await api_client.get("/api/v1/subscriptions/me")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["plan"] == "basic"
+    assert data["groups_limit"] == 3
+    assert data["members_limit"] == 50
+    assert data["groups_used"] == 1
+
+
+# ── POST /subscriptions — happy path ─────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_checkout_session_valid_plan_returns_url(api_client, mocker):
+    """Criar checkout com plano válido retorna URL de checkout."""
+    sub = _make_subscription("free")
+    sub.gateway_customer_id = None
+
+    mock_settings = MagicMock()
+    mock_settings.get_price_id.return_value = "price_test_123"
+    mock_settings.frontend_url = "https://rachao.app"
+
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.SubscriptionRepository.get_or_create",
+        new=AsyncMock(return_value=sub),
+    )
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.SubscriptionRepository.update_plan",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.get_settings",
+        return_value=mock_settings,
+    )
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.billing.get_or_create_customer",
+        new=AsyncMock(return_value="cus_new_001"),
+    )
+    mocker.patch(
+        "app.api.v1.routers.subscriptions.billing.create_checkout_session",
+        new=AsyncMock(return_value="https://checkout.stripe.com/test-session"),
+    )
+
+    response = await api_client.post(
+        "/api/v1/subscriptions",
+        json={"plan": "basic", "billing_cycle": "monthly"},
+    )
+
+    assert response.status_code == 201
+    assert "checkout_url" in response.json()
+    assert response.json()["checkout_url"] == "https://checkout.stripe.com/test-session"

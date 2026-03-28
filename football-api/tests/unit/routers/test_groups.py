@@ -305,3 +305,479 @@ async def test_list_members_non_member_returns_403(api_client, mocker):
     response = await api_client.get(f"/api/v1/groups/{group.id}/members")
 
     assert response.status_code == 403
+
+
+# ── GET /groups — happy path ──────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_list_groups_returns_200(api_client, mocker):
+    """Jogador autenticado recebe lista dos seus grupos."""
+    groups = [_make_group("Pelada A"), _make_group("Pelada B")]
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_player_groups",
+        new=AsyncMock(return_value=groups),
+    )
+
+    response = await api_client.get("/api/v1/groups")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
+# ── POST /groups — happy path ─────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_group_success_returns_201(api_client, mocker):
+    """Criação bem-sucedida de grupo retorna 201."""
+    sub = _make_subscription("basic")
+    group = _make_group("Pelada do Bairro")
+
+    mocker.patch(
+        "app.api.v1.routers.groups.SubscriptionRepository.get_or_create",
+        new=AsyncMock(return_value=sub),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.SubscriptionRepository.count_admin_groups",
+        new=AsyncMock(return_value=0),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_by_slug",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.create",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.add_member",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.post("/api/v1/groups", json=GROUP_PAYLOAD)
+
+    assert response.status_code == 201
+    assert response.json()["name"] == group.name
+
+
+# ── GET /groups/{id} — happy path ─────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_group_member_returns_200(api_client, player_user, mocker):
+    """Membro do grupo pode ver os detalhes do grupo."""
+    group = _make_group("Pelada")
+    group.members = []
+    group.description = "Toda sexta"
+    group.slug = "pelada"
+    group.per_match_amount = None
+    group.monthly_amount = None
+    group.recurrence_enabled = False
+    group.is_public = True
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_with_members",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "member"
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(group.id)
+
+
+# ── PATCH /groups/{id} — happy path ───────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_update_group_success_returns_200(api_client, mocker):
+    """Admin do grupo pode atualizar dados do grupo."""
+    group = _make_group("Pelada")
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "admin"
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group.id}",
+        json={"name": "Novo Nome"},
+    )
+
+    assert response.status_code == 200
+
+
+# ── DELETE /groups/{id} — happy path ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_delete_group_success_returns_204(admin_client, mocker):
+    """Super admin pode deletar um grupo existente."""
+    group = _make_group("Pelada")
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.delete",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await admin_client.delete(f"/api/v1/groups/{group.id}")
+
+    assert response.status_code == 204
+
+
+# ── GET /groups/{id}/members — happy path ─────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_list_members_success_returns_200(api_client, mocker):
+    """Membro do grupo pode listar os membros."""
+    group = _make_group("Pelada")
+    group.members = []
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_with_members",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "member"
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}/members")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+# ── POST /groups/{id}/members — happy path ────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_add_member_success_returns_201(api_client, mock_db, mocker):
+    """Admin do grupo pode adicionar um membro."""
+    from datetime import datetime
+    from app.models.player import PlayerRole
+    from app.models.group import GroupMemberRole
+
+    group = _make_group("Pelada")
+    group_id = group.id
+
+    caller_member = MagicMock()
+    caller_member.role = "admin"
+
+    player_id = uuid4()
+    player = MagicMock()
+    player.id = player_id
+    player.role = PlayerRole.PLAYER
+    player.name = "Novo Membro"
+    player.nickname = None
+    player.whatsapp = "+5511999990099"
+    player.avatar_url = None
+
+    new_member = MagicMock()
+    new_member.id = uuid4()
+    new_member.group_id = group_id
+    new_member.player_id = player_id
+    new_member.role = GroupMemberRole.MEMBER
+    new_member.skill_stars = 3
+    new_member.is_goalkeeper = False
+    new_member.created_at = datetime(2026, 1, 1)
+    new_member.player = player
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(side_effect=[caller_member, None]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.SubscriptionRepository.get_or_create",
+        new=AsyncMock(return_value=_make_subscription("pro")),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_non_admin_member_ids",
+        new=AsyncMock(return_value=[]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.add_member",
+        new=AsyncMock(return_value=new_member),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.MatchRepository.get_active_matches",
+        new=AsyncMock(return_value=[]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.FinanceRepository.ensure_member_in_current_period",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group_id}/members",
+        json={"player_id": str(player_id)},
+    )
+
+    assert response.status_code == 201
+
+
+# ── PATCH /groups/{id}/members/{player_id} — happy path ──────────────────────
+
+
+@pytest.mark.asyncio
+async def test_update_member_skill_stars_returns_200(api_client, mocker):
+    """Admin do grupo pode atualizar skill_stars de um membro."""
+    from datetime import datetime
+    from app.models.player import PlayerRole
+    from app.models.group import GroupMemberRole
+
+    group_id = uuid4()
+    player_id = uuid4()
+
+    player = MagicMock()
+    player.id = player_id
+    player.name = "Jogador"
+    player.nickname = None
+    player.avatar_url = None
+    player.role = PlayerRole.PLAYER
+    player.whatsapp = "+5511999990099"
+
+    member = MagicMock()
+    member.id = uuid4()
+    member.group_id = group_id
+    member.player_id = player_id
+    member.role = GroupMemberRole.MEMBER
+    member.skill_stars = 4
+    member.is_goalkeeper = False
+    member.created_at = datetime(2026, 1, 1)
+    member.player = player
+
+    caller = MagicMock()
+    caller.role = GroupMemberRole.ADMIN
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(side_effect=[caller, member]),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/members/{player_id}",
+        json={"skill_stars": 4},
+    )
+
+    assert response.status_code == 200
+
+
+# ── DELETE /groups/{id}/members/{player_id} — happy path ─────────────────────
+
+
+@pytest.mark.asyncio
+async def test_remove_member_success_returns_204(api_client, mocker):
+    """Admin do grupo pode remover um membro."""
+    group_id = uuid4()
+    player_id = uuid4()
+
+    caller = MagicMock()
+    caller.role = "admin"
+    member = MagicMock()
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(side_effect=[caller, member]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.MatchRepository.delete_player_attendances_in_open_matches",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.delete",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.delete(f"/api/v1/groups/{group_id}/members/{player_id}")
+
+    assert response.status_code == 204
+
+
+# ── POST /groups/{id}/waitlist — happy path ───────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_join_waitlist_success_returns_201(api_client, player_user, mock_db, mocker):
+    """Jogador não-membro pode entrar na fila de espera de um grupo público."""
+    from datetime import date
+
+    group_id = uuid4()
+    group = _make_group("Pelada Pública")
+    group.id = group_id
+    group.is_public = True
+
+    open_match = MagicMock()
+    open_match.id = uuid4()
+    open_match.max_players = None
+    open_match.match_date = date(2026, 4, 1)
+
+    entry = MagicMock()
+    entry.id = uuid4()
+    entry.match_id = open_match.id
+    entry.player_id = player_user.id
+    entry.intro = "Quero jogar!"
+    entry.status = "pending"
+    entry.created_at = "2026-04-01T10:00:00"
+    entry.player = MagicMock()
+    entry.player.name = player_user.name
+    entry.player.nickname = None
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=None),  # não é membro
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.MatchRepository.get_active_matches",
+        new=AsyncMock(return_value=[open_match]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.WaitlistRepository.get_entry",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.WaitlistRepository.create",
+        new=AsyncMock(return_value=entry),
+    )
+    # Sem admins no grupo para notificar
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = []
+    mock_db.execute = AsyncMock(return_value=result_mock)
+    mocker.patch("app.api.v1.routers.groups.send_push", new=AsyncMock(return_value=None))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group_id}/waitlist",
+        json={"agreed": True, "intro": "Quero jogar!"},
+    )
+
+    assert response.status_code == 201
+
+
+# ── GET /groups/{id}/waitlist — admin only ────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_list_waitlist_non_group_admin_returns_403(api_client, mocker):
+    """Apenas admin do grupo pode ver a lista de espera."""
+    group = _make_group("Pelada")
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "member"  # não é admin do grupo
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}/waitlist")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_list_waitlist_admin_returns_200(api_client, mocker):
+    """Admin do grupo pode listar candidatos da fila de espera."""
+    group = _make_group("Pelada")
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "admin"
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.MatchRepository.get_active_matches",
+        new=AsyncMock(return_value=[]),  # sem partida ativa → lista vazia
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}/waitlist")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+# ── GET /groups/{id}/waitlist/me ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_my_waitlist_entry_no_active_match_returns_none(api_client, mocker):
+    """Sem partida ativa, endpoint retorna null (200)."""
+    group = _make_group("Pelada")
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.MatchRepository.get_active_matches",
+        new=AsyncMock(return_value=[]),
+    )
+
+    response = await api_client.get(f"/api/v1/groups/{group.id}/waitlist/me")
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+# ── PATCH /groups/{id}/waitlist/{entry_id} — accept/reject ───────────────────
+
+
+@pytest.mark.asyncio
+async def test_review_waitlist_non_group_admin_returns_403(api_client, mocker):
+    """Apenas admin do grupo pode aceitar/rejeitar candidatos."""
+    group = _make_group("Pelada")
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get",
+        new=AsyncMock(return_value=group),
+    )
+    member = MagicMock()
+    member.role = "member"
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group.id}/waitlist/{uuid4()}",
+        json={"action": "accept"},
+    )
+
+    assert response.status_code == 403
