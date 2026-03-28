@@ -12,8 +12,7 @@
 | Rota | Descrição |
 |------|-----------|
 | `/` | Redirect para `/dashboard` ou `/login` |
-| `/lp` | Landing page |
-| `/jogar` | Landing page para jogadores (SEO) |
+| `/lp` | Landing page unificada (organizadores + jogadores) |
 | `/faq` | FAQ público |
 | `/plans` | Comparativo de planos |
 | `/privacy` | Política de privacidade |
