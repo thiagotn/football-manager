@@ -108,8 +108,13 @@
 <!-- ============================================================ -->
 <!-- SECTION 2 — PARA ORGANIZADORES                               -->
 <!-- ============================================================ -->
-<section id="organizar" class="bg-gray-900 py-16 px-6">
-  <div class="max-w-5xl mx-auto">
+<section
+  id="organizar"
+  class="relative py-16 px-6 overflow-hidden"
+  style="background-image: url('/organizer-bg.jpg'); background-size: cover; background-position: center top;"
+>
+  <div class="absolute inset-0 bg-gray-900/85"></div>
+  <div class="relative max-w-5xl mx-auto">
     <div class="text-center mb-12">
       <span class="text-xs font-semibold text-primary-400 uppercase tracking-widest">{$t('lp.organizer_badge')}</span>
       <h2 class="text-2xl sm:text-3xl font-bold text-white mt-2">{$t('lp.organizer_title')}</h2>
