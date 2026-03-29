@@ -11,7 +11,7 @@
 <PwaSmartBanner />
 
 <!-- Top bar: language switcher + login -->
-<div class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-gray-950/80 backdrop-blur-sm border-b border-white/10">
+<div class="fixed top-0 left-0 right-0 z-50 flex items-center justify-end gap-2 px-4 py-2 bg-gray-950/80 backdrop-blur-sm border-b border-white/10">
   <LanguageSwitcher variant="bar" />
   <a
     href="/login"
