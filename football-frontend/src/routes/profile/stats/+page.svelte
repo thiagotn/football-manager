@@ -106,7 +106,7 @@
       </div>
       <button
         onclick={shareScore}
-        class="btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        class="hidden sm:flex btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 items-center gap-1.5 shrink-0">
         <Share2 size={14} /> {$t('stats.share_score')}
       </button>
     </div>
@@ -373,4 +373,13 @@
 
     {/if}
   </main>
+
+  <!-- Botão fixo no rodapé — apenas mobile -->
+  <div class="sm:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none">
+    <button
+      onclick={shareScore}
+      class="pointer-events-auto w-full btn btn-primary flex items-center justify-center gap-2">
+      <Share2 size={16} /> {$t('stats.share_score')}
+    </button>
+  </div>
 </PageBackground>
