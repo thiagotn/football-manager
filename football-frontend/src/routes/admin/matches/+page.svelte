@@ -116,7 +116,7 @@
       <p class="text-gray-400 text-sm">Nenhum rachão encontrado.</p>
     </div>
   {:else}
-    <div class="card overflow-x-auto">
+    <div class="card overflow-x-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
@@ -156,7 +156,7 @@
                   </span>
                 {/if}
               </td>
-              <td class="px-3 py-2.5 text-gray-400">
+              <td class="pl-2 pr-4 py-2.5 text-gray-400">
                 <ChevronRight size={14} />
               </td>
             </tr>
