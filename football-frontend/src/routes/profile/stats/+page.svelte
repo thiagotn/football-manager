@@ -95,7 +95,7 @@
 </svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8 sm:pb-8 pb-28">
 
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -375,7 +375,7 @@
   </main>
 
   <!-- Botão fixo no rodapé — apenas mobile -->
-  <div class="sm:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none">
+  <div class="sm:hidden fixed bottom-0 left-0 right-0 px-4 pt-2 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))">
     <button
       onclick={shareScore}
       class="pointer-events-auto w-full btn btn-primary flex items-center justify-center gap-2">
