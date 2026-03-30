@@ -262,6 +262,7 @@
       `*Rachão ${match.group_name}*`,
       fmtDateShare(match.match_date),
       `Local: ${match.location}`,
+      ...(match.notes ? ['', match.notes] : []),
       '',
       confirmedHeader,
       confirmedList,
