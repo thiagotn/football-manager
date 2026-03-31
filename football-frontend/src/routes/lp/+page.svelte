@@ -638,8 +638,7 @@
 <!-- ============================================================ -->
 <footer class="bg-gray-950 text-gray-400 py-8 px-6 text-center text-xs">
   <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-    <span class="text-white font-semibold">⚽ rachao.app</span>
-    <span class="text-gray-500 text-xs">© 2026</span>
+    <span class="text-white font-semibold">⚽ rachao.app <span class="text-gray-500 font-normal">© 2026</span></span>
     <div class="flex flex-wrap gap-5 justify-center">
       <a href="/terms" class="hover:text-white transition-colors">{$t('lp.footer_terms')}</a>
       <a href="/privacy" class="hover:text-white transition-colors">{$t('lp.footer_privacy')}</a>
