@@ -327,7 +327,7 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.rachao.twa",
+      "package_name": "app.rachao",
       "sha256_cert_fingerprints": ["AA:BB:CC:..."]
     }
   }]
@@ -350,7 +350,7 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
   bubblewrap init --manifest https://rachao.app/manifest.webmanifest
   ```
   Configurar durante o init:
-  - Package name: `app.rachao.twa`
+  - Package name: `app.rachao`
   - App name: `rachao.app`
   - Launch URL: `https://rachao.app/`
   - Apontar para a keystore gerada
@@ -477,7 +477,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: app.rachao.twa
+          packageName: app.rachao
           releaseFiles: football-android/app-release-bundle.aab
           track: ${{ github.event.inputs.track }}
           status: completed
