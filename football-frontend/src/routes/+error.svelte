@@ -16,7 +16,7 @@
 </svelte:head>
 
 <div class="min-h-screen relative flex flex-col"
-  style="background-image: url('/error-bg.png'); background-size: cover; background-position: center top;">
+  style="background-image: url('/error-bg.webp'); background-size: cover; background-position: center top;">
 
   <!-- Overlay escuro na metade inferior para legibilidade do texto -->
   <div class="absolute inset-0 bg-gradient-to-t from-gray-950/95 via-gray-950/60 to-transparent pointer-events-none"></div>
