@@ -16,83 +16,87 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 ## Autenticação e Conta
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [verificacao-whatsapp.md](verificacao-whatsapp.md) | ✅ | OTP via Twilio Verify (SMS). Canal WhatsApp pendente de aprovação Twilio/Meta |
-| [otp-bypass-local.md](otp-bypass-local.md) | ✅ | `OTP_BYPASS_CODE` em `.env.docker` para dev local |
-| [troca-de-senha-com-otp.md](troca-de-senha-com-otp.md) | ✅ | Troca de senha via OTP quando usuário não lembra a senha atual |
-| [validacao-senha-igual.md](validacao-senha-igual.md) | ✅ | Backend 422 + feedback inline no frontend |
-| [otp-leitura-automatica-sms.md](otp-leitura-automatica-sms.md) | ⏸ | `autocomplete="one-time-code"` ativo (iOS). WebOTP Android aguarda template Twilio aprovado. `$effect` revertido por interferência no foco dos inputs |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 003 | [verificacao-whatsapp.md](003-verificacao-whatsapp.md) | ✅ | OTP via Twilio Verify (SMS). Canal WhatsApp pendente de aprovação Twilio/Meta |
+| 025 | [otp-bypass-local.md](025-otp-bypass-local.md) | ✅ | `OTP_BYPASS_CODE` em `.env.docker` para dev local |
+| 016 | [troca-de-senha-com-otp.md](016-troca-de-senha-com-otp.md) | ✅ | Troca de senha via OTP quando usuário não lembra a senha atual |
+| 023 | [validacao-senha-igual.md](023-validacao-senha-igual.md) | ✅ | Backend 422 + feedback inline no frontend |
+| 026 | [otp-leitura-automatica-sms.md](026-otp-leitura-automatica-sms.md) | ⏸ | `autocomplete="one-time-code"` ativo (iOS). WebOTP Android aguarda template Twilio aprovado. `$effect` revertido por interferência no foco dos inputs |
 
 ---
 
 ## Planos e Assinatura
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [planos-precificacao.md](planos-precificacao.md) | 📖 | Referência de precificação — preços confirmados: Basic R$19,90/mês · Pro R$39,90/mês |
-| [planos-assinatura.md](planos-assinatura.md) | ✅ | Sistema completo de planos e assinatura via Stripe |
-| [minha-conta-plano.md](minha-conta-plano.md) | ✅ | `/account/subscription` e `/plans` implementados |
-| [admin-subscriptions.md](admin-subscriptions.md) | ✅ | Painel `/admin/subscriptions` — resumo, breakdown, tabela de assinantes, ativação manual |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 010 | [planos-precificacao.md](010-planos-precificacao.md) | 📖 | Referência de precificação — preços confirmados: Basic R$19,90/mês · Pro R$39,90/mês |
+| 001 | [planos-assinatura.md](001-planos-assinatura.md) | ✅ | Sistema completo de planos e assinatura via Stripe |
+| 004 | [minha-conta-plano.md](004-minha-conta-plano.md) | ✅ | `/account/subscription` e `/plans` implementados |
+| 014 | [admin-subscriptions.md](014-admin-subscriptions.md) | ✅ | Painel `/admin/subscriptions` — resumo, breakdown, tabela de assinantes, ativação manual |
 
 ---
 
 ## Perfil do Jogador
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [avatar-jogador.md](avatar-jogador.md) | 📋 | Upload de foto de perfil com fallback de iniciais e armazenamento no Supabase Storage |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 027 | [avatar-jogador.md](027-avatar-jogador.md) | 📋 | Upload de foto de perfil com fallback de iniciais e armazenamento no Supabase Storage |
 
 ---
 
 ## Partidas e Grupos
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [grupos-publicos-lista-de-espera.md](grupos-publicos-lista-de-espera.md) | ✅ | Grupos públicos, lista de espera e feed de descoberta |
-| [recorrencia-heranca-convidados.md](recorrencia-heranca-convidados.md) | ✅ | Herança de convidados entre partidas recorrentes |
-| [votacao-pos-partida.md](votacao-pos-partida.md) | ✅ | Votação pós-partida completa com aba de Estatísticas |
-| [avaliacao-jogadores-e-montagem-de-times.md](avaliacao-jogadores-e-montagem-de-times.md) | ✅ | Notas por grupo, flag de goleiro, sorteio equilibrado e páginas públicas de times e resultados |
-| [configuracao-votacao-por-grupo.md](configuracao-votacao-por-grupo.md) | ✅ | Delay configurável por grupo |
-| [avaliacao-app.md](avaliacao-app.md) | ✅ | Votação pós-partida v1.5 com banner de pendências e estatísticas com filtro por período |
-| [financeiro-grupo.md](financeiro-grupo.md) | ✅ | Controle financeiro por grupo (mensalidade, avulso, histórico) |
-| [timezone-por-grupo.md](timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 019 | [grupos-publicos-lista-de-espera.md](019-grupos-publicos-lista-de-espera.md) | ✅ | Grupos públicos, lista de espera e feed de descoberta |
+| 000 | [recorrencia-heranca-convidados.md](000-recorrencia-heranca-convidados.md) | ✅ | Herança de convidados entre partidas recorrentes |
+| 005 | [votacao-pos-partida.md](005-votacao-pos-partida.md) | ✅ | Votação pós-partida completa com aba de Estatísticas |
+| 012 | [avaliacao-jogadores-e-montagem-de-times.md](012-avaliacao-jogadores-e-montagem-de-times.md) | ✅ | Notas por grupo, flag de goleiro, sorteio equilibrado e páginas públicas de times e resultados |
+| 011 | [configuracao-votacao-por-grupo.md](011-configuracao-votacao-por-grupo.md) | ✅ | Delay configurável por grupo |
+| 006 | [avaliacao-app.md](006-avaliacao-app.md) | ✅ | Votação pós-partida v1.5 com banner de pendências e estatísticas com filtro por período |
+| 015 | [financeiro-grupo.md](015-financeiro-grupo.md) | ✅ | Controle financeiro por grupo (mensalidade, avulso, histórico) |
+| 021 | [timezone-por-grupo.md](021-timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
 
 ---
 
 ## Internacionalização
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [auto-idioma-por-pais.md](auto-idioma-por-pais.md) | ✅ | Troca automática de idioma via seletor de país em `/login` e `/register` |
-| [internacionalizacao-e-whatsapp-global.md](internacionalizacao-e-whatsapp-global.md) | ✅ | WhatsApp E.164 + i18n pt-BR/en/es completo (Paraglide) |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 024 | [auto-idioma-por-pais.md](024-auto-idioma-por-pais.md) | ✅ | Troca automática de idioma via seletor de país em `/login` e `/register` |
+| 020 | [internacionalizacao-e-whatsapp-global.md](020-internacionalizacao-e-whatsapp-global.md) | ✅ | WhatsApp E.164 + i18n pt-BR/en/es completo (Paraglide) |
 
 ---
 
 ## Admin
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [admin-home.md](admin-home.md) | ✅ | Home `/admin` com big numbers, listagens globais de rachões e grupos |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 007 | [admin-home.md](007-admin-home.md) | ✅ | Home `/admin` com big numbers, listagens globais de rachões e grupos |
 
 ---
 
 ## Infraestrutura e Plataforma
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [observabilidade.md](observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
-| [push-notifications.md](push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
-| [instalacao-pwa-android.md](instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
-| [migracao-uuid-v7.md](migracao-uuid-v7.md) | 📋 | Migração de UUID v4 → v7 nas PKs |
-| [minhas-estatisticas.md](minhas-estatisticas.md) | ✅ | Estatísticas por jogador |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
+| 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
+| 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
+| 022 | [migracao-uuid-v7.md](022-migracao-uuid-v7.md) | 📋 | Migração de UUID v4 → v7 nas PKs |
+| 013 | [minhas-estatisticas.md](013-minhas-estatisticas.md) | ✅ | Estatísticas por jogador |
+| 029 | [ranking-geral.md](029-ranking-geral.md) | ✅ | Ranking geral da plataforma (top e flop) |
+| 032 | [publicacao-lojas.md](032-publicacao-lojas.md) | 📋 | TWA Android (Fase 1 aprovada) + Flutter nativo (Fase 2 em avaliação). Inclui arquitetura do monorepo, workflow GitHub Actions e checklist completo |
 
 ---
 
 ## Marketing e Legal
 
-| PRD | Status | Notas |
-|-----|--------|-------|
-| [seo-landing-page.md](seo-landing-page.md) | ✅ | SEO e meta tags da landing page |
-| [politica-de-privacidade.md](politica-de-privacidade.md) | ✅ | Publicada em `/privacy` |
-| [termos-de-uso.md](termos-de-uso.md) | ✅ | Publicados em `/terms`. Modal de aceite obrigatório implementado |
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 017 | [seo-landing-page.md](017-seo-landing-page.md) | ✅ | SEO e meta tags da landing page |
+| 008 | [politica-de-privacidade.md](008-politica-de-privacidade.md) | ✅ | Publicada em `/privacy` |
+| 009 | [termos-de-uso.md](009-termos-de-uso.md) | ✅ | Publicados em `/terms`. Modal de aceite obrigatório implementado |
+| 030 | [lp-jogadores-organico.md](030-lp-jogadores-organico.md) | 📋 | Landing page para aquisição orgânica de jogadores |
+| 031 | [lp-unificada.md](031-lp-unificada.md) | ✅ | Landing page unificada para organizadores e jogadores |
