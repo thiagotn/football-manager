@@ -23,6 +23,7 @@
     "vite-plugin-pwa": "^1.2.0"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "lucide-svelte": "^0.460.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.5"

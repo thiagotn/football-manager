@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -30,7 +30,7 @@
     { href: '/discover',              icon: Compass,    labelKey: 'nav.discover',       playerOnly: true },
     { href: '/matches',               icon: Calendar,   labelKey: 'nav.matches',        playerOnly: true },
     { href: '/profile/stats',         icon: BarChart2,  labelKey: 'nav.score',          playerOnly: true },
-    { href: '/review',                icon: Star,       labelKey: 'nav.review',         playerOnly: true, mobileHide: true },
+    { href: '/review',                icon: Star,       labelKey: 'nav.review',         playerOnly: true, mobileHide: true, desktopHide: true },
     { href: '/players',               icon: Users,      labelKey: 'nav.players',        adminOnly: true },
     { href: '/admin/reviews',         icon: Star,       labelKey: 'nav.admin_reviews',  adminOnly: true },
     { href: '/admin/subscriptions',   icon: CreditCard, labelKey: 'nav.subscriptions',  adminOnly: true },
@@ -38,6 +38,16 @@
   ];
 
   let menuOpen = $state(false);
+  let showAccountDropdown = $state(false);
+  let dropdownPos = $state({ top: 0, right: 0 });
+
+  function toggleAccountDropdown(e: MouseEvent) {
+    if (!showAccountDropdown) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      dropdownPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+    }
+    showAccountDropdown = !showAccountDropdown;
+  }
 
   function closeMenu() { menuOpen = false; showLangModal = false; }
 
@@ -45,6 +55,7 @@
   $effect(() => {
     $page.url.pathname;
     menuOpen = false;
+    showAccountDropdown = false;
   });
 
   // Trava scroll do body quando o drawer está aberto (iOS-safe: position fixed)
@@ -123,7 +134,7 @@
     <!-- Links — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-1">
       {#each links as l}
-        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled)}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled) && !l.desktopHide}
           <a
             href={l.href}
             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
@@ -146,12 +157,16 @@
       {/if}
       <span class="text-sm text-primary-200">{$currentPlayer?.nickname || $currentPlayer?.name}</span>
       <LanguageSwitcher variant="bar" />
-      <a href="/profile"
-        class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600 {$page.url.pathname === '/profile' ? 'bg-primary-900' : ''}"
-        title={$t('nav.my_account')}>
+      <button
+        onclick={toggleAccountDropdown}
+        class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600
+          {$page.url.pathname === '/profile' || $page.url.pathname === '/review' ? 'bg-primary-900' : ''}"
+        title={$t('nav.my_account')}
+      >
         <UserCircle size={15} />
         <span>{$t('nav.account')}</span>
-      </a>
+        <ChevronDown size={12} class="transition-transform duration-200 {showAccountDropdown ? 'rotate-180' : ''}" />
+      </button>
       <button onclick={themeStore.toggle} class="btn-ghost btn-sm text-primary-100 hover:text-white hover:bg-primary-600" title={$t('aria.theme')}>
         {#if $themeStore === 'dark'}<Sun size={15} />{:else}<Moon size={15} />{/if}
       </button>
@@ -170,6 +185,33 @@
       <Menu size={22} />
     </button>
   </div>
+
+  <!-- Dropdown "Conta" — fixed, ancorado via getBoundingClientRect -->
+  {#if showAccountDropdown}
+    <button
+      class="fixed inset-0 z-[39]"
+      onclick={() => showAccountDropdown = false}
+      tabindex="-1"
+      aria-hidden="true"
+    ></button>
+    <div
+      class="hidden min-[940px]:block fixed z-[41] w-48 bg-primary-800 rounded-xl shadow-xl border border-primary-700 overflow-hidden"
+      style="top: {dropdownPos.top}px; right: {dropdownPos.right}px;"
+    >
+      <a href="/profile" onclick={() => showAccountDropdown = false}
+        class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors
+          {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+        <UserCircle size={15} /> {$t('nav.my_account')}
+      </a>
+      {#if !$isAdmin}
+        <a href="/review" onclick={() => showAccountDropdown = false}
+          class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
+            {$page.url.pathname === '/review' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+          <Star size={15} /> {$t('nav.review')}
+        </a>
+      {/if}
+    </div>
+  {/if}
 </nav>
 
 <!-- Drawer lateral mobile -->
@@ -262,12 +304,12 @@
       <!-- Links legais — discretos -->
       <div class="flex items-center gap-3 px-3 pt-3 mt-1 border-t border-primary-700/40">
         <a href="/terms" onclick={closeMenu}
-          class="text-xs text-primary-400 hover:text-primary-200 transition-colors">
+          class="text-xs text-primary-400 hover:text-primary-200 transition-colors whitespace-nowrap">
           {$t('footer.terms')}
         </a>
         <span class="text-primary-600 text-xs">·</span>
         <a href="/privacy" onclick={closeMenu}
-          class="text-xs text-primary-400 hover:text-primary-200 transition-colors">
+          class="text-xs text-primary-400 hover:text-primary-200 transition-colors whitespace-nowrap">
           {$t('footer.privacy')}
         </a>
       </div>
