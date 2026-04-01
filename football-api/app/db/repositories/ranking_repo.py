@@ -49,16 +49,14 @@ class RankingRepository:
         return None  # all-time: sem filtro
 
     def _assign_positions(self, rows: list, score_attr: str) -> list[dict]:
-        """Atribui posições com suporte a empate (mesmo score → mesma posição)."""
+        """Atribui posições com suporte a empate (mesmo score → mesma posição, dense rank)."""
         result = []
         prev_score = None
         pos = 0
-        rank = 0
         for row in rows:
-            rank += 1
             score = getattr(row, score_attr)
             if score != prev_score:
-                pos = rank
+                pos += 1
                 prev_score = score
             result.append({
                 "position": pos,
