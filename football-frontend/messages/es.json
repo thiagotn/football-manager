@@ -1238,7 +1238,7 @@
   "groups.add_manual.nickname_label": "Apodo",
   "groups.add_manual.nickname_placeholder": "Apodo (opcional)",
   "groups.add_manual.stars_label": "Estrellas",
-  "groups.add_manual.goalkeeper_label": "Portero",
+  "groups.add_manual.position_label": "Posición",
   "groups.add_manual.back_btn": "Volver",
   "groups.add_manual.confirm_btn": "Agregar al grupo",
   "groups.add_manual.create_btn": "Crear y agregar",
@@ -1247,5 +1247,11 @@
   "groups.add_manual.close_btn": "Cerrar",
   "groups.add_manual.error_limit": "Límite de miembros del plan alcanzado.",
   "groups.add_manual.error_conflict": "El jugador ya es miembro de este grupo.",
-  "groups.add_manual.error_generic": "Error al agregar jugador."
+  "groups.add_manual.error_generic": "Error al agregar jugador.",
+
+  "position.gk": "Portero",
+  "position.zag": "Defensa central",
+  "position.lat": "Lateral",
+  "position.mei": "Mediocampista",
+  "position.ata": "Delantero"
 }

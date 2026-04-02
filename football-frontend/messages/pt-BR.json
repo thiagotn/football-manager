@@ -1238,7 +1238,7 @@
   "groups.add_manual.nickname_label": "Apelido",
   "groups.add_manual.nickname_placeholder": "Apelido (opcional)",
   "groups.add_manual.stars_label": "Estrelas",
-  "groups.add_manual.goalkeeper_label": "Goleiro",
+  "groups.add_manual.position_label": "Posição",
   "groups.add_manual.back_btn": "Voltar",
   "groups.add_manual.confirm_btn": "Adicionar ao grupo",
   "groups.add_manual.create_btn": "Criar e adicionar",
@@ -1247,5 +1247,11 @@
   "groups.add_manual.close_btn": "Fechar",
   "groups.add_manual.error_limit": "Limite de membros do plano atingido.",
   "groups.add_manual.error_conflict": "Jogador já é membro deste grupo.",
-  "groups.add_manual.error_generic": "Erro ao adicionar jogador."
+  "groups.add_manual.error_generic": "Erro ao adicionar jogador.",
+
+  "position.gk": "Goleiro",
+  "position.zag": "Zagueiro",
+  "position.lat": "Lateral",
+  "position.mei": "Meia",
+  "position.ata": "Atacante"
 }

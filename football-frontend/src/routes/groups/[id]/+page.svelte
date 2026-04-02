@@ -14,6 +14,9 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
+  import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import { POS_ABBR, POS_COLOR_CLASSES } from '$lib/team-builder';
+  import type { Position } from '$lib/team-builder';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
   import AddMemberModal from '$lib/components/AddMemberModal.svelte';
@@ -195,7 +198,7 @@
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
       .sort((a, b) => playerDisplayName(a.player.name, a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
   );
-  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; is_goalkeeper: boolean } | null>(null);
+  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string } | null>(null);
   let skillSaving = $state(false);
   let selectedMember = $state<GroupMember | null>(null);
   let showMemberDetail = $state(false);
@@ -434,10 +437,10 @@
     });
   }
 
-  async function saveSkill(playerId: string, skill_stars: number, is_goalkeeper: boolean) {
+  async function saveSkill(playerId: string, skill_stars: number, position: string) {
     skillSaving = true;
     try {
-      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, is_goalkeeper });
+      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, position });
       group = await groupsApi.get(groupId);
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
     skillSaving = false;
@@ -851,13 +854,16 @@
                   <StarRating rating={m.skill_stars} readonly size={13} />
                 </div>
               {/if}
-              {#if m.role === 'admin' || (isGroupAdmin() && m.is_goalkeeper)}
+              {#if m.role === 'admin' || m.position}
                 <div class="flex items-center gap-1 mt-0.5 flex-wrap">
                   {#if m.role === 'admin'}
                     <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{$t('group.role_president')}</span>
                   {/if}
-                  {#if isGroupAdmin() && m.is_goalkeeper}
-                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{$t('group.role_goalkeeper')}</span>
+                  {#if m.position}
+                    {@const pos = ({gk:'goalkeeper',zag:'defender',lat:'fullback',mei:'midfielder',ata:'forward'} as Record<string,Position>)[m.position]}
+                    {#if pos}
+                      <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-bold {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
+                    {/if}
                   {/if}
                 </div>
               {/if}
@@ -1235,9 +1241,16 @@
         </div>
         <div>
           <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_position')}</p>
-          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold {selectedMember.is_goalkeeper ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}">
-            {selectedMember.is_goalkeeper ? $t('group.detail_goalkeeper') : $t('group.detail_line')}
-          </span>
+          {#if selectedMember.position}
+            {@const pos = ({gk:'goalkeeper',zag:'defender',lat:'fullback',mei:'midfielder',ata:'forward'} as Record<string,Position>)[selectedMember.position]}
+            {#if pos}
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold {POS_COLOR_CLASSES[pos]}">
+                {POS_ABBR[pos]} — {$t(('position.' + selectedMember.position) as any)}
+              </span>
+            {/if}
+          {:else}
+            <span class="text-sm text-gray-400">—</span>
+          {/if}
         </div>
         {#if selectedMember.skill_stars != null}
           <div class="col-span-2">
@@ -1251,7 +1264,7 @@
         <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
           <button
             onclick={() => {
-              roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, is_goalkeeper: selectedMember!.is_goalkeeper ?? false };
+              roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei' };
               showMemberDetail = false;
             }}
             class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
@@ -1301,22 +1314,20 @@
         </div>
       </div>
 
-      <!-- Goalkeeper toggle -->
-      <label class="flex items-center justify-between cursor-pointer select-none">
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('group.goalkeeper_gk')}</span>
-        <div class="relative">
-          <input type="checkbox" class="sr-only peer" bind:checked={roleEditMember.is_goalkeeper} />
-          <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
-          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+      <!-- Position selector -->
+      <div>
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('group.detail_position')}</p>
+        <div class="flex justify-center">
+          <PositionSelector bind:value={roleEditMember.position} />
         </div>
-      </label>
+      </div>
 
       <!-- Save skill button -->
       <button
         class="btn btn-primary w-full justify-center"
         disabled={skillSaving}
         onclick={async () => {
-          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.is_goalkeeper);
+          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.position);
           roleEditMember = null;
         }}>
         {skillSaving ? $t('group.saving') : $t('group.save_skill')}

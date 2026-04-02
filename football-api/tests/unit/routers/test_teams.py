@@ -123,7 +123,7 @@ async def test_generate_teams_success_returns_201(admin_client, mocker):
             "name": f"Jogador {i}",
             "nickname": None,
             "skill_stars": 3,
-            "is_goalkeeper": (i == 0 or i == 5),
+            "position": "gk" if (i == 0 or i == 5) else "mei",
         }
         for i in range(10)
     ]
@@ -219,7 +219,7 @@ async def test_generate_teams_with_reserves_returns_201(admin_client, mocker):
             "name": f"Jogador {i}",
             "nickname": None,
             "skill_stars": 3,
-            "is_goalkeeper": False,
+            "position": "mei",
         }
         for i in range(10)
     ]
@@ -228,7 +228,7 @@ async def test_generate_teams_with_reserves_returns_201(admin_client, mocker):
         "name": "Reserva",
         "nickname": None,
         "skill_stars": 2,
-        "is_goalkeeper": False,
+        "position": "mei",
     }
     teams_data = [
         {"name": "Time 1", "color": "#e53e3e", "position": 1, "players": confirmed[:5]},
@@ -334,8 +334,8 @@ async def test_get_teams_with_reserve_team_returns_reserves(api_client, mocker):
     mocker.patch(
         "app.api.v1.routers.teams.GroupRepository.get_member_skills",
         new=AsyncMock(return_value={
-            player_id: {"skill_stars": 4, "is_goalkeeper": False},
-            reserve_player.player_id: {"skill_stars": 2, "is_goalkeeper": False},
+            player_id: {"skill_stars": 4, "position": "mei"},
+            reserve_player.player_id: {"skill_stars": 2, "position": "mei"},
         }),
     )
 

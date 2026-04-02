@@ -1238,7 +1238,7 @@
   "groups.add_manual.nickname_label": "Nickname",
   "groups.add_manual.nickname_placeholder": "Nickname (optional)",
   "groups.add_manual.stars_label": "Stars",
-  "groups.add_manual.goalkeeper_label": "Goalkeeper",
+  "groups.add_manual.position_label": "Position",
   "groups.add_manual.back_btn": "Back",
   "groups.add_manual.confirm_btn": "Add to group",
   "groups.add_manual.create_btn": "Create and add",
@@ -1247,5 +1247,11 @@
   "groups.add_manual.close_btn": "Close",
   "groups.add_manual.error_limit": "Group member limit reached for your plan.",
   "groups.add_manual.error_conflict": "Player is already a member of this group.",
-  "groups.add_manual.error_generic": "Error adding player."
+  "groups.add_manual.error_generic": "Error adding player.",
+
+  "position.gk": "Goalkeeper",
+  "position.zag": "Defender",
+  "position.lat": "Fullback",
+  "position.mei": "Midfielder",
+  "position.ata": "Forward"
 }

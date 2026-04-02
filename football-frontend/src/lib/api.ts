@@ -73,7 +73,7 @@ export type Player = {
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string; avatar_url: string | null };
 export type PlayerMemberView = PlayerPublic & { whatsapp: string };
 export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; timezone: string; created_at: string; updated_at: string };
-export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; is_goalkeeper: boolean | null; created_at: string };
+export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; position: string | null; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type WaitlistEntry = { id: string; match_id: string; player_id: string; player_name: string; player_nickname: string | null; intro: string | null; status: 'pending' | 'accepted' | 'rejected'; created_at: string };
 export type Match = {
@@ -93,7 +93,7 @@ export type DiscoverMatch = Match & { group_name: string; confirmed_count: numbe
 // ── Players ───────────────────────────────────────────────────
 export type MonthlyStatItem = { month: string; matches_confirmed: number; minutes_played: number };
 export type RecentMatchItem = { match_date: string; group_name: string; status: 'confirmed' | 'declined' };
-export type GroupStatItem = { group_id: string; group_name: string; skill_stars: number; is_goalkeeper: boolean; role: 'admin' | 'member'; matches_confirmed: number };
+export type GroupStatItem = { group_id: string; group_name: string; skill_stars: number; position: string; role: 'admin' | 'member'; matches_confirmed: number };
 export type PlayerFullStats = {
   total_matches_confirmed: number;
   total_minutes_played: number;
@@ -190,7 +190,7 @@ export type AddMemberByPhoneRequest = {
   name?: string;
   nickname?: string;
   skill_stars?: number;
-  is_goalkeeper?: boolean;
+  position?: string;
 };
 export type AddMemberByPhoneResponse = {
   member: GroupMember;
@@ -208,7 +208,7 @@ export const groups = {
   removeMember: (groupId: string, playerId: string) => del(`/groups/${groupId}/members/${playerId}`),
   updateMemberRole: (groupId: string, playerId: string, role: string) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, { role }),
-  updateMemberSkill: (groupId: string, playerId: string, data: { skill_stars?: number; is_goalkeeper?: boolean }) =>
+  updateMemberSkill: (groupId: string, playerId: string, data: { skill_stars?: number; position?: string | null }) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, data),
   getStats: (id: string, params?: { period?: string; month?: string }) => {
     const q = new URLSearchParams();
@@ -520,7 +520,7 @@ export type TeamPlayerItem = {
   name: string;
   nickname: string | null;
   skill_stars: number;
-  is_goalkeeper: boolean;
+  position: string;
 };
 
 export type TeamItem = {

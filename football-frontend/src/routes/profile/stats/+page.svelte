@@ -9,6 +9,11 @@
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import { t } from '$lib/i18n';
   import { toastSuccess, toastError } from '$lib/stores/toast';
+  import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
+
+  const API_TO_POS: Record<string, Position> = {
+    gk: 'goalkeeper', zag: 'defender', lat: 'fullback', mei: 'midfielder', ata: 'forward'
+  };
 
   let stats = $state<PlayerFullStats | null>(null);
   let loading = $state(true);
@@ -51,7 +56,7 @@
   }
 
   function hasGoalkeeper(groups: PlayerFullStats['groups']): boolean {
-    return groups.some(g => g.is_goalkeeper);
+    return groups.some(g => g.position === 'gk');
   }
 
   async function shareScore() {
@@ -353,8 +358,9 @@
                     <Shield size={14} class="text-primary-500 shrink-0" fill="currentColor" />
                     <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{g.group_name}</span>
                     <div class="flex items-center gap-2 shrink-0">
-                      {#if g.is_goalkeeper}
-                        <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">GK</span>
+                      {#if g.position}
+                        {@const pos = API_TO_POS[g.position] ?? 'midfielder'}
+                        <span class="text-[9px] px-1.5 py-0.5 rounded font-bold {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
                       {/if}
                       {#if g.role === 'admin'}
                         <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>

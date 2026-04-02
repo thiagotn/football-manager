@@ -71,14 +71,14 @@ class GroupRepository(BaseRepository[Group]):
         return list(result.scalars().all())
 
     async def get_confirmed_players_with_skills(self, match_id: UUID, group_id: UUID) -> list[dict]:
-        """Retorna confirmados da partida com skill_stars e is_goalkeeper de group_members."""
+        """Retorna confirmados da partida com skill_stars e position de group_members."""
         result = await self.session.execute(
             select(
                 Attendance.player_id,
                 Player.name,
                 Player.nickname,
                 GroupMember.skill_stars,
-                GroupMember.is_goalkeeper,
+                GroupMember.position,
             )
             .join(Player, Player.id == Attendance.player_id)
             .join(
@@ -98,24 +98,24 @@ class GroupRepository(BaseRepository[Group]):
                 "name": row.name,
                 "nickname": row.nickname,
                 "skill_stars": row.skill_stars,
-                "is_goalkeeper": row.is_goalkeeper,
+                "position": row.position,
             }
             for row in result.all()
         ]
 
     async def get_member_skills(self, group_id: UUID, player_ids: list[UUID]) -> dict[UUID, dict]:
-        """Retorna skill_stars e is_goalkeeper de membros específicos do grupo."""
+        """Retorna skill_stars e position de membros específicos do grupo."""
         if not player_ids:
             return {}
         result = await self.session.execute(
-            select(GroupMember.player_id, GroupMember.skill_stars, GroupMember.is_goalkeeper)
+            select(GroupMember.player_id, GroupMember.skill_stars, GroupMember.position)
             .where(
                 GroupMember.group_id == group_id,
                 GroupMember.player_id.in_(player_ids),
             )
         )
         return {
-            row.player_id: {"skill_stars": row.skill_stars, "is_goalkeeper": row.is_goalkeeper}
+            row.player_id: {"skill_stars": row.skill_stars, "position": row.position}
             for row in result.all()
         }
 

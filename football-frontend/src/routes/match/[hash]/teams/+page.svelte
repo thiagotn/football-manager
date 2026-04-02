@@ -94,7 +94,7 @@
       lines.push(`*${team.name}*`);
       team.players.forEach((p, i) => {
         const name = playerDisplayName(p.name, p.nickname);
-        lines.push(`${i + 1}. ${name}${p.is_goalkeeper ? ' (GK)' : ''}`);
+        lines.push(`${i + 1}. ${name}${p.position === 'gk' ? ' (GK)' : ''}`);
       });
       lines.push('');
     }
@@ -102,7 +102,7 @@
     if (teamsData.reserves.length > 0) {
       lines.push(`*Reservas*`);
       teamsData.reserves.forEach(p => {
-        lines.push(`- ${playerDisplayName(p.name, p.nickname)}${p.is_goalkeeper ? ' (GK)' : ''}`);
+        lines.push(`- ${playerDisplayName(p.name, p.nickname)}${p.position === 'gk' ? ' (GK)' : ''}`);
       });
       lines.push('');
     }
@@ -210,8 +210,13 @@
               {#each team.players as p}
                 <li class="px-2 py-1 flex items-center gap-1">
                   <span class="flex-1 text-xs text-gray-800 dark:text-gray-200 truncate">{playerDisplayName(p.name, p.nickname)}</span>
-                  {#if p.is_goalkeeper}
-                    <span class="text-[9px] px-1 leading-tight rounded font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">GK</span>
+                  {#if p.position}
+                    <span class="text-[9px] px-1 leading-tight rounded font-bold shrink-0
+                      {p.position === 'gk' ? 'bg-amber-400/20 text-amber-300' :
+                       p.position === 'zag' ? 'bg-blue-400/20 text-blue-300' :
+                       p.position === 'lat' ? 'bg-cyan-400/20 text-cyan-300' :
+                       p.position === 'mei' ? 'bg-emerald-400/20 text-emerald-300' :
+                       'bg-red-400/20 text-red-300'}">{p.position.toUpperCase()}</span>
                   {/if}
                 </li>
               {/each}
@@ -234,7 +239,7 @@
           <div class="px-3 py-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
             {#each teamsData.reserves as p}
               <span class="text-xs text-gray-600 dark:text-gray-400">
-                {playerDisplayName(p.name, p.nickname)}{p.is_goalkeeper ? ' (GK)' : ''}
+                {playerDisplayName(p.name, p.nickname)}{p.position === 'gk' ? ' (GK)' : ''}
               </span>
             {/each}
           </div>

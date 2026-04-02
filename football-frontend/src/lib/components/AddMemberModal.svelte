@@ -5,6 +5,7 @@
   import PhoneInput from '$lib/components/PhoneInput.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
+  import PositionSelector from '$lib/components/PositionSelector.svelte';
   import { t } from '$lib/i18n';
 
   let {
@@ -32,7 +33,7 @@
   let name = $state('');
   let nickname = $state('');
   let skillStars = $state(2);
-  let isGoalkeeper = $state(false);
+  let position = $state('mei');
 
   // Success state
   let successName = $state('');
@@ -49,7 +50,7 @@
     name = '';
     nickname = '';
     skillStars = 2;
-    isGoalkeeper = false;
+    position = 'mei';
     successName = '';
     successIsNew = false;
     successPhone = '';
@@ -98,7 +99,7 @@
       const res = await groupsApi.addMemberByPhone(groupId, {
         whatsapp: phone,
         skill_stars: skillStars,
-        is_goalkeeper: isGoalkeeper,
+        position,
       });
       successName = res.member.player.name;
       successIsNew = res.is_new;
@@ -131,7 +132,7 @@
         name: name.trim(),
         nickname: nickname.trim() || undefined,
         skill_stars: skillStars,
-        is_goalkeeper: isGoalkeeper,
+        position,
       });
       successName = res.member.player.name;
       successIsNew = res.is_new;
@@ -195,23 +196,15 @@
       {/if}
       <p class="text-sm text-gray-400">{$t('groups.add_manual.found_desc')}</p>
 
-      <!-- Stars + Goalkeeper -->
+      <!-- Stars + Position -->
       <div class="space-y-3">
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-400 w-20">{$t('groups.add_manual.stars_label')}</span>
           <StarRating bind:rating={skillStars} size={20} />
         </div>
-        <div class="flex items-center gap-3">
-          <span class="text-sm text-gray-400 w-20">{$t('groups.add_manual.goalkeeper_label')}</span>
-          <button
-            type="button"
-            onclick={() => isGoalkeeper = !isGoalkeeper}
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {isGoalkeeper ? 'bg-primary-500' : 'bg-gray-600'}"
-            role="switch"
-            aria-checked={isGoalkeeper}
-          >
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {isGoalkeeper ? 'translate-x-6' : 'translate-x-1'}" />
-          </button>
+        <div class="flex items-start gap-3">
+          <span class="text-sm text-gray-400 w-20 pt-1">{$t('groups.add_manual.position_label')}</span>
+          <PositionSelector bind:value={position} />
         </div>
       </div>
 
@@ -265,23 +258,15 @@
         />
       </div>
 
-      <!-- Stars + Goalkeeper -->
+      <!-- Stars + Position -->
       <div class="space-y-3">
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-400 w-20">{$t('groups.add_manual.stars_label')}</span>
           <StarRating bind:rating={skillStars} size={20} />
         </div>
-        <div class="flex items-center gap-3">
-          <span class="text-sm text-gray-400 w-20">{$t('groups.add_manual.goalkeeper_label')}</span>
-          <button
-            type="button"
-            onclick={() => isGoalkeeper = !isGoalkeeper}
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {isGoalkeeper ? 'bg-primary-500' : 'bg-gray-600'}"
-            role="switch"
-            aria-checked={isGoalkeeper}
-          >
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {isGoalkeeper ? 'translate-x-6' : 'translate-x-1'}" />
-          </button>
+        <div class="flex items-start gap-3">
+          <span class="text-sm text-gray-400 w-20 pt-1">{$t('groups.add_manual.position_label')}</span>
+          <PositionSelector bind:value={position} />
         </div>
       </div>
 

@@ -71,6 +71,7 @@
 | `PhoneInput.svelte` | Input de telefone com seletor de país (26 países) e validação E.164. Usar em todos os formulários com número WhatsApp |
 | `PwaInstallButton.svelte` | Botão de instalação PWA |
 | `PwaSmartBanner.svelte` | Banner de instalação PWA |
+| `PositionSelector.svelte` | Seletor de posição (gk/zag/lat/mei/ata) com badges coloridos. Props: `bind:value` (API value), `readonly?` |
 | `StarRating.svelte` | Seletor de estrelas (1–5), usado para `skill_stars` |
 | `TimePicker.svelte` | Seletor de horário |
 | `Toast.svelte` | Notificações toast |

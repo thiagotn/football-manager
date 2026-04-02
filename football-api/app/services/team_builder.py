@@ -49,14 +49,14 @@ def build_teams(
     players_per_team: int,
 ) -> tuple[list[dict], list[dict]]:
     """
-    Recebe lista de confirmados com player_id, skill_stars, is_goalkeeper.
+    Recebe lista de confirmados com player_id, skill_stars, position.
     Retorna (teams, reserves).
 
     players_per_team = jogadores de LINHA por time (exclui goleiro).
     Tamanho total de cada time = players_per_team + 1 (linha + goleiro).
 
     Cada team: { name, color, position, players: [player_dict] }
-    Cada player_dict: { player_id, name, nickname, skill_stars, is_goalkeeper }
+    Cada player_dict: { player_id, name, nickname, skill_stars, position }
     """
     team_size = players_per_team + 1  # linha + 1 goleiro (ou substituto)
     n_times = len(confirmed) // team_size
@@ -66,8 +66,8 @@ def build_teams(
     total_in_teams = n_times * team_size
 
     # Separa goleiros e não-goleiros de TODOS os confirmados
-    goleiros = [p for p in confirmed if p["is_goalkeeper"]]
-    nao_goleiros = [p for p in confirmed if not p["is_goalkeeper"]]
+    goleiros = [p for p in confirmed if p["position"] == "gk"]
+    nao_goleiros = [p for p in confirmed if p["position"] != "gk"]
 
     times: list[list[dict]] = [[] for _ in range(n_times)]
 

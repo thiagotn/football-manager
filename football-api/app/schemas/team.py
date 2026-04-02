@@ -8,7 +8,7 @@ class TeamPlayerItem(BaseModel):
     name: str
     nickname: str | None
     skill_stars: int
-    is_goalkeeper: bool
+    position: str
 
 
 class TeamItem(BaseModel):

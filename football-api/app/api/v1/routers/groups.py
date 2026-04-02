@@ -136,7 +136,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         r = GroupMemberResponse.model_validate(m)
         if include_skill:
             r.skill_stars = m.skill_stars
-            r.is_goalkeeper = m.is_goalkeeper
+            r.position = m.position
         return r
 
     return GroupDetailResponse(
@@ -213,7 +213,7 @@ async def list_members(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         r = GroupMemberResponse.model_validate(m)
         if include_skill:
             r.skill_stars = m.skill_stars
-            r.is_goalkeeper = m.is_goalkeeper
+            r.position = m.position
         return r
 
     return [_member_response(m, caller_is_admin) for m in group.members]
@@ -296,14 +296,14 @@ async def update_member(
         member.role = body.role
     if body.skill_stars is not None:
         member.skill_stars = body.skill_stars
-    if body.is_goalkeeper is not None:
-        member.is_goalkeeper = body.is_goalkeeper
+    if body.position is not None:
+        member.position = body.position
 
     await db.flush()
     await db.refresh(member, ["player"])
     r = GroupMemberResponse.model_validate(member)
     r.skill_stars = member.skill_stars
-    r.is_goalkeeper = member.is_goalkeeper
+    r.position = member.position
     return r
 
 
@@ -454,7 +454,7 @@ async def add_member_by_phone(
 
     member = await g_repo.add_member(group_id, player.id, GroupMemberRole.MEMBER)
     member.skill_stars = body.skill_stars
-    member.is_goalkeeper = body.is_goalkeeper
+    member.position = body.position
     await db.flush()
 
     # Add as PENDING to open matches
@@ -472,7 +472,7 @@ async def add_member_by_phone(
     await db.refresh(member, ["player"])
     member_response = GroupMemberResponse.model_validate(member)
     member_response.skill_stars = member.skill_stars
-    member_response.is_goalkeeper = member.is_goalkeeper
+    member_response.position = member.position
 
     return AddMemberByPhoneResponse(member=member_response, is_new=is_new)
 

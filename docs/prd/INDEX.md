@@ -57,7 +57,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 034 | [adicionar-jogador-manual.md](034-adicionar-jogador-manual.md) | 📋 | Admin adiciona jogador pelo WhatsApp — cria conta se necessário, sem link de convite |
+| 034 | [adicionar-jogador-manual.md](034-adicionar-jogador-manual.md) | ✅ | Admin adiciona jogador pelo WhatsApp — cria conta se necessário, sem link de convite |
+| 035 | [posicao-jogador-grupo.md](035-posicao-jogador-grupo.md) | 📋 | Substituir flag "goleiro" por seletor de posição (GK/ZAG/LAT/MEI/ATA) em group_members |
 
 ---
 

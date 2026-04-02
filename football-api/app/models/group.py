@@ -57,7 +57,7 @@ class GroupMember(Base, UUIDMixin, TimestampMixin):
         _group_member_role_col, nullable=False, default=GroupMemberRole.MEMBER
     )
     skill_stars: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=2)
-    is_goalkeeper: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    position: Mapped[str] = mapped_column(String(3), nullable=False, default="mei")
 
     # Relationships
     group = relationship("Group", back_populates="members")

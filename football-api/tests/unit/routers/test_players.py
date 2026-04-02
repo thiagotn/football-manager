@@ -206,7 +206,7 @@ def _make_full_stats_mock():
                 group_id=str(uuid4()),
                 group_name="Pelada dos Amigos",
                 skill_stars=4,
-                is_goalkeeper=False,
+                position="mei",
                 role="member",
                 matches_confirmed=42,
             )

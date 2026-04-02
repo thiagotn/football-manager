@@ -497,7 +497,7 @@ async def test_add_member_success_returns_201(api_client, mock_db, mocker):
     new_member.player_id = player_id
     new_member.role = GroupMemberRole.MEMBER
     new_member.skill_stars = 3
-    new_member.is_goalkeeper = False
+    new_member.position = "mei"
     new_member.created_at = datetime(2026, 1, 1)
     new_member.player = player
 
@@ -569,7 +569,7 @@ async def test_update_member_skill_stars_returns_200(api_client, mocker):
     member.player_id = player_id
     member.role = GroupMemberRole.MEMBER
     member.skill_stars = 4
-    member.is_goalkeeper = False
+    member.position = "mei"
     member.created_at = datetime(2026, 1, 1)
     member.player = player
 
@@ -884,14 +884,14 @@ async def test_lookup_non_admin_returns_403(api_client, mocker):
 # ── POST /groups/{id}/members/by-phone ───────────────────────────────────────
 
 
-def _make_member_mock(player: MagicMock, skill_stars: int = 2, is_goalkeeper: bool = False) -> MagicMock:
+def _make_member_mock(player: MagicMock, skill_stars: int = 2, position: str = "mei") -> MagicMock:
     m = MagicMock()
     m.id = uuid4()
     m.player = player
     m.player_id = player.id
     m.role = "member"
     m.skill_stars = skill_stars
-    m.is_goalkeeper = is_goalkeeper
+    m.position = position
     m.created_at = "2026-01-01T00:00:00"
     return m
 
@@ -916,7 +916,7 @@ async def test_add_by_phone_existing_player_not_member(api_client, mocker):
 
     response = await api_client.post(
         f"/api/v1/groups/{group.id}/members/by-phone",
-        json={"whatsapp": "+5511999990002", "skill_stars": 3, "is_goalkeeper": False},
+        json={"whatsapp": "+5511999990002", "skill_stars": 3, "position": "mei"},
     )
 
     assert response.status_code == 201

@@ -19,7 +19,7 @@ class GroupStatItem(BaseModel):
     group_id: str
     group_name: str
     skill_stars: int
-    is_goalkeeper: bool
+    position: str
     role: str  # "admin" | "member"
     matches_confirmed: int
 

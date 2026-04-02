@@ -29,7 +29,7 @@ def _serialize_teams(teams_db, group_member_skills: dict[uuid.UUID, dict]) -> Te
                 name=tp.player.name,
                 nickname=tp.player.nickname,
                 skill_stars=skill_data.get("skill_stars", 2),
-                is_goalkeeper=skill_data.get("is_goalkeeper", False),
+                position=skill_data.get("position", "mei"),
             )
             if tp.is_reserve:
                 reserves_out.append(item)
@@ -85,7 +85,7 @@ async def generate_teams(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     # Opção mais simples: armazenar reservas como is_reserve=True no time 1
     # Mas vamos criar times reais e um time de reservas com position=0
     skill_map: dict[uuid.UUID, dict] = {
-        p["player_id"]: {"skill_stars": p["skill_stars"], "is_goalkeeper": p["is_goalkeeper"]}
+        p["player_id"]: {"skill_stars": p["skill_stars"], "position": p["position"]}
         for p in confirmed
     }
 
@@ -121,7 +121,7 @@ async def generate_teams(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
             name=p["name"],
             nickname=p["nickname"],
             skill_stars=p["skill_stars"],
-            is_goalkeeper=p["is_goalkeeper"],
+            position=p["position"],
         ))
     return result
 
@@ -159,6 +159,6 @@ async def get_teams(match_id: uuid.UUID, db: DB):
                 name=tp.player.name,
                 nickname=tp.player.nickname,
                 skill_stars=skill_data.get("skill_stars", 2),
-                is_goalkeeper=skill_data.get("is_goalkeeper", False),
+                position=skill_data.get("position", "mei"),
             ))
     return result

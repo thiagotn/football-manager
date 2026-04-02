@@ -177,7 +177,7 @@ class PlayerStatsRepository:
                     gm.group_id::text AS group_id,
                     g.name            AS group_name,
                     COALESCE(gm.skill_stars, 2)::int   AS skill_stars,
-                    COALESCE(gm.is_goalkeeper, false)   AS is_goalkeeper,
+                    COALESCE(gm.position, 'mei')        AS position,
                     gm.role::text                       AS role,
                     COUNT(a.match_id) FILTER (
                         WHERE a.status = 'confirmed' AND m.status = 'closed'
@@ -187,7 +187,7 @@ class PlayerStatsRepository:
                 LEFT JOIN matches m     ON m.group_id = gm.group_id
                 LEFT JOIN attendances a ON a.match_id = m.id AND a.player_id = gm.player_id
                 WHERE gm.player_id = :player_id
-                GROUP BY gm.group_id, g.name, gm.skill_stars, gm.is_goalkeeper, gm.role
+                GROUP BY gm.group_id, g.name, gm.skill_stars, gm.position, gm.role
                 ORDER BY matches_confirmed DESC
             """),
             params,
@@ -197,7 +197,7 @@ class PlayerStatsRepository:
                 group_id=r["group_id"],
                 group_name=r["group_name"],
                 skill_stars=r["skill_stars"],
-                is_goalkeeper=r["is_goalkeeper"],
+                position=r["position"],
                 role=r["role"],
                 matches_confirmed=r["matches_confirmed"],
             )

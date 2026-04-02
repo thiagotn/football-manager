@@ -76,7 +76,7 @@ class GroupMemberResponse(BaseModel):
     player: PlayerMemberView
     role: GroupMemberRole
     skill_stars: int | None = None
-    is_goalkeeper: bool | None = None
+    position: str | None = None
     created_at: datetime
 
 
@@ -115,7 +115,7 @@ class UpdateMemberRoleRequest(BaseModel):
 class UpdateMemberRequest(BaseModel):
     role: GroupMemberRole | None = None
     skill_stars: int | None = Field(None, ge=1, le=5)
-    is_goalkeeper: bool | None = None
+    position: str | None = Field(None, pattern=r'^(gk|zag|lat|mei|ata)$')
 
 
 # ── Add member by phone ───────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ class AddMemberByPhoneRequest(BaseModel):
     name: str | None = Field(None, min_length=2, max_length=100)
     nickname: str | None = Field(None, max_length=50)
     skill_stars: int = Field(2, ge=1, le=5)
-    is_goalkeeper: bool = False
+    position: str = Field("mei", pattern=r'^(gk|zag|lat|mei|ata)$')
 
 
 class AddMemberByPhoneResponse(BaseModel):

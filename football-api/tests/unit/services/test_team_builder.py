@@ -11,18 +11,18 @@ import pytest
 from app.services.team_builder import TEAM_COLORS, build_teams
 
 
-def make_player(skill: int = 3, is_goalkeeper: bool = False) -> dict:
+def make_player(skill: int = 3, position: str = "mei") -> dict:
     return {
         "player_id": str(uuid4()),
         "name": f"Jogador {uuid4().hex[:4]}",
         "nickname": None,
         "skill_stars": skill,
-        "is_goalkeeper": is_goalkeeper,
+        "position": position,
     }
 
 
-def make_players(n: int, skill: int = 3, is_goalkeeper: bool = False) -> list[dict]:
-    return [make_player(skill=skill, is_goalkeeper=is_goalkeeper) for _ in range(n)]
+def make_players(n: int, skill: int = 3, position: str = "mei") -> list[dict]:
+    return [make_player(skill=skill, position=position) for _ in range(n)]
 
 
 # ── Validação de entrada ──────────────────────────────────────────────────────
@@ -85,23 +85,21 @@ def test_total_players_conserved():
 
 def test_goalkeeper_distributed_one_per_team():
     """Com 2 goleiros para 2 times, cada time deve ter exatamente 1."""
-    players = make_players(6, is_goalkeeper=False)
-    players[0]["is_goalkeeper"] = True
-    players[1]["is_goalkeeper"] = True
+    players = make_players(6, position="mei")
+    players[0]["position"] = "gk"
+    players[1]["position"] = "gk"
     teams, _ = build_teams(players, players_per_team=2)
     for team in teams:
-        gks = [p for p in team["players"] if p["is_goalkeeper"]]
+        gks = [p for p in team["players"] if p["position"] == "gk"]
         assert len(gks) == 1
 
 
 def test_excess_goalkeeper_goes_to_outfield_pool():
-    """3 goleiros para 2 times → 2 ficam como GK titulares, 1 vai para o pool de linha.
-    O 3º goleiro pode terminar em qualquer time como jogador de linha (is_goalkeeper=True
-    mas tratado como outfield pelo snake draft). Total de GKs nos times pode ser até 3."""
-    players = make_players(8, is_goalkeeper=False)
-    players[0]["is_goalkeeper"] = True
-    players[1]["is_goalkeeper"] = True
-    players[2]["is_goalkeeper"] = True
+    """3 goleiros para 2 times → 2 ficam como GK titulares, 1 vai para o pool de linha."""
+    players = make_players(8, position="mei")
+    players[0]["position"] = "gk"
+    players[1]["position"] = "gk"
+    players[2]["position"] = "gk"
     teams, reserves = build_teams(players, players_per_team=3)
     # Todos os 8 jogadores devem estar distribuídos (2 times de 4, sem reservas)
     total_active = sum(len(t["players"]) for t in teams)

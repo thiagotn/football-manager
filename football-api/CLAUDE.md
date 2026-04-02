@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `033_player_avatar_url.sql`.
+A última migration criada é `035_group_member_position.sql`.
 
-**A próxima deve ser numerada `034_`.**
+**A próxima deve ser numerada `036_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
