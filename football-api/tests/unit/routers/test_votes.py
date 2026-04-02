@@ -347,3 +347,207 @@ async def test_close_voting_early_not_open_returns_403(api_client, mocker):
 
     assert response.status_code == 403
     assert response.json()["detail"] == "VOTING_NOT_OPEN"
+
+
+# ── GET /matches/{id}/votes/status — partida não encontrada ──────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_vote_status_match_not_found_returns_404(api_client, mocker):
+    """Partida inexistente retorna 404."""
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/votes/status")
+
+    assert response.status_code == 404
+
+
+# ── GET /matches/{id}/votes/status — status "open" e "closed" ────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_vote_status_open_returns_voted_ids(api_client, player_user, mocker):
+    """Status 'open' retorna voted_player_ids e time_label com 'Fecha em'."""
+    from datetime import datetime, timezone
+
+    match = _make_match(player_ids=[player_user.id])
+    match.vote_notified = True
+
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="open")
+
+    now = datetime.now(timezone.utc)
+    mocker.patch("app.api.v1.routers.votes.voting_window", return_value=(now, now))
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_count",
+        new=AsyncMock(return_value=2),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.has_voted",
+        new=AsyncMock(return_value=False),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_ids",
+        new=AsyncMock(return_value=[player_user.id]),
+    )
+    mocker.patch("app.api.v1.routers.votes.time_until", return_value="1h 30min")
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/votes/status")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "open"
+    assert "Fecha em" in data["time_label"]
+
+
+@pytest.mark.asyncio
+async def test_get_vote_status_closed_returns_encerrada_label(api_client, player_user, mocker):
+    """Status 'closed' retorna time_label 'Votação encerrada'."""
+    from datetime import datetime, timezone
+
+    match = _make_match(player_ids=[player_user.id])
+    match.vote_notified = True
+
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="closed")
+
+    now = datetime.now(timezone.utc)
+    mocker.patch("app.api.v1.routers.votes.voting_window", return_value=(now, now))
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_count",
+        new=AsyncMock(return_value=3),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.has_voted",
+        new=AsyncMock(return_value=True),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_ids",
+        new=AsyncMock(return_value=[player_user.id]),
+    )
+    mocker.patch("app.api.v1.routers.votes.time_until", return_value="0min")
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/votes/status")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "closed"
+    assert data["time_label"] == "Votação encerrada"
+
+
+@pytest.mark.asyncio
+async def test_get_vote_status_triggers_push_when_open_not_notified(api_client, player_user, mocker):
+    """Primeira chamada com status 'open' dispara push notification."""
+    from datetime import datetime, timezone
+
+    match = _make_match(player_ids=[player_user.id])
+    match.vote_notified = False
+
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="open")
+
+    now = datetime.now(timezone.utc)
+    mocker.patch("app.api.v1.routers.votes.voting_window", return_value=(now, now))
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_count",
+        new=AsyncMock(return_value=0),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.has_voted",
+        new=AsyncMock(return_value=False),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_ids",
+        new=AsyncMock(return_value=[]),
+    )
+    mocker.patch("app.api.v1.routers.votes.time_until", return_value="2h")
+    mock_push = mocker.patch(
+        "app.api.v1.routers.votes.send_push",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/votes/status")
+
+    assert response.status_code == 200
+    # vote_notified deve ter sido marcado como True
+    assert match.vote_notified is True
+    mock_push.assert_called_once()
+
+
+# ── GET /matches/{id}/votes/results — autenticado ────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_vote_results_authenticated_voting_not_closed_returns_403(api_client, mocker):
+    """Resultados autenticados indisponíveis quando votação ainda não encerrou."""
+    match = _make_match()
+
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="open")
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/votes/results")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "RESULTS_NOT_AVAILABLE"
+
+
+@pytest.mark.asyncio
+async def test_get_vote_results_authenticated_closed_returns_200(api_client, player_user, mocker):
+    """Resultados autenticados disponíveis após encerramento."""
+    match = _make_match(player_ids=[player_user.id])
+
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="closed")
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.get_results",
+        new=AsyncMock(return_value={"top5": [], "flop": [], "total_voters": 0}),
+    )
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/votes/results")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "top5" in data
+    assert data["eligible_voters"] == 1
+
+
+# ── POST /matches/{id}/votes/close — non-group-admin ─────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_close_voting_non_group_admin_returns_403(api_client, mocker):
+    """Jogador sem papel de admin no grupo não pode encerrar votação."""
+    match = _make_match()
+
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.GroupRepository.get_member",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="open")
+
+    response = await api_client.post(f"/api/v1/matches/{uuid4()}/votes/close")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "NOT_GROUP_ADMIN"

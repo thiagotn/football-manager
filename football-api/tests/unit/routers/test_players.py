@@ -456,3 +456,159 @@ async def test_get_signup_stats_admin_returns_200(admin_client, mocker):
     assert "total" in data
     assert data["total"] == 100
     assert "recent" in data
+
+
+# ── GET /players/me/stats/full ────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_my_full_stats_returns_200(api_client, mocker):
+    """Jogador pode acessar suas estatísticas completas."""
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerStatsRepository.get_full_stats",
+        new=AsyncMock(return_value=_make_full_stats_mock()),
+    )
+
+    response = await api_client.get("/api/v1/players/me/stats/full")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_matches_confirmed" in data
+    assert data["total_matches_confirmed"] == 42
+
+
+# ── GET /players — active_only=false ─────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_list_players_with_active_only_false_calls_get_all(admin_client, mocker):
+    """active_only=false retorna todos os jogadores incluindo inativos."""
+    players = [_make_player_db(), _make_player_db()]
+    mock_get_all = mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get_all",
+        new=AsyncMock(return_value=players),
+    )
+
+    response = await admin_client.get("/api/v1/players?active_only=false")
+
+    assert response.status_code == 200
+    mock_get_all.assert_called_once()
+
+
+# ── PATCH /players/{id} — casos de erro ──────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_update_player_other_player_non_admin_returns_403(api_client):
+    """Jogador não pode atualizar dados de outro jogador."""
+    response = await api_client.patch(
+        f"/api/v1/players/{uuid4()}",
+        json={"name": "Tentativa"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_player_not_found_returns_404(admin_client, mocker):
+    """Atualizar jogador inexistente retorna 404."""
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await admin_client.patch(
+        f"/api/v1/players/{uuid4()}",
+        json={"name": "Novo Nome"},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_player_whatsapp_conflict_returns_409(admin_client, mocker):
+    """Alterar WhatsApp para um já em uso retorna 409."""
+    original = _make_player_db()
+    conflicting = _make_player_db()  # id diferente, mesmo whatsapp
+
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=original),
+    )
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get_by_whatsapp",
+        new=AsyncMock(return_value=conflicting),
+    )
+
+    response = await admin_client.patch(
+        f"/api/v1/players/{original.id}",
+        json={"whatsapp": "+5511999990099"},
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_update_player_password_is_hashed(api_client, player_user, mocker):
+    """Alterar senha criptografa o valor antes de salvar."""
+    player = _make_player_db(player_user.id)
+
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get_by_whatsapp",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/players/{player_user.id}",
+        json={"password": "novaSenha456"},
+    )
+
+    assert response.status_code == 200
+    # Verifica que password_hash foi atualizado (não é a senha em texto puro)
+    assert player.password_hash != "novaSenha456"
+
+
+# ── POST /players/{id}/reset-password — happy path ───────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_reset_password_success_returns_temp_password(admin_client, mocker):
+    """Reset de senha retorna senha temporária e marca must_change_password."""
+    player = _make_player_db()
+
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+
+    response = await admin_client.post(f"/api/v1/players/{player.id}/reset-password")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "temp_password" in data
+    assert len(data["temp_password"]) > 0
+    assert player.must_change_password is True
+
+
+# ── DELETE /players/{id} — happy path ────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_delete_player_success_returns_204(admin_client, mocker):
+    """Soft-delete de jogador existente retorna 204."""
+    player = _make_player_db()
+    player.active = True
+
+    mocker.patch(
+        "app.api.v1.routers.players.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+
+    response = await admin_client.delete(f"/api/v1/players/{player.id}")
+
+    assert response.status_code == 204
+    assert player.active is False

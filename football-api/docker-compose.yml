@@ -41,6 +41,7 @@ services:
       - ./app:/app/app
       - ./migrations:/app/migrations:ro
       - ./tests:/app/tests
+      - ./.coveragerc:/app/.coveragerc:ro
     depends_on:
       postgres:
         condition: service_healthy

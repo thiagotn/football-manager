@@ -1,0 +1,16 @@
+[run]
+source = app
+omit =
+    app/main.py
+    app/core/config.py
+    app/core/database.py
+    app/api/deps.py
+    app/db/migrate.py
+    app/db/session.py
+    app/models/*.py
+    app/db/repositories/*.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:

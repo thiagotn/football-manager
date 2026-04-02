@@ -153,3 +153,20 @@ def test_snake_draft_produces_balanced_teams():
     totals = [t["skill_total"] for t in teams]
     diff = max(totals) - min(totals)
     assert diff <= 8  # diferença tolerável para 2 times com snake draft
+
+
+# ── _pick_names — overflow além do pool ──────────────────────────────────────
+
+
+def test_pick_names_overflow_beyond_pool():
+    """Com mais de 15 times (tamanho do pool), _pick_names gera nomes com sufixo numérico."""
+    # 16 times: players_per_team=1 → team_size=2, precisa 32 jogadores
+    players = make_players(32, skill=3)
+    teams, reserves = build_teams(players, players_per_team=1)
+
+    assert len(teams) == 16
+    # Todos os times devem ter nome não-vazio
+    names = [t["name"] for t in teams]
+    assert all(n for n in names)
+    # Não deve haver duplicatas
+    assert len(set(names)) == len(names)

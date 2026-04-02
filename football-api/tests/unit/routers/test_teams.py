@@ -204,3 +204,144 @@ async def test_get_teams_success_returns_200(api_client, mocker):
     assert response.status_code == 200
     assert "teams" in response.json()
     assert "reserves" in response.json()
+
+
+# ── POST /matches/{id}/teams — com reservas ───────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_generate_teams_with_reserves_returns_201(admin_client, mocker):
+    """Quando há jogadores excedentes, reservas são criadas em time separado."""
+    match = _make_match(players_per_team=4)
+    confirmed = [
+        {
+            "player_id": uuid4(),
+            "name": f"Jogador {i}",
+            "nickname": None,
+            "skill_stars": 3,
+            "is_goalkeeper": False,
+        }
+        for i in range(10)
+    ]
+    reserve_player = {
+        "player_id": uuid4(),
+        "name": "Reserva",
+        "nickname": None,
+        "skill_stars": 2,
+        "is_goalkeeper": False,
+    }
+    teams_data = [
+        {"name": "Time 1", "color": "#e53e3e", "position": 1, "players": confirmed[:5]},
+        {"name": "Time 2", "color": "#3b82f6", "position": 2, "players": confirmed[5:]},
+    ]
+
+    mocker.patch(
+        "app.api.v1.routers.teams.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.GroupRepository.get_confirmed_players_with_skills",
+        new=AsyncMock(return_value=confirmed + [reserve_player]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.build_teams",
+        return_value=(teams_data, [reserve_player]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.delete_by_match",
+        new=AsyncMock(return_value=None),
+    )
+
+    created_team = MagicMock()
+    created_team.id = uuid4()
+    created_team.name = "Time 1"
+    created_team.color = "#e53e3e"
+    created_team.position = 1
+    created_team.players = []
+
+    reserve_team = MagicMock()
+    reserve_team.id = uuid4()
+    reserve_team.name = "Reservas"
+    reserve_team.color = None
+    reserve_team.position = 0
+    reserve_team.players = []
+
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.create_team",
+        new=AsyncMock(side_effect=[created_team, created_team, reserve_team]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.add_player",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.get_by_match",
+        new=AsyncMock(return_value=[created_team]),
+    )
+
+    response = await admin_client.post(f"/api/v1/matches/{uuid4()}/teams")
+
+    assert response.status_code == 201
+    data = response.json()
+    assert "reserves" in data
+    # A reserva deve aparecer na resposta
+    assert len(data["reserves"]) == 1
+    assert data["reserves"][0]["name"] == "Reserva"
+
+
+# ── GET /matches/{id}/teams — com time de reservas no banco ──────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_teams_with_reserve_team_returns_reserves(api_client, mocker):
+    """Times com position=0 são retornados como reservas."""
+    match = _make_match(players_per_team=4)
+    player_id = uuid4()
+
+    # Time regular (position > 0)
+    regular_team = MagicMock()
+    regular_team.id = uuid4()
+    regular_team.name = "Time A"
+    regular_team.color = "#e53e3e"
+    regular_team.position = 1
+    regular_player = MagicMock()
+    regular_player.player_id = player_id
+    regular_player.is_reserve = False
+    regular_player.player = MagicMock()
+    regular_player.player.name = "Jogador A"
+    regular_player.player.nickname = None
+    regular_team.players = [regular_player]
+
+    # Time de reservas (position = 0)
+    reserve_team = MagicMock()
+    reserve_team.id = uuid4()
+    reserve_team.position = 0
+    reserve_player = MagicMock()
+    reserve_player.player_id = uuid4()
+    reserve_player.player = MagicMock()
+    reserve_player.player.name = "Reserva"
+    reserve_player.player.nickname = None
+    reserve_team.players = [reserve_player]
+
+    mocker.patch(
+        "app.api.v1.routers.teams.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.get_by_match",
+        new=AsyncMock(return_value=[regular_team, reserve_team]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.GroupRepository.get_member_skills",
+        new=AsyncMock(return_value={
+            player_id: {"skill_stars": 4, "is_goalkeeper": False},
+            reserve_player.player_id: {"skill_stars": 2, "is_goalkeeper": False},
+        }),
+    )
+
+    response = await api_client.get(f"/api/v1/matches/{uuid4()}/teams")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["reserves"]) == 1
+    assert data["reserves"][0]["name"] == "Reserva"
