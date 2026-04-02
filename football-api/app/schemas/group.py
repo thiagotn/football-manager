@@ -118,6 +118,33 @@ class UpdateMemberRequest(BaseModel):
     is_goalkeeper: bool | None = None
 
 
+# ── Add member by phone ───────────────────────────────────────────────────────
+
+class LookupPlayerInfo(BaseModel):
+    id: uuid.UUID
+    name: str
+    nickname: str | None = None
+    avatar_url: str | None = None
+
+
+class LookupMemberResponse(BaseModel):
+    status: str  # "found" | "not_found" | "already_member"
+    player: LookupPlayerInfo | None = None
+
+
+class AddMemberByPhoneRequest(BaseModel):
+    whatsapp: str
+    name: str | None = Field(None, min_length=2, max_length=100)
+    nickname: str | None = Field(None, max_length=50)
+    skill_stars: int = Field(2, ge=1, le=5)
+    is_goalkeeper: bool = False
+
+
+class AddMemberByPhoneResponse(BaseModel):
+    member: GroupMemberResponse
+    is_new: bool
+
+
 # ── Waitlist ──────────────────────────────────────────────────────────────────
 
 class WaitlistJoinRequest(BaseModel):

@@ -53,6 +53,14 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 ---
 
+## Gestão de Membros
+
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 034 | [adicionar-jogador-manual.md](034-adicionar-jogador-manual.md) | 📋 | Admin adiciona jogador pelo WhatsApp — cria conta se necessário, sem link de convite |
+
+---
+
 ## Partidas e Grupos
 
 | # | PRD | Status | Notas |

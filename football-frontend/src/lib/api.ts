@@ -175,6 +175,28 @@ export type PlayerStatItem = {
 };
 export type GroupStatsResponse = { players: PlayerStatItem[]; period_label: string };
 
+export type LookupPlayerInfo = {
+  id: string;
+  name: string;
+  nickname: string | null;
+  avatar_url: string | null;
+};
+export type LookupMemberResponse = {
+  status: 'found' | 'not_found' | 'already_member';
+  player?: LookupPlayerInfo;
+};
+export type AddMemberByPhoneRequest = {
+  whatsapp: string;
+  name?: string;
+  nickname?: string;
+  skill_stars?: number;
+  is_goalkeeper?: boolean;
+};
+export type AddMemberByPhoneResponse = {
+  member: GroupMember;
+  is_new: boolean;
+};
+
 export const groups = {
   list: () => get<Group[]>('/groups'),
   get: (id: string) => get<GroupDetail>(`/groups/${id}`),
@@ -201,6 +223,12 @@ export const groups = {
   getMyWaitlistEntry: (groupId: string) => get<WaitlistEntry | null>(`/groups/${groupId}/waitlist/me`),
   reviewWaitlist: (groupId: string, entryId: string, action: 'accept' | 'reject') =>
     patch<WaitlistEntry>(`/groups/${groupId}/waitlist/${entryId}`, { action }),
+  lookupMember: (groupId: string, whatsapp: string) => {
+    const q = new URLSearchParams({ whatsapp });
+    return get<LookupMemberResponse>(`/groups/${groupId}/members/lookup?${q}`);
+  },
+  addMemberByPhone: (groupId: string, data: AddMemberByPhoneRequest) =>
+    post<AddMemberByPhoneResponse>(`/groups/${groupId}/members/by-phone`, data),
 };
 
 // ── Matches ───────────────────────────────────────────────────

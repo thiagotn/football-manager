@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { groups as groupsApi, matches as matchesApi, invites, players as playersApi, votes as votesApi, finance as financeApi, ApiError } from '$lib/api';
-  import type { GroupDetail, GroupMember, Match, MatchDetail, Player, VoteStatusResponse, PlayerStatItem, FinancePeriod, FinancePayment, WaitlistEntry } from '$lib/api';
+  import { groups as groupsApi, matches as matchesApi, invites, votes as votesApi, finance as financeApi, ApiError } from '$lib/api';
+  import type { GroupDetail, GroupMember, Match, MatchDetail, VoteStatusResponse, PlayerStatItem, FinancePeriod, FinancePayment, WaitlistEntry } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError, toastInfo } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
@@ -16,6 +16,7 @@
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
+  import AddMemberModal from '$lib/components/AddMemberModal.svelte';
   import { relativeDate, playerDisplayName } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
   import { TIMEZONE_OPTIONS, TIMEZONE_GROUPS } from '$lib/timezones';
@@ -120,8 +121,8 @@
   let showMatch = $state(false);
   let showEditMatch = $state(false);
   let showInvite = $state(false);
-  let showAddMember = $state(false);
   let showEditGroup = $state(false);
+  let showAddMemberByPhone = $state(false);
 
   let inviteLink = $state('');
   let inviteQr = $state('');
@@ -136,8 +137,6 @@
   let editingMatch: Match | null = $state(null);
   let saving = $state(false);
 
-  let allPlayers: Player[] = $state([]);
-  let addMemberId = $state('');
 
   let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, vote_open_delay_minutes: 20, vote_duration_hours: 24, timezone: 'America/Sao_Paulo' });
 
@@ -416,28 +415,8 @@
     toastInfo($t('group.link_copied'));
   }
 
-  async function openAddMember() {
-    try { allPlayers = await playersApi.list(); } catch {}
-    showAddMember = true;
-  }
-
-  async function addMember() {
-    if (!addMemberId) return;
-    saving = true;
-    try {
-      await groupsApi.addMember(groupId, addMemberId);
-      group = await groupsApi.get(groupId);
-      showAddMember = false;
-      addMemberId = '';
-      toastSuccess($t('group.add_member_success'));
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 403 && e.message === 'PLAN_LIMIT_EXCEEDED') {
-        toastError($t('group.add_member_limit'));
-      } else {
-        toastError(e instanceof ApiError ? e.message : $t('group.add_member_error'));
-      }
-    }
-    saving = false;
+  async function onMemberAdded() {
+    group = await groupsApi.get(groupId);
   }
 
   async function toggleRole(playerId: string, currentRole: string, name: string) {
@@ -846,7 +825,7 @@
       {#if isGroupAdmin()}
         <div class="flex justify-end gap-2 mb-4">
           <button class="btn-secondary btn-sm" onclick={generateInvite}><Link size={14} /> {$t('group.invite_btn')}</button>
-          <button class="btn-secondary btn-sm" onclick={openAddMember}><UserPlus size={14} /> {$t('group.add_member_btn')}</button>
+          <button class="btn-secondary btn-sm" onclick={() => showAddMemberByPhone = true}><UserPlus size={14} /> {$t('group.add_member_btn')}</button>
         </div>
       {/if}
       <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
@@ -855,7 +834,7 @@
             <Users size={32} class="mx-auto mb-2 opacity-40" />
             <p>{$t('group.no_players')}</p>
             {#if isGroupAdmin()}
-              <button class="btn-primary mt-4 btn-sm" onclick={openAddMember}><UserPlus size={14} /> {$t('group.add_player')}</button>
+              <button class="btn-primary mt-4 btn-sm" onclick={() => showAddMemberByPhone = true}><UserPlus size={14} /> {$t('group.add_player')}</button>
             {/if}
           </div>
         {/if}
@@ -1221,38 +1200,7 @@
   </div>
 </Modal>
 
-<!-- Add member modal -->
-<Modal bind:open={showAddMember} title={$t('group.add_member_modal_title')}>
-  {@const available = allPlayers.filter(p => p.role !== 'admin' && !group?.members.some(m => m.player.id === p.id))}
-  <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-    {$t('group.add_member_modal_desc')}
-  </p>
-  {#if available.length === 0}
-    <div class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
-      <UserPlus size={32} class="mx-auto mb-2 opacity-40" />
-      <p>{$t('group.all_players_in_group')}</p>
-    </div>
-    <div class="flex justify-end mt-4">
-      <button class="btn-secondary" onclick={() => showAddMember = false}>{$t('group.close')}</button>
-    </div>
-  {:else}
-    <form onsubmit={(e) => { e.preventDefault(); addMember(); }} class="space-y-4">
-      <div class="form-group">
-        <label class="label" for="pid">{$t('group.player_select_label')}</label>
-        <select id="pid" class="input" bind:value={addMemberId} required>
-          <option value="">{$t('group.player_select_placeholder')}</option>
-          {#each available as p}
-            <option value={p.id}>{playerDisplayName(p.name, p.nickname)}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="flex gap-3 justify-end">
-        <button type="button" class="btn-secondary" onclick={() => showAddMember = false}>{$t('group.cancel')}</button>
-        <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('group.adding') : $t('group.add')}</button>
-      </div>
-    </form>
-  {/if}
-</Modal>
+<AddMemberModal bind:open={showAddMemberByPhone} {groupId} onAdded={onMemberAdded} />
 
 <!-- Member detail modal -->
 <Modal bind:open={showMemberDetail} title={$t('group.member_detail_modal')}>

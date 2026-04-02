@@ -1,5 +1,6 @@
 import asyncio
 import re
+import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, Query
@@ -7,7 +8,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
-from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError
+from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError, ValidationError
+from app.core.security import hash_password
 from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.db.repositories.waitlist_repo import WaitlistRepository
 
@@ -34,11 +36,15 @@ from app.models.waitlist import WaitlistStatus
 from app.services.push import send_push
 from app.schemas.group import (
     AddMemberRequest,
+    AddMemberByPhoneRequest,
+    AddMemberByPhoneResponse,
     GroupCreate,
     GroupDetailResponse,
     GroupMemberResponse,
     GroupResponse,
     GroupUpdate,
+    LookupMemberResponse,
+    LookupPlayerInfo,
     UpdateMemberRoleRequest,
     UpdateMemberRequest,
     WaitlistJoinRequest,
@@ -318,6 +324,157 @@ async def remove_member(
     m_repo = MatchRepository(db)
     await m_repo.delete_player_attendances_in_open_matches(group_id, player_id)
     await repo.delete(member)
+
+
+# ── Add member by phone ───────────────────────────────────────────────────────
+
+def _normalize_whatsapp(number: str) -> str:
+    """Strip spaces/dashes/parens; ensure leading +."""
+    cleaned = re.sub(r"[^\d+]", "", number)
+    if cleaned and not cleaned.startswith("+"):
+        cleaned = "+" + cleaned
+    return cleaned
+
+
+@router.get("/{group_id}/members/lookup", response_model=LookupMemberResponse)
+async def lookup_member_by_phone(
+    group_id: uuid.UUID,
+    whatsapp: str,
+    db: DB,
+    current: CurrentPlayer,
+):
+    """Lookup a player by WhatsApp number — admin only. Does not modify any data."""
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    if current.role != PlayerRole.ADMIN:
+        caller = await g_repo.get_member(group_id, current.id)
+        if not caller or caller.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem usar esta função")
+
+    normalized = _normalize_whatsapp(whatsapp)
+    p_repo = PlayerRepository(db)
+    player = await p_repo.get_by_whatsapp(normalized)
+
+    if not player:
+        return LookupMemberResponse(status="not_found")
+
+    existing_member = await g_repo.get_member(group_id, player.id)
+    if existing_member:
+        return LookupMemberResponse(
+            status="already_member",
+            player=LookupPlayerInfo(
+                id=player.id,
+                name=player.name,
+                nickname=player.nickname,
+                avatar_url=player.avatar_url,
+            ),
+        )
+
+    return LookupMemberResponse(
+        status="found",
+        player=LookupPlayerInfo(
+            id=player.id,
+            name=player.name,
+            nickname=player.nickname,
+            avatar_url=player.avatar_url,
+        ),
+    )
+
+
+@router.post("/{group_id}/members/by-phone", response_model=AddMemberByPhoneResponse, status_code=201)
+async def add_member_by_phone(
+    group_id: uuid.UUID,
+    body: AddMemberByPhoneRequest,
+    db: DB,
+    current: CurrentPlayer,
+):
+    """Add a member by WhatsApp — creates account if player doesn't exist (admin only)."""
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    if current.role != PlayerRole.ADMIN:
+        caller = await g_repo.get_member(group_id, current.id)
+        if not caller or caller.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem usar esta função")
+
+    normalized = _normalize_whatsapp(body.whatsapp)
+    p_repo = PlayerRepository(db)
+    player = await p_repo.get_by_whatsapp(normalized)
+
+    is_new = False
+
+    if player:
+        if player.role == PlayerRole.ADMIN:
+            raise ForbiddenError("Super admin não pode ser adicionado como membro de grupo")
+
+        existing = await g_repo.get_member(group_id, player.id)
+        if existing:
+            raise ConflictError("Jogador já é membro deste grupo")
+
+        # Check plan limit
+        if current.role != PlayerRole.ADMIN:
+            sub_repo = SubscriptionRepository(db)
+            sub = await sub_repo.get_or_create(current.id)
+            members_limit = _PLAN_MEMBERS_LIMIT.get(sub.plan, 30)
+            if members_limit is not None:
+                member_count = len(await g_repo.get_non_admin_member_ids(group_id))
+                if member_count >= members_limit:
+                    raise PlanLimitError()
+    else:
+        if not body.name or len(body.name.strip()) < 2:
+            raise ValidationError("Nome é obrigatório para criar um novo jogador")
+
+        # Check plan limit before creating player
+        if current.role != PlayerRole.ADMIN:
+            sub_repo = SubscriptionRepository(db)
+            sub = await sub_repo.get_or_create(current.id)
+            members_limit = _PLAN_MEMBERS_LIMIT.get(sub.plan, 30)
+            if members_limit is not None:
+                member_count = len(await g_repo.get_non_admin_member_ids(group_id))
+                if member_count >= members_limit:
+                    raise PlanLimitError()
+
+        temp_password = secrets.token_urlsafe(16)
+        player = await p_repo.create(
+            name=body.name.strip(),
+            nickname=body.nickname.strip() if body.nickname else None,
+            whatsapp=normalized,
+            password_hash=hash_password(temp_password),
+            must_change_password=True,
+        )
+
+        sub_repo = SubscriptionRepository(db)
+        await sub_repo.get_or_create(player.id)
+        is_new = True
+
+    member = await g_repo.add_member(group_id, player.id, GroupMemberRole.MEMBER)
+    member.skill_stars = body.skill_stars
+    member.is_goalkeeper = body.is_goalkeeper
+    await db.flush()
+
+    # Add as PENDING to open matches
+    m_repo = MatchRepository(db)
+    active_matches = await m_repo.get_active_matches(group_id)
+    for match in active_matches:
+        await m_repo.upsert_attendance(match.id, player.id, AttendanceStatus.PENDING)
+
+    # Ensure finance period for current month
+    f_repo = FinanceRepository(db)
+    await f_repo.ensure_member_in_current_period(
+        group_id, player.id, player.nickname or player.name
+    )
+
+    await db.refresh(member, ["player"])
+    member_response = GroupMemberResponse.model_validate(member)
+    member_response.skill_stars = member.skill_stars
+    member_response.is_goalkeeper = member.is_goalkeeper
+
+    return AddMemberByPhoneResponse(member=member_response, is_new=is_new)
 
 
 # ── Stats ──────────────────────────────────────────────────────────────────────

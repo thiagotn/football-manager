@@ -781,3 +781,256 @@ async def test_review_waitlist_non_group_admin_returns_403(api_client, mocker):
     )
 
     assert response.status_code == 403
+
+
+# ── GET /groups/{id}/members/lookup ──────────────────────────────────────────
+
+
+def _make_player(name: str = "Carlos Silva", whatsapp: str = "+5511999990002") -> MagicMock:
+    p = MagicMock()
+    p.id = uuid4()
+    p.name = name
+    p.nickname = "Carlão"
+    p.avatar_url = None
+    p.whatsapp = whatsapp
+    p.role = PlayerRole.PLAYER
+    return p
+
+
+def _make_group_admin_member() -> MagicMock:
+    m = MagicMock()
+    m.role = "admin"
+    return m
+
+
+@pytest.mark.asyncio
+async def test_lookup_found_not_member(api_client, mocker):
+    """Número encontrado, jogador não é membro → status: found."""
+    group = _make_group()
+    player = _make_player()
+    group_admin = _make_group_admin_member()
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", side_effect=[group_admin, None])
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=player))
+
+    response = await api_client.get(
+        f"/api/v1/groups/{group.id}/members/lookup?whatsapp=%2B5511999990002"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "found"
+    assert data["player"]["name"] == player.name
+
+
+@pytest.mark.asyncio
+async def test_lookup_already_member(api_client, mocker):
+    """Número encontrado, jogador já é membro → status: already_member."""
+    group = _make_group()
+    player = _make_player()
+    group_admin = _make_group_admin_member()
+    existing_member = MagicMock()
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", side_effect=[group_admin, existing_member])
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=player))
+
+    response = await api_client.get(
+        f"/api/v1/groups/{group.id}/members/lookup?whatsapp=%2B5511999990002"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "already_member"
+
+
+@pytest.mark.asyncio
+async def test_lookup_not_found(api_client, mocker):
+    """Número não encontrado → status: not_found, sem campo player."""
+    group = _make_group()
+    group_admin = _make_group_admin_member()
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=group_admin))
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=None))
+
+    response = await api_client.get(
+        f"/api/v1/groups/{group.id}/members/lookup?whatsapp=%2B5511999990099"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "not_found"
+    assert data.get("player") is None
+
+
+@pytest.mark.asyncio
+async def test_lookup_non_admin_returns_403(api_client, mocker):
+    """Caller não é admin do grupo → 403."""
+    group = _make_group()
+    non_admin_member = MagicMock()
+    non_admin_member.role = "member"
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=non_admin_member))
+
+    response = await api_client.get(
+        f"/api/v1/groups/{group.id}/members/lookup?whatsapp=%2B5511999990002"
+    )
+
+    assert response.status_code == 403
+
+
+# ── POST /groups/{id}/members/by-phone ───────────────────────────────────────
+
+
+def _make_member_mock(player: MagicMock, skill_stars: int = 2, is_goalkeeper: bool = False) -> MagicMock:
+    m = MagicMock()
+    m.id = uuid4()
+    m.player = player
+    m.player_id = player.id
+    m.role = "member"
+    m.skill_stars = skill_stars
+    m.is_goalkeeper = is_goalkeeper
+    m.created_at = "2026-01-01T00:00:00"
+    return m
+
+
+@pytest.mark.asyncio
+async def test_add_by_phone_existing_player_not_member(api_client, mocker):
+    """Jogador existente, não é membro → 201, is_new=false."""
+    group = _make_group()
+    player = _make_player()
+    group_admin = _make_group_admin_member()
+    sub = _make_subscription("pro")
+    new_member = _make_member_mock(player)
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", side_effect=[group_admin, None])
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=player))
+    mocker.patch("app.api.v1.routers.groups.SubscriptionRepository.get_or_create", new=AsyncMock(return_value=sub))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_non_admin_member_ids", new=AsyncMock(return_value=[]))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.add_member", new=AsyncMock(return_value=new_member))
+    mocker.patch("app.api.v1.routers.groups.MatchRepository.get_active_matches", new=AsyncMock(return_value=[]))
+    mocker.patch("app.api.v1.routers.groups.FinanceRepository.ensure_member_in_current_period", new=AsyncMock())
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990002", "skill_stars": 3, "is_goalkeeper": False},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["is_new"] is False
+
+
+@pytest.mark.asyncio
+async def test_add_by_phone_existing_player_already_member(api_client, mocker):
+    """Jogador existente, já é membro → 409."""
+    group = _make_group()
+    player = _make_player()
+    group_admin = _make_group_admin_member()
+    existing_member = MagicMock()
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", side_effect=[group_admin, existing_member])
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=player))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990002"},
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_add_by_phone_new_player_with_name(api_client, mocker):
+    """Jogador novo com nome preenchido → 201, is_new=true."""
+    group = _make_group()
+    new_player = _make_player("Carlos Silva")
+    new_player.must_change_password = True
+    group_admin = _make_group_admin_member()
+    sub = _make_subscription("pro")
+    new_member = _make_member_mock(new_player)
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=group_admin))
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.SubscriptionRepository.get_or_create", new=AsyncMock(return_value=sub))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_non_admin_member_ids", new=AsyncMock(return_value=[]))
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.create", new=AsyncMock(return_value=new_player))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.add_member", new=AsyncMock(return_value=new_member))
+    mocker.patch("app.api.v1.routers.groups.MatchRepository.get_active_matches", new=AsyncMock(return_value=[]))
+    mocker.patch("app.api.v1.routers.groups.FinanceRepository.ensure_member_in_current_period", new=AsyncMock())
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990099", "name": "Carlos Silva", "skill_stars": 2},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["is_new"] is True
+
+
+@pytest.mark.asyncio
+async def test_add_by_phone_new_player_without_name_returns_422(api_client, mocker):
+    """Jogador novo sem nome → 422."""
+    group = _make_group()
+    group_admin = _make_group_admin_member()
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=group_admin))
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=None))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990099"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_add_by_phone_plan_limit_exceeded(api_client, mocker):
+    """Limite de plano atingido → 403 PLAN_LIMIT_EXCEEDED."""
+    group = _make_group()
+    player = _make_player()
+    group_admin = _make_group_admin_member()
+    sub = _make_subscription("free")
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", side_effect=[group_admin, None])
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=player))
+    mocker.patch("app.api.v1.routers.groups.SubscriptionRepository.get_or_create", new=AsyncMock(return_value=sub))
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_non_admin_member_ids",
+        new=AsyncMock(return_value=list(range(30))),  # free limit = 30
+    )
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990002"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "PLAN_LIMIT_EXCEEDED"
+
+
+@pytest.mark.asyncio
+async def test_add_by_phone_non_admin_returns_403(api_client, mocker):
+    """Caller não é admin do grupo → 403."""
+    group = _make_group()
+    non_admin_member = MagicMock()
+    non_admin_member.role = "member"
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=non_admin_member))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990002"},
+    )
+
+    assert response.status_code == 403
