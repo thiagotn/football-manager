@@ -574,14 +574,19 @@ export type RankingFlopItem = {
 };
 
 export type RankingResponse = {
-  period: 'month' | 'year' | 'all';
+  year: number | null;
+  month: number | null;
   type: 'top' | 'flop';
   items: RankingTopItem[] | RankingFlopItem[];
 };
 
 export const ranking = {
-  get: (period: 'month' | 'year' | 'all', type: 'top' | 'flop'): Promise<RankingResponse> =>
-    get<RankingResponse>(`/ranking?period=${period}&type=${type}`),
+  get: (year: number | null, month: number | null, type: 'top' | 'flop'): Promise<RankingResponse> => {
+    const params = new URLSearchParams({ type });
+    if (year !== null) params.set('year', String(year));
+    if (month !== null) params.set('month', String(month));
+    return get<RankingResponse>(`/ranking?${params}`);
+  },
 };
 
 // ── Invites ───────────────────────────────────────────────────

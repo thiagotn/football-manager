@@ -5,15 +5,16 @@ Regras:
 - Apenas partidas com ao menos 10 presenças confirmadas contam (D2).
   `eligible_voters` não é coluna persistida em `matches`, por isso usamos
   subquery de contagem de `attendances` com status='confirmed'.
-- Período: filtra por `match_votes.submitted_at` via date_trunc.
+- Período: filtra por `match_votes.submitted_at` via comparações de datetime.
 - Exclui super admin (PlayerRole.ADMIN) dos resultados.
 - Top: soma de pontos de `match_vote_top5` por jogador, limitado a 10.
 - Flop: contagem de votos em `match_vote_flop` por jogador, limitado a 10.
 - Empates recebem a mesma posição.
 """
+from datetime import datetime, timezone
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.match import Attendance, AttendanceStatus
@@ -41,12 +42,26 @@ class RankingRepository:
             .scalar_subquery()
         )
 
-    def _period_filter(self, period: Literal["month", "year", "all"]):
-        if period == "month":
-            return MatchVote.submitted_at >= func.date_trunc("month", func.now())
-        if period == "year":
-            return MatchVote.submitted_at >= func.date_trunc("year", func.now())
-        return None  # all-time: sem filtro
+    def _period_filter(self, year: int | None, month: int | None):
+        """
+        Retorna filtro de período para submitted_at.
+        - year + month → intervalo do mês específico
+        - year only    → intervalo do ano completo
+        - nenhum       → sem filtro (todos os tempos)
+        """
+        if year is None:
+            return None
+        if month is None:
+            start = datetime(year, 1, 1, tzinfo=timezone.utc)
+            end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            start = datetime(year, month, 1, tzinfo=timezone.utc)
+            end = (
+                datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+                if month == 12
+                else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+            )
+        return and_(MatchVote.submitted_at >= start, MatchVote.submitted_at < end)
 
     def _assign_positions(self, rows: list, score_attr: str) -> list[dict]:
         """Atribui posições com suporte a empate (mesmo score → mesma posição, dense rank)."""
@@ -68,13 +83,13 @@ class RankingRepository:
             })
         return result
 
-    async def get_top(self, period: Literal["month", "year", "all"]) -> list[dict]:
+    async def get_top(self, year: int | None, month: int | None) -> list[dict]:
         """
         Retorna os top 10 jogadores por soma de pontos recebidos em votações,
         considerando apenas partidas elegíveis.
         """
         eligible_match_ids = self._eligible_match_ids_subquery()
-        period_filter = self._period_filter(period)
+        period_filter = self._period_filter(year, month)
 
         query = (
             select(
@@ -107,13 +122,13 @@ class RankingRepository:
         rows = result.all()
         return self._assign_positions(rows, "total_points")
 
-    async def get_flop(self, period: Literal["month", "year", "all"]) -> list[dict]:
+    async def get_flop(self, year: int | None, month: int | None) -> list[dict]:
         """
         Retorna os top 10 jogadores por número de votos de decepção recebidos,
         considerando apenas partidas elegíveis.
         """
         eligible_match_ids = self._eligible_match_ids_subquery()
-        period_filter = self._period_filter(period)
+        period_filter = self._period_filter(year, month)
 
         query = (
             select(

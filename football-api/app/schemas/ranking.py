@@ -21,6 +21,7 @@ class FlopRankingItem(RankingItem):
 
 
 class RankingResponse(BaseModel):
-    period: Literal["month", "year", "all"]
+    year: int | None
+    month: int | None
     type: Literal["top", "flop"]
     items: list[TopRankingItem] | list[FlopRankingItem]
