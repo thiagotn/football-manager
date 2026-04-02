@@ -45,6 +45,14 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 ---
 
+## Ferramentas Públicas
+
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 033 | [simulador-sorteio-publico.md](033-simulador-sorteio-publico.md) | 📋 | Página pública `/draw` — sorteio de times com posições e estrelas, sem login, sem backend |
+
+---
+
 ## Partidas e Grupos
 
 | # | PRD | Status | Notas |

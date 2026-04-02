@@ -24,6 +24,7 @@
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
 | `/ranking` | Ranking geral da plataforma — top 10 melhores e decepções (público) |
+| `/draw` | Simulador público de sorteio de times — sem login, sem backend, estado em localStorage |
 | `/discover` | Rachões públicos abertos com filtros (público + autenticado) |
 | `/players/[id]` | Perfil público do jogador com Rachão Score |
 
@@ -90,6 +91,16 @@
 | `sessionExpired.ts` | Flag para exibir modal de sessão expirada |
 | `theme.ts` | Tema claro/escuro |
 | `toast.ts` | Fila de toasts (`showToast`, `dismissToast`) |
+
+---
+
+## Libs utilitárias (`src/lib/`)
+
+| Arquivo | Uso |
+|---------|-----|
+| `team-builder.ts` | Algoritmo de sorteio de times (TypeScript puro, sem API). Tipos: `DrawPlayer`, `Team`, `TeamResult`. Constantes: `POS_ABBR`, `POS_COLOR_CLASSES`, `TEAM_COLORS`. |
+| `draw-seed.ts` | 30 jogadores de seed para o simulador `/draw`. Exporta `seedWithIds()`. |
+| `team-names.ts` | Banco de ≥ 40 nomes de times estilo várzea. Exporta `TEAM_NAMES` e `shuffledNames()`. |
 
 ---
 
