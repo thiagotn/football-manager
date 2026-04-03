@@ -31,16 +31,20 @@
   let {
     value = $bindable('mei'),
     readonly = false,
+    onchange,
   }: {
     value?: string;
     readonly?: boolean;
+    onchange?: (apiValue: string) => void;
   } = $props();
 
   let currentPos = $derived(API_TO_POS[value] ?? 'midfielder');
 
   function select(pos: Position) {
     if (readonly) return;
-    value = POS_TO_API[pos];
+    const apiValue = POS_TO_API[pos];
+    value = apiValue;
+    onchange?.(apiValue);
   }
 </script>
 

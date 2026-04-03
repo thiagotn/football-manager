@@ -1260,16 +1260,16 @@
         {/if}
       </div>
 
-      {#if selectedMember.player.id !== $currentPlayer?.id}
-        <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
-          <button
-            onclick={() => {
-              roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei' };
-              showMemberDetail = false;
-            }}
-            class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
-            <Pencil size={14} /> {$t('group.edit_skill')}
-          </button>
+      <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
+        <button
+          onclick={() => {
+            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei' };
+            showMemberDetail = false;
+          }}
+          class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
+          <Pencil size={14} /> {$t('group.edit_skill')}
+        </button>
+        {#if selectedMember.player.id !== $currentPlayer?.id}
           <button
             onclick={() => {
               toggleRole(selectedMember!.player.id, selectedMember!.role, selectedMember!.player.name);
@@ -1290,8 +1290,8 @@
             class="btn-sm btn-ghost flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400">
             <Trash2 size={14} /> {$t('group.remove_from_group')}
           </button>
-        </div>
-      {/if}
+        {/if}
+      </div>
     </div>
   {/if}
 </Modal>
@@ -1334,15 +1334,17 @@
       </button>
 
       <div class="border-t border-gray-100 dark:border-gray-700 pt-3 flex flex-col gap-2">
-        <button
-          class="btn btn-secondary justify-center py-2.5"
-          onclick={() => { toggleRole(roleEditMember!.id, roleEditMember!.role, roleEditMember!.name); roleEditMember = null; }}>
-          {#if roleEditMember.role === 'admin'}
-            <ShieldOff size={15} /> {$t('group.remove_president')}
-          {:else}
-            <ShieldCheck size={15} /> {$t('group.make_president')}
-          {/if}
-        </button>
+        {#if roleEditMember.id !== $currentPlayer?.id}
+          <button
+            class="btn btn-secondary justify-center py-2.5"
+            onclick={() => { toggleRole(roleEditMember!.id, roleEditMember!.role, roleEditMember!.name); roleEditMember = null; }}>
+            {#if roleEditMember.role === 'admin'}
+              <ShieldOff size={15} /> {$t('group.remove_president')}
+            {:else}
+              <ShieldCheck size={15} /> {$t('group.make_president')}
+            {/if}
+          </button>
+        {/if}
         <button class="btn btn-secondary justify-center py-2.5" onclick={() => roleEditMember = null}>
           {$t('group.cancel')}
         </button>

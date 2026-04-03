@@ -40,6 +40,7 @@ class AttendanceResponse(BaseModel):
     player: PlayerPublic
     status: AttendanceStatus
     updated_at: datetime
+    position: str | None = None
 
 
 class MatchResponse(BaseModel):

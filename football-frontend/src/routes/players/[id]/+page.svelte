@@ -10,7 +10,12 @@
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { ChevronLeft, Share2 } from 'lucide-svelte';
+  import { ChevronLeft, Share2, Shield } from 'lucide-svelte';
+  import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
+
+  const API_TO_POS: Record<string, Position> = {
+    gk: 'goalkeeper', zag: 'defender', lat: 'fullback', mei: 'midfielder', ata: 'forward'
+  };
 
   let stats = $state<PlayerPublicStats | null>(null);
   let loading = $state(true);
@@ -167,6 +172,28 @@
           </p>
         {/if}
       </div>
+
+      <!-- Grupos -->
+      {#if stats.groups.length > 0}
+        <div class="card overflow-hidden mb-4">
+          <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{$t('player_public.groups_section')}</h3>
+          </div>
+          <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+            {#each stats.groups as g}
+              <li class="px-4 py-2.5 flex items-center gap-2.5">
+                <Shield size={13} class="text-primary-500 shrink-0" fill="currentColor" />
+                <span class="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{g.group_name}</span>
+                {#if g.position && API_TO_POS[g.position]}
+                  {@const pos = API_TO_POS[g.position]}
+                  <span class="text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
+                {/if}
+                <span class="text-xs text-amber-500 tracking-tighter shrink-0">{'★'.repeat(g.skill_stars)}</span>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
 
     {/if}
   </main>

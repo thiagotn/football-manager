@@ -589,6 +589,59 @@ async def test_update_member_skill_stars_returns_200(api_client, mocker):
     assert response.status_code == 200
 
 
+# ── PATCH /groups/{id}/members/me — self-service position ────────────────────
+
+
+@pytest.mark.asyncio
+async def test_update_my_position_returns_200(api_client, player_user, mocker):
+    """Membro pode alterar sua própria posição no grupo."""
+    from datetime import datetime
+    from app.models.group import GroupMemberRole
+
+    group_id = uuid4()
+
+    member = MagicMock()
+    member.id = uuid4()
+    member.group_id = group_id
+    member.player_id = player_user.id
+    member.role = GroupMemberRole.MEMBER
+    member.skill_stars = 3
+    member.position = "gk"
+    member.created_at = datetime(2026, 1, 1)
+    member.player = player_user
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/members/me",
+        json={"position": "gk"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["position"] == "gk"
+
+
+@pytest.mark.asyncio
+async def test_update_my_position_not_member_returns_404(api_client, player_user, mocker):
+    """Jogador que não é membro do grupo recebe 404."""
+    group_id = uuid4()
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/members/me",
+        json={"position": "ata"},
+    )
+
+    assert response.status_code == 404
+
+
 # ── DELETE /groups/{id}/members/{player_id} — happy path ─────────────────────
 
 

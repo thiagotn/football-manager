@@ -17,6 +17,11 @@
   import { relativeDate, playerDisplayName } from '$lib/utils.js';
   import { goto } from '$app/navigation';
   import { t, locale } from '$lib/i18n';
+  import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
+
+  const API_TO_POS: Record<string, Position> = {
+    gk: 'goalkeeper', zag: 'defender', lat: 'fullback', mei: 'midfielder', ata: 'forward'
+  };
   import { formatMatchTimeRange } from '$lib/timezoneUtils';
 
   const matchHash = $page.params.hash;
@@ -616,6 +621,10 @@
               {#each confirmed as a, i}
                 <li class="px-4 py-2 flex items-center gap-2.5">
                   <span class="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                  {#if a.position && API_TO_POS[a.position]}
+                    {@const pos = API_TO_POS[a.position]}
+                    <span class="text-[9px] px-1 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
+                  {/if}
                   <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{playerDisplayName(a.player.name, a.player.nickname)}</p>
                   {#if voteStatus && voteStatus.status !== 'not_open'}
                     <span class="text-sm shrink-0" title="{voteStatus.voted_player_ids.includes(a.player.id) ? 'Votou' : 'Não votou ainda'}">
@@ -655,6 +664,10 @@
               {#each declined as a}
                 <li class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2.5">
                   <XCircle size={13} class="text-red-400 shrink-0" />
+                  {#if a.position && API_TO_POS[a.position]}
+                    {@const pos = API_TO_POS[a.position]}
+                    <span class="text-[9px] px-1 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
+                  {/if}
                   <span class="flex-1">{playerDisplayName(a.player.name, a.player.nickname)}</span>
                   {#if !$isAdmin && a.player.id === $currentPlayer?.id && (match.status === 'open' || match.status === 'in_progress')}
                     <button
@@ -689,6 +702,10 @@
               {#each pending as a}
                 <li class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2.5">
                   <Clock3 size={13} class="text-gray-400 shrink-0" />
+                  {#if a.position && API_TO_POS[a.position]}
+                    {@const pos = API_TO_POS[a.position]}
+                    <span class="text-[9px] px-1 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
+                  {/if}
                   <span class="flex-1">{playerDisplayName(a.player.name, a.player.nickname)}</span>
                   {#if !showRsvpBanner && a.player.id === $currentPlayer?.id && !$isAdmin && (match.status === 'open' || match.status === 'in_progress')}
                     <div class="flex gap-1 shrink-0">

@@ -33,6 +33,7 @@ def player_user() -> Player:
     p.name = "João Silva"
     p.whatsapp = "+5511999990001"
     p.role = PlayerRole.PLAYER
+    p.nickname = None
     p.active = True
     p.must_change_password = False
     p.avatar_url = None
@@ -45,6 +46,7 @@ def admin_user() -> Player:
     p.id = uuid4()
     p.name = "Super Admin"
     p.whatsapp = "+5511999990000"
+    p.nickname = None
     p.role = PlayerRole.ADMIN
     p.active = True
     p.must_change_password = False
@@ -57,9 +59,16 @@ def admin_user() -> Player:
 
 @pytest.fixture
 def mock_db() -> AsyncMock:
+    from unittest.mock import MagicMock
     db = AsyncMock()
     db.flush = AsyncMock()
     db.refresh = AsyncMock()
     db.commit = AsyncMock()
     db.rollback = AsyncMock()
+    # Configure execute to return a MagicMock so that result.all() and
+    # result.scalar_one_or_none() work without raising coroutine errors.
+    _result = MagicMock()
+    _result.all.return_value = []
+    _result.scalar_one_or_none.return_value = None
+    db.execute = AsyncMock(return_value=_result)
     return db

@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { auth as authApi, players as playersApi, push as pushApi, subscriptions as subsApi, ApiError } from '$lib/api';
+  import { auth as authApi, players as playersApi, groups as groupsApi, push as pushApi, subscriptions as subsApi, ApiError } from '$lib/api';
   import { billingEnabled } from '$lib/billing';
-  import type { SubscriptionInfo } from '$lib/api';
+  import type { SubscriptionInfo, GroupStatItem } from '$lib/api';
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { goto } from '$app/navigation';
-  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck, ChevronDown } from 'lucide-svelte';
+  import { Eye, EyeOff, KeyRound, Pencil, Bell, BellOff, BarChart2, User, CreditCard, ShieldCheck, ChevronDown, Loader2 } from 'lucide-svelte';
+  import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import type { Position } from '$lib/team-builder';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import { t } from '$lib/i18n';
@@ -85,6 +87,32 @@
       toastError(e instanceof ApiError ? e.message : 'Erro ao salvar apelido');
     }
     savingNickname = false;
+  }
+
+  // Positions per group
+  let myGroups = $state<GroupStatItem[]>([]);
+  let savingPosition = $state<string | null>(null); // group_id being saved
+
+  const API_TO_POS: Record<string, Position> = {
+    gk: 'goalkeeper', zag: 'defender', lat: 'fullback', mei: 'midfielder', ata: 'forward'
+  };
+
+  $effect(() => {
+    if ($isAdmin) return;
+    playersApi.myFullStats().then(s => { myGroups = s.groups; }).catch(() => {});
+  });
+
+  async function savePosition(groupId: string, position: string) {
+    savingPosition = groupId;
+    try {
+      await groupsApi.updateMyPosition(groupId, position);
+      myGroups = myGroups.map(g => g.group_id === groupId ? { ...g, position } : g);
+      toastSuccess($t('profile.position_saved'));
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : $t('profile.position_save_error'));
+    } finally {
+      savingPosition = null;
+    }
   }
 
   // Push notifications
@@ -414,6 +442,30 @@
           </div>
         </dl>
       </div>
+
+      <!-- Posições por grupo -->
+      {#if !$isAdmin && myGroups.length > 0}
+        <div class="card card-body">
+          <h2 class="font-semibold text-gray-800 dark:text-gray-200 mb-1">{$t('profile.section_positions')}</h2>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">{$t('profile.positions_desc')}</p>
+          <div class="space-y-4">
+            {#each myGroups as g}
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">{g.group_name}</span>
+                  {#if savingPosition === g.group_id}
+                    <Loader2 size={13} class="animate-spin text-gray-400 shrink-0" />
+                  {/if}
+                </div>
+                <PositionSelector
+                  value={g.position ?? 'mei'}
+                  onchange={(pos) => savePosition(g.group_id, pos)}
+                />
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <!-- Plano atual (apenas não-admins) -->
       {#if !$isAdmin && sub}

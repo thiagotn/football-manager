@@ -45,6 +45,7 @@ from app.schemas.group import (
     GroupUpdate,
     LookupMemberResponse,
     LookupPlayerInfo,
+    SelfUpdatePositionRequest,
     UpdateMemberRoleRequest,
     UpdateMemberRequest,
     WaitlistJoinRequest,
@@ -272,6 +273,28 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
     # Eager load player for response
     await db.refresh(member, ["player"])
     return GroupMemberResponse.model_validate(member)
+
+
+@router.patch("/{group_id}/members/me", response_model=GroupMemberResponse)
+async def update_my_position(
+    group_id: uuid.UUID,
+    body: SelfUpdatePositionRequest,
+    db: DB,
+    current: CurrentPlayer,
+):
+    """Permite que qualquer membro altere sua própria posição no grupo."""
+    repo = GroupRepository(db)
+    member = await repo.get_member(group_id, current.id)
+    if not member:
+        raise NotFoundError("Você não é membro deste grupo")
+
+    member.position = body.position
+    await db.flush()
+    await db.refresh(member, ["player"])
+    r = GroupMemberResponse.model_validate(member)
+    r.skill_stars = member.skill_stars
+    r.position = member.position
+    return r
 
 
 @router.patch("/{group_id}/members/{player_id}", response_model=GroupMemberResponse)

@@ -118,6 +118,10 @@ class UpdateMemberRequest(BaseModel):
     position: str | None = Field(None, pattern=r'^(gk|zag|lat|mei|ata)$')
 
 
+class SelfUpdatePositionRequest(BaseModel):
+    position: str = Field(..., pattern=r'^(gk|zag|lat|mei|ata)$')
+
+
 # ── Add member by phone ───────────────────────────────────────────────────────
 
 class LookupPlayerInfo(BaseModel):

@@ -34,6 +34,7 @@ def _make_attendance(status: AttendanceStatus, is_admin: bool = False) -> MagicM
     a.player.name = "Jogador"
     a.player.nickname = None
     a.player.avatar_url = None
+    a.position = None
     return a
 
 
@@ -539,6 +540,10 @@ async def test_confirm_attendance_success_returns_200(api_client, player_user, m
     attendance.player.nickname = None
     attendance.player.avatar_url = None
     attendance.player.role = player_user.role
+    attendance.position = None
+
+    member = MagicMock()
+    member.position = "mei"
 
     mocker.patch(
         "app.api.v1.routers.matches.MatchRepository.get",
@@ -547,6 +552,10 @@ async def test_confirm_attendance_success_returns_200(api_client, player_user, m
     mocker.patch(
         "app.api.v1.routers.matches.MatchRepository.upsert_attendance",
         new=AsyncMock(return_value=attendance),
+    )
+    mocker.patch(
+        "app.api.v1.routers.matches.GroupRepository.get_member",
+        new=AsyncMock(return_value=member),
     )
 
     response = await api_client.post(

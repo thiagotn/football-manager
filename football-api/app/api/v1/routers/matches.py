@@ -37,12 +37,18 @@ def _generate_hash() -> str:
     return secrets.token_urlsafe(8)[:10]
 
 
-def _build_detail(match: Match) -> MatchDetailResponse:
+def _build_detail(match: Match, position_map: dict | None = None) -> MatchDetailResponse:
     # Exclui o super admin (role=admin) das listas de presença
     attendances = [a for a in match.attendances if a.player.role != PlayerRole.ADMIN]
     confirmed = [a for a in attendances if a.status == AttendanceStatus.CONFIRMED]
     declined = [a for a in attendances if a.status == AttendanceStatus.DECLINED]
     pending = [a for a in attendances if a.status == AttendanceStatus.PENDING]
+
+    def _attendance(a) -> AttendanceResponse:
+        r = AttendanceResponse.model_validate(a)
+        if position_map:
+            r = r.model_copy(update={"position": position_map.get(str(a.player.id))})
+        return r
 
     return MatchDetailResponse(
         id=match.id,
@@ -61,7 +67,7 @@ def _build_detail(match: Match) -> MatchDetailResponse:
         status=match.status,
         created_at=match.created_at,
         updated_at=match.updated_at,
-        attendances=[AttendanceResponse.model_validate(a) for a in attendances],
+        attendances=[_attendance(a) for a in attendances],
         confirmed_count=len(confirmed),
         declined_count=len(declined),
         pending_count=len(pending),
@@ -136,7 +142,11 @@ async def get_match_public(match_hash: str, db: DB):
     match = await repo.get_by_hash_with_attendances(match_hash)
     if not match:
         raise NotFoundError("Partida não encontrada")
-    return _build_detail(match)
+    player_ids = [a.player.id for a in match.attendances if a.player.role != PlayerRole.ADMIN]
+    g_repo = GroupRepository(db)
+    skills = await g_repo.get_member_skills(match.group_id, player_ids)
+    position_map = {str(pid): data["position"] for pid, data in skills.items()}
+    return _build_detail(match, position_map)
 
 
 # ── Group matches ─────────────────────────────────────────────────────────────
@@ -241,7 +251,11 @@ async def get_match(group_id: uuid.UUID, match_id: uuid.UUID, db: DB, current: C
     match = await repo.get_with_attendances(match_id)
     if not match or match.group_id != group_id:
         raise NotFoundError("Partida não encontrada")
-    return _build_detail(match)
+    player_ids = [a.player.id for a in match.attendances if a.player.role != PlayerRole.ADMIN]
+    g_repo = GroupRepository(db)
+    skills = await g_repo.get_member_skills(group_id, player_ids)
+    position_map = {str(pid): data["position"] for pid, data in skills.items()}
+    return _build_detail(match, position_map)
 
 
 @router.patch("/groups/{group_id}/matches/{match_id}", response_model=MatchResponse)
@@ -354,4 +368,8 @@ async def set_attendance(
 
     attendance = await repo.upsert_attendance(match_id, body.player_id, body.status)
     await db.refresh(attendance, ["player"])
-    return AttendanceResponse.model_validate(attendance)
+    g_repo = GroupRepository(db)
+    member = await g_repo.get_member(group_id, body.player_id)
+    position = member.position if member else None
+    r = AttendanceResponse.model_validate(attendance)
+    return r.model_copy(update={"position": position})

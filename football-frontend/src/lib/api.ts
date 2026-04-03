@@ -85,7 +85,7 @@ export type Match = {
   notes: string | null; hash: string; status: 'open' | 'in_progress' | 'closed';
   created_at: string; updated_at: string;
 };
-export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string };
+export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string; position: string | null };
 export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean; group_timezone: string };
 export type PlayerMatchItem = Match & { group_name: string; my_attendance: 'confirmed' | 'declined' | 'pending' | null; group_timezone: string };
 export type DiscoverMatch = Match & { group_name: string; confirmed_count: number; spots_left: number | null; group_timezone: string };
@@ -130,6 +130,7 @@ export interface PlayerPublicStats {
   top5_count: number;
   total_vote_points: number;
   total_flop_votes: number;
+  groups: GroupStatItem[];
 }
 
 export const players = {
@@ -210,6 +211,8 @@ export const groups = {
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, { role }),
   updateMemberSkill: (groupId: string, playerId: string, data: { skill_stars?: number; position?: string | null }) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, data),
+  updateMyPosition: (groupId: string, position: string) =>
+    patch<GroupMember>(`/groups/${groupId}/members/me`, { position }),
   getStats: (id: string, params?: { period?: string; month?: string }) => {
     const q = new URLSearchParams();
     if (params?.period) q.set('period', params.period);
