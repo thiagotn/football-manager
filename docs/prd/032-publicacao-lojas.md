@@ -304,24 +304,24 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
 ### Pré-requisitos
 
 - [ ] Conta de desenvolvedor Google Play ($25, pagamento único)
-- [ ] Keystore Android para assinatura do app:
+- [x] Keystore Android para assinatura do app:
   ```bash
   keytool -genkeypair -v -keystore rachao-release.keystore \
     -alias rachao -keyalg RSA -keysize 2048 -validity 10000
   ```
-- [ ] Node.js instalado (para Bubblewrap)
-- [ ] Java JDK instalado (para geração do APK/AAB)
-- [ ] Android SDK instalado (ou Android Studio)
+- [x] Node.js instalado (para Bubblewrap)
+- [x] Java JDK instalado (para geração do APK/AAB)
+- [x] Android SDK instalado (ou Android Studio)
 
 ---
 
 ### Servidor — Digital Asset Links
 
-- [ ] Obter o SHA-256 fingerprint da keystore de release:
+- [x] Obter o SHA-256 fingerprint da keystore de release:
   ```bash
   keytool -list -v -keystore rachao-release.keystore -alias rachao
   ```
-- [ ] Criar `football-frontend/static/.well-known/assetlinks.json`:
+- [x] Criar `football-frontend/static/.well-known/assetlinks.json`:
   ```json
   [{
     "relation": ["delegate_permission/common.handle_all_urls"],
@@ -332,19 +332,19 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
     }
   }]
   ```
-- [ ] Verificar: `curl https://rachao.app/.well-known/assetlinks.json`
+- [x] Verificar: `curl https://rachao.app/.well-known/assetlinks.json`
 - [ ] Validar com a ferramenta do Google: [Statement List Generator](https://developers.google.com/digital-asset-links/tools/generator)
 
 ---
 
 ### Bubblewrap — Geração do app
 
-- [ ] Criar o diretório `football-android/` na raiz do monorepo
-- [ ] Instalar Bubblewrap CLI:
+- [x] Criar o diretório `football-android/` na raiz do monorepo
+- [x] Instalar Bubblewrap CLI:
   ```bash
   npm install -g @bubblewrap/cli
   ```
-- [ ] Inicializar o projeto TWA dentro de `football-android/`:
+- [x] Inicializar o projeto TWA dentro de `football-android/`:
   ```bash
   cd football-android
   bubblewrap init --manifest https://rachao.app/manifest.webmanifest
@@ -354,8 +354,8 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
   - App name: `rachao.app`
   - Launch URL: `https://rachao.app/`
   - Apontar para a keystore gerada
-- [ ] Criar `football-android/.gitignore` (ver modelo acima)
-- [ ] Criar `football-android/CLAUDE.md` com estado inicial do projeto
+- [x] Criar `football-android/.gitignore` (ver modelo acima)
+- [x] Criar `football-android/CLAUDE.md` com estado inicial do projeto
 - [ ] Revisar `twa-manifest.json` gerado (ícones, cores, orientação)
 - [ ] Buildar o AAB (formato exigido pela Play Store):
   ```bash
