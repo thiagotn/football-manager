@@ -229,10 +229,27 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment: production
+    timeout-minutes: 20
     if: always() && needs.build.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Aguardar VPS disponível
+        run: |
+          HOST="${{ secrets.VPS_HOST }}"
+          PORT="${{ secrets.VPS_PORT || 22 }}"
+          echo "Verificando conectividade SSH em $HOST:$PORT..."
+          for i in $(seq 1 6); do
+            if nc -zw 8 "$HOST" "$PORT" 2>/dev/null; then
+              echo "VPS acessível ✓"
+              exit 0
+            fi
+            echo "Tentativa $i/6 — aguardando 20s..."
+            sleep 20
+          done
+          echo "Erro: VPS inacessível após 6 tentativas (~2 min)"
+          exit 1
 
       - name: Copiar arquivos para o VPS
         uses: appleboy/scp-action@v0.1.7
@@ -241,6 +258,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
+          timeout: 60s
           source: "football-api/docker-compose.prod.yml,football-api/traefik-dynamic.yml,football-api/migrations"
           target: ${{ env.DEPLOY_DIR }}
           strip_components: 1
@@ -272,6 +290,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
+          timeout: 60s
+          command_timeout: 15m
           envs: GHCR_TOKEN,ACTOR,SHA,DEPLOY_DIR,VAPID_PRIVATE_KEY,VAPID_PUBLIC_KEY,VAPID_CLAIMS_EMAIL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,STRIPE_PRICE_BASIC_MONTHLY,STRIPE_PRICE_BASIC_YEARLY,STRIPE_PRICE_PRO_MONTHLY,STRIPE_PRICE_PRO_YEARLY,DATABASE_URL,TWILIO_ACCOUNT_SID,TWILIO_AUTH_TOKEN,TWILIO_VERIFY_SID,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY
           script: |
             set -euo pipefail
