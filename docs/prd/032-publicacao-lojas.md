@@ -333,7 +333,7 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
   }]
   ```
 - [x] Verificar: `curl https://rachao.app/.well-known/assetlinks.json`
-- [ ] Validar com a ferramenta do Google: [Statement List Generator](https://developers.google.com/digital-asset-links/tools/generator)
+- [x] Validar com a ferramenta do Google: [Statement List Generator](https://developers.google.com/digital-asset-links/tools/generator)
 
 ---
 
