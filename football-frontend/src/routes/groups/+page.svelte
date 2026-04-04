@@ -112,24 +112,24 @@
 
 <PageBackground>
 <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
-  <div class="flex items-center justify-between mb-6">
-    <div>
+  <div class="flex items-center justify-between mb-6 gap-3">
+    <div class="min-w-0">
       <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-        <Trophy size={24} class="text-primary-400" /> {$t('groups.title')}
+        <Trophy size={24} class="text-primary-400 shrink-0" /> {$t('groups.title')}
       </h1>
       <p class="text-sm text-white/60 mt-0.5">{$t('groups.subtitle')}</p>
     </div>
-    <div class="flex flex-col items-end gap-1">
+    <div class="flex flex-col items-end gap-1 shrink-0">
       {#if !$isAdmin && sub}
-        <p class="text-xs {sub.groups_used >= (sub.groups_limit ?? Infinity) ? 'text-red-300' : sub.groups_used >= (sub.groups_limit ?? Infinity) * 0.8 ? 'text-yellow-300' : 'text-gray-400'}">
+        <p class="text-xs whitespace-nowrap {sub.groups_used >= (sub.groups_limit ?? Infinity) ? 'text-red-300' : sub.groups_used >= (sub.groups_limit ?? Infinity) * 0.8 ? 'text-yellow-300' : 'text-gray-400'}">
           {sub.groups_used} de {sub.groups_limit} grupo{sub.groups_limit !== 1 ? 's' : ''}
         </p>
       {/if}
-      <button class="btn-primary {atGroupLimit ? 'opacity-80' : ''}" onclick={openCreateOrUpsell}>
+      <button class="btn-primary btn-sm whitespace-nowrap {atGroupLimit ? 'opacity-80' : ''}" onclick={openCreateOrUpsell}>
         {#if atGroupLimit}
-          <Lock size={15} /> {$t('groups.new')}
+          <Lock size={14} /> {$t('groups.new')}
         {:else}
-          <Plus size={16} /> {$t('groups.new')}
+          <Plus size={14} /> {$t('groups.new')}
         {/if}
       </button>
     </div>
