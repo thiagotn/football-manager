@@ -25,7 +25,6 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
-          base: ${{ github.event.before || 'HEAD~1' }}
           filters: |
             api:
               - 'football-api/**'
