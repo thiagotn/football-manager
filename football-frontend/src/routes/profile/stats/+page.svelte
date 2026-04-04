@@ -67,16 +67,17 @@
           title: 'Rachão Score — ' + ($currentPlayer?.nickname || $currentPlayer?.name),
           url,
         });
-      } catch {
-        /* user cancelled */
+        return;
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return; // usuário cancelou
+        // qualquer outro erro → fallback para clipboard
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toastSuccess($t('stats.share_copied'));
-      } catch {
-        toastError($t('stats.share_error'));
-      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toastSuccess($t('stats.share_copied'));
+    } catch {
+      toastError($t('stats.share_error'));
     }
   }
 

@@ -48,16 +48,17 @@
           title: stats ? playerDisplayName(stats.name, stats.nickname) + ' — Rachão Score' : 'Rachão Score',
           url,
         });
-      } catch {
-        /* user cancelled */
+        return;
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return; // usuário cancelou
+        // qualquer outro erro → fallback para clipboard
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toastSuccess($t('player_public.share_copied'));
-      } catch {
-        toastError($t('player_public.share_error'));
-      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toastSuccess($t('player_public.share_copied'));
+    } catch {
+      toastError($t('player_public.share_error'));
     }
   }
 
