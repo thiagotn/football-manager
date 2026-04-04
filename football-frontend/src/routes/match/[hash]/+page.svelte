@@ -15,7 +15,6 @@
   import VoteResults from '$lib/components/VoteResults.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { relativeDate, playerDisplayName } from '$lib/utils.js';
-  import { goto } from '$app/navigation';
   import { t, locale } from '$lib/i18n';
   import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
 
@@ -300,14 +299,6 @@
     togglingStatus = false;
   }
 
-  function goBack() {
-    if (history.length > 1) {
-      history.back();
-    } else {
-      goto('/');
-    }
-  }
-
   // ── Waitlist ──────────────────────────────────────────────────────────────────
   let showWaitlistModal = $state(false);
   let waitlistEntry = $state<WaitlistEntry | null>(null);
@@ -391,14 +382,6 @@
 
 <PageBackground>
   <main class="relative z-10 max-w-2xl mx-auto px-4 pt-4 pb-8">
-    {#if $isLoggedIn}
-      <button
-        onclick={goBack}
-        class="mb-3 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-        {$t('match.back')}
-      </button>
-    {/if}
-
     {#if loading}
       <div class="animate-pulse space-y-4">
         <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>

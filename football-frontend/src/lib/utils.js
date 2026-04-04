@@ -8,7 +8,8 @@
  */
 export function playerDisplayName(name, nickname) {
   const firstName = (name ?? '').trim().split(/\s+/)[0];
-  return nickname ? `${firstName} (${nickname})` : firstName;
+  const nick = nickname?.trim() || null;
+  return nick ? `${firstName} (${nick})` : firstName;
 }
 
 export function formatDate(dateStr, locale = 'pt-BR') {

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 import re
 
 from app.models.group import GroupMemberRole
-from app.schemas.player import PlayerPublic, PlayerMemberView
+from app.schemas.player import PlayerPublic, PlayerMemberView, normalize_nickname
 
 
 def _validate_iana_timezone(v: str) -> str:
@@ -142,6 +142,11 @@ class AddMemberByPhoneRequest(BaseModel):
     nickname: str | None = Field(None, max_length=50)
     skill_stars: int = Field(2, ge=1, le=5)
     position: str = Field("mei", pattern=r'^(gk|zag|lat|mei|ata)$')
+
+    @field_validator("nickname", mode="before")
+    @classmethod
+    def trim_nickname(cls, v: str | None) -> str | None:
+        return normalize_nickname(v)
 
 
 class AddMemberByPhoneResponse(BaseModel):

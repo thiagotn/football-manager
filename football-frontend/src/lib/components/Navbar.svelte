@@ -100,6 +100,9 @@
     if (pathname === '/privacy')  return '/';
     if (pathname.startsWith('/admin/')) return '/';
     if (pathname.startsWith('/players/')) return '/ranking';
+    if (/^\/match\/[^/]+\/results$/.test(pathname)) return pathname.slice(0, -'/results'.length);
+    if (/^\/match\/[^/]+\/teams$/.test(pathname)) return pathname.slice(0, -'/teams'.length);
+    if (/^\/match\/[^/]+$/.test(pathname)) return 'BACK';
     return null;
   }
 
@@ -112,13 +115,23 @@
     <!-- Esquerda: botão voltar (mobile) + logo desktop -->
     <div class="flex items-center gap-1 shrink-0">
       {#if backHref}
-        <a
-          href={backHref}
-          class="min-[940px]:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-primary-600 transition-colors"
-          aria-label={$t('aria.back')}
-        >
-          <ChevronLeft size={22} />
-        </a>
+        {#if backHref === 'BACK'}
+          <button
+            onclick={() => { if (history.length > 1) history.back(); else goto('/'); }}
+            class="min-[940px]:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-primary-600 transition-colors"
+            aria-label={$t('aria.back')}
+          >
+            <ChevronLeft size={22} />
+          </button>
+        {:else}
+          <a
+            href={backHref}
+            class="min-[940px]:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-primary-600 transition-colors"
+            aria-label={$t('aria.back')}
+          >
+            <ChevronLeft size={22} />
+          </a>
+        {/if}
       {/if}
       <!-- Logo desktop: efeito sangramento à esquerda -->
       <a href="/" class="hidden min-[940px]:flex -ml-16 self-stretch items-end">

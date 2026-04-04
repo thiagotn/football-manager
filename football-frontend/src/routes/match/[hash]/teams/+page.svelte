@@ -127,13 +127,6 @@
 <PageBackground>
   <main class="relative z-10 max-w-2xl mx-auto px-3 pt-3 {$isLoggedIn ? 'pb-6' : 'pb-24'}">
 
-    <!-- Back button -->
-    <button
-      onclick={() => goto(`/match/${matchHash}`, { replaceState: true })}
-      class="mb-3 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-      {$t('match.back')}
-    </button>
-
     <!-- Match banner card -->
     {#if match}
       <MatchBannerCard {match} {isGroupAdmin} />

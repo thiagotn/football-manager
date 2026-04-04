@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 
-from app.schemas.player import normalize_whatsapp
+from app.schemas.player import normalize_whatsapp, normalize_nickname
 
 
 class LoginRequest(BaseModel):
@@ -56,6 +56,11 @@ class RegisterRequest(BaseModel):
     @classmethod
     def validate_whatsapp(cls, v: str) -> str:
         return normalize_whatsapp(v)
+
+    @field_validator("nickname", mode="before")
+    @classmethod
+    def trim_nickname(cls, v: str | None) -> str | None:
+        return normalize_nickname(v)
 
 
 class TokenResponse(BaseModel):

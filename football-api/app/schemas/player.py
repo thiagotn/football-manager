@@ -21,6 +21,13 @@ def normalize_whatsapp(v: str) -> str:
     return cleaned
 
 
+def normalize_nickname(v: str | None) -> str | None:
+    if v is None:
+        return None
+    stripped = v.strip()
+    return stripped if stripped else None
+
+
 class PlayerCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     nickname: str | None = Field(None, max_length=50)
@@ -32,6 +39,11 @@ class PlayerCreate(BaseModel):
     @classmethod
     def validate_whatsapp(cls, v: str) -> str:
         return normalize_whatsapp(v)
+
+    @field_validator("nickname", mode="before")
+    @classmethod
+    def trim_nickname(cls, v: str | None) -> str | None:
+        return normalize_nickname(v)
 
 
 class PlayerUpdate(BaseModel):
@@ -48,6 +60,11 @@ class PlayerUpdate(BaseModel):
         if v is None:
             return v
         return normalize_whatsapp(v)
+
+    @field_validator("nickname", mode="before")
+    @classmethod
+    def trim_nickname(cls, v: str | None) -> str | None:
+        return normalize_nickname(v)
 
 
 class PlayerResponse(BaseModel):

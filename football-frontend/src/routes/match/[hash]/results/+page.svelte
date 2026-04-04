@@ -144,12 +144,6 @@
 
 <PageBackground>
   <main class="relative z-10 max-w-lg mx-auto px-4 pt-4 {$isLoggedIn ? 'pb-10' : 'pb-24'}">
-    <button
-      onclick={() => history.length > 1 ? history.back() : (window.location.href = `/match/${matchHash}`)}
-      class="mb-4 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-      {$t('results.back')}
-    </button>
-
     <!-- Match info card -->
     {#if match}
       <div class="card mb-4 overflow-hidden">
