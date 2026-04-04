@@ -203,14 +203,14 @@
       <div class="card-header pb-0">
         <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 -mb-px">
           <button
-            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {matchTab === 'upcoming' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+            class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors {matchTab === 'upcoming' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
             onclick={() => matchTab = 'upcoming'}>
-            {$t('dash.upcoming_matches')}
+            <Calendar size={14} />{$t('dash.upcoming_matches')}
           </button>
           <button
-            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {matchTab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+            class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors {matchTab === 'past' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
             onclick={() => matchTab = 'past'}>
-            {$t('dash.past_matches')}
+            <Clock size={14} />{$t('dash.past_matches')}
           </button>
         </div>
       </div>
