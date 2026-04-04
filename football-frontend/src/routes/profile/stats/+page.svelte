@@ -381,11 +381,14 @@
   </main>
 
   <!-- Botão fixo no rodapé — apenas mobile -->
-  <div class="sm:hidden fixed bottom-0 left-0 right-0 px-4 pt-2 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))">
-    <button
-      onclick={shareScore}
-      class="pointer-events-auto w-full btn btn-primary flex items-center justify-center gap-2">
-      <Share2 size={16} /> {$t('stats.share_score')}
-    </button>
+  <div class="sm:hidden fixed bottom-0 left-0 right-0" style="padding-bottom: env(safe-area-inset-bottom)">
+    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent pointer-events-none"></div>
+    <div class="relative px-4 pt-2 pb-4">
+      <button
+        onclick={shareScore}
+        class="w-full btn btn-primary flex items-center justify-center gap-2">
+        <Share2 size={16} /> {$t('stats.share_score')}
+      </button>
+    </div>
   </div>
 </PageBackground>

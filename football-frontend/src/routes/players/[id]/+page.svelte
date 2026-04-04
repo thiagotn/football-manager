@@ -10,7 +10,7 @@
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { ChevronLeft, Share2, Shield } from 'lucide-svelte';
+  import { Share2, Shield } from 'lucide-svelte';
   import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
 
   const API_TO_POS: Record<string, Position> = {
@@ -79,19 +79,17 @@
   <main class="relative z-10 max-w-lg mx-auto px-4 py-8 {!$isLoggedIn ? 'pb-24' : ''}">
 
     <!-- Cabeçalho -->
-    <div class="flex items-center justify-between mb-6">
-      <a href="/" class="text-sm text-white/70 hover:text-white transition-colors flex items-center gap-1">
-        <ChevronLeft size={16} />
-        {$t('player_public.back')}
-      </a>
-      {#if stats}
+    {#if stats}
+      <div class="flex items-center justify-end mb-6">
         <button
           onclick={shareScore}
           class="btn btn-sm btn-ghost text-white border border-white/20 hover:bg-white/10 flex items-center gap-1.5">
           <Share2 size={14} /> {$t('player_public.share')}
         </button>
-      {/if}
-    </div>
+      </div>
+    {:else}
+      <div class="mb-6"></div>
+    {/if}
 
     {#if loading}
       <div class="card p-8 text-center animate-pulse">
@@ -109,29 +107,32 @@
     {:else if stats}
       <!-- Card de identidade -->
       <div class="card overflow-hidden mb-4">
-        <div class="relative px-4 py-6 text-white text-center overflow-hidden"
+        <div class="relative px-4 py-5 text-white overflow-hidden"
           style="background: linear-gradient(135deg, #166534 0%, #15803d 60%, #16a34a 100%);">
-          <div class="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white"></div>
-          <div class="absolute -left-4 bottom-0 w-16 h-16 rounded-full opacity-10 bg-white"></div>
-          <div class="relative flex flex-col items-center gap-3">
-            <AvatarImage
-              name={stats.name}
-              avatarUrl={stats.avatar_url}
-              size={80}
-              class="ring-4 ring-white/30"
-            />
-            <div>
-              <p class="text-xl font-bold leading-tight">{displayName(stats)}</p>
-              {#if stats.nickname}
-                <p class="text-sm text-green-200">{stats.name}</p>
-              {/if}
+          <div class="relative flex items-center justify-between gap-3">
+            <!-- Esquerda: avatar + nome -->
+            <div class="flex items-center gap-3 min-w-0">
+              <AvatarImage
+                name={stats.name}
+                avatarUrl={stats.avatar_url}
+                size={56}
+                class="shrink-0 ring-2 ring-white/30"
+              />
+              <div class="min-w-0">
+                <p class="text-xl font-bold leading-tight truncate">{displayName(stats)}</p>
+                {#if stats.nickname}
+                  <p class="text-sm text-green-200 truncate">{stats.name}</p>
+                {/if}
+                <!-- Estrelas de habilidade -->
+                <div class="flex items-center gap-0.5 mt-1">
+                  {#each Array.from({ length: 5 }) as _, i}
+                    <span class="text-base {i < stats.skill_stars ? 'text-amber-300' : 'text-white/20'}">★</span>
+                  {/each}
+                </div>
+              </div>
             </div>
-            <!-- Estrelas de habilidade -->
-            <div class="flex items-center gap-1">
-              {#each Array.from({ length: 5 }) as _, i}
-                <span class="text-lg {i < stats.skill_stars ? 'text-amber-300' : 'text-white/20'}">★</span>
-              {/each}
-            </div>
+            <!-- Direita: logo -->
+            <img src="/logo.png" alt="rachao.app" class="h-14 w-auto shrink-0 opacity-90" />
           </div>
         </div>
       </div>
