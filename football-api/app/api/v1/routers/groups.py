@@ -172,14 +172,8 @@ async def update_group(group_id: uuid.UUID, body: GroupUpdate, db: DB, current: 
         if not member or member.role != GroupMemberRole.ADMIN:
             raise ForbiddenError("Apenas admins do grupo podem editar")
 
-    for field, value in body.model_dump(exclude_none=True, exclude={'per_match_amount', 'monthly_amount'}).items():
+    for field, value in body.model_dump(exclude_unset=True).items():
         setattr(group, field, value)
-    # Campos de cobrança são explicitamente anuláveis: atualiza se enviados,
-    # mesmo que o valor seja null (para zerar o campo).
-    if 'per_match_amount' in body.model_fields_set:
-        group.per_match_amount = body.per_match_amount
-    if 'monthly_amount' in body.model_fields_set:
-        group.monthly_amount = body.monthly_amount
     await db.flush()
     await db.refresh(group)
     return group

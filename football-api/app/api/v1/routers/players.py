@@ -231,7 +231,7 @@ async def update_player(player_id: uuid.UUID, body: PlayerUpdate, db: DB, curren
         if existing and existing.id != player_id:
             raise ConflictError(f"WhatsApp {body.whatsapp} já está em uso")
 
-    update_data = body.model_dump(exclude_none=True)
+    update_data = body.model_dump(exclude_unset=True)
     if "password" in update_data:
         update_data["password_hash"] = hash_password(update_data.pop("password"))
 

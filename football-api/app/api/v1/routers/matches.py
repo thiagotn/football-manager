@@ -279,7 +279,7 @@ async def update_match(
         and match.status not in (MatchStatus.IN_PROGRESS, MatchStatus.CLOSED)
     )
 
-    for field, value in body.model_dump(exclude_none=True).items():
+    for field, value in body.model_dump(exclude_unset=True).items():
         setattr(match, field, value)
     await db.flush()
     await db.refresh(match)
