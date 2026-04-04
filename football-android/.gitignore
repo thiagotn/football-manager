@@ -1,0 +1,6 @@
+*.keystore
+*.jks
+android/.gradle/
+android/app/build/
+android/local.properties
+rachao-release.keystore

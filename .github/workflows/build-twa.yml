@@ -1,0 +1,80 @@
+name: Build & Deploy TWA Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Play Store track'
+        required: true
+        default: 'internal'
+        type: choice
+        options: [internal, alpha, beta, production]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    name: Build & Upload AAB
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+            | base64 --decode > football-android/rachao-release.keystore
+
+      - name: Inject signing config into twa-manifest.json
+        working-directory: football-android
+        run: |
+          jq \
+            --arg path "rachao-release.keystore" \
+            --arg alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --arg keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --arg storepass "${{ secrets.ANDROID_STORE_PASSWORD }}" \
+            '.signingKey.path = $path |
+             .signingKey.alias = $alias |
+             .signingKey.keypassword = $keypass |
+             .signingKey.storepassword = $storepass' \
+            twa-manifest.json > twa-manifest.tmp.json
+          mv twa-manifest.tmp.json twa-manifest.json
+
+      - name: Build AAB
+        working-directory: football-android
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: bubblewrap build --skipPwaValidation
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rachao-twa-${{ github.sha }}
+          path: football-android/app-release-bundle.aab
+          retention-days: 30
+
+      - name: Upload to Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: app.rachao
+          releaseFiles: football-android/app-release-bundle.aab
+          track: ${{ github.event.inputs.track }}
+          status: completed

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.rachao",
+      "sha256_cert_fingerprints": [
+        "29:EB:44:EF:E4:B5:B6:37:61:0E:EB:A6:E5:3D:85:85:8A:B1:CB:DA:B9:79:3C:59:DE:11:9F:C4:9A:29:5D:02"
+      ]
+    }
+  }
+]
