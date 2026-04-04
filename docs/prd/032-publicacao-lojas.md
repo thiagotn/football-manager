@@ -356,12 +356,12 @@ Os dois pipelines são **completamente independentes**. Um deploy da web não ac
   - Apontar para a keystore gerada
 - [x] Criar `football-android/.gitignore` (ver modelo acima)
 - [x] Criar `football-android/CLAUDE.md` com estado inicial do projeto
-- [ ] Revisar `twa-manifest.json` gerado (ícones, cores, orientação)
-- [ ] Buildar o AAB (formato exigido pela Play Store):
+- [x] Revisar `twa-manifest.json` gerado (ícones, cores, orientação)
+- [x] Buildar o AAB (formato exigido pela Play Store):
   ```bash
   bubblewrap build
   ```
-- [ ] Verificar que o build gerou `app-release-bundle.aab`
+- [x] Verificar que o build gerou `app-release-bundle.aab`
 - [ ] Commitar `football-android/` (sem o keystore)
 
 ---

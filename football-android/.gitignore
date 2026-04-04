@@ -1,6 +1,15 @@
+# Keystore — NUNCA commitar
 *.keystore
 *.jks
-android/.gradle/
-android/app/build/
-android/local.properties
 rachao-release.keystore
+
+# Build outputs
+*.apk
+*.aab
+*.idsig
+build/
+app/build/
+
+# Gradle cache
+.gradle/
+local.properties
