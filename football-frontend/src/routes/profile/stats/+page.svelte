@@ -101,7 +101,7 @@
 </svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8 sm:pb-8 pb-28">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8">
 
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -381,15 +381,5 @@
     {/if}
   </main>
 
-  <!-- Botão fixo no rodapé — apenas mobile -->
-  <div class="sm:hidden fixed bottom-0 left-0 right-0" style="padding-bottom: env(safe-area-inset-bottom)">
-    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent pointer-events-none"></div>
-    <div class="relative px-4 pt-2 pb-4">
-      <button
-        onclick={shareScore}
-        class="w-full btn btn-primary flex items-center justify-center gap-2">
-        <Share2 size={16} /> {$t('stats.share_score')}
-      </button>
-    </div>
-  </div>
+
 </PageBackground>
