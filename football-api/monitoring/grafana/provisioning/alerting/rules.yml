@@ -85,15 +85,15 @@ groups:
                     params: []
                     type: last
                   type: query
-        noDataState: NoData
-        execErrState: Error
+        noDataState: Alerting
+        execErrState: Alerting
         for: 5m
         isPaused: false
         labels:
           severity: warning
         annotations:
           summary: "RAM do servidor acima de 85%"
-          description: "Uso atual: {{ $values.B.Value | printf \"%.1f\" }}%"
+          description: "Uso atual: {{ if $values.B }}{{ $values.B.Value | printf \"%.1f\" }}{{ else }}N/A{{ end }}%"
 
       # ── Disco > 80% ──────────────────────────────────────────────────
       - uid: alert-disk-high
@@ -153,15 +153,15 @@ groups:
                     params: []
                     type: last
                   type: query
-        noDataState: NoData
-        execErrState: Error
+        noDataState: Alerting
+        execErrState: Alerting
         for: 5m
         isPaused: false
         labels:
           severity: warning
         annotations:
           summary: "Disco do servidor acima de 80%"
-          description: "Uso atual: {{ $values.B.Value | printf \"%.1f\" }}%"
+          description: "Uso atual: {{ if $values.B }}{{ $values.B.Value | printf \"%.1f\" }}{{ else }}N/A{{ end }}%"
 
       # ── CPU > 90% por 10 minutos ─────────────────────────────────────
       - uid: alert-cpu-high
@@ -221,15 +221,15 @@ groups:
                     params: []
                     type: last
                   type: query
-        noDataState: NoData
-        execErrState: Error
+        noDataState: Alerting
+        execErrState: Alerting
         for: 10m
         isPaused: false
         labels:
           severity: critical
         annotations:
           summary: "CPU do servidor acima de 90%"
-          description: "Uso atual: {{ $values.B.Value | printf \"%.1f\" }}%"
+          description: "Uso atual: {{ if $values.B }}{{ $values.B.Value | printf \"%.1f\" }}{{ else }}N/A{{ end }}%"
 
   # ──────────────────────────────────────────────────────────────────────
   # API: taxa de erros 5xx (via prometheus-fastapi-instrumentator v7)
@@ -301,12 +301,12 @@ groups:
                     params: []
                     type: last
                   type: query
-        noDataState: NoData
-        execErrState: Error
+        noDataState: OK
+        execErrState: Alerting
         for: 5m
         isPaused: false
         labels:
           severity: critical
         annotations:
           summary: "Taxa de erros 5xx acima de 1%"
-          description: "Taxa atual: {{ $values.B.Value | printf \"%.2f\" }}% das requisições"
+          description: "Taxa atual: {{ if $values.B }}{{ $values.B.Value | printf \"%.2f\" }}{{ else }}N/A{{ end }}% das requisições"
