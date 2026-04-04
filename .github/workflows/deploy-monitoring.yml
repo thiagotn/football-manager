@@ -5,6 +5,7 @@ on:
 
 env:
   DEPLOY_DIR: /opt/football-manager
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy-monitoring:
