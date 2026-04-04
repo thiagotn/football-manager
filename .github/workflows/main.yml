@@ -7,6 +7,7 @@ env:
   API_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-api
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-frontend
   DEPLOY_DIR: /opt/football-manager
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ──────────────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./football-api
-          dockerfile: ./football-api/Dockerfile
+          file: ./football-api/Dockerfile
           target: production
           push: true
           tags: |
@@ -207,7 +208,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./football-frontend
-          dockerfile: ./football-frontend/Dockerfile
+          file: ./football-frontend/Dockerfile
           push: true
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
