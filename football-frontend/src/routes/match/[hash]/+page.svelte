@@ -580,10 +580,10 @@
                 <p class="text-sm text-red-500 font-medium text-center py-2">{$t('match.rsvp_full').replace('{n}', String(match.max_players))}</p>
               {/if}
               <div class="flex gap-3">
-                <button class="flex-1 btn btn-primary justify-center" onclick={() => { respond('confirmed'); showRsvpBanner = false; }} disabled={responding || isFull}>
+                <button class="flex-1 btn btn-primary justify-center whitespace-nowrap" onclick={() => { respond('confirmed'); showRsvpBanner = false; }} disabled={responding || isFull}>
                   <CheckCircle size={16} /> {$t('match.rsvp_confirm')}
                 </button>
-                <button class="flex-1 btn btn-danger justify-center" onclick={() => { respond('declined'); showRsvpBanner = false; }} disabled={responding}>
+                <button class="flex-1 btn btn-danger justify-center whitespace-nowrap" onclick={() => { respond('declined'); showRsvpBanner = false; }} disabled={responding}>
                   <XCircle size={16} /> {$t('match.rsvp_decline')}
                 </button>
               </div>

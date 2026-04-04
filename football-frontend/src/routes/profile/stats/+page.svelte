@@ -170,7 +170,7 @@
                 {/if}
               </div>
             </div>
-            <div class="flex flex-col items-end gap-1.5 shrink-0">
+            <div class="hidden sm:flex flex-col items-end gap-1.5 shrink-0">
               {#if hasGoalkeeper(stats.groups)}
                 <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900">{$t('stats.goalkeeper')}</span>
               {/if}
