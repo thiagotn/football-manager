@@ -5,7 +5,7 @@
   import StarRating from '$lib/components/StarRating.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { Shuffle, Trash2, UserPlus, RotateCcw, AlertTriangle, Check, Star } from 'lucide-svelte';
-  import { buildTeams, POS_ABBR, POS_COLOR_CLASSES, type DrawPlayer, type TeamResult, type Position } from '$lib/team-builder';
+  import { buildTeams, POS_ABBR, POS_COLOR_CLASSES, sortPlayersByPosition, type DrawPlayer, type TeamResult, type Position } from '$lib/team-builder';
   import { seedWithIds } from '$lib/draw-seed';
   import { shuffledNames } from '$lib/team-names';
 
@@ -375,7 +375,7 @@
 
               <!-- Lista de jogadores -->
               <div class="divide-y divide-white/[0.06]">
-                {#each team.players as p}
+                {#each sortPlayersByPosition(team.players) as p}
                   <div class="flex items-center gap-2 px-4 py-2">
                     <span class="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0
                                  {POS_COLOR_CLASSES[p.position as Position]}">

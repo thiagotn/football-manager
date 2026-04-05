@@ -65,6 +65,11 @@
     }
   }
 
+  const POS_SORT: Record<string, number> = { gk: 0, lat: 1, zag: 2, mei: 3, ata: 4 };
+  function sortedPlayers<T extends { position?: string | null }>(players: T[]): T[] {
+    return [...players].sort((a, b) => (POS_SORT[a.position ?? ''] ?? 9) - (POS_SORT[b.position ?? ''] ?? 9));
+  }
+
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
     toastSuccess($t('teams.link_copied'));
@@ -200,7 +205,7 @@
             </div>
             <!-- Players -->
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-              {#each team.players as p}
+              {#each sortedPlayers(team.players) as p}
                 <li class="px-2 py-1 flex items-center gap-1">
                   <span class="flex-1 text-xs text-gray-800 dark:text-gray-200 truncate">{playerDisplayName(p.name, p.nickname)}</span>
                   {#if p.position}
