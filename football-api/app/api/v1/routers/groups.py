@@ -315,6 +315,9 @@ async def update_member(
         member.skill_stars = body.skill_stars
     if body.position is not None:
         member.position = body.position
+    if body.nickname is not None:
+        await db.refresh(member, ["player"])
+        member.player.nickname = body.nickname or None
 
     await db.flush()
     await db.refresh(member, ["player"])

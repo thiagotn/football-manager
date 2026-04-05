@@ -116,6 +116,12 @@ class UpdateMemberRequest(BaseModel):
     role: GroupMemberRole | None = None
     skill_stars: int | None = Field(None, ge=1, le=5)
     position: str | None = Field(None, pattern=r'^(gk|zag|lat|mei|ata)$')
+    nickname: str | None = Field(None, max_length=50)
+
+    @field_validator("nickname", mode="before")
+    @classmethod
+    def trim_nickname(cls, v: str | None) -> str | None:
+        return normalize_nickname(v)
 
 
 class SelfUpdatePositionRequest(BaseModel):

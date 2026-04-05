@@ -198,7 +198,7 @@
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
       .sort((a, b) => playerDisplayName(a.player.name, a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
   );
-  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string } | null>(null);
+  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string } | null>(null);
   let skillSaving = $state(false);
   let selectedMember = $state<GroupMember | null>(null);
   let showMemberDetail = $state(false);
@@ -437,10 +437,10 @@
     });
   }
 
-  async function saveSkill(playerId: string, skill_stars: number, position: string) {
+  async function saveSkill(playerId: string, skill_stars: number, position: string, nickname: string) {
     skillSaving = true;
     try {
-      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, position });
+      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, position, nickname: nickname.trim() || null });
       group = await groupsApi.get(groupId);
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
     skillSaving = false;
@@ -1263,7 +1263,7 @@
       <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
         <button
           onclick={() => {
-            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei' };
+            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.player.nickname ?? '' };
             showMemberDetail = false;
           }}
           class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
@@ -1303,6 +1303,18 @@
     <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto space-y-5">
       <p class="text-gray-800 dark:text-gray-200 font-semibold text-center text-base">{roleEditMember.name}</p>
 
+      <!-- Nickname -->
+      <div>
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('groups.add_manual.nickname_label')}</p>
+        <input
+          class="input w-full text-sm"
+          type="text"
+          bind:value={roleEditMember.nickname}
+          placeholder={$t('groups.add_manual.nickname_placeholder')}
+          maxlength="50"
+        />
+      </div>
+
       <!-- Skill stars -->
       <div>
         <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('group.skill_level')}</p>
@@ -1322,12 +1334,12 @@
         </div>
       </div>
 
-      <!-- Save skill button -->
+      <!-- Save button -->
       <button
         class="btn btn-primary w-full justify-center"
         disabled={skillSaving}
         onclick={async () => {
-          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.position);
+          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.position, roleEditMember!.nickname);
           roleEditMember = null;
         }}>
         {skillSaving ? $t('group.saving') : $t('group.save_skill')}

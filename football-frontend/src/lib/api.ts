@@ -209,7 +209,7 @@ export const groups = {
   removeMember: (groupId: string, playerId: string) => del(`/groups/${groupId}/members/${playerId}`),
   updateMemberRole: (groupId: string, playerId: string, role: string) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, { role }),
-  updateMemberSkill: (groupId: string, playerId: string, data: { skill_stars?: number; position?: string | null }) =>
+  updateMemberSkill: (groupId: string, playerId: string, data: { skill_stars?: number; position?: string | null; nickname?: string | null }) =>
     patch<GroupMember>(`/groups/${groupId}/members/${playerId}`, data),
   updateMyPosition: (groupId: string, position: string) =>
     patch<GroupMember>(`/groups/${groupId}/members/me`, { position }),
