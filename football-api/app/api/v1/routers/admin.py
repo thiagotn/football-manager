@@ -209,8 +209,8 @@ async def list_subscriptions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    """Lista paginada de assinantes pagos. Exclusivo para super admins."""
-    conditions = ["ps.plan != 'free'"]
+    """Lista paginada de assinantes. Exclusivo para super admins."""
+    conditions: list[str] = ["p.role != 'admin'"]
     params: dict = {"limit": page_size, "offset": (page - 1) * page_size}
 
     if status:
@@ -220,7 +220,7 @@ async def list_subscriptions(
         conditions.append("ps.plan = :plan")
         params["plan"] = plan
 
-    where = "WHERE " + " AND ".join(conditions)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
     count_result = await db.execute(
         text(f"""

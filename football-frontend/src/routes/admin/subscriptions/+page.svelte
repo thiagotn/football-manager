@@ -264,7 +264,7 @@
       </button>
     {/each}
     <span class="text-xs text-gray-400 shrink-0 ml-2">Plano:</span>
-    {#each [['', 'Todos'], ['basic', 'Basic'], ['pro', 'Pro']] as [val, label]}
+    {#each [['', 'Todos'], ['free', 'Grátis'], ['basic', 'Basic'], ['pro', 'Pro']] as [val, label]}
       <button
         onclick={() => { filterPlan = val; currentPage = 1; }}
         class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0
