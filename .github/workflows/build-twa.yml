@@ -40,13 +40,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Android SDK components
+        uses: android-actions/setup-android@v3
+
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
       - name: Configure Bubblewrap (non-interactive JDK + SDK)
         run: |
           mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"/usr/local/lib/android/sdk\"}" \
+          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" \
             > ~/.bubblewrap/config.json
 
       - name: Decode keystore
@@ -71,8 +74,6 @@ jobs:
 
       - name: Build AAB
         working-directory: football-android
-        env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
         run: bubblewrap build --skipPwaValidation
 
       - name: Upload AAB artifact
