@@ -43,41 +43,36 @@ jobs:
       - name: Set up Android SDK components
         uses: android-actions/setup-android@v3
 
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
-
-      - name: Configure Bubblewrap (non-interactive JDK + SDK)
-        run: |
-          mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" \
-            > ~/.bubblewrap/config.json
-
       - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
             | base64 --decode > football-android/rachao-release.keystore
 
-      - name: Inject signing config into twa-manifest.json
+      - name: Inject signing config into keystore.properties
         working-directory: football-android
         run: |
-          jq \
-            --arg path "rachao-release.keystore" \
-            --arg alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --arg keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --arg storepass "${{ secrets.ANDROID_STORE_PASSWORD }}" \
-            '.signingKey.path = $path |
-             .signingKey.alias = $alias |
-             .signingKey.keypassword = $keypass |
-             .signingKey.storepassword = $storepass' \
-            twa-manifest.json > twa-manifest.tmp.json
-          mv twa-manifest.tmp.json twa-manifest.json
+          cat > keystore.properties <<EOF
+          storeFile=../rachao-release.keystore
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
 
       - name: Build AAB
         working-directory: football-android
-        env:
-          STORE_PASS: ${{ secrets.ANDROID_STORE_PASSWORD }}
-          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: printf 'Y\n%s\n%s\n%s\n%s\n' "$STORE_PASS" "$KEY_PASS" "$STORE_PASS" "$KEY_PASS" | bubblewrap build --skipPwaValidation
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file="$(pwd)/../rachao-release.keystore" \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_STORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Locate AAB
+        run: |
+          find football-android -name "*.aab" 2>/dev/null
+          cp football-android/app/build/outputs/bundle/release/app-release.aab \
+             football-android/app-release-bundle.aab
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
