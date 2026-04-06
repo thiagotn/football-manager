@@ -9,6 +9,12 @@ on:
         default: 'internal'
         type: choice
         options: [internal, alpha, beta, production]
+      upload_to_play_store:
+        description: 'Upload AAB to Play Store?'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -77,6 +83,7 @@ jobs:
           retention-days: 30
 
       - name: Upload to Play Store
+        if: ${{ github.event.inputs.upload_to_play_store == 'true' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
