@@ -77,7 +77,7 @@ jobs:
         env:
           STORE_PASS: ${{ secrets.ANDROID_STORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: printf 'Y\n%s\n%s\n' "$STORE_PASS" "$KEY_PASS" | bubblewrap build --skipPwaValidation
+        run: printf 'Y\n%s\n%s\n%s\n%s\n' "$STORE_PASS" "$KEY_PASS" "$STORE_PASS" "$KEY_PASS" | bubblewrap build --skipPwaValidation
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
