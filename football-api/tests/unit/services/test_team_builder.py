@@ -153,6 +153,57 @@ def test_snake_draft_produces_balanced_teams():
     assert diff <= 8  # diferença tolerável para 2 times com snake draft
 
 
+# ── Equilíbrio de posição ────────────────────────────────────────────────────
+
+
+def test_position_balance_no_team_without_forward():
+    """Nenhum time deve ficar sem ATA quando há ATAs suficientes."""
+    # 4 times de 9 campo + 1 GK = 10 — 40 jogadores
+    players = (
+        make_players(4, position="gk")
+        + make_players(5, position="lat")
+        + make_players(11, position="zag")
+        + make_players(16, position="mei")
+        + make_players(4, position="ata")
+    )
+    teams, _ = build_teams(players, players_per_team=9)
+    for team in teams:
+        atas = [p for p in team["players"] if p["position"] == "ata"]
+        assert len(atas) >= 1, f"Time '{team['name']}' ficou sem atacante"
+
+
+def test_position_balance_no_team_without_fullback():
+    """Com 5 laterais para 4 times, nenhum time deve ficar sem LAT."""
+    players = (
+        make_players(4, position="gk")
+        + make_players(5, position="lat")
+        + make_players(11, position="zag")
+        + make_players(16, position="mei")
+        + make_players(4, position="ata")
+    )
+    teams, _ = build_teams(players, players_per_team=9)
+    for team in teams:
+        lats = [p for p in team["players"] if p["position"] == "lat"]
+        assert len(lats) >= 1, f"Time '{team['name']}' ficou sem lateral"
+
+
+def test_position_counts_differ_by_at_most_one():
+    """A contagem de cada posição entre times deve diferir em no máximo 1."""
+    players = (
+        make_players(4, position="gk")
+        + make_players(5, position="lat")
+        + make_players(11, position="zag")
+        + make_players(16, position="mei")
+        + make_players(4, position="ata")
+    )
+    teams, _ = build_teams(players, players_per_team=9)
+    for pos in ("lat", "zag", "mei", "ata"):
+        counts = [len([p for p in t["players"] if p["position"] == pos]) for t in teams]
+        assert max(counts) - min(counts) <= 1, (
+            f"Posição '{pos}' desequilibrada: {counts}"
+        )
+
+
 # ── _pick_names — overflow além do pool ──────────────────────────────────────
 
 
