@@ -204,6 +204,32 @@ def test_position_counts_differ_by_at_most_one():
         )
 
 
+# ── Tamanho correto com composição desbalanceada (regressão) ─────────────────
+
+
+def test_team_size_correct_with_mei_heavy_roster():
+    """
+    Regressão: 39 jogadores com muitos MEIs causava times de 12 em vez de 10.
+    A soma dos per_team por posição não pode ultrapassar field_slots.
+    """
+    players = (
+        make_players(3, position="gk")
+        + make_players(5, position="lat")
+        + make_players(11, position="zag")
+        + make_players(16, position="mei")
+        + make_players(4, position="ata")
+    )
+    assert len(players) == 39
+    teams, reserves = build_teams(players, players_per_team=9)
+    assert len(teams) == 3
+    for team in teams:
+        assert len(team["players"]) == 10, (
+            f"Time '{team['name']}' tem {len(team['players'])} jogadores, esperado 10"
+        )
+    assert len(reserves) == 9
+    assert sum(len(t["players"]) for t in teams) + len(reserves) == 39
+
+
 # ── _pick_names — overflow além do pool ──────────────────────────────────────
 
 

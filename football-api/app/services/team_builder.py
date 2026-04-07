@@ -55,10 +55,12 @@ def build_teams(
 
     Algoritmo:
     1. Goleiros: 1 por time em snake draft por estrelas.
-    2. Jogadores de linha por posição (lat, zag, mei, ata): distribui
-       floor(N/n_times) por time em snake draft — garante equilíbrio de contagem.
-       O índice snake continua globalmente entre grupos para manter equilíbrio de estrelas.
-    3. Overflow (excedentes de posição + GKs extras) preenche slots restantes via snake.
+    2. Para cada posição de linha (lat, zag, mei, ata), calcula per_team =
+       floor(N / n_times). Se a soma dos per_team ultrapassar field_slots
+       (slots de linha disponíveis por time), reduz iterativamente a posição
+       mais abundante até caber — garantindo tamanho correto e preservando ATAs.
+    3. Overflow (excedentes de posição + GKs extras) preenche slots restantes
+       via snake draft por estrelas.
     4. Jogadores além da capacidade total viram reservas.
     """
     team_size = players_per_team + 1
@@ -82,7 +84,7 @@ def build_teams(
     times: list[list[dict]] = [[] for _ in range(n_times)]
     overflow: list[dict] = []
 
-    # Ciclo snake: [0,1,...,n-1, n-1,...,1,0] — cada time recebe exatamente 2 picks por ciclo
+    # Ciclo snake: [0,1,...,n-1, n-1,...,1,0]
     snake = list(range(n_times)) + list(range(n_times - 1, -1, -1))
     si = 0  # índice global do snake — continua entre grupos para equilibrar estrelas
 
@@ -92,22 +94,40 @@ def build_teams(
         si += 1
     overflow.extend(gks[n_times:])
 
-    # Passo 2: Jogadores de linha — distribuição equilibrada por posição
-    # Cada time recebe floor(N/n_times) jogadores de cada posição.
-    # O restante (N % n_times) vai para overflow e é distribuído no passo 3.
-    for pos in ("lat", "zag", "mei", "ata"):
+    # Passo 2: Calcula per_team por posição respeitando capacidade total do time
+    #
+    # field_slots = slots de linha por time (exclui o slot do goleiro).
+    # A soma de todos os per_team NÃO pode ultrapassar field_slots, senão os
+    # times ficam maiores que team_size.
+    # Estratégia: reduz iterativamente a posição com maior per_team até caber.
+    field_slots = team_size - 1
+    positions = ["lat", "zag", "mei", "ata"]
+
+    pos_per_team: dict[str, int] = {
+        pos: len(by_pos.get(pos, [])) // n_times
+        for pos in positions
+    }
+
+    while sum(pos_per_team.values()) > field_slots:
+        # Reduz a posição mais abundante (mantém equilíbrio relativo entre posições)
+        max_pos = max(
+            (p for p in positions if pos_per_team[p] > 0),
+            key=lambda p: pos_per_team[p],
+        )
+        pos_per_team[max_pos] -= 1
+
+    # Passo 3: Distribui cada posição em snake draft contínuo
+    for pos in positions:
         group = by_pos.get(pos, [])
-        if not group:
-            continue
-        per_team = len(group) // n_times
-        # Distribui per_team * n_times jogadores em snake draft contínuo
+        per_team = pos_per_team[pos]
+
         for player in group[: per_team * n_times]:
             times[snake[si % len(snake)]].append(player)
             si += 1
         # Excedentes de posição vão para overflow
         overflow.extend(group[per_team * n_times :])
 
-    # Passo 3: Overflow preenche slots restantes em snake draft (por estrelas)
+    # Passo 4: Overflow preenche slots restantes em snake draft (por estrelas)
     overflow.sort(key=lambda p: p["skill_stars"], reverse=True)
     remaining = [team_size - len(t) for t in times]
     total_needed = sum(remaining)
