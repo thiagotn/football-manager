@@ -69,22 +69,48 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function buildSnakeCycle(nTeams: number): number[] {
-  const fwd = Array.from({ length: nTeams }, (_, i) => i);
-  return [...fwd, ...[...fwd].reverse()];
+/**
+ * Distributes `group` (sorted by stars desc) across `nTeams` teams using
+ * shuffled-tier round-robin: takes groups of nTeams players (similar stars),
+ * shuffles each group, then assigns one player to each team.
+ *
+ * This ensures similar-skill players go to different teams, but which team
+ * gets which is determined by random draw — no systematic bias.
+ *
+ * Returns overflow (players beyond perTeam * nTeams).
+ */
+function assignTiers<T extends { stars: number }>(
+  group: T[],
+  perTeam: number,
+  nTeams: number,
+  teams: T[][],
+): T[] {
+  const toDist = group.slice(0, perTeam * nTeams);
+  const overflow = group.slice(perTeam * nTeams);
+
+  for (let round = 0; round < perTeam; round++) {
+    const tier = shuffle(toDist.slice(round * nTeams, (round + 1) * nTeams));
+    for (let i = 0; i < tier.length; i++) {
+      teams[i].push(tier[i]);
+    }
+  }
+
+  return overflow;
 }
 
 /**
  * Builds balanced teams from a list of active players.
  *
- * Algorithm:
- * 1. Assign the best GKs (1 per team) via snake draft by stars.
- * 2. For each field position (ZAG, LAT, MEI, ATA): distribute floor(count/nTeams)
- *    players per team via snake draft — guarantees equal positional distribution.
- *    The snake index continues globally so the direction alternates correctly
- *    across position groups, keeping star totals balanced.
- * 3. Overflow (position remainders + excess GKs) fills remaining slots via snake.
- * 4. Players beyond total capacity become reserves.
+ * Algorithm — shuffled-tier round-robin per position:
+ * 1. GKs: randomly shuffled and assigned 1 per team.
+ * 2. Each field position (lat/zag/mei/ata): sorted by stars desc, split
+ *    into tiers of nTeams players. Each tier is shuffled before assignment —
+ *    similar-skill players go to different teams, but which team gets which
+ *    is random (no systematic bias toward any team).
+ * 3. Per-position cap: sum of perTeam values cannot exceed field slots per
+ *    team, preventing teams from exceeding teamSize.
+ * 4. Overflow fills remaining slots using the same shuffled-tier approach.
+ * 5. Players beyond total capacity become reserves.
  */
 export function buildTeams(
   activePlayers: DrawPlayer[],
@@ -94,19 +120,24 @@ export function buildTeams(
 ): TeamResult {
   if (nTeams === 0) return { teams: [], reserves: [] };
 
-  const teamSize   = playersPerTeam + 1;
-  const snakeCycle = buildSnakeCycle(nTeams);
+  const teamSize = playersPerTeam + 1;
 
-  // Shuffle so equal-star players are randomly ordered across runs
+  // Shuffle first so equal-star players have random order
   const shuffled = shuffle(activePlayers);
 
-  // --- Step 1: GKs — 1 per team, snake draft by stars desc ---
-  const gks = shuffled
-    .filter(p => p.position === 'goalkeeper')
-    .sort((a, b) => b.stars - a.stars);
+  // Separate by position, sort by stars desc within each group
+  const byPos: Partial<Record<Position, DrawPlayer[]>> = {};
+  for (const p of shuffled) {
+    if (!byPos[p.position]) byPos[p.position] = [];
+    byPos[p.position]!.push(p);
+  }
+  for (const pos of Object.keys(byPos) as Position[]) {
+    byPos[pos]!.sort((a, b) => b.stars - a.stars);
+  }
 
-  const assignedGks = gks.slice(0, nTeams);
-  const excessGks   = gks.slice(nTeams);
+  const gks   = byPos['goalkeeper'] ?? [];
+  const teamArrays: DrawPlayer[][] = Array.from({ length: nTeams }, () => []);
+  const overflow: DrawPlayer[] = [];
 
   const teams: Team[] = Array.from({ length: nTeams }, (_, i) => ({
     name:          teamNames[i] ?? `Time ${i + 1}`,
@@ -116,66 +147,69 @@ export function buildTeams(
     hasGoalkeeper: false,
   }));
 
-  // Global snake index — kept across all distribution steps for correct alternation
-  let si = 0;
-
-  for (const gk of assignedGks) {
-    const ti = snakeCycle[si % snakeCycle.length];
-    teams[ti].players.push({ ...gk, isGkSlot: true });
-    teams[ti].totalStars += gk.stars;
-    teams[ti].hasGoalkeeper = true;
-    si++;
+  // Step 1: GKs — 1 per team, randomly assigned
+  const gksForTeams = shuffle(gks.slice(0, nTeams));
+  for (let i = 0; i < gksForTeams.length; i++) {
+    teamArrays[i].push(gksForTeams[i]);
   }
+  overflow.push(...gks.slice(nTeams));
 
-  // --- Step 2: Field positions — equal distribution per position ---
-  const fieldPositions: Position[] = ['defender', 'fullback', 'midfielder', 'forward'];
-  const overflow: DrawPlayer[] = [...excessGks].sort((a, b) => b.stars - a.stars);
+  // Step 2: Compute perTeam for each position, capped to fit field slots
+  const fieldSlots = teamSize - 1;
+  const fieldPositions = ['fullback', 'defender', 'midfielder', 'forward'] as const;
 
+  const perTeamMap: Record<string, number> = {};
   for (const pos of fieldPositions) {
-    const group = shuffled
-      .filter(p => p.position === pos)
-      .sort((a, b) => b.stars - a.stars);
-
-    // Cap perTeam so we never exceed any team's remaining field capacity
-    const minRemaining = Math.min(...teams.map(t => teamSize - t.players.length));
-    const perTeam      = Math.min(Math.floor(group.length / nTeams), minRemaining);
-
-    // Remainder goes to overflow for step 3
-    overflow.push(...group.slice(perTeam * nTeams));
-
-    if (perTeam === 0) continue;
-
-    // Snake draft (continuing global si) — alternates direction across groups,
-    // which compensates for the GK star spread and keeps totals balanced
-    const toDistribute = group.slice(0, perTeam * nTeams);
-    for (const player of toDistribute) {
-      const ti = snakeCycle[si % snakeCycle.length];
-      teams[ti].players.push({ ...player, isGkSlot: false });
-      teams[ti].totalStars += player.stars;
-      si++;
-    }
+    perTeamMap[pos] = Math.floor((byPos[pos as Position]?.length ?? 0) / nTeams);
   }
 
-  // --- Step 3: Overflow fills remaining slots via snake ---
-  const remaining   = teams.map(t => teamSize - t.players.length);
-  const totalNeeded = remaining.reduce((s, n) => s + n, 0);
+  // Reduce the most abundant position until total fits within fieldSlots
+  let total = Object.values(perTeamMap).reduce((s, v) => s + v, 0);
+  while (total > fieldSlots) {
+    const maxPos = fieldPositions.reduce((a, b) =>
+      perTeamMap[a] >= perTeamMap[b] ? a : b
+    );
+    perTeamMap[maxPos]--;
+    total--;
+  }
 
+  // Step 3: Distribute each position using shuffled tiers
+  for (const pos of fieldPositions) {
+    const group = byPos[pos as Position] ?? [];
+    const leftover = assignTiers(group, perTeamMap[pos], nTeams, teamArrays);
+    overflow.push(...leftover);
+  }
+
+  // Step 4: Overflow fills remaining slots using shuffled tiers
   overflow.sort((a, b) => b.stars - a.stars);
-  const forDist  = overflow.slice(0, totalNeeded);
-  const reserves = overflow.slice(totalNeeded);
+  const remaining = teamArrays.map(t => teamSize - t.length);
 
-  for (const player of forDist) {
-    // Advance past full teams (safety: max nTeams*2 skips)
-    let skips = 0;
-    while (remaining[snakeCycle[si % snakeCycle.length]] === 0 && skips < nTeams * 2) {
-      si++;
-      skips++;
+  let idx = 0;
+  while (idx < overflow.length) {
+    const openTeams = teamArrays
+      .map((_, i) => i)
+      .filter(i => remaining[i] > 0);
+    if (openTeams.length === 0) break;
+
+    const batch = shuffle(overflow.slice(idx, idx + openTeams.length));
+    for (let i = 0; i < batch.length; i++) {
+      const ti = openTeams[i];
+      teamArrays[ti].push(batch[i]);
+      remaining[ti]--;
     }
-    const ti = snakeCycle[si % snakeCycle.length];
-    teams[ti].players.push({ ...player, isGkSlot: false });
-    teams[ti].totalStars += player.stars;
-    remaining[ti]--;
-    si++;
+    idx += batch.length;
+  }
+
+  const reserves = overflow.slice(idx);
+
+  // Build final Team objects
+  for (let i = 0; i < nTeams; i++) {
+    for (const p of teamArrays[i]) {
+      const isGk = p.position === 'goalkeeper';
+      teams[i].players.push({ ...p, isGkSlot: isGk });
+      teams[i].totalStars += p.stars;
+      if (isGk) teams[i].hasGoalkeeper = true;
+    }
   }
 
   return { teams, reserves };
