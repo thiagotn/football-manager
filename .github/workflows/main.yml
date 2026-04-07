@@ -1,4 +1,4 @@
-name: CI / CD
+name: Build & Deploy Web
 
 on:
   workflow_dispatch:
