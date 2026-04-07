@@ -54,24 +54,28 @@ def build_teams(
     players_per_team = jogadores de LINHA por time (exclui goleiro).
     Tamanho total de cada time = players_per_team + 1 (linha + goleiro).
 
-    Algoritmo:
-    1. Goleiros: 1 por time em snake draft por estrelas.
-    2. Para cada posição de linha (lat, zag, mei, ata), calcula per_team =
-       floor(N / n_times). Se a soma dos per_team ultrapassar field_slots
-       (slots de linha disponíveis por time), reduz iterativamente a posição
-       mais abundante até caber — garantindo tamanho correto e preservando ATAs.
-    3. Overflow (excedentes de posição + GKs extras) preenche slots restantes
-       via snake draft por estrelas.
-    4. Jogadores além da capacidade total viram reservas.
+    Algoritmo — distribuição por posição com sorteio em faixas de estrelas:
+    1. Separa jogadores por posição.
+    2. Goleiros: sorteia aleatoriamente qual time recebe cada um (1 por time).
+    3. Para cada posição de linha (lat, zag, mei, ata):
+       - Ordena por estrelas desc.
+       - Distribui em rodadas de n_times jogadores por vez ("faixas").
+       - Dentro de cada faixa embaralha aleatoriamente antes de atribuir
+         um jogador a cada time — jogadores de nível similar vão para times
+         diferentes, mas qual time recebe qual é sorteado.
+    4. A soma de faixas por posição é limitada ao campo disponível no time
+       (para evitar times maiores que team_size).
+    5. Excedentes preenchem os slots restantes, distribuídos da mesma forma.
+    6. Jogadores além da capacidade total viram reservas.
     """
     team_size = players_per_team + 1
     # ceil garante que todos os confirmados entram em algum time.
-    # Com 39 jogadores e time_size=10 → 4 times (3 completos + 1 com 9).
+    # Com 39 jogadores e team_size=10 → 4 times (3 completos + 1 com 9).
     n_times = math.ceil(len(confirmed) / team_size)
     if n_times < 2:
         raise ValueError("Confirmados insuficientes para montar times.")
 
-    # Shuffle para aleatorizar jogadores com mesmas estrelas entre sorteios
+    # Embaralha para que jogadores com mesmas estrelas tenham ordem aleatória
     pool = confirmed[:]
     random.shuffle(pool)
 
@@ -87,22 +91,37 @@ def build_teams(
     times: list[list[dict]] = [[] for _ in range(n_times)]
     overflow: list[dict] = []
 
-    # Ciclo snake: [0,1,...,n-1, n-1,...,1,0]
-    snake = list(range(n_times)) + list(range(n_times - 1, -1, -1))
-    si = 0  # índice global do snake — continua entre grupos para equilibrar estrelas
+    def assign_tiers(group: list[dict], per_team: int) -> None:
+        """
+        Distribui `per_team` rodadas de `group` (ordenado por estrelas desc)
+        entre os times. A cada rodada, pega os próximos n_times jogadores
+        (mesma faixa de estrelas), embaralha e atribui um a cada time.
+        Isso garante que jogadores de nível similar vão para times diferentes,
+        com o sorteio decidindo qual time recebe qual.
+        Excedentes vão para overflow.
+        """
+        to_dist = group[: per_team * n_times]
+        overflow.extend(group[per_team * n_times :])
 
-    # Passo 1: Goleiros — 1 por time, snake por estrelas
-    for gk in gks[:n_times]:
-        times[snake[si % len(snake)]].append(gk)
-        si += 1
+        for round_num in range(per_team):
+            tier = to_dist[round_num * n_times : (round_num + 1) * n_times]
+            shuffled = tier[:]
+            random.shuffle(shuffled)
+            for team_idx, player in enumerate(shuffled):
+                times[team_idx].append(player)
+
+    # Passo 1: Goleiros — 1 por time, sorteado aleatoriamente
+    gks_for_teams = gks[:n_times]
+    random.shuffle(gks_for_teams)
+    for team_idx, gk in enumerate(gks_for_teams):
+        times[team_idx].append(gk)
     overflow.extend(gks[n_times:])
 
-    # Passo 2: Calcula per_team por posição respeitando capacidade total do time
+    # Passo 2: Calcula per_team por posição, limitado ao campo disponível
     #
-    # field_slots = slots de linha por time (exclui o slot do goleiro).
-    # A soma de todos os per_team NÃO pode ultrapassar field_slots, senão os
-    # times ficam maiores que team_size.
-    # Estratégia: reduz iterativamente a posição com maior per_team até caber.
+    # A soma de todos os per_team não pode ultrapassar field_slots, senão os
+    # times ficam maiores que team_size. Reduz iterativamente a posição mais
+    # abundante até caber.
     field_slots = team_size - 1
     positions = ["lat", "zag", "mei", "ata"]
 
@@ -112,25 +131,18 @@ def build_teams(
     }
 
     while sum(pos_per_team.values()) > field_slots:
-        # Reduz a posição mais abundante (mantém equilíbrio relativo entre posições)
         max_pos = max(
             (p for p in positions if pos_per_team[p] > 0),
             key=lambda p: pos_per_team[p],
         )
         pos_per_team[max_pos] -= 1
 
-    # Passo 3: Distribui cada posição em snake draft contínuo
+    # Passo 3: Distribui cada posição por faixas embaralhadas
     for pos in positions:
         group = by_pos.get(pos, [])
-        per_team = pos_per_team[pos]
+        assign_tiers(group, pos_per_team[pos])
 
-        for player in group[: per_team * n_times]:
-            times[snake[si % len(snake)]].append(player)
-            si += 1
-        # Excedentes de posição vão para overflow
-        overflow.extend(group[per_team * n_times :])
-
-    # Passo 4: Overflow preenche slots restantes em snake draft (por estrelas)
+    # Passo 4: Overflow preenche slots restantes
     overflow.sort(key=lambda p: p["skill_stars"], reverse=True)
     remaining = [team_size - len(t) for t in times]
     total_needed = sum(remaining)
@@ -138,15 +150,19 @@ def build_teams(
     for_dist = overflow[:total_needed]
     reserves = overflow[total_needed:]
 
-    for player in for_dist:
-        skips = 0
-        while remaining[snake[si % len(snake)]] == 0 and skips < n_times * 2:
-            si += 1
-            skips += 1
-        ti = snake[si % len(snake)]
-        times[ti].append(player)
-        remaining[ti] -= 1
-        si += 1
+    # Distribui overflow também por faixas embaralhadas entre times com espaço
+    idx = 0
+    while idx < len(for_dist):
+        open_teams = [i for i in range(n_times) if remaining[i] > 0]
+        if not open_teams:
+            break
+        batch = for_dist[idx : idx + len(open_teams)]
+        shuffled = batch[:]
+        random.shuffle(shuffled)
+        for ti, player in zip(open_teams, shuffled):
+            times[ti].append(player)
+            remaining[ti] -= 1
+        idx += len(batch)
 
     names = _pick_names(n_times)
     colors = TEAM_COLORS * ((n_times // len(TEAM_COLORS)) + 1)
