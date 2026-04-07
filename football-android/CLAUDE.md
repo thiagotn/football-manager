@@ -20,8 +20,8 @@
 
 | Campo | Valor |
 |-------|-------|
-| `appVersionCode` | 1 |
-| `appVersionName` | 1.0.0 |
+| `appVersionCode` | 1 (incrementar a cada release) |
+| `appVersionName` | 1.0.0 (semver: major.minor.patch) |
 | Package name | `app.rachao` |
 
 > Incrementar `appVersionCode` a cada novo release no `twa-manifest.json`.

@@ -20,8 +20,8 @@
     "path": "/home/thiagotn/Documentos/Dev/Projects/football-manager/football-android/rachao-release.keystore",
     "alias": "rachao"
   },
-  "appVersionName": "3",
-  "appVersionCode": 3,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://rachao.app/manifest.webmanifest",
@@ -43,5 +43,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "3"
+  "appVersion": "1.0.0"
 }
