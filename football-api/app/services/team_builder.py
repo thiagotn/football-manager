@@ -1,3 +1,4 @@
+import math
 import random
 
 TEAM_NAMES = [
@@ -64,7 +65,9 @@ def build_teams(
     4. Jogadores além da capacidade total viram reservas.
     """
     team_size = players_per_team + 1
-    n_times = len(confirmed) // team_size
+    # ceil garante que todos os confirmados entram em algum time.
+    # Com 39 jogadores e time_size=10 → 4 times (3 completos + 1 com 9).
+    n_times = math.ceil(len(confirmed) / team_size)
     if n_times < 2:
         raise ValueError("Confirmados insuficientes para montar times.")
 
