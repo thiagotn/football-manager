@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -23,39 +23,58 @@
     goto('/login');
   }
 
-  const links = [
-    { href: '/',                      icon: Home,       labelKey: 'nav.dashboard' },
-    { href: '/groups',                icon: Trophy,     labelKey: 'nav.groups' },
-    { href: '/ranking',               icon: Award,      labelKey: 'nav.ranking' },
-    { href: '/discover',              icon: Compass,    labelKey: 'nav.discover',       playerOnly: true },
-    { href: '/matches',               icon: Calendar,   labelKey: 'nav.matches',        playerOnly: true },
-    { href: '/profile/stats',         icon: BarChart2,  labelKey: 'nav.score',          playerOnly: true },
-    { href: '/review',                icon: Star,       labelKey: 'nav.review',         playerOnly: true, mobileHide: true, desktopHide: true },
-    { href: '/players',               icon: Users,      labelKey: 'nav.players',        adminOnly: true },
-    { href: '/admin/reviews',         icon: Star,       labelKey: 'nav.admin_reviews',  adminOnly: true },
-    { href: '/admin/subscriptions',   icon: CreditCard, labelKey: 'nav.subscriptions',  adminOnly: true },
-    { href: '/admin/faq',             icon: BookOpen,   labelKey: 'nav.guide',          adminOnly: true },
+  // ── Itens principal (desktop + mobile) ──────────────────────────────────────
+  const mainLinks = [
+    { href: '/',         icon: Home,     labelKey: 'nav.dashboard' },
+    { href: '/groups',   icon: Trophy,   labelKey: 'nav.groups' },
+    { href: '/matches',  icon: Calendar, labelKey: 'nav.matches',  playerOnly: true },
+    { href: '/discover', icon: Compass,  labelKey: 'nav.discover', playerOnly: true },
+    // admin-only links aparecem no lugar dos playerOnly
+    { href: '/players',            icon: Users,      labelKey: 'nav.players',       adminOnly: true },
+    { href: '/admin/reviews',      icon: Star,       labelKey: 'nav.admin_reviews', adminOnly: true },
+    { href: '/admin/subscriptions',icon: CreditCard, labelKey: 'nav.subscriptions', adminOnly: true },
+    { href: '/admin/faq',          icon: BookOpen,   labelKey: 'nav.guide',         adminOnly: true },
   ];
 
-  let menuOpen = $state(false);
+  // ── Itens Explorar (dropdown desktop + seção mobile) ────────────────────────
+  const exploreLinks = [
+    { href: '/ranking',       icon: Award,    labelKey: 'nav.ranking' },
+    { href: '/profile/stats', icon: BarChart2,labelKey: 'nav.score',     playerOnly: true },
+    { href: '/simulator',     icon: Shuffle,  labelKey: 'nav.simulator' },
+  ];
+
+  let menuOpen           = $state(false);
   let showAccountDropdown = $state(false);
-  let dropdownPos = $state({ top: 0, right: 0 });
+  let showExploreDropdown = $state(false);
+  let accountDropdownPos  = $state({ top: 0, right: 0 });
+  let exploreDropdownPos  = $state({ top: 0, right: 0 });
 
   function toggleAccountDropdown(e: MouseEvent) {
     if (!showAccountDropdown) {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      dropdownPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+      accountDropdownPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+      showExploreDropdown = false;
     }
     showAccountDropdown = !showAccountDropdown;
   }
 
+  function toggleExploreDropdown(e: MouseEvent) {
+    if (!showExploreDropdown) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      exploreDropdownPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+      showAccountDropdown = false;
+    }
+    showExploreDropdown = !showExploreDropdown;
+  }
+
   function closeMenu() { menuOpen = false; showLangModal = false; }
 
-  // Fecha ao navegar
+  // Fecha dropdowns e drawer ao navegar
   $effect(() => {
     $page.url.pathname;
     menuOpen = false;
     showAccountDropdown = false;
+    showExploreDropdown = false;
   });
 
   // Trava scroll do body quando o drawer está aberto (iOS-safe: position fixed)
@@ -94,19 +113,25 @@
     if (pathname === '/profile/stats')  return '/';
     if (pathname === '/review')   return '/';
     if (pathname === '/plans')    return '/';
+    if (pathname === '/simulator') return '/';
     if (pathname.startsWith('/account/')) return '/profile';
     if (pathname === '/faq')      return '/';
     if (pathname === '/terms')    return '/';
     if (pathname === '/privacy')  return '/';
     if (pathname.startsWith('/admin/')) return '/';
     if (pathname.startsWith('/players/')) return '/ranking';
-    if (/^\/match\/[^/]+\/results$/.test(pathname)) return pathname.slice(0, -'/results'.length);
-    if (/^\/match\/[^/]+\/teams$/.test(pathname)) return pathname.slice(0, -'/teams'.length);
-    if (/^\/match\/[^/]+$/.test(pathname)) return 'BACK';
+    // Toda a árvore /match/* usa history.back() para não criar entradas extras no histórico
+    // (evita loop: match → teams → [link] → match → history.back() → teams → ...)
+    if (/^\/match\//.test(pathname)) return 'BACK';
     return null;
   }
 
   let backHref = $derived(getBackHref($page.url.pathname));
+
+  // Está na seção Explorar? (para highlight do botão desktop)
+  let exploreActive = $derived(
+    exploreLinks.some(l => $page.url.pathname === l.href)
+  );
 </script>
 
 <nav class="bg-primary-700 text-white shadow-md relative z-40" style="padding-top: env(safe-area-inset-top);">
@@ -133,21 +158,22 @@
           </a>
         {/if}
       {/if}
-      <!-- Logo desktop: efeito sangramento à esquerda -->
+      <!-- Logo desktop -->
       <a href="/" class="hidden min-[940px]:flex -ml-16 self-stretch items-end">
         <img src="/logo.png" alt="rachao.app" class="h-24 w-auto flex-shrink-0 -translate-y-2" />
       </a>
     </div>
 
-    <!-- Logo mobile: centralizado na altura total (status bar + barra) -->
+    <!-- Logo mobile: centralizado -->
     <a href="/" class="min-[940px]:hidden absolute left-1/2 -translate-x-1/2 top-0 bottom-0 flex items-center pointer-events-auto">
       <img src="/logo.png" alt="rachao.app" class="h-14 w-auto flex-shrink-0" />
     </a>
 
     <!-- Links — desktop -->
     <div class="hidden min-[940px]:flex items-center gap-1">
-      {#each links as l}
-        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled) && !l.desktopHide}
+      <!-- Itens principais -->
+      {#each mainLinks as l}
+        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin)}
           <a
             href={l.href}
             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
@@ -158,6 +184,19 @@
           </a>
         {/if}
       {/each}
+
+      <!-- Dropdown Explorar (não aparece para admin) -->
+      {#if !$isAdmin}
+        <button
+          onclick={toggleExploreDropdown}
+          class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+            {exploreActive || showExploreDropdown ? 'bg-primary-900' : 'hover:bg-primary-600'}"
+        >
+          <Compass size={15} />
+          {$t('nav.explore')}
+          <ChevronDown size={12} class="transition-transform duration-200 {showExploreDropdown ? 'rotate-180' : ''}" />
+        </button>
+      {/if}
     </div>
 
     <!-- Direita — desktop -->
@@ -199,17 +238,40 @@
     </button>
   </div>
 
-  <!-- Dropdown "Conta" — fixed, ancorado via getBoundingClientRect -->
-  {#if showAccountDropdown}
+  <!-- Backdrop para fechar dropdowns desktop -->
+  {#if showExploreDropdown || showAccountDropdown}
     <button
       class="fixed inset-0 z-[39]"
-      onclick={() => showAccountDropdown = false}
+      onclick={() => { showExploreDropdown = false; showAccountDropdown = false; }}
       tabindex="-1"
       aria-hidden="true"
     ></button>
+  {/if}
+
+  <!-- Dropdown "Explorar" — desktop -->
+  {#if showExploreDropdown}
+    <div
+      class="hidden min-[940px]:block fixed z-[41] w-52 bg-primary-800 rounded-xl shadow-xl border border-primary-700 overflow-hidden"
+      style="top: {exploreDropdownPos.top}px; right: {exploreDropdownPos.right}px;"
+    >
+      {#each exploreLinks as l, i}
+        {#if !l.playerOnly || !$isAdmin}
+          <a href={l.href} onclick={() => showExploreDropdown = false}
+            class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors
+              {i > 0 ? 'border-t border-primary-700/50' : ''}
+              {$page.url.pathname === l.href ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <l.icon size={15} /> {$t(l.labelKey)}
+          </a>
+        {/if}
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Dropdown "Conta" — desktop -->
+  {#if showAccountDropdown}
     <div
       class="hidden min-[940px]:block fixed z-[41] w-48 bg-primary-800 rounded-xl shadow-xl border border-primary-700 overflow-hidden"
-      style="top: {dropdownPos.top}px; right: {dropdownPos.right}px;"
+      style="top: {accountDropdownPos.top}px; right: {accountDropdownPos.right}px;"
     >
       <a href="/profile" onclick={() => showAccountDropdown = false}
         class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors
@@ -239,6 +301,7 @@
   <!-- Painel deslizante da direita -->
   <div class="min-[940px]:hidden fixed top-0 right-0 h-full w-72 max-w-[85vw] z-50 bg-primary-800 shadow-2xl flex flex-col"
     style="animation: slideInRight 0.22s ease-out;">
+
     <!-- Cabeçalho do drawer -->
     <div class="flex items-center justify-between px-4 h-16 border-b border-primary-700 shrink-0">
       <p class="text-sm font-medium text-primary-200 truncate">{$currentPlayer?.nickname || $currentPlayer?.name}</p>
@@ -247,75 +310,105 @@
       </button>
     </div>
 
-    <!-- Links de navegação -->
-    <div class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-      {#each links as l}
-        {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin) && (!l.billingOnly || billingEnabled) && !l.mobileHide}
-          <a
-            href={l.href}
-            onclick={closeMenu}
+    <div class="flex-1 overflow-y-auto">
+
+      <!-- Seção: Principal -->
+      <div class="px-3 pt-3 pb-1">
+        <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-primary-400">
+          {$t('nav.section.main')}
+        </p>
+        <div class="space-y-0.5">
+          {#each mainLinks as l}
+            {#if (!l.adminOnly || $isAdmin) && (!l.playerOnly || !$isAdmin)}
+              <a
+                href={l.href}
+                onclick={closeMenu}
+                class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                  {$page.url.pathname === l.href ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}"
+              >
+                <l.icon size={18} />
+                {$t(l.labelKey)}
+              </a>
+            {/if}
+          {/each}
+        </div>
+      </div>
+
+      <!-- Seção: Explorar (não aparece para admin) -->
+      {#if !$isAdmin}
+        <div class="px-3 pt-3 pb-1 border-t border-primary-700/60 mt-1">
+          <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-primary-400">
+            {$t('nav.section.explore')}
+          </p>
+          <div class="space-y-0.5">
+            {#each exploreLinks as l}
+              <a
+                href={l.href}
+                onclick={closeMenu}
+                class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                  {$page.url.pathname === l.href ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}"
+              >
+                <l.icon size={18} />
+                {$t(l.labelKey)}
+              </a>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <!-- Seção: Conta -->
+      <div class="px-3 pt-3 pb-1 border-t border-primary-700/60 mt-1">
+        <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-primary-400">
+          {$t('nav.section.account')}
+        </p>
+        <div class="space-y-0.5">
+          {#if billingEnabled && !$isAdmin}
+            <a href="/account/subscription" onclick={closeMenu}
+              class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                {$page.url.pathname.startsWith('/account/') || $page.url.pathname === '/plans' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+              <CreditCard size={18} /> {$t('nav.plan')}
+            </a>
+          {/if}
+          <a href="/profile" onclick={closeMenu}
             class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-              {$page.url.pathname === l.href ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}"
+              {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <UserCircle size={18} /> {$t('nav.my_account')}
+          </a>
+          <a href="/faq" onclick={closeMenu}
+            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+              {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <HelpCircle size={18} /> {$t('nav.faq')}
+          </a>
+          {#if !$isAdmin}
+            <a href="/review" onclick={closeMenu}
+              class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                {$page.url.pathname === '/review' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+              <Star size={18} /> {$t('nav.review')}
+            </a>
+          {/if}
+          <button
+            onclick={() => showLangModal = true}
+            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors w-full text-left text-primary-100 hover:bg-primary-700"
+            aria-label="Language / Idioma"
           >
-            <l.icon size={18} />
-            {$t(l.labelKey)}
-          </a>
-        {/if}
-      {/each}
-
-      <div class="border-t border-primary-700/60 pt-1 mt-1 space-y-1">
-        {#if billingEnabled && !$isAdmin}
-          <a href="/account/subscription" onclick={closeMenu}
-            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-              {$page.url.pathname.startsWith('/account/') || $page.url.pathname === '/plans' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-            <CreditCard size={18} /> {$t('nav.plan')}
-          </a>
-        {/if}
-        <a href="/faq" onclick={closeMenu}
-          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-            {$page.url.pathname === '/faq' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-          <HelpCircle size={18} /> {$t('nav.faq')}
-        </a>
-        <button
-          onclick={() => showLangModal = true}
-          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors w-full text-left text-primary-100 hover:bg-primary-700"
-          aria-label="Language / Idioma"
-        >
-          <Globe size={18} />
-          <span>{LANG_LABELS[$locale].flag} {LANG_LABELS[$locale].full}</span>
-        </button>
-        <PwaInstallButton />
-      </div>
-    </div>
-
-    <!-- Rodapé do drawer -->
-    <div class="px-3 py-3 border-t border-primary-700 shrink-0">
-      <div class="space-y-1">
-        {#if !$isAdmin}
-          <a href="/review" onclick={closeMenu}
-            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
-              {$page.url.pathname === '/review' ? 'bg-primary-900 text-white' : ''}">
-            <Star size={18} /> {$t('nav.review')}
-          </a>
-        {/if}
-        <button onclick={themeStore.toggle}
-          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
-          {#if $themeStore === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
-          {$t('aria.theme')}
-        </button>
-        <a href="/profile" onclick={closeMenu}
-          class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors text-primary-100 hover:bg-primary-700
-            {$page.url.pathname === '/profile' ? 'bg-primary-900 text-white' : ''}">
-          <UserCircle size={18} /> {$t('nav.my_account')}
-        </a>
-        <button onclick={logout}
-          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
-          <LogOut size={18} /> {$t('nav.logout')}
-        </button>
+            <Globe size={18} />
+            <span>{LANG_LABELS[$locale].flag} {LANG_LABELS[$locale].full}</span>
+          </button>
+          <button onclick={themeStore.toggle}
+            class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
+            {#if $themeStore === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
+            {$t('aria.theme')}
+          </button>
+          <PwaInstallButton />
+          <button onclick={logout}
+            class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-primary-700 text-left text-primary-100 transition-colors">
+            <LogOut size={18} /> {$t('nav.logout')}
+          </button>
+        </div>
       </div>
 
-      <!-- Links legais — discretos -->
-      <div class="flex items-center gap-3 px-3 pt-3 mt-1 border-t border-primary-700/40">
+      <!-- Links legais -->
+      <div class="flex items-center gap-3 px-6 py-4 mt-1 border-t border-primary-700/40">
         <a href="/terms" onclick={closeMenu}
           class="text-xs text-primary-400 hover:text-primary-200 transition-colors whitespace-nowrap">
           {$t('footer.terms')}
@@ -326,6 +419,7 @@
           {$t('footer.privacy')}
         </a>
       </div>
+
     </div>
   </div>
 {/if}

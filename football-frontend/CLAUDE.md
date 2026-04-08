@@ -24,7 +24,8 @@
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
 | `/ranking` | Ranking geral da plataforma — top 10 melhores e decepções (público) |
-| `/draw` | Simulador público de sorteio de times — sem login, sem backend, estado em localStorage |
+| `/simulator` | Simulador público de sorteio de times — sem login, sem backend, estado em localStorage |
+| `/draw` | Redirect 301 para `/simulator` (compatibilidade com URLs salvas) |
 | `/discover` | Rachões públicos abertos com filtros (público + autenticado) |
 | `/players/[id]` | Perfil público do jogador com Rachão Score |
 
