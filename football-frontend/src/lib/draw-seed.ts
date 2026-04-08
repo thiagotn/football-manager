@@ -29,7 +29,7 @@ export const SEED_PLAYERS: SeedPlayer[] = [
   { name: 'David Alaba',          nickname: 'Alaba',          stars: 4, position: 'fullback', active: true },
   { name: 'Bixente Lizarazu',     nickname: 'Lizarazu',       stars: 4, position: 'fullback', active: true },
   { name: 'Gary Neville',         nickname: 'G. Neville',     stars: 3, position: 'fullback', active: true },
-  { name: 'Wael Gomaa',           nickname: 'Cafú Egípcio',   stars: 2, position: 'fullback', active: true },
+  { name: 'Javier Zanetti',       nickname: 'Zanetti',        stars: 5, position: 'fullback', active: true },
 
   // Zagueiros (18)
   { name: 'Paolo Maldini',        nickname: 'Maldini',       stars: 5, position: 'defender', active: true },
