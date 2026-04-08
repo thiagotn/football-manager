@@ -104,7 +104,7 @@ export const SEED_PLAYERS: SeedPlayer[] = [
   { name: 'Wayne Rooney',         nickname: 'Rooney',        stars: 4, position: 'forward', active: true },
   { name: 'Fernando Torres',      nickname: 'El Niño',       stars: 4, position: 'forward', active: true },
   { name: 'David Trezeguet',      nickname: 'Trezeguet',     stars: 4, position: 'forward', active: true },
-  { name: 'Filippo Inzaghi',      nickname: 'Pippo',         stars: 4, position: 'forward', active: true },
+  { name: 'Filippo Inzaghi',      nickname: 'Inzaghi',       stars: 4, position: 'forward', active: true },
   { name: 'Hernán Crespo',        nickname: 'Crespo',        stars: 4, position: 'forward', active: true },
   { name: 'Patrick Kluivert',     nickname: 'Kluivert',      stars: 4, position: 'forward', active: true },
   { name: 'Antoine Griezmann',    nickname: 'Griezmann',     stars: 4, position: 'forward', active: true },
