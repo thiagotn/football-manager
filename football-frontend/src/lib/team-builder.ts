@@ -183,24 +183,42 @@ export function buildTeams(
   // Step 4: Overflow fills remaining slots using shuffled tiers
   overflow.sort((a, b) => b.stars - a.stars);
   const remaining = teamArrays.map(t => teamSize - t.length);
+  const finalReserves: DrawPlayer[] = [];
 
+  // 4a: Extra GKs only go to teams that still need a GK; otherwise become reserves
+  const overflowGks   = shuffle(overflow.filter(p => p.position === 'goalkeeper'));
+  const overflowField = overflow.filter(p => p.position !== 'goalkeeper');
+
+  for (const gk of overflowGks) {
+    const ti = teamArrays.findIndex((t, i) =>
+      remaining[i] > 0 && !t.some(p => p.position === 'goalkeeper')
+    );
+    if (ti !== -1) {
+      teamArrays[ti].push(gk);
+      remaining[ti]--;
+    } else {
+      finalReserves.push(gk);
+    }
+  }
+
+  // 4b: Field overflow fills remaining slots with shuffled-tier batches
   let idx = 0;
-  while (idx < overflow.length) {
+  while (idx < overflowField.length) {
     const openTeams = teamArrays
       .map((_, i) => i)
       .filter(i => remaining[i] > 0);
     if (openTeams.length === 0) break;
 
-    const batch = shuffle(overflow.slice(idx, idx + openTeams.length));
+    const batch = shuffle(overflowField.slice(idx, idx + openTeams.length));
     for (let i = 0; i < batch.length; i++) {
-      const ti = openTeams[i];
-      teamArrays[ti].push(batch[i]);
-      remaining[ti]--;
+      teamArrays[openTeams[i]].push(batch[i]);
+      remaining[openTeams[i]]--;
     }
     idx += batch.length;
   }
 
-  const reserves = overflow.slice(idx);
+  finalReserves.push(...overflowField.slice(idx));
+  const reserves = finalReserves;
 
   // Build final Team objects
   for (let i = 0; i < nTeams; i++) {

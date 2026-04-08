@@ -145,24 +145,44 @@ def build_teams(
     # Passo 4: Overflow preenche slots restantes
     overflow.sort(key=lambda p: p["skill_stars"], reverse=True)
     remaining = [team_size - len(t) for t in times]
-    total_needed = sum(remaining)
+    final_reserves: list[dict] = []
 
-    for_dist = overflow[:total_needed]
-    reserves = overflow[total_needed:]
+    # 4a: Goleiros excedentes só vão para times que ainda não têm GK;
+    #     caso contrário viram reservas (evita 2 goleiros no mesmo time)
+    overflow_gks = [p for p in overflow if p.get("position") == "gk"]
+    overflow_field = [p for p in overflow if p.get("position") != "gk"]
 
-    # Distribui overflow também por faixas embaralhadas entre times com espaço
+    random.shuffle(overflow_gks)
+    for gk in overflow_gks:
+        ti = next(
+            (
+                i for i, t in enumerate(times)
+                if remaining[i] > 0 and not any(p.get("position") == "gk" for p in t)
+            ),
+            None,
+        )
+        if ti is not None:
+            times[ti].append(gk)
+            remaining[ti] -= 1
+        else:
+            final_reserves.append(gk)
+
+    # 4b: Jogadores de linha preenchem os slots restantes por faixas embaralhadas
     idx = 0
-    while idx < len(for_dist):
+    while idx < len(overflow_field):
         open_teams = [i for i in range(n_times) if remaining[i] > 0]
         if not open_teams:
             break
-        batch = for_dist[idx : idx + len(open_teams)]
+        batch = overflow_field[idx : idx + len(open_teams)]
         shuffled = batch[:]
         random.shuffle(shuffled)
         for ti, player in zip(open_teams, shuffled):
             times[ti].append(player)
             remaining[ti] -= 1
         idx += len(batch)
+
+    final_reserves.extend(overflow_field[idx:])
+    reserves = final_reserves
 
     names = _pick_names(n_times)
     colors = TEAM_COLORS * ((n_times // len(TEAM_COLORS)) + 1)
