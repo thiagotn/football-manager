@@ -167,13 +167,20 @@ def build_teams(
         else:
             final_reserves.append(gk)
 
-    # 4b: Jogadores de linha preenchem os slots restantes por faixas embaralhadas
+    # 4b: Jogadores de linha preenchem os slots restantes por faixas embaralhadas.
+    # Embaralha antes de ordenar para que jogadores com mesmas estrelas tenham
+    # ordem aleatória entre grupos de posição — evita que os mesmos jogadores
+    # fracos sejam sempre reservas por chegarem sempre no fim do array.
+    overflow_field_sorted = overflow_field[:]
+    random.shuffle(overflow_field_sorted)
+    overflow_field_sorted.sort(key=lambda p: p["skill_stars"], reverse=True)
+
     idx = 0
-    while idx < len(overflow_field):
+    while idx < len(overflow_field_sorted):
         open_teams = [i for i in range(n_times) if remaining[i] > 0]
         if not open_teams:
             break
-        batch = overflow_field[idx : idx + len(open_teams)]
+        batch = overflow_field_sorted[idx : idx + len(open_teams)]
         shuffled = batch[:]
         random.shuffle(shuffled)
         for ti, player in zip(open_teams, shuffled):
@@ -181,7 +188,7 @@ def build_teams(
             remaining[ti] -= 1
         idx += len(batch)
 
-    final_reserves.extend(overflow_field[idx:])
+    final_reserves.extend(overflow_field_sorted[idx:])
     reserves = final_reserves
 
     names = _pick_names(n_times)

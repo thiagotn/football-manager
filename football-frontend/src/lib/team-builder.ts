@@ -201,15 +201,18 @@ export function buildTeams(
     }
   }
 
-  // 4b: Field overflow fills remaining slots with shuffled-tier batches
+  // 4b: Field overflow fills remaining slots with shuffled-tier batches.
+  // Shuffle before sorting so equal-star players have random order across
+  // position groups — prevents the same weakest players from always being reserves.
+  const overflowFieldSorted = shuffle(overflowField).sort((a, b) => b.stars - a.stars);
   let idx = 0;
-  while (idx < overflowField.length) {
+  while (idx < overflowFieldSorted.length) {
     const openTeams = teamArrays
       .map((_, i) => i)
       .filter(i => remaining[i] > 0);
     if (openTeams.length === 0) break;
 
-    const batch = shuffle(overflowField.slice(idx, idx + openTeams.length));
+    const batch = shuffle(overflowFieldSorted.slice(idx, idx + openTeams.length));
     for (let i = 0; i < batch.length; i++) {
       teamArrays[openTeams[i]].push(batch[i]);
       remaining[openTeams[i]]--;
@@ -217,7 +220,7 @@ export function buildTeams(
     idx += batch.length;
   }
 
-  finalReserves.push(...overflowField.slice(idx));
+  finalReserves.push(...overflowFieldSorted.slice(idx));
   const reserves = finalReserves;
 
   // Build final Team objects
