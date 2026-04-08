@@ -43,7 +43,7 @@ export const SEED_PLAYERS: SeedPlayer[] = [
   { name: 'Marcel Desailly',      nickname: 'Desailly',      stars: 4, position: 'defender', active: true },
   { name: 'Fernando Hierro',      nickname: 'Hierro',        stars: 4, position: 'defender', active: true },
   { name: 'Lúcio',                nickname: 'Lúcio',         stars: 4, position: 'defender', active: true },
-  { name: 'John Terry',           nickname: 'JT',            stars: 4, position: 'defender', active: true },
+  { name: 'John Terry',           nickname: 'John Terry',    stars: 4, position: 'defender', active: true },
   { name: 'Raphaël Varane',       nickname: 'Varane',        stars: 4, position: 'defender', active: true },
   { name: 'Jaap Stam',            nickname: 'Jaap Stam',     stars: 4, position: 'defender', active: true },
   { name: 'Pepe',                 nickname: 'Pepe',          stars: 4, position: 'defender', active: true },
