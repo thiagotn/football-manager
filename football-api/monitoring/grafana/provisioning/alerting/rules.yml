@@ -302,7 +302,7 @@ groups:
                     type: last
                   type: query
         noDataState: OK
-        execErrState: Alerting
+        execErrState: OK
         for: 5m
         isPaused: false
         labels:
