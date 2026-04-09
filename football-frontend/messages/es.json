@@ -1235,6 +1235,7 @@
   "draw.warn.no_goalkeepers": "No hay portero en la lista — algunos equipos pueden quedarse sin POR.",
   "draw.need_more_players": "Faltan {n} jugadores activos para formar 2 equipos.",
   "draw.generate_btn": "Generar lista de jugadores famosos",
+  "draw.generate_alliance_btn": "Generar lista Alliance Juventus Fc",
   "draw.empty_hint": "Genera una lista de jugadores de ejemplo o agrega los tuyos manualmente.",
 
   "groups.add_manual.title": "Agregar jugador",

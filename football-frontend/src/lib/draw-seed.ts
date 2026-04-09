@@ -117,3 +117,61 @@ export const SEED_PLAYERS: SeedPlayer[] = [
 export function seedWithIds(): DrawPlayer[] {
   return SEED_PLAYERS.map((p, i) => ({ ...p, id: String(i) }));
 }
+
+// ── Alliance Juventus FC ──────────────────────────────────────────────────────
+
+export const ALLIANCE_PLAYERS: SeedPlayer[] = [
+  // Goleiros (4)
+  { name: 'Andrey',    nickname: 'Andrey',          stars: 3, position: 'goalkeeper', active: true },
+  { name: 'Goleiro',   nickname: 'Goleiro',          stars: 3, position: 'goalkeeper', active: true },
+  { name: 'Goleiro',   nickname: 'Rogerio Goleiro',  stars: 3, position: 'goalkeeper', active: true },
+  { name: 'Michael',   nickname: 'Michael',          stars: 3, position: 'goalkeeper', active: true },
+
+  // Laterais (6)
+  { name: 'Adriano',   nickname: 'Filho do Vento',   stars: 3, position: 'fullback', active: true },
+  { name: 'Gabriel',   nickname: 'Gabriel',          stars: 3, position: 'fullback', active: true },
+  { name: 'guilherme', nickname: 'guilherme',        stars: 3, position: 'fullback', active: true },
+  { name: 'Luiz',      nickname: 'Pai Pietro',       stars: 3, position: 'fullback', active: true },
+  { name: 'Renato',    nickname: 'Renatinho',        stars: 3, position: 'fullback', active: true },
+
+  // Zagueiros (13)
+  { name: 'Alex',      nickname: 'Alex',             stars: 3, position: 'defender', active: true },
+  { name: 'Alexandre', nickname: 'Careca',           stars: 3, position: 'defender', active: true },
+  { name: 'Cesinha',   nickname: 'Cesinha',          stars: 3, position: 'defender', active: true },
+  { name: 'Eduardo',   nickname: 'Eduardo',          stars: 3, position: 'defender', active: true },
+  { name: 'Eric',      nickname: 'Tago',             stars: 3, position: 'defender', active: true },
+  { name: 'Guilherme', nickname: 'Guilherme',        stars: 3, position: 'defender', active: true },
+  { name: 'Gustavo',   nickname: 'Gustavo',          stars: 3, position: 'defender', active: true },
+  { name: 'Leonardo',  nickname: 'Leozao',           stars: 3, position: 'defender', active: true },
+  { name: 'Luiz',      nickname: 'Luiz',             stars: 3, position: 'defender', active: true },
+  { name: 'Rodrigo',   nickname: 'Rod Dogliotti',    stars: 3, position: 'defender', active: true },
+  { name: 'Thiago',    nickname: 'Aquino',           stars: 3, position: 'defender', active: true },
+
+  // Meias (17)
+  { name: 'Bruno',     nickname: 'Cavallari',        stars: 3, position: 'midfielder', active: true },
+  { name: 'David',     nickname: 'Davi Xandao',      stars: 3, position: 'midfielder', active: true },
+  { name: 'Fabio',     nickname: 'Isaque',           stars: 3, position: 'midfielder', active: true },
+  { name: 'Guilherme', nickname: 'Nevou',            stars: 3, position: 'midfielder', active: true },
+  { name: 'Joao',      nickname: 'JP',               stars: 3, position: 'midfielder', active: true },
+  { name: 'Joseilson', nickname: 'Jo',               stars: 3, position: 'midfielder', active: true },
+  { name: 'Kauã',      nickname: 'Prado',            stars: 3, position: 'midfielder', active: true },
+  { name: 'Leonardo',  nickname: 'Léo',              stars: 3, position: 'midfielder', active: true },
+  { name: 'Lucas',     nickname: 'Filho Michael',    stars: 3, position: 'midfielder', active: true },
+  { name: 'Marcelo',   nickname: 'Barista',          stars: 3, position: 'midfielder', active: true },
+  { name: 'Thiago',    nickname: 'Arimura',          stars: 3, position: 'midfielder', active: true },
+  { name: 'Thiago',    nickname: 'Thiagol',          stars: 3, position: 'midfielder', active: true },
+  { name: 'Tiago',     nickname: 'Stein',            stars: 3, position: 'midfielder', active: true },
+  { name: 'Vinicius',  nickname: 'Vinicius',         stars: 3, position: 'midfielder', active: true },
+  { name: 'Vinicius',  nickname: 'Vini Correa',      stars: 3, position: 'midfielder', active: true },
+  { name: 'William',   nickname: 'Will',             stars: 3, position: 'midfielder', active: true },
+
+  // Atacantes (4)
+  { name: 'Clovis',    nickname: 'Clovao Love',      stars: 3, position: 'forward', active: true },
+  { name: 'Gabriel',   nickname: 'Lins',             stars: 3, position: 'forward', active: true },
+  { name: 'Gustavo',   nickname: 'Lulinha',          stars: 3, position: 'forward', active: true },
+  { name: 'Nano',      nickname: 'Nano',             stars: 3, position: 'forward', active: true },
+];
+
+export function allianceSeedWithIds(): DrawPlayer[] {
+  return ALLIANCE_PLAYERS.map((p, i) => ({ ...p, id: String(i) }));
+}

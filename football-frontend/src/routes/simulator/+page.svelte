@@ -10,7 +10,7 @@
 
   let isLoggedIn = $derived(!!$authStore.player);
   import { buildTeams, POS_ABBR, POS_COLOR_CLASSES, sortPlayersByPosition, type DrawPlayer, type TeamResult, type Position } from '$lib/team-builder';
-  import { seedWithIds } from '$lib/draw-seed';
+  import { seedWithIds, allianceSeedWithIds } from '$lib/draw-seed';
   import { shuffledNames } from '$lib/team-names';
 
   const STORAGE_KEY = 'draw_players_v1';
@@ -95,6 +95,15 @@
     warnings = [];
   }
 
+  function generateAllianceSeed() {
+    const seed = allianceSeedWithIds();
+    players  = seed;
+    nextId   = seed.length;
+    result   = null;
+    errors   = [];
+    warnings = [];
+  }
+
   function resetToDefaults() {
     generateSeed();
     if (browser) localStorage.removeItem(STORAGE_KEY);
@@ -170,13 +179,20 @@
         <div class="text-center space-y-2">
           <p class="text-white/40 text-sm">{$t('draw.empty_hint')}</p>
         </div>
-        <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
           <button
             type="button"
             onclick={generateSeed}
             class="btn btn-primary flex items-center gap-2 px-6 py-3 text-base font-semibold"
           >
             <Shuffle size={18} /> {$t('draw.generate_btn')}
+          </button>
+          <button
+            type="button"
+            onclick={generateAllianceSeed}
+            class="btn btn-secondary flex items-center gap-2 px-6 py-3 text-base font-semibold"
+          >
+            <Shuffle size={18} /> {$t('draw.generate_alliance_btn')}
           </button>
           <button
             type="button"

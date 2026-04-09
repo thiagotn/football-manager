@@ -1235,6 +1235,7 @@
   "draw.warn.no_goalkeepers": "Nenhum goleiro na lista — alguns times podem ficar sem GK.",
   "draw.need_more_players": "Faltam {n} jogadores ativos para formar 2 times.",
   "draw.generate_btn": "Gerar lista de jogadores famosos",
+  "draw.generate_alliance_btn": "Gerar lista Alliance Juventus Fc",
   "draw.empty_hint": "Gere uma lista de jogadores de exemplo ou adicione os seus manualmente.",
 
   "groups.add_manual.title": "Adicionar jogador",
