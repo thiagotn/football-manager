@@ -6,6 +6,10 @@ export class ApiError extends Error {
   }
 }
 
+// One-shot gate: prevents multiple simultaneous 401s from firing multiple toasts.
+// Reset to false on the next successful request (i.e. after the user logs back in).
+let sessionExpiredTriggered = false;
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -19,7 +23,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
-    if (res.status === 401 && typeof window !== 'undefined' && localStorage.getItem('player')) {
+    if (
+      res.status === 401 &&
+      !sessionExpiredTriggered &&
+      typeof window !== 'undefined' &&
+      localStorage.getItem('player')
+    ) {
+      sessionExpiredTriggered = true;
       const { sessionExpiredStore } = await import('$lib/stores/sessionExpired');
       sessionExpiredStore.set(true);
     }
@@ -28,6 +38,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new ApiError(res.status, Array.isArray(msg) ? msg[0]?.msg ?? String(msg) : String(msg));
   }
 
+  sessionExpiredTriggered = false;
   if (res.status === 204) return undefined as T;
   return res.json();
 }
