@@ -65,6 +65,12 @@ jobs:
               --env-file .env.monitoring \
               up -d --remove-orphans
 
+            echo "==> Reiniciando Grafana para recarregar provisioning files..."
+            docker compose \
+              -f docker-compose.monitoring.prod.yml \
+              --env-file .env.monitoring \
+              restart grafana
+
             echo "==> Reiniciando Traefik para recarregar traefik-dynamic.yml..."
             docker compose -f docker-compose.prod.yml restart traefik
 
