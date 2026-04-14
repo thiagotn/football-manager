@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `036_trim_player_nicknames.sql`.
+A última migration criada é `037_android_beta_signups.sql`.
 
-**A próxima deve ser numerada `037_`.**
+**A próxima deve ser numerada `038_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -31,6 +31,7 @@ A última migration criada é `036_trim_player_nicknames.sql`.
 | `reviews.py` | Avaliações do app |
 | `subscriptions.py` | Planos e assinaturas |
 | `ranking.py` | Ranking geral da plataforma (público) |
+| `beta.py` | Inscrição no beta Android — `POST /beta/android-signup` (público) |
 | `teams.py` | Sorteio de times |
 | `votes.py` | Votação pós-partida |
 | `webhooks.py` | Webhooks do Stripe |

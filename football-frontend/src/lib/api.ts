@@ -640,3 +640,31 @@ export const invites = {
   accept: (token: string, data: { name?: string; nickname?: string; whatsapp: string; password: string }) =>
     post<{ access_token: string; player_id: string; name: string; role: string }>(`/invites/${token}/accept`, data),
 };
+
+// ── Android Beta ───────────────────────────────────────────────
+export type AndroidBetaSignupItem = {
+  id: string;
+  google_email: string;
+  player_id: string | null;
+  player_name: string | null;
+  created_at: string;
+};
+
+export type AndroidBetaSignupListResponse = {
+  total: number;
+  page: number;
+  page_size: number;
+  items: AndroidBetaSignupItem[];
+};
+
+export const androidBeta = {
+  submit: (google_email: string) =>
+    post<{ status: string }>('/beta/android-signup', { google_email }),
+  list: (params?: { page?: number; page_size?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.page)      q.set('page',      String(params.page));
+    if (params?.page_size) q.set('page_size', String(params.page_size));
+    const qs = q.toString();
+    return get<AndroidBetaSignupListResponse>(`/admin/beta-signups${qs ? '?' + qs : ''}`);
+  },
+};

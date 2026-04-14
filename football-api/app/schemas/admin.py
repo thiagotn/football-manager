@@ -113,3 +113,20 @@ class AdminPlayerListResponse(BaseModel):
     page: int
     page_size: int
     items: list[AdminPlayerItem]
+
+
+# ── Android Beta Signups ───────────────────────────────────────
+
+class AndroidBetaSignupItem(BaseModel):
+    id: UUID
+    google_email: str
+    player_id: UUID | None
+    player_name: str | None
+    created_at: datetime
+
+
+class AndroidBetaSignupListResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[AndroidBetaSignupItem]

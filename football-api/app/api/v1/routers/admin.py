@@ -21,6 +21,7 @@ from app.schemas.admin import (
     AdminSubscriptionListResponse,
     AdminSubscriptionSummary,
     AdminSubscriptionUpdateRequest,
+    AndroidBetaSignupListResponse,
 )
 
 logger = structlog.get_logger()
@@ -389,3 +390,32 @@ async def remove_player_avatar(player_id: UUID, db: DB, _: AdminPlayer):
     player.avatar_url = None
     await db.flush()
     logger.info("admin_avatar_removed", player_id=str(player_id))
+
+
+# ── Android Beta Signups ───────────────────────────────────────────────────────
+
+@router.get("/beta-signups", response_model=AndroidBetaSignupListResponse)
+async def list_beta_signups(
+    db: DB,
+    _: AdminPlayer,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """Lista os emails inscritos na faixa de testes do Android. Exclusivo para super admins."""
+    count_result = await db.execute(
+        text("SELECT COUNT(*)::int FROM android_beta_signups")
+    )
+    total = count_result.scalar_one()
+
+    rows = await db.execute(
+        text("""
+            SELECT s.id, s.google_email, s.player_id, p.name AS player_name, s.created_at
+            FROM android_beta_signups s
+            LEFT JOIN players p ON p.id = s.player_id
+            ORDER BY s.created_at DESC
+            LIMIT :limit OFFSET :offset
+        """),
+        {"limit": page_size, "offset": (page - 1) * page_size},
+    )
+    items = [dict(row._mapping) for row in rows]
+    return AndroidBetaSignupListResponse(total=total, page=page, page_size=page_size, items=items)

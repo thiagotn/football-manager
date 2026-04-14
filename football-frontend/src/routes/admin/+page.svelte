@@ -3,7 +3,7 @@
   import { authStore, isAdmin } from '$lib/stores/auth';
   import { admin as adminApi } from '$lib/api';
   import type { AdminStatsResponse, AdminSubscriptionSummary } from '$lib/api';
-  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight, CreditCard, AlertTriangle, TrendingUp } from 'lucide-svelte';
+  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight, CreditCard, AlertTriangle, TrendingUp, Smartphone } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let stats = $state<AdminStatsResponse | null>(null);
@@ -102,13 +102,23 @@
           <p class="text-xs text-gray-400 mt-1">Horas jogadas</p>
         </div>
 
-        <a href="/admin/reviews" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer col-span-2 sm:col-span-1">
+        <a href="/admin/reviews" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer">
           <div class="flex items-center justify-center gap-1 mb-1">
             <Star size={14} class="text-yellow-400 opacity-70" />
           </div>
           <p class="text-3xl font-bold text-yellow-400">{stats.total_reviews}</p>
           <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
             Avaliações <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+          </p>
+        </a>
+
+        <a href="/admin/beta" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-center gap-1 mb-1">
+            <Smartphone size={14} class="text-primary-400 opacity-70" />
+          </div>
+          <p class="text-3xl font-bold text-primary-400">—</p>
+          <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
+            Beta Android <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
           </p>
         </a>
 
