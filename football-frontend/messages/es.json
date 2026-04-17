@@ -17,7 +17,7 @@
   "nav.faq": "FAQ",
   "nav.explore": "Explorar",
   "nav.simulator": "Simulador de Sorteo",
-  "nav.tetris": "Descubrir",
+  "nav.tetris": "¿Estás ocioso?",
   "nav.section.main": "Principal",
   "nav.section.explore": "Explorar",
   "nav.section.account": "Cuenta",
@@ -1013,13 +1013,10 @@
   "profile.positions_desc": "Tu posición preferida en cada grupo. Visible para todos los miembros.",
   "profile.position_saved": "¡Posición actualizada!",
   "profile.position_save_error": "Error al guardar posición",
-
   "cta.banner_title": "Gestiona tu pachanga",
   "cta.login": "Entrar",
   "cta.register": "Registrarse",
-
   "nav.ranking": "Ranking",
-
   "player_public.title": "Perfil del Jugador",
   "player_public.loading": "Cargando perfil…",
   "player_public.not_found": "Jugador no encontrado.",
@@ -1039,7 +1036,6 @@
   "stats.share_score": "Compartir mi Score",
   "stats.share_copied": "¡Enlace copiado!",
   "stats.share_error": "Error al compartir",
-
   "jogar.page_title": "Encuentra un partido cerca de ti — gratis | rachao.app",
   "jogar.page_desc": "Únete a partidos abiertos con lugares disponibles. Registro gratuito, accede desde el navegador o app Android. Acumula tu Rachão Score.",
   "jogar.hero_title": "¿Quieres jugar? Hay un partido con lugar para ti.",
@@ -1075,7 +1071,6 @@
   "jogar.free_feature_4": "Perfil público compartible",
   "jogar.free_feature_5": "Ranking general de la plataforma",
   "jogar.free_feature_6": "Sin límite de partidos para jugadores",
-
   "ranking.title": "Ranking General",
   "ranking.subtitle": "Los mejores de toda la plataforma",
   "ranking.tab_top": "Mejores",
@@ -1098,7 +1093,6 @@
   "ranking.you_badge": "Tú",
   "ranking.empty": "No hay votaciones registradas para este período.",
   "ranking.empty_sub": "Los partidos necesitan al menos 10 jugadores para contar en el ranking.",
-
   "lp.topbar_login": "Iniciar sesión",
   "lp.page_title": "rachao.app — Organiza o encuentra tu partido de fútbol",
   "lp.page_desc": "Gestiona tu grupo de fútbol o encuentra un partido abierto cerca de ti. Confirma asistencia, sortea equipos, vota al mejor. Gratis.",
@@ -1218,7 +1212,6 @@
   "lp.footer_privacy": "Privacidad",
   "lp.footer_faq": "FAQ",
   "lp.footer_status": "Status",
-
   "draw.title": "Simulador de Sorteo",
   "draw.subtitle": "Arma y prueba tus equipos antes del partido",
   "draw.active_count": "{active} activos de {total}",
@@ -1245,7 +1238,6 @@
   "draw.generate_btn": "Generar lista de jugadores famosos",
   "draw.generate_alliance_btn": "Generar lista Alliance Juventus Fc",
   "draw.empty_hint": "Genera una lista de jugadores de ejemplo o agrega los tuyos manualmente.",
-
   "groups.add_manual.title": "Agregar jugador",
   "groups.add_manual.step1_label": "WhatsApp del jugador",
   "groups.add_manual.search_btn": "Buscar",
@@ -1269,7 +1261,6 @@
   "groups.add_manual.error_limit": "Límite de miembros del plan alcanzado.",
   "groups.add_manual.error_conflict": "El jugador ya es miembro de este grupo.",
   "groups.add_manual.error_generic": "Error al agregar jugador.",
-
   "position.gk": "Portero",
   "position.zag": "Defensa central",
   "position.lat": "Lateral",

@@ -17,7 +17,7 @@
   "nav.faq": "FAQ",
   "nav.explore": "Explore",
   "nav.simulator": "Draw Simulator",
-  "nav.tetris": "Discover",
+  "nav.tetris": "Feeling idle?",
   "nav.section.main": "Main",
   "nav.section.explore": "Explore",
   "nav.section.account": "Account",
@@ -1013,13 +1013,10 @@
   "profile.positions_desc": "Your preferred position in each group. Visible to all members.",
   "profile.position_saved": "Position updated!",
   "profile.position_save_error": "Error saving position",
-
   "cta.banner_title": "Manage your football game",
   "cta.login": "Sign in",
   "cta.register": "Sign up",
-
   "nav.ranking": "Ranking",
-
   "player_public.title": "Player Profile",
   "player_public.loading": "Loading profile…",
   "player_public.not_found": "Player not found.",
@@ -1039,7 +1036,6 @@
   "stats.share_score": "Share my Score",
   "stats.share_copied": "Link copied!",
   "stats.share_error": "Error sharing",
-
   "jogar.page_title": "Find a football game near you — free | rachao.app",
   "jogar.page_desc": "Join open games with available spots. Free registration, access via web or Android app. Build your Rachão Score.",
   "jogar.hero_title": "Want to play? There's a game with a spot for you.",
@@ -1075,7 +1071,6 @@
   "jogar.free_feature_4": "Shareable public profile",
   "jogar.free_feature_5": "Platform overall ranking",
   "jogar.free_feature_6": "No match limit for players",
-
   "ranking.title": "Overall Ranking",
   "ranking.subtitle": "The best players across the platform",
   "ranking.tab_top": "Top Players",
@@ -1098,7 +1093,6 @@
   "ranking.you_badge": "You",
   "ranking.empty": "No votes recorded for this period.",
   "ranking.empty_sub": "Matches need at least 10 players to count in the ranking.",
-
   "lp.topbar_login": "Sign in",
   "lp.page_title": "rachao.app — Organize or find your football game",
   "lp.page_desc": "Manage your football group or find an open game near you. Confirm attendance, draw teams, vote for the best player. Free.",
@@ -1218,7 +1212,6 @@
   "lp.footer_privacy": "Privacy",
   "lp.footer_faq": "FAQ",
   "lp.footer_status": "Status",
-
   "draw.title": "Team Draw Simulator",
   "draw.subtitle": "Build and test your teams before the game",
   "draw.active_count": "{active} active of {total}",
@@ -1245,7 +1238,6 @@
   "draw.generate_btn": "Generate famous players list",
   "draw.generate_alliance_btn": "Generate Alliance Juventus Fc list",
   "draw.empty_hint": "Generate a sample player list or add your own manually.",
-
   "groups.add_manual.title": "Add player",
   "groups.add_manual.step1_label": "Player's WhatsApp",
   "groups.add_manual.search_btn": "Search",
@@ -1269,7 +1261,6 @@
   "groups.add_manual.error_limit": "Group member limit reached for your plan.",
   "groups.add_manual.error_conflict": "Player is already a member of this group.",
   "groups.add_manual.error_generic": "Error adding player.",
-
   "position.gk": "Goalkeeper",
   "position.zag": "Defender",
   "position.lat": "Fullback",
