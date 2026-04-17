@@ -56,6 +56,7 @@
   let showVoteModal = $state(true);
   let showResultsPromo = $state(false);
   let closingVote = $state(false);
+  let confirmCloseVoteOpen = $state(false);
 
   $effect(() => {
     const m = match;
@@ -77,6 +78,10 @@
       })
       .catch(() => {});
   });
+
+  function askCloseVote() {
+    confirmCloseVoteOpen = true;
+  }
 
   async function closeVotingEarly() {
     if (!match) return;
@@ -490,8 +495,8 @@
         </button>
       {/if}
 
-      <!-- Admin: voting status card with early-close button -->
-      {#if voteStatus && match.status === 'closed' && $isAdmin}
+      <!-- Admin/group-admin: voting status card with early-close button -->
+      {#if voteStatus && match.status === 'closed' && ($isAdmin || isGroupAdmin)}
         <div class="mb-3 card px-4 py-3 flex items-center justify-between gap-3">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
             {$t('match.vote_label')}
@@ -507,7 +512,7 @@
           </span>
           {#if voteStatus.status === 'open'}
             <button
-              onclick={closeVotingEarly}
+              onclick={askCloseVote}
               disabled={closingVote}
               class="btn btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 shrink-0">
               {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
@@ -908,4 +913,12 @@
   confirmLabel={$t('match.teams_confirm_label')}
   danger={false}
   onConfirm={generateTeams}
+/>
+
+<ConfirmDialog
+  bind:open={confirmCloseVoteOpen}
+  message={$t('match.vote_close_early_confirm')}
+  confirmLabel={$t('match.vote_close_early')}
+  danger={true}
+  onConfirm={closeVotingEarly}
 />

@@ -441,6 +441,7 @@
   "match.vote_votes": "{voted}/{eligible} votos",
   "match.vote_close_early_loading": "Encerrando…",
   "match.vote_close_early": "Encerrar agora",
+  "match.vote_close_early_confirm": "Encerrar a votação agora? Os resultados ficarão visíveis imediatamente e ninguém mais poderá votar.",
   "match.teams_sorted": "Times sorteados",
   "match.teams_count": "{n} times",
   "match.teams_sort": "Sorteio de times",

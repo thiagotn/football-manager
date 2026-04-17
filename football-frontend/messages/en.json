@@ -441,6 +441,7 @@
   "match.vote_votes": "{voted}/{eligible} votes",
   "match.vote_close_early_loading": "Closing…",
   "match.vote_close_early": "Close now",
+  "match.vote_close_early_confirm": "Close voting now? Results will be visible immediately and no one will be able to vote anymore.",
   "match.teams_sorted": "Teams drawn",
   "match.teams_count": "{n} teams",
   "match.teams_sort": "Team draw",
