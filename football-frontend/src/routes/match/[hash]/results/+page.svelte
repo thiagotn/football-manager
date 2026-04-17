@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { votes as votesApi, matches as matchesApi, ApiError } from '$lib/api';
-  import type { VoteResultsResponse, MatchDetail } from '$lib/api';
+  import type { VoteResultsResponse, MatchDetail, VoteBallotsResponse } from '$lib/api';
+  import AvatarImage from '$lib/components/AvatarImage.svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
   import { isLoggedIn } from '$lib/stores/auth';
@@ -38,20 +39,25 @@
 
   let results = $state<VoteResultsResponse | null>(null);
   let match = $state<MatchDetail | null>(null);
+  let ballots = $state<VoteBallotsResponse | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
+
+  const POSITION_LABELS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '4º', 5: '5º' };
 
   $effect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [r, m] = await Promise.all([
+        const [r, m, b] = await Promise.all([
           votesApi.getPublicResults(matchHash),
           matchesApi.getByHash(matchHash),
+          votesApi.getPublicBallots(matchHash).catch(() => null),
         ]);
         if (!cancelled) {
           results = r;
           match = m;
+          ballots = b;
         }
       } catch (e) {
         if (!cancelled) {
@@ -268,6 +274,58 @@
                 <div class="px-4 py-3 flex items-center gap-2">
                   <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{playerDisplayName(item.name, item.nickname)}</span>
                   <span class="text-xs text-red-600 dark:text-red-400 shrink-0">{item.votes} voto{item.votes !== 1 ? 's' : ''}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Cédulas de Votação -->
+        {#if ballots && ballots.ballots.length > 0}
+          <div class="mb-4">
+            <div class="mb-3">
+              <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{$t('results.ballots_title')}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{$t('results.ballots_subtitle')}</p>
+            </div>
+            <div class="space-y-3">
+              {#each ballots.ballots as ballot}
+                <div class="card overflow-hidden">
+                  <!-- Cabeçalho do votante -->
+                  <div class="px-4 py-3 flex items-center gap-3 border-b border-gray-100 dark:border-gray-700">
+                    <AvatarImage name={ballot.voter_name} avatarUrl={ballot.voter_avatar_url} size={32} />
+                    <span class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+                      {playerDisplayName(ballot.voter_name, ballot.voter_nickname)}
+                    </span>
+                  </div>
+                  <!-- Top 5 -->
+                  <div class="px-4 pt-3 pb-2">
+                    <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
+                      {$t('results.ballot_top5_label')}
+                    </p>
+                    <div class="space-y-1">
+                      {#each ballot.top5 as pick}
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm w-6 shrink-0 text-center">{POSITION_LABELS[pick.position] ?? `${pick.position}º`}</span>
+                          <span class="text-sm text-gray-700 dark:text-gray-300 truncate">
+                            {playerDisplayName(pick.name, pick.nickname)}
+                          </span>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                  <!-- Flop -->
+                  <div class="px-4 pt-1 pb-3">
+                    <p class="text-xs font-semibold text-red-500 dark:text-red-400 uppercase tracking-wide mb-1">
+                      {$t('results.ballot_flop_label')}
+                    </p>
+                    {#if ballot.flop}
+                      <span class="text-sm text-gray-700 dark:text-gray-300">
+                        😬 {playerDisplayName(ballot.flop.name, ballot.flop.nickname)}
+                      </span>
+                    {:else}
+                      <span class="text-xs text-gray-400 dark:text-gray-500 italic">{$t('results.ballot_no_flop')}</span>
+                    {/if}
+                  </div>
                 </div>
               {/each}
             </div>

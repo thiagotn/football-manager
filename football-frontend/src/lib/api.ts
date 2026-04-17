@@ -333,10 +333,23 @@ export type VotePendingItem = {
   eligible_count: number;
 };
 
+export type BallotTop5Item = { position: number; player_id: string; name: string; nickname: string | null };
+export type BallotFlopItem = { player_id: string; name: string; nickname: string | null };
+export type VoterBallotItem = {
+  voter_id: string;
+  voter_name: string;
+  voter_nickname: string | null;
+  voter_avatar_url: string | null;
+  top5: BallotTop5Item[];
+  flop: BallotFlopItem | null;
+};
+export type VoteBallotsResponse = { ballots: VoterBallotItem[]; total_voters: number };
+
 export const votes = {
   getStatus:  (matchId: string) => get<VoteStatusResponse>(`/matches/${matchId}/votes/status`),
   getResults: (matchId: string) => get<VoteResultsResponse>(`/matches/${matchId}/votes/results`),
   getPublicResults: (hash: string) => get<VoteResultsResponse>(`/matches/public/${hash}/votes/results`),
+  getPublicBallots: (hash: string) => get<VoteBallotsResponse>(`/matches/public/${hash}/votes/ballots`),
   submit: (matchId: string, top5: { player_id: string; position: number }[], flop_player_id?: string | null) =>
     post<{ message: string }>(`/matches/${matchId}/votes`, { top5, flop_player_id }),
   getPending: () => get<{ items: VotePendingItem[] }>('/votes/pending'),

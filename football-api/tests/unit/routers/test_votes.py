@@ -182,6 +182,107 @@ async def test_get_public_vote_results_not_closed_returns_404(api_client, mocker
     assert response.status_code == 404
 
 
+# ── GET /matches/public/{hash}/votes/ballots ─────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_public_vote_ballots_not_found_returns_404(api_client, mocker):
+    """Partida inexistente retorna 404."""
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_by_hash_with_attendances",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.get("/api/v1/matches/public/naoexiste/votes/ballots")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_public_vote_ballots_not_closed_returns_404(api_client, mocker):
+    """Cédulas só disponíveis após encerramento da votação."""
+    match = _make_match()
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_by_hash_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="open")
+
+    response = await api_client.get("/api/v1/matches/public/abc123/votes/ballots")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_public_vote_ballots_closed_returns_200(api_client, mocker):
+    """Cédulas individuais disponíveis após encerramento."""
+    voter_id = uuid4()
+    player_id = uuid4()
+    flop_id = uuid4()
+
+    match = _make_match()
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_by_hash_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="closed")
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.get_ballots",
+        new=AsyncMock(return_value=[
+            {
+                "voter_id": voter_id,
+                "voter_name": "João Silva",
+                "voter_nickname": None,
+                "voter_avatar_url": None,
+                "top5": [{"position": 1, "player_id": player_id, "name": "Pedro", "nickname": None}],
+                "flop": {"player_id": flop_id, "name": "Carlos", "nickname": "Cadu"},
+            }
+        ]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_count",
+        new=AsyncMock(return_value=1),
+    )
+
+    response = await api_client.get("/api/v1/matches/public/abc123/votes/ballots")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_voters"] == 1
+    assert len(data["ballots"]) == 1
+    ballot = data["ballots"][0]
+    assert ballot["voter_name"] == "João Silva"
+    assert len(ballot["top5"]) == 1
+    assert ballot["top5"][0]["position"] == 1
+    assert ballot["flop"]["name"] == "Carlos"
+
+
+@pytest.mark.asyncio
+async def test_get_public_vote_ballots_no_votes_returns_empty(api_client, mocker):
+    """Partida sem votos retorna lista de cédulas vazia."""
+    match = _make_match()
+    mocker.patch(
+        "app.api.v1.routers.votes.MatchRepository.get_by_hash_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch("app.api.v1.routers.votes.voting_status", return_value="closed")
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.get_ballots",
+        new=AsyncMock(return_value=[]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.votes.VoteRepository.voter_count",
+        new=AsyncMock(return_value=0),
+    )
+
+    response = await api_client.get("/api/v1/matches/public/abc123/votes/ballots")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ballots"] == []
+    assert data["total_voters"] == 0
+
+
 # ── GET /matches/{id}/votes/status — happy path ───────────────────────────────
 
 

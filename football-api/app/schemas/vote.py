@@ -94,3 +94,30 @@ class VotePendingItem(BaseModel):
 
 class VotePendingResponse(BaseModel):
     items: list[VotePendingItem]
+
+
+class BallotTop5Item(BaseModel):
+    position: int
+    player_id: UUID
+    name: str
+    nickname: str | None = None
+
+
+class BallotFlopItem(BaseModel):
+    player_id: UUID
+    name: str
+    nickname: str | None = None
+
+
+class VoterBallotItem(BaseModel):
+    voter_id: UUID
+    voter_name: str
+    voter_nickname: str | None = None
+    voter_avatar_url: str | None = None
+    top5: list[BallotTop5Item]
+    flop: BallotFlopItem | None = None
+
+
+class VoteBallotsResponse(BaseModel):
+    ballots: list[VoterBallotItem]
+    total_voters: int

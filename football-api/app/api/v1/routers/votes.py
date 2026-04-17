@@ -19,6 +19,7 @@ from app.models.player import PlayerRole
 from app.schemas.vote import (
     VotePendingItem,
     VotePendingResponse,
+    VoteBallotsResponse,
     VoteResultsResponse,
     VoteStatusResponse,
     VoteSubmitRequest,
@@ -218,6 +219,25 @@ async def get_public_vote_results(match_hash: str, db: DB):
         total_voters=data["total_voters"],
         eligible_voters=len(confirmed_ids),
     )
+
+
+@router.get(
+    "/matches/public/{match_hash}/votes/ballots",
+    response_model=VoteBallotsResponse,
+    tags=["public"],
+)
+async def get_public_vote_ballots(match_hash: str, db: DB):
+    """Cédulas individuais de votação — disponíveis somente após o encerramento."""
+    m_repo = MatchRepository(db)
+    match = await m_repo.get_by_hash_with_attendances(match_hash)
+    if not match:
+        raise NotFoundError("Partida não encontrada")
+    if voting_status(match) != "closed":
+        raise NotFoundError("Cédulas não disponíveis")
+    vote_repo = VoteRepository(db)
+    ballots = await vote_repo.get_ballots(match.id)
+    total_voters = await vote_repo.voter_count(match.id)
+    return VoteBallotsResponse(ballots=ballots, total_voters=total_voters)
 
 
 @router.get("/matches/{match_id}/votes/results", response_model=VoteResultsResponse)

@@ -116,3 +116,78 @@ class VoteRepository:
 
         total_voters = await self.voter_count(match_id)
         return {"top5": top5_results, "flop": flop_results, "total_voters": total_voters}
+
+    async def get_ballots(self, match_id: UUID) -> list[dict]:
+        """Retorna as cédulas individuais de votação para uma partida."""
+        # 1. Votos com dados do votante
+        votes_q = await self.session.execute(
+            select(
+                MatchVote.id.label("vote_id"),
+                MatchVote.voter_id,
+                Player.name.label("voter_name"),
+                Player.nickname.label("voter_nickname"),
+                Player.avatar_url.label("voter_avatar_url"),
+            )
+            .join(Player, Player.id == MatchVote.voter_id)
+            .where(MatchVote.match_id == match_id)
+            .order_by(MatchVote.submitted_at)
+        )
+        votes_rows = votes_q.mappings().all()
+        if not votes_rows:
+            return []
+
+        vote_ids = [r["vote_id"] for r in votes_rows]
+
+        # 2. Top 5 de cada voto
+        top5_q = await self.session.execute(
+            select(
+                MatchVoteTop5.vote_id,
+                MatchVoteTop5.position,
+                MatchVoteTop5.player_id,
+                Player.name,
+                Player.nickname,
+            )
+            .join(Player, Player.id == MatchVoteTop5.player_id)
+            .where(MatchVoteTop5.vote_id.in_(vote_ids))
+            .order_by(MatchVoteTop5.vote_id, MatchVoteTop5.position)
+        )
+        top5_by_vote: dict = {}
+        for r in top5_q.mappings().all():
+            top5_by_vote.setdefault(r["vote_id"], []).append({
+                "position": r["position"],
+                "player_id": r["player_id"],
+                "name": r["name"],
+                "nickname": r["nickname"],
+            })
+
+        # 3. Flop de cada voto
+        flop_q = await self.session.execute(
+            select(
+                MatchVoteFlop.vote_id,
+                MatchVoteFlop.player_id,
+                Player.name,
+                Player.nickname,
+            )
+            .join(Player, Player.id == MatchVoteFlop.player_id)
+            .where(MatchVoteFlop.vote_id.in_(vote_ids))
+        )
+        flop_by_vote: dict = {
+            r["vote_id"]: {
+                "player_id": r["player_id"],
+                "name": r["name"],
+                "nickname": r["nickname"],
+            }
+            for r in flop_q.mappings().all()
+        }
+
+        return [
+            {
+                "voter_id": r["voter_id"],
+                "voter_name": r["voter_name"],
+                "voter_nickname": r["voter_nickname"],
+                "voter_avatar_url": r["voter_avatar_url"],
+                "top5": top5_by_vote.get(r["vote_id"], []),
+                "flop": flop_by_vote.get(r["vote_id"]),
+            }
+            for r in votes_rows
+        ]
