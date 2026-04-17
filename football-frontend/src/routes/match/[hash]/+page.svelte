@@ -479,24 +479,38 @@
 
       <!-- Voting chip (before player list) -->
       {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal}
-        <button
-          onclick={() => showVoteModal = true}
-          class="mb-3 w-full card px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors text-left">
-          <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-            {$t('match.vote_post_match')}
-            <span class="text-xs font-normal px-2 py-0.5 rounded-full
-              {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-               voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
-               'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-              {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
+        <div class="mb-3 w-full card px-4 py-3 flex items-center gap-3">
+          <button
+            onclick={() => showVoteModal = true}
+            class="flex-1 min-w-0 flex items-center gap-2 hover:opacity-75 transition-opacity text-left">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              {$t('match.vote_post_match')}
+              <span class="text-xs font-normal px-2 py-0.5 rounded-full
+                {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                 voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
+                 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
+                {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
+              </span>
             </span>
-          </span>
-          <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">{$t('match.vote_see')}</span>
-        </button>
+          </button>
+          {#if isGroupAdmin && voteStatus.status === 'open'}
+            <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+              {$t('match.vote_votes').replace('{voted}', String(voteStatus.voter_count)).replace('{eligible}', String(voteStatus.eligible_count))}
+            </span>
+            <button
+              onclick={askCloseVote}
+              disabled={closingVote}
+              class="btn btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 shrink-0">
+              {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
+            </button>
+          {:else}
+            <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">{$t('match.vote_see')}</span>
+          {/if}
+        </div>
       {/if}
 
-      <!-- Admin/group-admin: voting status card with early-close button -->
-      {#if voteStatus && match.status === 'closed' && ($isAdmin || isGroupAdmin)}
+      <!-- Admin / group-admin sem presença confirmada: card de votação com botão de encerrar -->
+      {#if voteStatus && match.status === 'closed' && ($isAdmin || (isGroupAdmin && mine?.status !== 'confirmed'))}
         <div class="mb-3 card px-4 py-3 flex items-center justify-between gap-3">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
             {$t('match.vote_label')}
