@@ -61,12 +61,24 @@ def _optimize_teams(times: list[list[dict]]) -> None:
         best_swap: tuple[int, int, int, int] | None = None
 
         n = len(times)
+        gk_counts = [sum(1 for p in t if p.get("position") == "gk") for t in times]
+
         for a in range(n):
             for b in range(a + 1, n):
                 for i, pa in enumerate(times[a]):
                     for j, pb in enumerate(times[b]):
                         if pa["skill_stars"] == pb["skill_stars"]:
                             continue
+
+                        # GK constraint: não remover o único goleiro de um time
+                        pa_is_gk = pa.get("position") == "gk"
+                        pb_is_gk = pb.get("position") == "gk"
+                        if pa_is_gk != pb_is_gk:
+                            if pa_is_gk and gk_counts[a] <= 1:
+                                continue  # time A perderia seu único GK
+                            if pb_is_gk and gk_counts[b] <= 1:
+                                continue  # time B perderia seu único GK
+
                         new_totals = totals[:]
                         new_totals[a] = totals[a] - pa["skill_stars"] + pb["skill_stars"]
                         new_totals[b] = totals[b] - pb["skill_stars"] + pa["skill_stars"]

@@ -176,6 +176,29 @@ def test_swap_optimization_produces_balanced_teams():
     assert diff <= 2  # otimização deve equalizar ao máximo
 
 
+def test_swap_optimization_preserves_goalkeeper_per_team():
+    """
+    Regressão: a otimização não deve mover o único GK de um time,
+    mesmo que isso melhore o equilíbrio de estrelas.
+    Cada time que recebeu um GK na distribuição inicial deve manter exatamente 1.
+    """
+    # 4 GKs com estrelas bem diferentes criam forte pressão para troca
+    players = (
+        [make_player(skill=1, position="gk")]   # GK muito fraco
+        + [make_player(skill=5, position="gk")]  # GK muito forte
+        + [make_player(skill=3, position="gk")]
+        + [make_player(skill=3, position="gk")]
+        + make_players(16, skill=3, position="mei")
+        + make_players(4, skill=4, position="ata")
+    )
+    teams, _ = build_teams(players, players_per_team=5)
+    for team in teams:
+        gks = [p for p in team["players"] if p["position"] == "gk"]
+        assert len(gks) == 1, (
+            f"Time '{team['name']}' tem {len(gks)} goleiro(s) após otimização (esperado: 1)"
+        )
+
+
 def test_swap_optimization_real_world_scenario():
     """
     Regressão do caso real: 40 jogadores com skill heterogêneo (1-5★).
