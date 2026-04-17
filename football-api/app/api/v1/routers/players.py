@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, status
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
 from sqlalchemy import select, text
 
@@ -318,6 +318,7 @@ async def upload_my_avatar(
         raise ValidationError("Arquivo não reconhecido como imagem.")
 
     # Crop quadrado centralizado + resize 256×256 + converte para WebP
+    img = ImageOps.exif_transpose(img)  # corrige orientação EXIF (fotos de iPhone)
     img = img.convert("RGB")
     w, h = img.size
     side = min(w, h)
