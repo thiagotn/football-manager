@@ -166,14 +166,46 @@ def test_skill_total_is_sum_of_player_skills():
 # ── Snake draft (equilíbrio) ──────────────────────────────────────────────────
 
 
-def test_snake_draft_produces_balanced_teams():
+def test_swap_optimization_produces_balanced_teams():
     """Com jogadores de habilidades variadas, a diferença de skill_total deve ser pequena."""
-    # 4 de skill 5, 4 de skill 1 → snake draft deve equilibrar
+    # 4 de skill 5, 4 de skill 1 → otimização deve equilibrar perfeitamente
     players = make_players(4, skill=5) + make_players(4, skill=1)
     teams, _ = build_teams(players, players_per_team=3)
     totals = [t["skill_total"] for t in teams]
     diff = max(totals) - min(totals)
-    assert diff <= 8  # diferença tolerável para 2 times com snake draft
+    assert diff <= 2  # otimização deve equalizar ao máximo
+
+
+def test_swap_optimization_real_world_scenario():
+    """
+    Regressão do caso real: 40 jogadores com skill heterogêneo (1-5★).
+    A diferença entre o time mais forte e mais fraco não deve ultrapassar 4★.
+    """
+    # Distribui as estrelas de forma heterogênea por posição (semelhante ao caso real)
+    import random as _rnd
+    _rnd.seed(42)
+    players = (
+        make_players(1, skill=2, position="gk")   # GK fraco
+        + make_players(3, skill=4, position="gk")  # GKs bons
+        + make_players(2, skill=4, position="lat")
+        + make_players(2, skill=3, position="lat")
+        + make_players(1, skill=5, position="zag")
+        + make_players(2, skill=4, position="zag")
+        + make_players(3, skill=3, position="zag")
+        + make_players(2, skill=2, position="zag")
+        + make_players(2, skill=1, position="zag")
+        + make_players(2, skill=5, position="mei")
+        + make_players(5, skill=4, position="mei")
+        + make_players(7, skill=3, position="mei")
+        + make_players(1, skill=2, position="mei")
+        + make_players(1, skill=5, position="ata")
+        + make_players(2, skill=4, position="ata")
+        + make_players(1, skill=4, position="ata")
+    )
+    teams, _ = build_teams(players, players_per_team=9)
+    totals = [t["skill_total"] for t in teams]
+    diff = max(totals) - min(totals)
+    assert diff <= 4, f"Desequilíbrio excessivo: totais={totals}, diff={diff}"
 
 
 # ── Equilíbrio de posição ────────────────────────────────────────────────────

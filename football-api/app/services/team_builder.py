@@ -43,6 +43,46 @@ def _pick_names(n: int) -> list[str]:
     return names
 
 
+def _optimize_teams(times: list[list[dict]]) -> None:
+    """
+    Fase de otimização pós-distribuição: greedy swap para equalizar totais.
+
+    Itera encontrando o melhor par de jogadores (um de cada time) cuja troca
+    mais reduz a diferença entre o time com maior e menor skill_total.
+    Para quando nenhuma troca melhora ou o spread fica ≤ 1.
+    """
+    for _ in range(500):
+        totals = [sum(p["skill_stars"] for p in t) for t in times]
+        current_spread = max(totals) - min(totals)
+        if current_spread <= 1:
+            break
+
+        best_improvement = 0
+        best_swap: tuple[int, int, int, int] | None = None
+
+        n = len(times)
+        for a in range(n):
+            for b in range(a + 1, n):
+                for i, pa in enumerate(times[a]):
+                    for j, pb in enumerate(times[b]):
+                        if pa["skill_stars"] == pb["skill_stars"]:
+                            continue
+                        new_totals = totals[:]
+                        new_totals[a] = totals[a] - pa["skill_stars"] + pb["skill_stars"]
+                        new_totals[b] = totals[b] - pb["skill_stars"] + pa["skill_stars"]
+                        new_spread = max(new_totals) - min(new_totals)
+                        improvement = current_spread - new_spread
+                        if improvement > best_improvement:
+                            best_improvement = improvement
+                            best_swap = (a, i, b, j)
+
+        if best_swap is None:
+            break
+
+        a, i, b, j = best_swap
+        times[a][i], times[b][j] = times[b][j], times[a][i]
+
+
 def build_teams(
     confirmed: list[dict],
     players_per_team: int,
@@ -54,7 +94,8 @@ def build_teams(
     players_per_team = jogadores de LINHA por time (exclui goleiro).
     Tamanho total de cada time = players_per_team + 1 (linha + goleiro).
 
-    Algoritmo — distribuição por posição com sorteio em faixas de estrelas:
+    Algoritmo — distribuição por posição com sorteio em faixas de estrelas
+    seguida de otimização greedy:
     1. Separa jogadores por posição.
     2. Goleiros: sorteia aleatoriamente qual time recebe cada um (1 por time).
     3. Para cada posição de linha (lat, zag, mei, ata):
@@ -67,6 +108,8 @@ def build_teams(
        (para evitar times maiores que team_size).
     5. Excedentes preenchem os slots restantes, distribuídos da mesma forma.
     6. Jogadores além da capacidade total viram reservas.
+    7. Fase de otimização: greedy swap entre times para minimizar a diferença
+       de skill_total entre o time mais forte e o mais fraco.
     """
     team_size = players_per_team + 1
     # ceil garante que todos os confirmados entram em algum time.
@@ -190,6 +233,9 @@ def build_teams(
 
     final_reserves.extend(overflow_field_sorted[idx:])
     reserves = final_reserves
+
+    # Fase de otimização: equaliza skill_total entre os times via greedy swap
+    _optimize_teams(times)
 
     names = _pick_names(n_times)
     colors = TEAM_COLORS * ((n_times // len(TEAM_COLORS)) + 1)
