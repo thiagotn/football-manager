@@ -17,7 +17,7 @@
   import AndroidBetaBanner from '$lib/components/AndroidBetaBanner.svelte';
   import { initLocale, t } from '$lib/i18n';
 
-  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy', '/ranking', '/discover', '/players/', '/draw', '/simulator'];
+  const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/match/', '/faq', '/lp', '/terms', '/privacy', '/ranking', '/discover', '/players/', '/draw', '/simulator', '/tetris'];
 
   onMount(() => {
     themeStore.init();

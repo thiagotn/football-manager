@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle, Gamepad2 } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -114,6 +114,7 @@
     if (pathname === '/review')   return '/';
     if (pathname === '/plans')    return '/';
     if (pathname === '/simulator') return '/';
+    if (pathname === '/tetris')    return '/';
     if (pathname.startsWith('/account/')) return '/profile';
     if (pathname === '/faq')      return '/';
     if (pathname === '/terms')    return '/';
@@ -285,6 +286,11 @@
           <Star size={15} /> {$t('nav.review')}
         </a>
       {/if}
+      <a href="/tetris" onclick={() => showAccountDropdown = false}
+        class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
+          {$page.url.pathname === '/tetris' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+        <Gamepad2 size={15} /> {$t('nav.tetris')}
+      </a>
     </div>
   {/if}
 </nav>
@@ -386,6 +392,11 @@
               <Star size={18} /> {$t('nav.review')}
             </a>
           {/if}
+          <a href="/tetris" onclick={closeMenu}
+            class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+              {$page.url.pathname === '/tetris' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <Gamepad2 size={18} /> {$t('nav.tetris')}
+          </a>
           <button
             onclick={() => showLangModal = true}
             class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors w-full text-left text-primary-100 hover:bg-primary-700"
