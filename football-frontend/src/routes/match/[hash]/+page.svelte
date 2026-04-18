@@ -50,9 +50,6 @@
 
   // Player stats (goals & assists)
   let playerStats = $state<MatchPlayerStatsResponse | null>(null);
-  // statsMap: player_id → {goals, assists} — driven by admin inputs
-  let statsMap = $state<Record<string, { goals: number; assists: number }>>({});
-  let statsSaving = $state(false);
 
   // Voting
   let voteStatus = $state<VoteStatusResponse | null>(null);
@@ -207,12 +204,6 @@
           // Load existing player stats for this match
           const ps = await matchStats.getPublic(m.hash).catch(() => null);
           playerStats = ps;
-          // Pre-populate statsMap from existing records
-          const initial: Record<string, { goals: number; assists: number }> = {};
-          if (ps?.stats) {
-            for (const s of ps.stats) initial[s.player_id] = { goals: s.goals, assists: s.assists };
-          }
-          statsMap = initial;
         }
       } catch { isGroupAdmin = false; }
     })();
@@ -268,26 +259,6 @@
     const dt = new Date(d + 'T00:00');
     const ddmmyyyy = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     return `${rel}, ${time} (${ddmmyyyy})`;
-  }
-
-  async function saveStats() {
-    if (!match) return;
-    statsSaving = true;
-    try {
-      const confirmed = match.attendances.filter(a => a.status === 'confirmed');
-      const payload = confirmed.map(a => ({
-        player_id: a.player.id,
-        goals: statsMap[a.player.id]?.goals ?? 0,
-        assists: statsMap[a.player.id]?.assists ?? 0,
-      }));
-      const result = await matchStats.put(match.hash, payload);
-      playerStats = result;
-      toastSuccess($t('match.stats_saved'));
-    } catch {
-      toastError($t('match.stats_save_error'));
-    } finally {
-      statsSaving = false;
-    }
   }
 
   function shareWhatsApp() {
@@ -541,7 +512,9 @@
               {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
             </button>
           {:else}
-            <span class="text-xs text-primary-600 dark:text-primary-400 font-medium shrink-0">{$t('match.vote_see')}</span>
+            <a href="/match/{matchHash}/results" class="btn-sm btn-secondary gap-1 shrink-0">
+              <ExternalLink size={12} /> {$t('match.vote_see')}
+            </a>
           {/if}
         </div>
       {/if}
@@ -611,6 +584,26 @@
                 </a>
               {/if}
             </div>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Stats card — admin only, in_progress or closed -->
+      {#if isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed')}
+        <div class="card mb-3 overflow-hidden">
+          <div class="flex items-center gap-3 px-4 py-3">
+            <span class="text-xl">📊</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('match.stats_section')}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {playerStats?.registered
+                  ? $t('match.stats_registered').replace('{n}', String(playerStats.stats.filter(s => s.goals > 0 || s.assists > 0).length))
+                  : $t('match.stats_not_registered')}
+              </p>
+            </div>
+            <a href="/match/{matchHash}/stats" class="btn-sm btn-secondary gap-1 shrink-0">
+              <ExternalLink size={12} /> {$t('match.stats_edit')}
+            </a>
           </div>
         </div>
       {/if}
@@ -817,53 +810,6 @@
       </div>
       </div><!-- /relative RSVP wrapper -->
 
-
-      <!-- Goals & assists editor (admin only, match must be in_progress or closed) -->
-      {#if isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed')}
-        {@const confirmedPlayers = match?.attendances.filter(a => a.status === 'confirmed') ?? []}
-        <div class="card overflow-hidden mt-3">
-          <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{$t('match.stats_section')}</h3>
-          </div>
-          <div class="px-4 py-3">
-            {#if confirmedPlayers.length === 0}
-              <p class="text-sm text-gray-400 dark:text-gray-500">{$t('match.stats_no_confirmed')}</p>
-            {:else}
-              <div class="space-y-2">
-                {#each confirmedPlayers as a}
-                  <div class="flex items-center gap-2">
-                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate min-w-0">{playerDisplayName(a.player.name, a.player.nickname)}</span>
-                    <label class="flex items-center gap-1 shrink-0">
-                      <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">⚽</span>
-                      <input
-                        type="number" min="0" max="20"
-                        class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
-                        value={statsMap[a.player.id]?.goals ?? 0}
-                        oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: v, assists: statsMap[a.player.id]?.assists ?? 0 } }; }}
-                      />
-                    </label>
-                    <label class="flex items-center gap-1 shrink-0">
-                      <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">🅰</span>
-                      <input
-                        type="number" min="0" max="20"
-                        class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
-                        value={statsMap[a.player.id]?.assists ?? 0}
-                        oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: statsMap[a.player.id]?.goals ?? 0, assists: v } }; }}
-                      />
-                    </label>
-                  </div>
-                {/each}
-              </div>
-              <button
-                onclick={saveStats}
-                disabled={statsSaving}
-                class="mt-3 w-full btn btn-primary justify-center btn-sm">
-                {statsSaving ? $t('match.stats_saving') : $t('match.stats_save')}
-              </button>
-            {/if}
-          </div>
-        </div>
-      {/if}
 
       <!-- Share -->
       <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
