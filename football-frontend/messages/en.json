@@ -452,7 +452,7 @@
   "match.teams_rebuild": "Redraw",
   "match.teams_build": "Build",
   "match.teams_generating": "Drawing…",
-  "match.teams_view": "View Teams",
+  "match.teams_view": "View",
   "match.rsvp_title": "Confirm your attendance",
   "match.rsvp_full": "⛔ Match full — {n} players already confirmed.",
   "match.rsvp_confirm": "I'll play!",
