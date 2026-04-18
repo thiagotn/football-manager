@@ -485,126 +485,115 @@
         </div>
       {/if}
 
-      <!-- Voting chip (before player list) -->
-      {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal}
-        <div class="mb-3 w-full card px-4 py-3 flex items-center gap-3">
-          <button
-            onclick={() => showVoteModal = true}
-            class="flex-1 min-w-0 flex items-center gap-2 hover:opacity-75 transition-opacity text-left">
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-              {$t('match.vote_post_match')}
-              <span class="text-xs font-normal px-2 py-0.5 rounded-full
-                {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                 voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
-                 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-                {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
-              </span>
-            </span>
-          </button>
-          {#if isGroupAdmin && voteStatus.status === 'open'}
-            <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-              {$t('match.vote_votes').replace('{voted}', String(voteStatus.voter_count)).replace('{eligible}', String(voteStatus.eligible_count))}
-            </span>
-            <button
-              onclick={askCloseVote}
-              disabled={closingVote}
-              class="btn btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 shrink-0">
-              {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
-            </button>
-          {:else}
-            <a href="/match/{matchHash}/results" class="btn-sm btn-secondary gap-1 shrink-0">
-              <ExternalLink size={12} /> {$t('match.vote_see')}
-            </a>
-          {/if}
-        </div>
-      {/if}
+      <!-- Quick-access cards — side by side -->
+      {#if (voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal)
+        || (voteStatus && match.status === 'closed' && ($isAdmin || (isGroupAdmin && mine?.status !== 'confirmed')))
+        || ((teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')))
+        || (isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed'))}
+        <div class="flex gap-2 mb-3 items-stretch">
 
-      <!-- Admin / group-admin sem presença confirmada: card de votação com botão de encerrar -->
-      {#if voteStatus && match.status === 'closed' && ($isAdmin || (isGroupAdmin && mine?.status !== 'confirmed'))}
-        <div class="mb-3 card px-4 py-3 flex items-center justify-between gap-3">
-          <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-            {$t('match.vote_label')}
-            <span class="text-xs font-normal px-2 py-0.5 rounded-full
-              {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-               voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
-               'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-              {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
-            </span>
-          </span>
-          <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-            {$t('match.vote_votes').replace('{voted}', String(voteStatus.voter_count)).replace('{eligible}', String(voteStatus.eligible_count))}
-          </span>
-          {#if voteStatus.status === 'open'}
-            <button
-              onclick={askCloseVote}
-              disabled={closingVote}
-              class="btn btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 shrink-0">
-              {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
-            </button>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Teams card — above player lists -->
-      {#if (teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress'))}
-        <div class="card mb-3 overflow-hidden">
-          <div class="flex items-center gap-3 px-4 py-3">
-            <span class="text-xl">⚽</span>
-            <div class="flex-1 min-w-0">
-              {#if teamsData && teamsData.teams.length > 0}
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('match.teams_sorted')}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{$t('match.teams_count').replace('{n}', String(teamsData.teams.length))}</p>
-              {:else}
-                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('match.teams_sort')}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {!match.players_per_team ? $t('match.teams_configure') :
-                   match.confirmed_count < (match.players_per_team + 1) * 2 ? $t('match.teams_waiting') :
-                   $t('match.teams_ready')}
-                </p>
-              {/if}
+          <!-- Voting card -->
+          {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal}
+            <div class="card flex-1 flex flex-col p-3 gap-2 min-w-0">
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{$t('match.vote_post_match')}</p>
+                <span class="inline-block mt-1 text-xs px-1.5 py-0.5 rounded-full
+                  {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                   voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
+                   'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
+                  {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
+                </span>
+              </div>
+              <a href="/match/{matchHash}/results" class="btn-sm btn-secondary gap-1 justify-center">
+                <ExternalLink size={12} /> {$t('match.vote_see')}
+              </a>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-              {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')}
-                {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
-                  <button class="btn-sm btn-secondary gap-1 opacity-50" disabled>
-                    <Shuffle size={12} /> {teamsData ? $t('match.teams_rebuild') : $t('match.teams_build')}
-                  </button>
-                {:else}
-                  <button
-                    onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
-                    disabled={generatingTeams}
-                    class="btn-sm btn-primary gap-1">
-                    <Shuffle size={12} /> {generatingTeams ? $t('match.teams_generating') : teamsData ? $t('match.teams_rebuild') : $t('match.teams_build')}
-                  </button>
-                {/if}
-              {/if}
-              {#if teamsData && teamsData.teams.length > 0}
-                <a href="/match/{matchHash}/teams" class="btn-sm btn-secondary gap-1">
-                  <ExternalLink size={12} /> {$t('match.teams_view')}
+          {/if}
+
+          {#if voteStatus && match.status === 'closed' && ($isAdmin || (isGroupAdmin && mine?.status !== 'confirmed'))}
+            <div class="card flex-1 flex flex-col p-3 gap-2 min-w-0">
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{$t('match.vote_label')}</p>
+                <span class="inline-block mt-1 text-xs px-1.5 py-0.5 rounded-full
+                  {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                   voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
+                   'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
+                  {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
+                </span>
+              </div>
+              {#if voteStatus.status === 'open'}
+                <button
+                  onclick={askCloseVote}
+                  disabled={closingVote}
+                  class="btn-sm btn-ghost text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-40 justify-center">
+                  {closingVote ? $t('match.vote_close_early_loading') : $t('match.vote_close_early')}
+                </button>
+              {:else}
+                <a href="/match/{matchHash}/results" class="btn-sm btn-secondary gap-1 justify-center">
+                  <ExternalLink size={12} /> {$t('match.vote_see')}
                 </a>
               {/if}
             </div>
-          </div>
-        </div>
-      {/if}
+          {/if}
 
-      <!-- Stats card — admin only, in_progress or closed -->
-      {#if isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed')}
-        <div class="card mb-3 overflow-hidden">
-          <div class="flex items-center gap-3 px-4 py-3">
-            <span class="text-xl">📊</span>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('match.stats_section')}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {playerStats?.registered
-                  ? $t('match.stats_registered').replace('{n}', String(playerStats.stats.filter(s => s.goals > 0 || s.assists > 0).length))
-                  : $t('match.stats_not_registered')}
-              </p>
+          <!-- Teams card -->
+          {#if (teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress'))}
+            <div class="card flex-1 flex flex-col p-3 gap-2 min-w-0">
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
+                  {teamsData && teamsData.teams.length > 0 ? $t('match.teams_sorted') : $t('match.teams_sort')}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {#if teamsData && teamsData.teams.length > 0}
+                    {$t('match.teams_count').replace('{n}', String(teamsData.teams.length))}
+                  {:else}
+                    {!match.players_per_team ? $t('match.teams_configure') :
+                     match.confirmed_count < (match.players_per_team + 1) * 2 ? $t('match.teams_waiting') :
+                     $t('match.teams_ready')}
+                  {/if}
+                </p>
+              </div>
+              <div class="flex flex-col gap-1">
+                {#if isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')}
+                  {#if !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
+                    <button class="btn-sm btn-secondary gap-1 justify-center opacity-50" disabled>
+                      <Shuffle size={12} /> {teamsData ? $t('match.teams_rebuild') : $t('match.teams_build')}
+                    </button>
+                  {:else}
+                    <button
+                      onclick={() => teamsData ? (confirmTeamsOpen = true) : generateTeams()}
+                      disabled={generatingTeams}
+                      class="btn-sm btn-primary gap-1 justify-center">
+                      <Shuffle size={12} /> {generatingTeams ? $t('match.teams_generating') : teamsData ? $t('match.teams_rebuild') : $t('match.teams_build')}
+                    </button>
+                  {/if}
+                {/if}
+                {#if teamsData && teamsData.teams.length > 0}
+                  <a href="/match/{matchHash}/teams" class="btn-sm btn-secondary gap-1 justify-center">
+                    <ExternalLink size={12} /> {$t('match.teams_view')}
+                  </a>
+                {/if}
+              </div>
             </div>
-            <a href="/match/{matchHash}/stats" class="btn-sm btn-secondary gap-1 shrink-0">
-              <ExternalLink size={12} /> {$t('match.stats_edit')}
-            </a>
-          </div>
+          {/if}
+
+          <!-- Stats card -->
+          {#if isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed')}
+            <div class="card flex-1 flex flex-col p-3 gap-2 min-w-0">
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{$t('match.stats_section')}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {playerStats?.registered
+                    ? $t('match.stats_registered').replace('{n}', String(playerStats.stats.filter(s => s.goals > 0 || s.assists > 0).length))
+                    : $t('match.stats_not_registered')}
+                </p>
+              </div>
+              <a href="/match/{matchHash}/stats" class="btn-sm btn-secondary gap-1 justify-center">
+                <ExternalLink size={12} /> {$t('match.stats_edit')}
+              </a>
+            </div>
+          {/if}
+
         </div>
       {/if}
 
