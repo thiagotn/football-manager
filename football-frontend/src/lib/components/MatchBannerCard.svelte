@@ -58,95 +58,78 @@
       />
     </picture>
     <div class="absolute inset-0 bg-primary-900/80"></div>
-    <div class="relative flex items-stretch gap-3">
-
-      <!-- Left: match details -->
-      <div class="flex-1 min-w-0 flex flex-col justify-center gap-0.5 sm:gap-0">
-
-        <!-- Row 1: group name + status + lock -->
-        <div class="flex items-center gap-1.5 min-w-0">
-          <p class="text-xs sm:text-sm font-bold text-white truncate">#{match.number} {match.group_name}</p>
-          <div class="flex items-center gap-1 shrink-0">
-            {#if match.status === 'in_progress'}
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
-                <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                {$t('match.live')}
-              </span>
-            {:else}
-              <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
-                {match.status === 'open' ? $t('match.open') : $t('match.closed')}
-              </span>
-            {/if}
-            {#if showAdminActions}
-              {#if match.status === 'closed'}
-                <button onclick={onToggleOpen} disabled={togglingStatus}
-                  class="p-0.5 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                  title={$t('match.reopen_title')}><LockOpen size={13} /></button>
-              {:else}
-                <button onclick={onAskClose} disabled={togglingStatus}
-                  class="p-0.5 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                  title={$t('match.close_title')}><Lock size={13} /></button>
-              {/if}
-            {/if}
-          </div>
-        </div>
-
-        <!-- Row 2: date -->
-        <h1 class="text-sm sm:text-xl font-bold capitalize leading-tight">{fmtDate(match.match_date)}</h1>
-
-        <!-- Row 3 mobile: time only -->
-        <p class="flex sm:hidden items-center gap-1 text-xs text-primary-100 truncate">
-          <Clock size={11} class="shrink-0" />
-          <span class="truncate">{formatMatchTimeRange(match.start_time, match.end_time, match.group_timezone)}</span>
-        </p>
-
-        <!-- Row 3 desktop: time + location with icons -->
-        <div class="hidden sm:flex flex-wrap gap-3 mt-2 text-primary-100 text-sm">
-          <span class="flex items-center gap-1.5"><Clock size={14} />{formatMatchTimeRange(match.start_time, match.end_time, match.group_timezone)}</span>
-          {#if match.address}
-            <a href="https://maps.google.com/?q={encodeURIComponent(match.address)}" target="_blank" rel="noopener noreferrer"
-              class="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors">
-              <MapPin size={14} />{match.location}
-            </a>
+      <!-- Status badge + lock — top-right corner -->
+      <div class="absolute top-3 right-3 flex items-center gap-1">
+        {#if match.status === 'in_progress'}
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+            {$t('match.live')}
+          </span>
+        {:else}
+          <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
+            {match.status === 'open' ? $t('match.open') : $t('match.closed')}
+          </span>
+        {/if}
+        {#if showAdminActions}
+          {#if match.status === 'closed'}
+            <button onclick={onToggleOpen} disabled={togglingStatus}
+              class="p-0.5 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              title={$t('match.reopen_title')}><LockOpen size={13} /></button>
           {:else}
-            <span class="flex items-center gap-1.5"><MapPin size={14} />{match.location}</span>
+            <button onclick={onAskClose} disabled={togglingStatus}
+              class="p-0.5 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              title={$t('match.close_title')}><Lock size={13} /></button>
           {/if}
+        {/if}
+      </div>
+
+      <!-- Match details -->
+      <div class="flex flex-col gap-0.5 pr-24">
+
+        <!-- Row 1: group name -->
+        <p class="text-xs sm:text-sm font-bold text-white truncate">#{match.number} {match.group_name}</p>
+
+        <!-- Row 2: date + time -->
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+          <h1 class="text-sm sm:text-lg font-bold capitalize leading-tight">{fmtDate(match.match_date)}</h1>
+          <span class="flex items-center gap-1 text-xs text-primary-100 whitespace-nowrap">
+            <Clock size={11} class="shrink-0" />
+            {formatMatchTimeRange(match.start_time, match.end_time, match.group_timezone)}
+          </span>
         </div>
 
-        <!-- Row 4: tags -->
+        <!-- Row 3: tags -->
         {#if match.court_type || match.players_per_team || match.group_per_match_amount != null || match.group_monthly_amount != null || match.location}
-          <div class="flex flex-wrap gap-1 sm:gap-3 mt-0.5 sm:mt-2 text-primary-200 text-xs">
+          <div class="flex flex-wrap gap-1 mt-0.5 text-primary-200 text-xs">
             {#if match.court_type}
-              <span class="bg-primary-800/40 rounded px-1.5 sm:px-2 py-0.5">{courtLabels[match.court_type] ?? match.court_type}</span>
+              <span class="bg-primary-800/40 rounded px-1.5 py-0.5">{courtLabels[match.court_type] ?? match.court_type}</span>
             {/if}
             {#if match.players_per_team}
-              <span class="bg-primary-800/40 rounded px-1.5 sm:px-2 py-0.5">{$t('match.line_plus_goalkeeper').replace('{n}', String(match.players_per_team))}</span>
+              <span class="bg-primary-800/40 rounded px-1.5 py-0.5">{$t('match.line_plus_goalkeeper').replace('{n}', String(match.players_per_team))}</span>
             {/if}
             {#if match.location}
               {#if match.address}
                 <a href="https://maps.google.com/?q={encodeURIComponent(match.address)}" target="_blank" rel="noopener noreferrer"
-                  class="sm:hidden bg-primary-800/40 rounded px-1.5 py-0.5 inline-flex items-center gap-1 hover:text-white transition-colors">
+                  class="bg-primary-800/40 rounded px-1.5 py-0.5 inline-flex items-center gap-1 hover:text-white transition-colors">
                   <MapPin size={10} class="shrink-0" />{match.location}
                 </a>
               {:else}
-                <span class="sm:hidden bg-primary-800/40 rounded px-1.5 py-0.5 inline-flex items-center gap-1">
+                <span class="bg-primary-800/40 rounded px-1.5 py-0.5 inline-flex items-center gap-1">
                   <MapPin size={10} class="shrink-0" />{match.location}
                 </span>
               {/if}
             {/if}
             {#each fmtPricingParts(match.group_per_match_amount, match.group_monthly_amount) as part}
-              <span class="bg-amber-500/30 text-amber-200 rounded px-1.5 sm:px-2 py-0.5 font-medium">{part}</span>
+              <span class="bg-amber-500/30 text-amber-200 rounded px-1.5 py-0.5 font-medium">{part}</span>
             {/each}
           </div>
         {/if}
 
         {#if match.notes}
-          <p class="text-xs sm:text-sm text-primary-200 mt-0.5 sm:mt-2 bg-primary-800/30 rounded-lg px-2 sm:px-3 py-0.5 sm:py-1.5">{match.notes}</p>
+          <p class="text-xs text-primary-200 mt-0.5 bg-primary-800/30 rounded-lg px-2 py-0.5">{match.notes}</p>
         {/if}
 
-      </div><!-- /left column -->
-
-    </div><!-- /flex row -->
+      </div><!-- /details -->
   </div><!-- /banner -->
   {#if children}
     {@render children()}
