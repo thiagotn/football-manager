@@ -818,46 +818,50 @@
       </div><!-- /relative RSVP wrapper -->
 
 
-      <!-- Goals & assists editor (admin only) -->
-      {#if isGroupAdmin}
-        {@const confirmed = match?.attendances.filter(a => a.status === 'confirmed') ?? []}
-        <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{$t('match.stats_section')}</h3>
-          {#if confirmed.length === 0}
-            <p class="text-sm text-gray-400 dark:text-gray-500">{$t('match.stats_no_confirmed')}</p>
-          {:else}
-            <div class="space-y-2">
-              {#each confirmed as a}
-                <div class="flex items-center gap-2">
-                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate min-w-0">{playerDisplayName(a.player.name, a.player.nickname)}</span>
-                  <label class="flex items-center gap-1 shrink-0">
-                    <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">⚽</span>
-                    <input
-                      type="number" min="0" max="20"
-                      class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
-                      value={statsMap[a.player.id]?.goals ?? 0}
-                      oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: v, assists: statsMap[a.player.id]?.assists ?? 0 } }; }}
-                    />
-                  </label>
-                  <label class="flex items-center gap-1 shrink-0">
-                    <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">🅰</span>
-                    <input
-                      type="number" min="0" max="20"
-                      class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
-                      value={statsMap[a.player.id]?.assists ?? 0}
-                      oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: statsMap[a.player.id]?.goals ?? 0, assists: v } }; }}
-                    />
-                  </label>
-                </div>
-              {/each}
-            </div>
-            <button
-              onclick={saveStats}
-              disabled={statsSaving}
-              class="mt-3 w-full btn btn-primary justify-center btn-sm">
-              {statsSaving ? $t('match.stats_saving') : $t('match.stats_save')}
-            </button>
-          {/if}
+      <!-- Goals & assists editor (admin only, match must be in_progress or closed) -->
+      {#if isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed')}
+        {@const confirmedPlayers = match?.attendances.filter(a => a.status === 'confirmed') ?? []}
+        <div class="card overflow-hidden mt-3">
+          <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{$t('match.stats_section')}</h3>
+          </div>
+          <div class="px-4 py-3">
+            {#if confirmedPlayers.length === 0}
+              <p class="text-sm text-gray-400 dark:text-gray-500">{$t('match.stats_no_confirmed')}</p>
+            {:else}
+              <div class="space-y-2">
+                {#each confirmedPlayers as a}
+                  <div class="flex items-center gap-2">
+                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate min-w-0">{playerDisplayName(a.player.name, a.player.nickname)}</span>
+                    <label class="flex items-center gap-1 shrink-0">
+                      <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">⚽</span>
+                      <input
+                        type="number" min="0" max="20"
+                        class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
+                        value={statsMap[a.player.id]?.goals ?? 0}
+                        oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: v, assists: statsMap[a.player.id]?.assists ?? 0 } }; }}
+                      />
+                    </label>
+                    <label class="flex items-center gap-1 shrink-0">
+                      <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">🅰</span>
+                      <input
+                        type="number" min="0" max="20"
+                        class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
+                        value={statsMap[a.player.id]?.assists ?? 0}
+                        oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: statsMap[a.player.id]?.goals ?? 0, assists: v } }; }}
+                      />
+                    </label>
+                  </div>
+                {/each}
+              </div>
+              <button
+                onclick={saveStats}
+                disabled={statsSaving}
+                class="mt-3 w-full btn btn-primary justify-center btn-sm">
+                {statsSaving ? $t('match.stats_saving') : $t('match.stats_save')}
+              </button>
+            {/if}
+          </div>
         </div>
       {/if}
 
