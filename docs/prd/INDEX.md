@@ -74,6 +74,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 006 | [avaliacao-app.md](006-avaliacao-app.md) | ✅ | Votação pós-partida v1.5 com banner de pendências e estatísticas com filtro por período |
 | 015 | [financeiro-grupo.md](015-financeiro-grupo.md) | ✅ | Controle financeiro por grupo (mensalidade, avulso, histórico) |
 | 021 | [timezone-por-grupo.md](021-timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
+| 036 | [gols-e-assistencias.md](036-gols-e-assistencias.md) | 📋 | Registro de gols e assistências por partida — somente admin do grupo |
 
 ---
 
