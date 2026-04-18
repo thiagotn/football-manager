@@ -7,7 +7,7 @@
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
-  import { ArrowLeft, Save } from 'lucide-svelte';
+  import { Save } from 'lucide-svelte';
   import { t } from '$lib/i18n';
   import { playerDisplayName } from '$lib/utils';
 
@@ -105,11 +105,6 @@
     </div>
   {:else if match}
     <main class="relative z-10 max-w-lg mx-auto px-4 py-6">
-      <!-- Back -->
-      <a href="/match/{matchHash}" class="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4 transition-colors">
-        <ArrowLeft size={16} /> {$t('match.stats_back')}
-      </a>
-
       <MatchBannerCard {match} />
 
       <!-- Editor card -->
