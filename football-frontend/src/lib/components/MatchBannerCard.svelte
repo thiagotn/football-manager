@@ -146,18 +146,6 @@
 
       </div><!-- /left column -->
 
-      <!-- Right: logo -->
-      <div class="flex items-center shrink-0 -mt-3 sm:-mt-4 -mb-3 sm:-mb-4 -mr-4">
-        <img
-          src="/logo.png"
-          alt="rachao.app"
-          width="320"
-          height="174"
-          aria-hidden="true"
-          class="w-36 sm:w-52 drop-shadow-lg pointer-events-none select-none"
-        />
-      </div>
-
     </div><!-- /flex row -->
   </div><!-- /banner -->
   {#if children}
