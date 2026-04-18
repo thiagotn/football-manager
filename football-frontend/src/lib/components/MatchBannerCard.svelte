@@ -84,7 +84,7 @@
       </div>
 
       <!-- Match details -->
-      <div class="flex flex-col gap-0.5 pr-24">
+      <div class="relative flex flex-col gap-0.5 pr-24">
 
         <!-- Row 1: group name -->
         <p class="text-xs sm:text-sm font-bold text-white truncate">#{match.number} {match.group_name}</p>

@@ -1281,5 +1281,8 @@
   "match.stats_saving": "Salvando…",
   "match.stats_saved": "Estatísticas salvas!",
   "match.stats_save_error": "Erro ao salvar estatísticas.",
-  "match.stats_no_confirmed": "Nenhum jogador confirmado nesta partida."
+  "match.stats_no_confirmed": "Nenhum jogador confirmado nesta partida.",
+  "match.vote_short": "Votação",
+  "match.teams_short": "Times",
+  "match.stats_short": "Gols & Assist."
 }
