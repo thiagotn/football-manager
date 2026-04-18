@@ -433,7 +433,7 @@
   "match.waitlist_full": "⛔ Rachão lotado — não há vagas disponíveis no momento",
   "match.not_member": "Você não é membro deste grupo. Solicite uma vaga para o admin.",
   "match.want_to_play": "Quero jogar!",
-  "match.vote_post_match": "🏆 Votação pós-partida",
+  "match.vote_post_match": "🏆 Votação",
   "match.vote_open": "Aberta",
   "match.vote_closed": "Encerrada",
   "match.vote_soon": "Em breve",

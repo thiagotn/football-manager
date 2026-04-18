@@ -433,7 +433,7 @@
   "match.waitlist_full": "⛔ Partido completo — no hay lugares disponibles en este momento",
   "match.not_member": "No eres miembro de este grupo. Solicita un lugar al admin.",
   "match.want_to_play": "¡Quiero jugar!",
-  "match.vote_post_match": "🏆 Votación post-partido",
+  "match.vote_post_match": "🏆 Votación",
   "match.vote_open": "Abierta",
   "match.vote_closed": "Cerrada",
   "match.vote_soon": "Próximamente",

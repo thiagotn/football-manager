@@ -433,7 +433,7 @@
   "match.waitlist_full": "⛔ Match full — no spots available at the moment",
   "match.not_member": "You are not a member of this group. Ask the admin for a spot.",
   "match.want_to_play": "I want to play!",
-  "match.vote_post_match": "🏆 Post-match voting",
+  "match.vote_post_match": "🏆 Voting",
   "match.vote_open": "Open",
   "match.vote_closed": "Closed",
   "match.vote_soon": "Coming soon",
