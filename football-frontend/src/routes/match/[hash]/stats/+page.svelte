@@ -16,6 +16,7 @@
   let match = $state<MatchDetail | null>(null);
   let loading = $state(true);
   let isGroupAdmin = $state(false);
+  let adminChecked = $state(false);
   let statsMap = $state<Record<string, { goals: number; assists: number }>>({});
   let saving = $state(false);
 
@@ -44,17 +45,19 @@
   $effect(() => {
     const player = $currentPlayer;
     const m = match;
-    if (!player || !m) { isGroupAdmin = false; return; }
-    if (player.role === 'admin') { isGroupAdmin = true; return; }
+    if (!player || !m) return;
+    if (player.role === 'admin') { isGroupAdmin = true; adminChecked = true; return; }
     groupsApi.get(m.group_id)
       .then(g => {
         isGroupAdmin = g.members.some(mb => mb.player.id === player.id && mb.role === 'admin');
+        adminChecked = true;
       })
-      .catch(() => { isGroupAdmin = false; });
+      .catch(() => { isGroupAdmin = false; adminChecked = true; });
   });
 
+  // Only redirect once both data and admin check are complete
   $effect(() => {
-    if (!loading && match && $isLoggedIn !== undefined) {
+    if (!loading && adminChecked && match) {
       const allowed = match.status === 'in_progress' || match.status === 'closed';
       if (!$isLoggedIn || (!isGroupAdmin && !$isAdmin) || !allowed) {
         goto(`/match/${matchHash}`);
