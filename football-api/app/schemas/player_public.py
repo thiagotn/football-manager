@@ -20,4 +20,6 @@ class PlayerPublicStats(BaseModel):
     top5_count: int
     total_vote_points: int
     total_flop_votes: int
+    total_goals: int = 0
+    total_assists: int = 0
     groups: list[GroupStatItem] = []

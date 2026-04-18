@@ -10,6 +10,7 @@ from app.core.dependencies import DB, CurrentPlayer, OptionalPlayer
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.match_repo import MatchRepository
+from app.db.repositories.match_stats_repo import MatchStatsRepository
 from app.models.match import AttendanceStatus, Match, MatchStatus
 from app.models.player import PlayerRole
 from app.models.group import GroupMemberRole
@@ -25,8 +26,11 @@ from app.schemas.match import (
     DiscoverMatchResponse,
     MatchCreate,
     MatchDetailResponse,
+    MatchPlayerStatsRequest,
+    MatchPlayerStatsResponse,
     MatchResponse,
     MatchUpdate,
+    PlayerStatResponse,
     SetAttendanceRequest,
 )
 
@@ -318,6 +322,94 @@ async def delete_match(group_id: uuid.UUID, match_id: uuid.UUID, db: DB, current
     if not match or match.group_id != group_id:
         raise NotFoundError("Partida não encontrada")
     await repo.delete(match)
+
+
+# ── Player stats (goals & assists) ───────────────────────────────────────────
+
+
+@router.get(
+    "/matches/public/{match_hash}/player-stats",
+    response_model=MatchPlayerStatsResponse,
+    tags=["public"],
+)
+async def get_public_match_player_stats(match_hash: str, db: DB):
+    """Retorna gols e assistências de todos os jogadores da partida. Público."""
+    m_repo = MatchRepository(db)
+    match = await m_repo.get_by_hash(match_hash)
+    if not match:
+        raise NotFoundError("Partida não encontrada")
+
+    stats_repo = MatchStatsRepository(db)
+    records = await stats_repo.get_by_match(match.id)
+
+    return MatchPlayerStatsResponse(
+        match_hash=match_hash,
+        registered=len(records) > 0,
+        stats=[
+            PlayerStatResponse(
+                player_id=r.player_id,
+                player_name=r.player.name,
+                avatar_url=r.player.avatar_url,
+                goals=r.goals,
+                assists=r.assists,
+            )
+            for r in records
+        ],
+    )
+
+
+@router.put(
+    "/matches/{match_hash}/player-stats",
+    response_model=MatchPlayerStatsResponse,
+)
+async def put_match_player_stats(
+    match_hash: str,
+    body: MatchPlayerStatsRequest,
+    db: DB,
+    current: CurrentPlayer,
+):
+    """Registra/atualiza gols e assistências da partida. Apenas admin do grupo."""
+    m_repo = MatchRepository(db)
+    match = await m_repo.get_by_hash(match_hash)
+    if not match:
+        raise NotFoundError("Partida não encontrada")
+
+    # Verifica se o usuário é admin do grupo
+    if current.role != PlayerRole.ADMIN:
+        g_repo = GroupRepository(db)
+        member = await g_repo.get_member(match.group_id, current.id)
+        if not member or member.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem registrar estatísticas")
+
+    # Valida que todos os player_ids são confirmados nesta partida
+    confirmed_ids = set(await m_repo.get_confirmed_player_ids(match.id))
+    for item in body.stats:
+        if item.player_id not in confirmed_ids:
+            raise ConflictError(
+                f"Jogador {item.player_id} não está confirmado nesta partida"
+            )
+
+    stats_repo = MatchStatsRepository(db)
+    records = await stats_repo.upsert_stats(
+        match_id=match.id,
+        recorded_by_id=current.id,
+        stats=[{"player_id": s.player_id, "goals": s.goals, "assists": s.assists} for s in body.stats],
+    )
+
+    return MatchPlayerStatsResponse(
+        match_hash=match_hash,
+        registered=len(records) > 0,
+        stats=[
+            PlayerStatResponse(
+                player_id=r.player_id,
+                player_name=r.player.name,
+                avatar_url=r.player.avatar_url,
+                goals=r.goals,
+                assists=r.assists,
+            )
+            for r in records
+        ],
+    )
 
 
 # ── Attendance ────────────────────────────────────────────────────────────────

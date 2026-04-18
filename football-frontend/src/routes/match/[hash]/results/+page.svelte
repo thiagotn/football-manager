@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { votes as votesApi, matches as matchesApi, ApiError } from '$lib/api';
-  import type { VoteResultsResponse, MatchDetail, VoteBallotsResponse } from '$lib/api';
+  import { votes as votesApi, matches as matchesApi, matchStats, ApiError } from '$lib/api';
+  import type { VoteResultsResponse, MatchDetail, VoteBallotsResponse, MatchPlayerStatsResponse } from '$lib/api';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
@@ -40,6 +40,7 @@
   let results = $state<VoteResultsResponse | null>(null);
   let match = $state<MatchDetail | null>(null);
   let ballots = $state<VoteBallotsResponse | null>(null);
+  let playerStatsData = $state<MatchPlayerStatsResponse | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
@@ -49,15 +50,17 @@
     let cancelled = false;
     (async () => {
       try {
-        const [r, m, b] = await Promise.all([
+        const [r, m, b, ps] = await Promise.all([
           votesApi.getPublicResults(matchHash),
           matchesApi.getByHash(matchHash),
           votesApi.getPublicBallots(matchHash).catch(() => null),
+          matchStats.getPublic(matchHash).catch(() => null),
         ]);
         if (!cancelled) {
           results = r;
           match = m;
           ballots = b;
+          playerStatsData = ps;
         }
       } catch (e) {
         if (!cancelled) {
@@ -278,6 +281,31 @@
               {/each}
             </div>
           </div>
+        {/if}
+
+        <!-- Artilheiros & Assistências -->
+        {#if playerStatsData?.registered && playerStatsData.stats.length > 0}
+          {@const scorers = playerStatsData.stats.filter(s => s.goals > 0 || s.assists > 0)}
+          {#if scorers.length > 0}
+            <div class="card mb-4 overflow-hidden">
+              <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{$t('stats.scorers_title')}</p>
+              </div>
+              <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {#each scorers as s}
+                  <div class="px-4 py-2.5 flex items-center gap-3">
+                    <span class="flex-1 text-sm text-gray-800 dark:text-gray-100 truncate">{s.player_name}</span>
+                    {#if s.goals > 0}
+                      <span class="text-xs font-semibold text-gray-600 dark:text-gray-300 shrink-0">⚽ {s.goals}</span>
+                    {/if}
+                    {#if s.assists > 0}
+                      <span class="text-xs font-semibold text-primary-500 shrink-0">🅰 {s.assists}</span>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
         {/if}
 
         <!-- Cédulas de Votação -->

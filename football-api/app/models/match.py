@@ -82,6 +82,29 @@ class Match(Base, UUIDMixin, TimestampMixin):
     group = relationship("Group", back_populates="matches")
     created_by = relationship("Player", foreign_keys=[created_by_id])
     attendances = relationship("Attendance", back_populates="match", cascade="all, delete-orphan")
+    player_stats = relationship("MatchPlayerStats", back_populates="match", cascade="all, delete-orphan",
+                                foreign_keys="[MatchPlayerStats.match_id]")
+
+
+class MatchPlayerStats(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "match_player_stats"
+
+    __table_args__ = (UniqueConstraint("match_id", "player_id", name="uq_mps_match_player"),)
+
+    match_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("matches.id", ondelete="CASCADE"), nullable=False
+    )
+    player_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=False
+    )
+    goals: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    assists: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recorded_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("players.id"), nullable=False
+    )
+
+    match = relationship("Match", back_populates="player_stats", foreign_keys=[match_id])
+    player = relationship("Player", foreign_keys=[player_id])
 
 
 class Attendance(Base, UUIDMixin, TimestampMixin):

@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `037_android_beta_signups.sql`.
+A última migration criada é `038_match_player_stats.sql`.
 
-**A próxima deve ser numerada `038_`.**
+**A próxima deve ser numerada `039_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -40,7 +40,7 @@ A última migration criada é `037_android_beta_signups.sql`.
 
 ## Repositories existentes (`app/db/repositories/`)
 
-`base`, `finance_repo`, `group_repo`, `group_stats_repo`, `invite_repo`, `match_repo`, `player_repo`, `player_stats_repo`, `ranking_repo`, `review_repo`, `subscription_repo`, `team_repo`, `vote_repo`, `waitlist_repo`
+`base`, `finance_repo`, `group_repo`, `group_stats_repo`, `invite_repo`, `match_repo`, `match_stats_repo`, `player_repo`, `player_stats_repo`, `ranking_repo`, `review_repo`, `subscription_repo`, `team_repo`, `vote_repo`, `waitlist_repo`
 
 ---
 

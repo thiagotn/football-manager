@@ -195,6 +195,8 @@ async def get_player_public_stats(player_id: uuid.UUID, db: DB):
         top5_count=full_stats.top5_count,
         total_vote_points=full_stats.total_vote_points,
         total_flop_votes=full_stats.total_flop_votes,
+        total_goals=full_stats.total_goals,
+        total_assists=full_stats.total_assists,
         groups=full_stats.groups,
     )
 

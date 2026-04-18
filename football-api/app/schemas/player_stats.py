@@ -31,6 +31,8 @@ class PlayerFullStats(BaseModel):
     total_flop_votes: int
     top1_count: int
     top5_count: int
+    total_goals: int
+    total_assists: int
     current_streak: int
     best_streak: int
     attendance_rate: int  # 0–100

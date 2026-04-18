@@ -1265,5 +1265,15 @@
   "position.zag": "Defensa central",
   "position.lat": "Lateral",
   "position.mei": "Mediocampista",
-  "position.ata": "Delantero"
+  "position.ata": "Delantero",
+  "stats.goals": "Goles",
+  "stats.assists": "Asistencias",
+  "stats.scorers_title": "Goleadores y Asistencias",
+  "stats.scorers_empty": "Sin datos registrados para este partido.",
+  "match.stats_section": "Goles y Asistencias",
+  "match.stats_save": "Guardar",
+  "match.stats_saving": "Guardando…",
+  "match.stats_saved": "¡Estadísticas guardadas!",
+  "match.stats_save_error": "Error al guardar estadísticas.",
+  "match.stats_no_confirmed": "No hay jugadores confirmados en este partido."
 }

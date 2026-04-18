@@ -87,6 +87,32 @@ class SetAttendanceRequest(BaseModel):
     status: AttendanceStatus
 
 
+class PlayerStatInput(BaseModel):
+    player_id: uuid.UUID
+    goals: int = Field(0, ge=0, le=20)
+    assists: int = Field(0, ge=0, le=20)
+
+
+class MatchPlayerStatsRequest(BaseModel):
+    stats: list[PlayerStatInput]
+
+
+class PlayerStatResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    player_id: uuid.UUID
+    player_name: str
+    avatar_url: str | None
+    goals: int
+    assists: int
+
+
+class MatchPlayerStatsResponse(BaseModel):
+    match_hash: str
+    registered: bool
+    stats: list[PlayerStatResponse]
+
+
 class DiscoverMatchResponse(BaseModel):
     model_config = {"from_attributes": True}
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { matches as matchesApi, votes as votesApi, teams as teamsApi, groups as groupsApi, ApiError } from '$lib/api';
-  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse, WaitlistEntry } from '$lib/api';
+  import { matches as matchesApi, votes as votesApi, teams as teamsApi, groups as groupsApi, matchStats, ApiError } from '$lib/api';
+  import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse, WaitlistEntry, MatchPlayerStatsResponse } from '$lib/api';
   import { currentPlayer, isLoggedIn, isAdmin } from '$lib/stores/auth';
 
   let { data } = $props();
@@ -47,6 +47,12 @@
   let teamsLoading = $state(false);
   let generatingTeams = $state(false);
   let confirmTeamsOpen = $state(false);
+
+  // Player stats (goals & assists)
+  let playerStats = $state<MatchPlayerStatsResponse | null>(null);
+  // statsMap: player_id → {goals, assists} — driven by admin inputs
+  let statsMap = $state<Record<string, { goals: number; assists: number }>>({});
+  let statsSaving = $state(false);
 
   // Voting
   let voteStatus = $state<VoteStatusResponse | null>(null);
@@ -196,7 +202,18 @@
           const member = group.members.find(mb => mb.player.id === player.id);
           isGroupAdmin = member?.role === 'admin';
         }
-        if (isGroupAdmin) groupMembers = group.members;
+        if (isGroupAdmin) {
+          groupMembers = group.members;
+          // Load existing player stats for this match
+          const ps = await matchStats.getPublic(m.hash).catch(() => null);
+          playerStats = ps;
+          // Pre-populate statsMap from existing records
+          const initial: Record<string, { goals: number; assists: number }> = {};
+          if (ps?.stats) {
+            for (const s of ps.stats) initial[s.player_id] = { goals: s.goals, assists: s.assists };
+          }
+          statsMap = initial;
+        }
       } catch { isGroupAdmin = false; }
     })();
   });
@@ -251,6 +268,26 @@
     const dt = new Date(d + 'T00:00');
     const ddmmyyyy = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     return `${rel}, ${time} (${ddmmyyyy})`;
+  }
+
+  async function saveStats() {
+    if (!match) return;
+    statsSaving = true;
+    try {
+      const confirmed = match.attendances.filter(a => a.status === 'confirmed');
+      const payload = confirmed.map(a => ({
+        player_id: a.player.id,
+        goals: statsMap[a.player.id]?.goals ?? 0,
+        assists: statsMap[a.player.id]?.assists ?? 0,
+      }));
+      const result = await matchStats.put(match.hash, payload);
+      playerStats = result;
+      toastSuccess($t('match.stats_saved'));
+    } catch {
+      toastError($t('match.stats_save_error'));
+    } finally {
+      statsSaving = false;
+    }
   }
 
   function shareWhatsApp() {
@@ -780,6 +817,49 @@
       </div>
       </div><!-- /relative RSVP wrapper -->
 
+
+      <!-- Goals & assists editor (admin only) -->
+      {#if isGroupAdmin}
+        {@const confirmed = match?.attendances.filter(a => a.status === 'confirmed') ?? []}
+        <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{$t('match.stats_section')}</h3>
+          {#if confirmed.length === 0}
+            <p class="text-sm text-gray-400 dark:text-gray-500">{$t('match.stats_no_confirmed')}</p>
+          {:else}
+            <div class="space-y-2">
+              {#each confirmed as a}
+                <div class="flex items-center gap-2">
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate min-w-0">{playerDisplayName(a.player.name, a.player.nickname)}</span>
+                  <label class="flex items-center gap-1 shrink-0">
+                    <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">⚽</span>
+                    <input
+                      type="number" min="0" max="20"
+                      class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
+                      value={statsMap[a.player.id]?.goals ?? 0}
+                      oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: v, assists: statsMap[a.player.id]?.assists ?? 0 } }; }}
+                    />
+                  </label>
+                  <label class="flex items-center gap-1 shrink-0">
+                    <span class="text-xs text-gray-400 dark:text-gray-500 w-4 text-center">🅰</span>
+                    <input
+                      type="number" min="0" max="20"
+                      class="w-12 text-center text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 py-1 px-1"
+                      value={statsMap[a.player.id]?.assists ?? 0}
+                      oninput={(e) => { const v = Math.max(0, Math.min(20, parseInt((e.target as HTMLInputElement).value) || 0)); statsMap = { ...statsMap, [a.player.id]: { goals: statsMap[a.player.id]?.goals ?? 0, assists: v } }; }}
+                    />
+                  </label>
+                </div>
+              {/each}
+            </div>
+            <button
+              onclick={saveStats}
+              disabled={statsSaving}
+              class="mt-3 w-full btn btn-primary justify-center btn-sm">
+              {statsSaving ? $t('match.stats_saving') : $t('match.stats_save')}
+            </button>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Share -->
       <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">

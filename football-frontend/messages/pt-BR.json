@@ -1013,13 +1013,10 @@
   "profile.positions_desc": "Sua posição preferida em cada grupo. Visível para todos os membros.",
   "profile.position_saved": "Posição atualizada!",
   "profile.position_save_error": "Erro ao salvar posição",
-
   "cta.banner_title": "Gerencie o seu rachão",
   "cta.login": "Entrar",
   "cta.register": "Cadastrar",
-
   "nav.ranking": "Ranking",
-
   "player_public.title": "Perfil do Jogador",
   "player_public.loading": "Carregando perfil…",
   "player_public.not_found": "Jogador não encontrado.",
@@ -1039,7 +1036,6 @@
   "stats.share_score": "Compartilhar meu Score",
   "stats.share_copied": "Link copiado!",
   "stats.share_error": "Erro ao compartilhar",
-
   "jogar.page_title": "Encontre um rachão perto de você — grátis | rachao.app",
   "jogar.page_desc": "Junte-se a rachões abertos com vagas disponíveis. Cadastro gratuito, acesse pelo navegador ou app Android. Acumule seu Rachão Score e dispute o ranking da plataforma.",
   "jogar.hero_title": "Quer jogar? Tem rachão com vaga pra você.",
@@ -1075,7 +1071,6 @@
   "jogar.free_feature_4": "Perfil público compartilhável",
   "jogar.free_feature_5": "Ranking geral da plataforma",
   "jogar.free_feature_6": "Sem limite de partidas para jogadores",
-
   "ranking.title": "Ranking Geral",
   "ranking.subtitle": "Os melhores de toda a plataforma",
   "ranking.tab_top": "Melhores",
@@ -1098,7 +1093,6 @@
   "ranking.you_badge": "Você",
   "ranking.empty": "Nenhuma votação registrada para este período.",
   "ranking.empty_sub": "As partidas precisam ter ao menos 10 jogadores para contar no ranking.",
-
   "lp.topbar_login": "Entrar",
   "lp.page_title": "rachao.app — Organize ou encontre seu rachão de futebol",
   "lp.page_desc": "Gerencie seu rachão ou encontre uma pelada aberta perto de você. Confirme presenças, sorteie times, vote no melhor da partida. Grátis.",
@@ -1218,7 +1212,6 @@
   "lp.footer_privacy": "Privacidade",
   "lp.footer_faq": "FAQ",
   "lp.footer_status": "Status",
-
   "draw.title": "Simulador de Sorteio",
   "draw.subtitle": "Monte e teste seus times antes do rachão",
   "draw.active_count": "{active} ativos de {total}",
@@ -1245,7 +1238,6 @@
   "draw.generate_btn": "Gerar lista de jogadores famosos",
   "draw.generate_alliance_btn": "Gerar lista Alliance Juventus Fc",
   "draw.empty_hint": "Gere uma lista de jogadores de exemplo ou adicione os seus manualmente.",
-
   "groups.add_manual.title": "Adicionar jogador",
   "groups.add_manual.step1_label": "WhatsApp do jogador",
   "groups.add_manual.search_btn": "Buscar",
@@ -1269,10 +1261,19 @@
   "groups.add_manual.error_limit": "Limite de membros do plano atingido.",
   "groups.add_manual.error_conflict": "Jogador já é membro deste grupo.",
   "groups.add_manual.error_generic": "Erro ao adicionar jogador.",
-
   "position.gk": "Goleiro",
   "position.zag": "Zagueiro",
   "position.lat": "Lateral",
   "position.mei": "Meia",
-  "position.ata": "Atacante"
+  "position.ata": "Atacante",
+  "stats.goals": "Gols",
+  "stats.assists": "Assistências",
+  "stats.scorers_title": "Artilheiros & Assistências",
+  "stats.scorers_empty": "Nenhum dado registrado para esta partida.",
+  "match.stats_section": "Gols & Assistências",
+  "match.stats_save": "Salvar",
+  "match.stats_saving": "Salvando…",
+  "match.stats_saved": "Estatísticas salvas!",
+  "match.stats_save_error": "Erro ao salvar estatísticas.",
+  "match.stats_no_confirmed": "Nenhum jogador confirmado nesta partida."
 }

@@ -227,6 +227,26 @@
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.flops')}</p>
           </div>
         </div>
+
+        <div class="card card-body flex items-center gap-3 py-3">
+          <div class="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 text-lg">
+            ⚽
+          </div>
+          <div class="min-w-0">
+            <p class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none">{stats.total_goals ?? 0}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.goals')}</p>
+          </div>
+        </div>
+
+        <div class="card card-body flex items-center gap-3 py-3">
+          <div class="w-9 h-9 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0 text-lg">
+            🅰
+          </div>
+          <div class="min-w-0">
+            <p class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-none">{stats.total_assists ?? 0}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{$t('stats.assists')}</p>
+          </div>
+        </div>
       </div>
 
       <!-- Blocos 3-7: single column mobile / two-column desktop -->

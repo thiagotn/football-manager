@@ -196,6 +196,8 @@ def _make_full_stats_mock():
         top1_count=3,
         top5_count=18,
         total_flop_votes=2,
+        total_goals=7,
+        total_assists=3,
         current_streak=4,
         best_streak=9,
         attendance_rate=87,

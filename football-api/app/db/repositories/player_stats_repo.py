@@ -52,6 +52,13 @@ class PlayerStatsRepository:
                     JOIN match_votes mv ON mv.id = mvf.vote_id
                     WHERE mvf.player_id = :player_id
                 ),
+                goals_ast AS (
+                    SELECT
+                        COALESCE(SUM(mps.goals),   0)::int AS total_goals,
+                        COALESCE(SUM(mps.assists), 0)::int AS total_assists
+                    FROM match_player_stats mps
+                    WHERE mps.player_id = :player_id
+                ),
                 att_rate AS (
                     SELECT
                         COUNT(*) FILTER (WHERE a.status = 'confirmed')::int AS confirmed_cnt,
@@ -68,10 +75,12 @@ class PlayerStatsRepository:
                     v.top1_count,
                     v.top5_count,
                     f.total_flop_votes,
+                    g.total_goals,
+                    g.total_assists,
                     CASE WHEN (r.confirmed_cnt + r.declined_cnt) = 0 THEN 0
                          ELSE ROUND(r.confirmed_cnt * 100.0 / (r.confirmed_cnt + r.declined_cnt))
                     END::int AS attendance_rate
-                FROM totals t, vote_pts v, flop_cnt f, att_rate r
+                FROM totals t, vote_pts v, flop_cnt f, goals_ast g, att_rate r
             """),
             params,
         )
@@ -211,6 +220,8 @@ class PlayerStatsRepository:
             top1_count=row["top1_count"],
             top5_count=row["top5_count"],
             total_flop_votes=row["total_flop_votes"],
+            total_goals=row["total_goals"],
+            total_assists=row["total_assists"],
             current_streak=current_streak,
             best_streak=best_streak,
             attendance_rate=row["attendance_rate"],

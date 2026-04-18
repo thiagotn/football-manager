@@ -1265,5 +1265,15 @@
   "position.zag": "Defender",
   "position.lat": "Fullback",
   "position.mei": "Midfielder",
-  "position.ata": "Forward"
+  "position.ata": "Forward",
+  "stats.goals": "Goals",
+  "stats.assists": "Assists",
+  "stats.scorers_title": "Scorers & Assists",
+  "stats.scorers_empty": "No data recorded for this match.",
+  "match.stats_section": "Goals & Assists",
+  "match.stats_save": "Save",
+  "match.stats_saving": "Saving…",
+  "match.stats_saved": "Stats saved!",
+  "match.stats_save_error": "Error saving stats.",
+  "match.stats_no_confirmed": "No confirmed players in this match."
 }

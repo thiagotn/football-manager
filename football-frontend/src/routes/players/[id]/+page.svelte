@@ -173,6 +173,16 @@
             {$t('player_public.flop').replace('{n}', String(stats.total_flop_votes))}
           </p>
         {/if}
+        {#if (stats.total_goals ?? 0) > 0 || (stats.total_assists ?? 0) > 0}
+          <div class="flex gap-3 pt-1">
+            {#if (stats.total_goals ?? 0) > 0}
+              <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">⚽ {stats.total_goals} {$t('stats.goals').toLowerCase()}</span>
+            {/if}
+            {#if (stats.total_assists ?? 0) > 0}
+              <span class="text-sm font-semibold text-primary-600 dark:text-primary-400">🅰 {stats.total_assists} {$t('stats.assists').toLowerCase()}</span>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <!-- Grupos -->

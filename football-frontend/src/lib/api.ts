@@ -112,6 +112,8 @@ export type PlayerFullStats = {
   total_flop_votes: number;
   top1_count: number;
   top5_count: number;
+  total_goals: number;
+  total_assists: number;
   current_streak: number;
   best_streak: number;
   attendance_rate: number;
@@ -141,6 +143,8 @@ export interface PlayerPublicStats {
   top5_count: number;
   total_vote_points: number;
   total_flop_votes: number;
+  total_goals: number;
+  total_assists: number;
   groups: GroupStatItem[];
 }
 
@@ -344,6 +348,15 @@ export type VoterBallotItem = {
   flop: BallotFlopItem | null;
 };
 export type VoteBallotsResponse = { ballots: VoterBallotItem[]; total_voters: number };
+
+export type PlayerStatItem2 = { player_id: string; player_name: string; avatar_url: string | null; goals: number; assists: number };
+export type MatchPlayerStatsResponse = { match_hash: string; registered: boolean; stats: PlayerStatItem2[] };
+
+export const matchStats = {
+  getPublic: (hash: string) => get<MatchPlayerStatsResponse>(`/matches/public/${hash}/player-stats`),
+  put: (hash: string, stats: { player_id: string; goals: number; assists: number }[]) =>
+    put<MatchPlayerStatsResponse>(`/matches/${hash}/player-stats`, { stats }),
+};
 
 export const votes = {
   getStatus:  (matchId: string) => get<VoteStatusResponse>(`/matches/${matchId}/votes/status`),
