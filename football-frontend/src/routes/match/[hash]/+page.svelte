@@ -494,14 +494,11 @@
 
           <!-- Voting card (confirmed player) -->
           {#if voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal}
-            <a href="/match/{matchHash}/results" class="card flex-1 flex flex-col p-3 gap-1 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
-              <p class="text-xs font-semibold text-gray-800 dark:text-gray-100">🏆 {$t('match.vote_short')}</p>
-              <span class="text-xs px-1.5 py-0.5 rounded-full w-fit
-                {voteStatus.status === 'open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                 voteStatus.status === 'closed' ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' :
-                 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}">
-                {voteStatus.status === 'open' ? $t('match.vote_open') : voteStatus.status === 'closed' ? $t('match.vote_closed') : $t('match.vote_soon')}
-              </span>
+            <a href="/match/{matchHash}/results" class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+              <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">🏆 {$t('match.vote_short')}</p>
+              {#if voteStatus.status === 'open'}
+                <span class="ml-1.5 w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
+              {/if}
             </a>
           {/if}
 
@@ -509,19 +506,14 @@
           {#if voteStatus && match.status === 'closed' && ($isAdmin || (isGroupAdmin && mine?.status !== 'confirmed'))}
             {#if voteStatus.status === 'open'}
               <button onclick={askCloseVote} disabled={closingVote}
-                class="card flex-1 flex flex-col p-3 gap-1 min-w-0 text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-60">
-                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100">🏆 {$t('match.vote_short')}</p>
-                <span class="text-xs px-1.5 py-0.5 rounded-full w-fit bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                  {$t('match.vote_open')} · {voteStatus.voter_count}/{voteStatus.eligible_count}
-                </span>
+                class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-60">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">🏆 {$t('match.vote_short')}</p>
+                <span class="ml-1.5 w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
               </button>
             {:else}
               <a href="/match/{matchHash}/results"
-                class="card flex-1 flex flex-col p-3 gap-1 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
-                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100">🏆 {$t('match.vote_short')}</p>
-                <span class="text-xs px-1.5 py-0.5 rounded-full w-fit bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                  {$t('match.vote_closed')}
-                </span>
+                class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">🏆 {$t('match.vote_short')}</p>
               </a>
             {/if}
           {/if}
@@ -530,22 +522,15 @@
           {#if (teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress'))}
             {#if teamsData && teamsData.teams.length > 0}
               <a href="/match/{matchHash}/teams"
-                class="card flex-1 flex flex-col p-3 gap-1 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
-                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100">⚽ {$t('match.teams_short')}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{$t('match.teams_count').replace('{n}', String(teamsData.teams.length))}</p>
+                class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">⚽ {$t('match.teams_short')}</p>
               </a>
             {:else}
               <button
                 onclick={() => generateTeams()}
                 disabled={generatingTeams || !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
-                class="card flex-1 flex flex-col p-3 gap-1 min-w-0 text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-50">
-                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100">⚽ {$t('match.teams_short')}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {generatingTeams ? $t('match.teams_generating') :
-                   !match.players_per_team ? $t('match.teams_configure') :
-                   match.confirmed_count < (match.players_per_team + 1) * 2 ? $t('match.teams_waiting') :
-                   $t('match.teams_ready')}
-                </p>
+                class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-50">
+                <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">⚽ {$t('match.teams_short')}</p>
               </button>
             {/if}
           {/if}
@@ -553,13 +538,8 @@
           <!-- Stats card -->
           {#if isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed')}
             <a href="/match/{matchHash}/stats"
-              class="card flex-1 flex flex-col p-3 gap-1 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
-              <p class="text-xs font-semibold text-gray-800 dark:text-gray-100">📊 {$t('match.stats_short')}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {playerStats?.registered
-                  ? $t('match.stats_registered').replace('{n}', String(playerStats.stats.filter(s => s.goals > 0 || s.assists > 0).length))
-                  : $t('match.stats_not_registered')}
-              </p>
+              class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+              <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">📊 {$t('match.stats_short')}</p>
             </a>
           {/if}
 
