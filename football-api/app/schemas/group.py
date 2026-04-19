@@ -2,11 +2,32 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 import re
 
 from app.models.group import GroupMemberRole
 from app.schemas.player import PlayerPublic, PlayerMemberView, normalize_nickname
+
+
+VALID_BIB_COLORS = {"laranja", "azul", "verde", "vermelho", "amarelo", "preto", "branco"}
+
+
+class TeamSlot(BaseModel):
+    color: str | None = None   # slug da paleta ou None
+    name: str | None = Field(None, max_length=40)
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: str | None) -> str | None:
+        if v is not None and v not in VALID_BIB_COLORS:
+            raise ValueError(f"Cor inválida: {v!r}. Use um dos slugs: {sorted(VALID_BIB_COLORS)}")
+        return v
+
+    @model_validator(mode="after")
+    def at_least_one(self) -> "TeamSlot":
+        if not self.color and not self.name:
+            raise ValueError("slot deve ter cor ou nome")
+        return self
 
 
 def _validate_iana_timezone(v: str) -> str:
@@ -60,6 +81,7 @@ class GroupUpdate(BaseModel):
     vote_open_delay_minutes: int | None = Field(None, ge=0, le=120)
     vote_duration_hours: int | None = Field(None, ge=2, le=72)
     timezone: str | None = Field(None, max_length=60)
+    team_slots: list[TeamSlot] | None = Field(None, max_length=5)
 
     @field_validator("timezone")
     @classmethod
@@ -94,6 +116,7 @@ class GroupResponse(BaseModel):
     vote_open_delay_minutes: int
     vote_duration_hours: int
     timezone: str = "America/Sao_Paulo"
+    team_slots: list[TeamSlot] | None = None
     created_at: datetime
     updated_at: datetime
 

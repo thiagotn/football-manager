@@ -75,6 +75,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 015 | [financeiro-grupo.md](015-financeiro-grupo.md) | ✅ | Controle financeiro por grupo (mensalidade, avulso, histórico) |
 | 021 | [timezone-por-grupo.md](021-timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
 | 036 | [gols-e-assistencias.md](036-gols-e-assistencias.md) | 📋 | Registro de gols e assistências por partida — somente admin do grupo |
+| 037 | [cores-de-coletes.md](037-cores-de-coletes.md) | 📋 | Cores de coletes e nomes customizados por time no grupo — até 5 slots por grupo |
 
 ---
 

@@ -1,9 +1,12 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { groups as groupsApi } from '$lib/api';
+  import type { TeamSlot } from '$lib/api';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import { t } from '$lib/i18n';
   import { TIMEZONE_OPTIONS, TIMEZONE_GROUPS } from '$lib/timezones';
+  import { BIB_COLOR_PALETTE } from '$lib/team-names';
+  import { Plus, X } from 'lucide-svelte';
 
   let name = $state('');
   let description = $state('');
@@ -11,14 +14,33 @@
   let voteOpenDelay = $state(20);
   let voteDuration = $state(24);
   let timezone = $state('America/Sao_Paulo');
+  let teamSlots = $state<TeamSlot[]>([]);
   let loading = $state(false);
   let error = $state('');
+
+  function addTeamSlot() {
+    if (teamSlots.length >= 5) return;
+    teamSlots = [...teamSlots, { color: null, name: null }];
+  }
+
+  function removeTeamSlot(i: number) {
+    teamSlots = teamSlots.filter((_, idx) => idx !== i);
+  }
+
+  function setSlotColor(i: number, slug: string | null) {
+    teamSlots = teamSlots.map((s, idx) => idx === i ? { ...s, color: slug } : s);
+  }
+
+  function setSlotName(i: number, val: string) {
+    teamSlots = teamSlots.map((s, idx) => idx === i ? { ...s, name: val || null } : s);
+  }
 
   async function handleCreate() {
     error = '';
     loading = true;
     try {
-      const g = await groupsApi.create({
+      const validSlots = teamSlots.filter(s => s.color || s.name);
+    const g = await groupsApi.create({
         name,
         description: description || undefined,
         is_public: isPublic,
@@ -26,6 +48,10 @@
         vote_duration_hours: voteDuration,
         timezone,
       });
+    // Save team slots via PATCH if any were configured
+    if (validSlots.length > 0) {
+      await groupsApi.update(g.id, { team_slots: validSlots });
+    }
       toastSuccess($t('new_group.success'));
       goto(`/groups/${g.id}`);
     } catch (e: any) {
@@ -132,6 +158,56 @@
             </select>
           </div>
         </div>
+      </div>
+
+      <!-- Team slots (optional) -->
+      <div class="border-t border-gray-100 pt-4">
+        <p class="text-sm font-medium text-gray-700 mb-1">{$t('group.team_slots_label')}</p>
+        <p class="text-xs text-gray-500 mb-3">{$t('group.team_slots_hint')}</p>
+        <div class="space-y-3">
+          {#each teamSlots as slot, i}
+            <div class="flex flex-col gap-2 p-3 rounded-xl border border-gray-200 bg-gray-50">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-gray-500">{i + 1}º time</span>
+                <button type="button" onclick={() => removeTeamSlot(i)}
+                  class="text-gray-400 hover:text-red-500 transition-colors p-0.5 rounded">
+                  <X size={14} />
+                </button>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 mb-1.5">{$t('group.team_slot_color')}</p>
+                <div class="flex flex-wrap gap-2">
+                  {#each BIB_COLOR_PALETTE as bib}
+                    <button
+                      type="button"
+                      onclick={() => setSlotColor(i, slot.color === bib.slug ? null : bib.slug)}
+                      title={bib.label}
+                      class="w-7 h-7 rounded-full border-2 transition-all {slot.color === bib.slug ? 'border-gray-800 scale-110 shadow-md' : 'border-transparent hover:scale-105'}"
+                      style="background-color: {bib.hex};"
+                    ></button>
+                  {/each}
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">{$t('group.team_slot_name')}</p>
+                <input
+                  type="text"
+                  class="input text-sm py-1.5"
+                  maxlength="40"
+                  value={slot.name ?? ''}
+                  oninput={(e) => setSlotName(i, (e.target as HTMLInputElement).value)}
+                  placeholder={$t('group.team_slot_name_placeholder')}
+                />
+              </div>
+            </div>
+          {/each}
+        </div>
+        {#if teamSlots.length < 5}
+          <button type="button" onclick={addTeamSlot}
+            class="mt-3 btn-secondary btn-sm w-full justify-center">
+            <Plus size={14} /> {$t('group.team_slot_add')}
+          </button>
+        {/if}
       </div>
 
       {#if error}

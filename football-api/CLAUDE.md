@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `038_match_player_stats.sql`.
+A última migration criada é `039_group_team_slots.sql`.
 
-**A próxima deve ser numerada `039_`.**
+**A próxima deve ser numerada `040_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 

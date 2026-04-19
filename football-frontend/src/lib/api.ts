@@ -83,7 +83,8 @@ export type Player = {
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string; avatar_url: string | null };
 export type PlayerMemberView = PlayerPublic & { whatsapp: string };
-export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; timezone: string; created_at: string; updated_at: string };
+export type TeamSlot = { color: string | null; name: string | null };
+export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; timezone: string; team_slots: TeamSlot[] | null; created_at: string; updated_at: string };
 export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; position: string | null; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type WaitlistEntry = { id: string; match_id: string; player_id: string; player_name: string; player_nickname: string | null; intro: string | null; status: 'pending' | 'accepted' | 'rejected'; created_at: string };
@@ -217,7 +218,7 @@ export const groups = {
   list: () => get<Group[]>('/groups'),
   get: (id: string) => get<GroupDetail>(`/groups/${id}`),
   create: (data: { name: string; description?: string; slug?: string; is_public?: boolean; vote_open_delay_minutes?: number; vote_duration_hours?: number; timezone?: string }) => post<Group>('/groups', data),
-  update: (id: string, data: { name?: string; description?: string; per_match_amount?: number | null; monthly_amount?: number | null; recurrence_enabled?: boolean; is_public?: boolean; vote_open_delay_minutes?: number; vote_duration_hours?: number; timezone?: string }) => patch<Group>(`/groups/${id}`, data),
+  update: (id: string, data: { name?: string; description?: string; per_match_amount?: number | null; monthly_amount?: number | null; recurrence_enabled?: boolean; is_public?: boolean; vote_open_delay_minutes?: number; vote_duration_hours?: number; timezone?: string; team_slots?: TeamSlot[] | null }) => patch<Group>(`/groups/${id}`, data),
   delete: (id: string) => del(`/groups/${id}`),
   addMember: (groupId: string, playerId: string, role = 'member') =>
     post<GroupMember>(`/groups/${groupId}/members`, { player_id: playerId, role }),

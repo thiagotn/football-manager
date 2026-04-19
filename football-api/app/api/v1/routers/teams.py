@@ -75,7 +75,9 @@ async def generate_teams(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
             f"({match.players_per_team} de linha + 1 goleiro por time)."
         )
 
-    teams_data, reserves_data = build_teams(confirmed, match.players_per_team)
+    group = await g_repo.get(match.group_id)
+    team_slots = group.team_slots if group else None
+    teams_data, reserves_data = build_teams(confirmed, match.players_per_team, team_slots=team_slots)
 
     # Sobrescreve times anteriores
     t_repo = TeamRepository(db)

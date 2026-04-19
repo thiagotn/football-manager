@@ -152,6 +152,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
         vote_open_delay_minutes=group.vote_open_delay_minutes,
         vote_duration_hours=group.vote_duration_hours,
         timezone=group.timezone,
+        team_slots=group.team_slots,
         created_at=group.created_at,
         updated_at=group.updated_at,
         members=[_member_response(m, caller_is_admin) for m in group.members],

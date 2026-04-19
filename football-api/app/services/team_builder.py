@@ -1,6 +1,16 @@
 import math
 import random
 
+BIB_COLOR_HEX: dict[str, str] = {
+    "laranja": "#f97316",
+    "azul": "#3b82f6",
+    "verde": "#22c55e",
+    "vermelho": "#ef4444",
+    "amarelo": "#eab308",
+    "preto": "#1f2937",
+    "branco": "#f1f5f9",
+}
+
 TEAM_NAMES = [
     "Real Madruga", "Barcelusa", "Barsemlona", "Meia Boca Juniors",
     "Baile de Munique", "Varmeiras", "Atecubanos FC", "Inter de Limão",
@@ -98,6 +108,7 @@ def _optimize_teams(times: list[list[dict]]) -> None:
 def build_teams(
     confirmed: list[dict],
     players_per_team: int,
+    team_slots: list[dict] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """
     Recebe lista de confirmados com player_id, skill_stars, position.
@@ -249,11 +260,38 @@ def build_teams(
     # Fase de otimização: equaliza skill_total entre os times via greedy swap
     _optimize_teams(times)
 
-    names = _pick_names(n_times)
-    colors = TEAM_COLORS * ((n_times // len(TEAM_COLORS)) + 1)
+    random_names = _pick_names(n_times)
+    default_colors = TEAM_COLORS * ((n_times // len(TEAM_COLORS)) + 1)
+
+    # Determine if any slot is configured (at least one non-empty slot)
+    has_slots = bool(team_slots)
 
     result = []
-    for pos_idx, (players, name, color) in enumerate(zip(times, names, colors), start=1):
+    for pos_idx, players in enumerate(times, start=1):
+        i = pos_idx - 1
+        slot = team_slots[i] if has_slots and i < len(team_slots) else None
+
+        if slot is not None:
+            slot_name = slot.get("name") if isinstance(slot, dict) else getattr(slot, "name", None)
+            slot_color_slug = slot.get("color") if isinstance(slot, dict) else getattr(slot, "color", None)
+        else:
+            slot_name = None
+            slot_color_slug = None
+
+        # Name priority: custom name > "Time {Cor}" > random
+        if slot_name:
+            name = slot_name
+        elif slot_color_slug:
+            name = f"Time {slot_color_slug.capitalize()}"
+        else:
+            name = random_names[i]
+
+        # Color priority: slot hex > default
+        if slot_color_slug and slot_color_slug in BIB_COLOR_HEX:
+            color = BIB_COLOR_HEX[slot_color_slug]
+        else:
+            color = default_colors[i]
+
         result.append(
             {
                 "name": name,

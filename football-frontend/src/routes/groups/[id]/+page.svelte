@@ -10,7 +10,9 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
   import TimePicker from '$lib/components/TimePicker.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X } from 'lucide-svelte';
+  import { BIB_COLOR_PALETTE } from '$lib/team-names';
+  import type { TeamSlot } from '$lib/api';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
@@ -142,6 +144,7 @@
 
 
   let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, vote_open_delay_minutes: 20, vote_duration_hours: 24, timezone: 'America/Sao_Paulo' });
+  let editTeamSlots = $state<TeamSlot[]>([]);
 
   // Waitlist
   let waitlistEntries = $state<WaitlistEntry[]>([]);
@@ -258,12 +261,32 @@
       vote_duration_hours: group.vote_duration_hours ?? 24,
       timezone: group.timezone ?? 'America/Sao_Paulo',
     };
+    editTeamSlots = (group.team_slots ?? []).map(s => ({ color: s.color, name: s.name }));
     showEditGroup = true;
+  }
+
+  function addTeamSlot() {
+    if (editTeamSlots.length >= 5) return;
+    editTeamSlots = [...editTeamSlots, { color: null, name: null }];
+  }
+
+  function removeTeamSlot(i: number) {
+    editTeamSlots = editTeamSlots.filter((_, idx) => idx !== i);
+  }
+
+  function setSlotColor(i: number, slug: string | null) {
+    editTeamSlots = editTeamSlots.map((s, idx) => idx === i ? { ...s, color: slug } : s);
+  }
+
+  function setSlotName(i: number, name: string) {
+    editTeamSlots = editTeamSlots.map((s, idx) => idx === i ? { ...s, name: name || null } : s);
   }
 
   async function saveEditGroup() {
     saving = true;
     try {
+      // Filter out invalid slots (must have color or name)
+      const validSlots = editTeamSlots.filter(s => s.color || s.name);
       await groupsApi.update(groupId, {
         name: editForm.name,
         description: editForm.description || undefined,
@@ -274,6 +297,7 @@
         vote_open_delay_minutes: editForm.vote_open_delay_minutes,
         vote_duration_hours: editForm.vote_duration_hours,
         timezone: editForm.timezone,
+        team_slots: validSlots.length > 0 ? validSlots : null,
       });
       group = await groupsApi.get(groupId);
       showEditGroup = false;
@@ -1464,6 +1488,58 @@
         </div>
       </div>
     </div>
+    <!-- Team slots -->
+    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{$t('group.team_slots_label')}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">{$t('group.team_slots_hint')}</p>
+      <div class="space-y-3">
+        {#each editTeamSlots as slot, i}
+          <div class="flex flex-col gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/40">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">{i + 1}º time</span>
+              <button type="button" onclick={() => removeTeamSlot(i)}
+                class="text-gray-400 hover:text-red-500 transition-colors p-0.5 rounded">
+                <X size={14} />
+              </button>
+            </div>
+            <!-- Color selector -->
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{$t('group.team_slot_color')}</p>
+              <div class="flex flex-wrap gap-2">
+                {#each BIB_COLOR_PALETTE as bib}
+                  <button
+                    type="button"
+                    onclick={() => setSlotColor(i, slot.color === bib.slug ? null : bib.slug)}
+                    title={bib.label}
+                    class="w-7 h-7 rounded-full border-2 transition-all {slot.color === bib.slug ? 'border-gray-800 dark:border-white scale-110 shadow-md' : 'border-transparent hover:scale-105'}"
+                    style="background-color: {bib.hex};"
+                  ></button>
+                {/each}
+              </div>
+            </div>
+            <!-- Name input -->
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{$t('group.team_slot_name')}</p>
+              <input
+                type="text"
+                class="input text-sm py-1.5"
+                maxlength="40"
+                value={slot.name ?? ''}
+                oninput={(e) => setSlotName(i, (e.target as HTMLInputElement).value)}
+                placeholder={$t('group.team_slot_name_placeholder')}
+              />
+            </div>
+          </div>
+        {/each}
+      </div>
+      {#if editTeamSlots.length < 5}
+        <button type="button" onclick={addTeamSlot}
+          class="mt-3 btn-secondary btn-sm w-full justify-center">
+          <Plus size={14} /> {$t('group.team_slot_add')}
+        </button>
+      {/if}
+    </div>
+
     <div class="flex gap-3 justify-end pt-2">
       <button type="button" class="btn-secondary" onclick={() => showEditGroup = false}>{$t('group.cancel')}</button>
       <button type="submit" class="btn-primary" disabled={saving}>{saving ? $t('group.save_loading') : $t('group.save_btn')}</button>

@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.services.team_builder import TEAM_COLORS, build_teams
+from app.services.team_builder import BIB_COLOR_HEX, TEAM_COLORS, build_teams
 
 
 def make_player(skill: int = 3, position: str = "mei") -> dict:
@@ -323,3 +323,66 @@ def test_pick_names_overflow_beyond_pool():
     assert all(n for n in names)
     # Não deve haver duplicatas
     assert len(set(names)) == len(names)
+
+
+# ── team_slots — lógica de nomes e cores ─────────────────────────────────────
+
+
+def _players_for_2_teams() -> list[dict]:
+    return make_players(8)  # players_per_team=3 → 2 times de 4
+
+
+def test_team_slots_custom_name_takes_priority():
+    """Slot com nome customizado: o nome deve ser usado (prioridade máxima)."""
+    players = _players_for_2_teams()
+    slots = [{"color": "laranja", "name": "Leões do Rei"}, {"color": "azul", "name": None}]
+    teams, _ = build_teams(players, players_per_team=3, team_slots=slots)
+    assert teams[0]["name"] == "Leões do Rei"
+    assert teams[1]["name"] == "Time Azul"
+
+
+def test_team_slots_color_only_generates_time_cor():
+    """Slot com cor mas sem nome → 'Time {Cor}'."""
+    players = _players_for_2_teams()
+    slots = [{"color": "laranja", "name": None}, {"color": "verde", "name": None}]
+    teams, _ = build_teams(players, players_per_team=3, team_slots=slots)
+    assert teams[0]["name"] == "Time Laranja"
+    assert teams[1]["name"] == "Time Verde"
+
+
+def test_team_slots_color_sets_hex():
+    """Slot com cor deve definir o hex correto no time."""
+    players = _players_for_2_teams()
+    slots = [{"color": "laranja", "name": None}, {"color": "azul", "name": None}]
+    teams, _ = build_teams(players, players_per_team=3, team_slots=slots)
+    assert teams[0]["color"] == BIB_COLOR_HEX["laranja"]
+    assert teams[1]["color"] == BIB_COLOR_HEX["azul"]
+
+
+def test_team_slots_fewer_slots_than_teams_uses_random_for_remainder():
+    """Apenas 1 slot para 2 times → 2º time recebe nome aleatório."""
+    players = _players_for_2_teams()
+    slots = [{"color": "vermelho", "name": None}]
+    teams, _ = build_teams(players, players_per_team=3, team_slots=slots)
+    assert teams[0]["name"] == "Time Vermelho"
+    # 2º time deve ter nome aleatório (não "Time X" baseado em slot)
+    assert teams[1]["name"]  # não vazio
+
+
+def test_team_slots_none_uses_random_names():
+    """Sem slots → nomes aleatórios normais com cores padrão."""
+    players = _players_for_2_teams()
+    teams, _ = build_teams(players, players_per_team=3, team_slots=None)
+    for team in teams:
+        assert team["name"]
+        assert team["color"] in TEAM_COLORS
+
+
+def test_team_slots_name_only_no_color_uses_default_color():
+    """Slot com nome mas sem cor → usa cor padrão."""
+    players = _players_for_2_teams()
+    slots = [{"color": None, "name": "Os Brabos"}, {"color": None, "name": "Guerreiros"}]
+    teams, _ = build_teams(players, players_per_team=3, team_slots=slots)
+    assert teams[0]["name"] == "Os Brabos"
+    assert teams[0]["color"] in TEAM_COLORS
+    assert teams[1]["name"] == "Guerreiros"

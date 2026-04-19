@@ -1,3 +1,16 @@
+/** Paleta de cores de coletes disponíveis para times do grupo. */
+export type BibColor = { slug: string; label: string; hex: string };
+
+export const BIB_COLOR_PALETTE: BibColor[] = [
+  { slug: 'laranja',  label: 'Laranja',  hex: '#f97316' },
+  { slug: 'azul',     label: 'Azul',     hex: '#3b82f6' },
+  { slug: 'verde',    label: 'Verde',    hex: '#22c55e' },
+  { slug: 'vermelho', label: 'Vermelho', hex: '#ef4444' },
+  { slug: 'amarelo',  label: 'Amarelo',  hex: '#eab308' },
+  { slug: 'preto',    label: 'Preto',    hex: '#1f2937' },
+  { slug: 'branco',   label: 'Branco',   hex: '#f1f5f9' },
+];
+
 /** Banco de nomes de times estilo várzea brasileira (≥ 40 nomes). */
 export const TEAM_NAMES: string[] = [
   // Clássicos (do PRD 012)
