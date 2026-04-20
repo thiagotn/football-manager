@@ -674,6 +674,231 @@ Para carregar no shell: `export $(cat .env | xargs)` antes de rodar `make dev` o
 
 ---
 
+## Testes unitários
+
+### Stack
+
+| Lib | Papel |
+|-----|-------|
+| `pytest` + `pytest-asyncio` | Runner e suporte a funções `async` |
+| `respx` | Mock de respostas HTTP do `httpx` — simula `api.rachao.app` sem rede real |
+| `pytest-mock` | `mocker` fixture para monkeypatching de env vars e módulos |
+
+> **Por que `respx` e não `ASGITransport`?** O MCP é um pacote independente que chama uma API remota via `httpx` — não há app FastAPI local para montar. `respx` intercepta as chamadas HTTP no nível do transport, sem precisar de rede real nem de um servidor rodando.
+
+### Estrutura de arquivos
+
+```
+football-mcp/
+└── tests/
+    ├── conftest.py          ← fixtures: mock_api, env_token
+    ├── test_auth.py         ← leitura do token do env
+    ├── test_client.py       ← headers, erros HTTP, timeout
+    ├── test_guardrails.py   ← read-only mode, group allowlist, tool allowlist
+    └── tools/
+        ├── test_groups.py
+        ├── test_matches.py
+        ├── test_players.py
+        └── test_teams.py
+```
+
+### `tests/conftest.py`
+
+```python
+import os
+import pytest
+import respx
+import httpx
+
+@pytest.fixture(autouse=True)
+def set_token(monkeypatch):
+    monkeypatch.setenv("RACHAO_TOKEN", "test-jwt-token")
+    monkeypatch.setenv("RACHAO_API_URL", "https://api.rachao.app/api/v1")
+
+@pytest.fixture
+def mock_api():
+    """Intercepta todas as chamadas HTTP para api.rachao.app."""
+    with respx.mock(base_url="https://api.rachao.app/api/v1") as mock:
+        yield mock
+```
+
+### Casos obrigatórios por módulo
+
+#### `test_auth.py`
+| Caso | Comportamento esperado |
+|------|----------------------|
+| `RACHAO_TOKEN` definido | `get_token()` retorna o valor |
+| `RACHAO_TOKEN` ausente | `RuntimeError` com mensagem "RACHAO_TOKEN não definido" |
+| `RACHAO_API_URL` ausente | usa default `https://api.rachao.app/api/v1` |
+
+```python
+def test_missing_token_raises(monkeypatch):
+    monkeypatch.delenv("RACHAO_TOKEN", raising=False)
+    with pytest.raises(RuntimeError, match="RACHAO_TOKEN"):
+        from rachao_mcp.auth import get_token
+        get_token()
+```
+
+---
+
+#### `test_client.py`
+| Caso | Comportamento esperado |
+|------|----------------------|
+| Toda request inclui `Authorization: Bearer <token>` | Header presente em GET e POST |
+| API retorna 401 | `PermissionError("Autenticação inválida — verifique RACHAO_TOKEN")` |
+| API retorna 404 | `LookupError("Recurso não encontrado")` |
+| API retorna 503 / timeout | `RuntimeError("API indisponível")` — não trava o CLI |
+| GET bem-sucedido | retorna dict/list parseado do JSON |
+
+```python
+@pytest.mark.asyncio
+async def test_bearer_header_sent(mock_api):
+    mock_api.get("/groups").mock(return_value=httpx.Response(200, json=[]))
+    from rachao_mcp.client import api
+    await api.get("/groups")
+    assert mock_api.calls[0].request.headers["authorization"] == "Bearer test-jwt-token"
+
+@pytest.mark.asyncio
+async def test_401_raises_permission_error(mock_api):
+    mock_api.get("/groups").mock(return_value=httpx.Response(401))
+    from rachao_mcp.client import api
+    with pytest.raises(PermissionError, match="RACHAO_TOKEN"):
+        await api.get("/groups")
+
+@pytest.mark.asyncio
+async def test_503_raises_runtime_error(mock_api):
+    mock_api.get("/groups").mock(return_value=httpx.Response(503))
+    from rachao_mcp.client import api
+    with pytest.raises(RuntimeError, match="indisponível"):
+        await api.get("/groups")
+```
+
+---
+
+#### `test_guardrails.py`
+| Caso | Comportamento esperado |
+|------|----------------------|
+| `RACHAO_MCP_READ_ONLY=true` | `write_tools` não registrados no servidor |
+| `RACHAO_MCP_READ_ONLY=false` (default) | todos os tools registrados |
+| `GROUP_ALLOWLIST` definido, group_id na lista | request passa |
+| `GROUP_ALLOWLIST` definido, group_id fora da lista | `PermissionError` antes de chamar a API |
+| `ALLOWED_TOOLS` definido | tools fora da lista não são registrados |
+
+```python
+def test_read_only_excludes_write_tools(monkeypatch):
+    monkeypatch.setenv("RACHAO_MCP_READ_ONLY", "true")
+    from rachao_mcp import server
+    tool_names = {t.name for t in server.mcp.tools}
+    assert "create_match" not in tool_names
+    assert "draw_teams" not in tool_names
+    assert "list_matches" in tool_names
+
+@pytest.mark.asyncio
+async def test_group_allowlist_blocks_unauthorized(monkeypatch, mock_api):
+    allowed = "aaaaaaaa-0000-0000-0000-000000000000"
+    blocked = "bbbbbbbb-0000-0000-0000-000000000000"
+    monkeypatch.setenv("RACHAO_MCP_GROUP_ALLOWLIST", allowed)
+    from rachao_mcp.client import api
+    with pytest.raises(PermissionError, match="allowlist"):
+        await api.get(f"/groups/{blocked}/matches")
+
+@pytest.mark.asyncio
+async def test_group_allowlist_allows_authorized(monkeypatch, mock_api):
+    allowed = "aaaaaaaa-0000-0000-0000-000000000000"
+    monkeypatch.setenv("RACHAO_MCP_GROUP_ALLOWLIST", allowed)
+    mock_api.get(f"/groups/{allowed}/matches").mock(return_value=httpx.Response(200, json=[]))
+    from rachao_mcp.client import api
+    result = await api.get(f"/groups/{allowed}/matches")
+    assert result == []
+```
+
+---
+
+#### `tests/tools/test_groups.py`
+| Caso | Comportamento esperado |
+|------|----------------------|
+| `list_groups` → GET `/groups` | retorna lista de grupos |
+| `get_group` → GET `/groups/{id}` | retorna detalhes do grupo |
+| `get_group_stats` → GET `/groups/{id}/stats` | retorna stats do grupo |
+
+```python
+@pytest.mark.asyncio
+async def test_list_groups(mock_api):
+    mock_api.get("/groups").mock(return_value=httpx.Response(200, json=[{"id": "abc", "name": "Pelada"}]))
+    from rachao_mcp.tools.groups import list_groups
+    result = await list_groups()
+    assert result[0]["name"] == "Pelada"
+```
+
+---
+
+#### `tests/tools/test_matches.py`
+| Caso | Comportamento esperado |
+|------|----------------------|
+| `list_matches(group_id)` → GET `/groups/{id}/matches` | lista correta |
+| `create_match(...)` → POST `/groups/{id}/matches` com body correto | retorna partida criada |
+| `update_match(...)` → PATCH com apenas campos alterados | body correto |
+| `set_attendance(group_id, match_id, player_id, status)` → POST correto | retorna confirmação |
+| `discover_matches()` → GET `/matches/discover` sem auth | retorna lista pública |
+
+```python
+@pytest.mark.asyncio
+async def test_create_match_posts_correct_body(mock_api):
+    gid = "group-uuid"
+    mock_api.post(f"/groups/{gid}/matches").mock(
+        return_value=httpx.Response(201, json={"id": "match-uuid"})
+    )
+    from rachao_mcp.tools.matches import create_match
+    result = await create_match(gid, "2026-05-10", "20:00", "Campo do Zé")
+    sent = mock_api.calls[0].request
+    import json
+    body = json.loads(sent.content)
+    assert body["match_date"] == "2026-05-10"
+    assert body["start_time"] == "20:00"
+    assert body["location"] == "Campo do Zé"
+```
+
+---
+
+#### `tests/tools/test_teams.py`
+| Caso | Comportamento esperado |
+|------|----------------------|
+| `draw_teams(group_id, match_id)` → POST correto | retorna times sorteados |
+| `get_teams(group_id, match_id)` → GET correto | retorna times existentes |
+
+---
+
+### Rodar os testes
+
+```bash
+# Instalar dependências de dev (inclui respx, pytest-asyncio, pytest-mock)
+cd football-mcp
+make install
+
+# Rodar todos os testes
+make test
+
+# Com cobertura
+uv run pytest tests/ --cov=rachao_mcp --cov-report=term-missing -q
+```
+
+### Adicionar ao `pyproject.toml`
+
+```toml
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-mock>=3.14",
+    "respx>=0.21",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+```
+
+---
+
 ## Deploy — GitHub Actions
 
 O MCP segue o mesmo pipeline CI/CD da API e do frontend. Um novo job `build-mcp` é adicionado ao workflow existente em `.github/workflows/main.yml`.
