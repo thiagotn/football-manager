@@ -26,6 +26,14 @@ http:
       middlewares: [www-redirect]
       service: frontend
 
+    mcp:
+      rule: "Host(`mcp.rachao.app`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      middlewares: [mcp-sse]
+      service: mcp
+
     # ── Monitoramento ────────────────────────────────────────────
     grafana:
       rule: "Host(`grafana.rachao.app`)"
@@ -68,6 +76,13 @@ http:
         servers:
           - url: "http://frontend:3000"
 
+    mcp:
+      loadBalancer:
+        servers:
+          - url: "http://mcp:8080"
+        responseForwarding:
+          flushInterval: "100ms"
+
     # ── Monitoramento ────────────────────────────────────────────
     grafana:
       loadBalancer:
@@ -96,6 +111,11 @@ http:
         regex: ".*"
         replacement: "https://uptime.rachao.app/status/rachao"
         permanent: true
+
+    mcp-sse:
+      headers:
+        customResponseHeaders:
+          X-Accel-Buffering: "no"
 
     # Basic Auth para o Prometheus
     # Senha padrão: monitoring123 — troque no VPS com: htpasswd -nb admin NOVA_SENHA

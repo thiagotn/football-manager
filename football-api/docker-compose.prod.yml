@@ -69,6 +69,24 @@ services:
     networks:
       - app-net
 
+  # ── MCP Server ────────────────────────────────────────────────
+  mcp:
+    image: ghcr.io/thiagotn/football-manager-mcp:latest
+    container_name: football-mcp
+    restart: unless-stopped
+    environment:
+      RACHAO_TOKEN: ${MCP_RACHAO_TOKEN}
+      RACHAO_API_URL: https://api.rachao.app/api/v1
+      MCP_TRANSPORT: sse
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8080
+      MCP_SECRET_KEY: ${MCP_SECRET_KEY}
+      RACHAO_MCP_READ_ONLY: "false"
+    expose:
+      - "8080"
+    networks:
+      - app-net
+
 volumes:
   letsencrypt:
 
