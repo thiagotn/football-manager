@@ -8,6 +8,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 |---------|-------------|
 | ✅ | Implementado e em produção |
 | 🚧 | Parcialmente implementado |
+| ❌ | Cancelado — não será implementado |
 | ⏸ | Bloqueado por dependência externa |
 | 📋 | Proposto — aguardando decisão ou priorização |
 | 📖 | Documento de referência (não é uma feature) |
@@ -50,6 +51,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
 | 033 | [simulador-sorteio-publico.md](033-simulador-sorteio-publico.md) | 📋 | Página pública `/draw` — sorteio de times com posições e estrelas, sem login, sem backend |
+| 038 | [mapa-discover.md](038-mapa-discover.md) | ❌ | Mapa interativo em `/discover` — cancelado; backend e frontend totalmente revertidos |
 
 ---
 
@@ -100,6 +102,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
+| 039 | [mcp-server.md](039-mcp-server.md) | 📋 | Servidor MCP para usar a API do rachao.app no Claude CLI e GitHub Copilot |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
 | 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
