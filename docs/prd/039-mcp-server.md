@@ -192,9 +192,9 @@ pip install -e .   # ou: uv pip install -e .
 
 ```bash
 claude mcp add rachao \
-  --command "python" \
-  --args "-m rachao_mcp" \
-  --env RACHAO_TOKEN="eyJ..."
+  -e RACHAO_TOKEN="eyJ..." \
+  -e RACHAO_API_URL="https://api.rachao.app/api/v1" \
+  -- python -m rachao_mcp
 ```
 
 Ou editar `~/.claude.json` diretamente:

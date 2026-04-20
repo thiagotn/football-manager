@@ -15,7 +15,7 @@ dev:
 	fi
 	RACHAO_TOKEN=$(RACHAO_TOKEN) \
 	RACHAO_API_URL=$(RACHAO_API_URL) \
-	python -m rachao_mcp
+	.venv/bin/python -m rachao_mcp
 
 # ── Integração com Claude CLI ─────────────────────────────────
 
@@ -24,10 +24,9 @@ register:
 		echo "Uso: make register RACHAO_TOKEN=<jwt>"; exit 1; \
 	fi
 	claude mcp add rachao \
-		--command "python" \
-		--args "-m rachao_mcp" \
-		--env RACHAO_TOKEN="$(RACHAO_TOKEN)" \
-		--env RACHAO_API_URL="$(RACHAO_API_URL)"
+		-e RACHAO_TOKEN="$(RACHAO_TOKEN)" \
+		-e RACHAO_API_URL="$(RACHAO_API_URL)" \
+		-- $(shell pwd)/.venv/bin/python -m rachao_mcp
 	@echo ""
 	@echo "MCP registrado. Verifique com: make list"
 
@@ -46,7 +45,7 @@ check:
 	fi
 	RACHAO_TOKEN=$(RACHAO_TOKEN) \
 	RACHAO_API_URL=$(RACHAO_API_URL) \
-	python -c "import asyncio; from rachao_mcp.client import api; print(asyncio.run(api.get('/groups')))"
+	.venv/bin/python -c "import asyncio; from rachao_mcp.client import api; print(asyncio.run(api.get('/groups')))"
 
 # ── Testes ────────────────────────────────────────────────────
 
