@@ -338,6 +338,8 @@ Config no Claude CLI para acessar remotamente:
 | Arquivo | Ação |
 |---------|------|
 | `football-mcp/pyproject.toml` | Criar |
+| `football-mcp/Makefile` | Criar |
+| `football-mcp/Dockerfile` | Criar |
 | `football-mcp/rachao_mcp/__init__.py` | Criar |
 | `football-mcp/rachao_mcp/server.py` | Criar |
 | `football-mcp/rachao_mcp/client.py` | Criar |
@@ -347,7 +349,9 @@ Config no Claude CLI para acessar remotamente:
 | `football-mcp/rachao_mcp/tools/players.py` | Criar |
 | `football-mcp/rachao_mcp/tools/teams.py` | Criar |
 | `football-mcp/README.md` | Criar |
-| `.github/workflows/main.yml` | Modificar (adicionar build do container MCP, opcional) |
+| `football-api/docker-compose.prod.yml` | Modificar (adicionar serviço `mcp`) |
+| `football-api/traefik-dynamic.yml` | Modificar (adicionar router, service e middleware `mcp-sse`) |
+| `.github/workflows/main.yml` | Modificar (adicionar job `build-mcp`) |
 
 ---
 
@@ -566,6 +570,110 @@ async def create_match(
 
 ---
 
+## Desenvolvimento local
+
+### Pré-requisitos
+
+- Python 3.11+
+- `uv` instalado (`pip install uv` ou via `brew install uv`)
+- Token JWT válido do rachao.app (ver seção Autenticação)
+
+### Makefile — `football-mcp/Makefile`
+
+```makefile
+.PHONY: install dev register unregister list check test
+
+RACHAO_API_URL ?= https://api.rachao.app/api/v1
+
+# ── Instalação ────────────────────────────────────────────────
+
+install:
+	uv pip install -e .
+
+# ── Execução local (stdio) ────────────────────────────────────
+
+dev:
+	@if [ -z "$(RACHAO_TOKEN)" ]; then \
+		echo "Erro: defina RACHAO_TOKEN=<jwt>"; exit 1; \
+	fi
+	RACHAO_TOKEN=$(RACHAO_TOKEN) \
+	RACHAO_API_URL=$(RACHAO_API_URL) \
+	python -m rachao_mcp
+
+# ── Integração com Claude CLI ─────────────────────────────────
+
+register:
+	@if [ -z "$(RACHAO_TOKEN)" ]; then \
+		echo "Uso: make register RACHAO_TOKEN=<jwt>"; exit 1; \
+	fi
+	claude mcp add rachao \
+		--command "python" \
+		--args "-m rachao_mcp" \
+		--env RACHAO_TOKEN="$(RACHAO_TOKEN)" \
+		--env RACHAO_API_URL="$(RACHAO_API_URL)"
+	@echo ""
+	@echo "MCP registrado. Teste com: make list"
+
+unregister:
+	claude mcp remove rachao
+	@echo "MCP removido."
+
+list:
+	claude mcp list
+
+# ── Verificação rápida sem Claude CLI ────────────────────────
+
+check:
+	@if [ -z "$(RACHAO_TOKEN)" ]; then \
+		echo "Uso: make check RACHAO_TOKEN=<jwt>"; exit 1; \
+	fi
+	RACHAO_TOKEN=$(RACHAO_TOKEN) \
+	RACHAO_API_URL=$(RACHAO_API_URL) \
+	python -c "import asyncio; from rachao_mcp.client import api; print(asyncio.run(api.get('/groups')))"
+
+# ── Testes ────────────────────────────────────────────────────
+
+test:
+	pytest tests/ -v
+```
+
+### Fluxo de teste local (passo a passo)
+
+```bash
+# 1. Entrar no diretório e instalar dependências
+cd football-mcp
+make install
+
+# 2. Registrar o servidor no Claude CLI (só precisa fazer uma vez)
+make register RACHAO_TOKEN=eyJ...
+
+# 3. Verificar que aparece na lista
+make list
+# → rachao  stdio  python -m rachao_mcp
+
+# 4. Abrir o Claude CLI e testar as tools
+claude
+> Quais são meus grupos no rachao.app?
+> Liste as partidas do grupo X
+
+# 5. Para remover quando não precisar mais
+make unregister
+```
+
+### Variáveis de ambiente para desenvolvimento
+
+Crie um `.env` em `football-mcp/` (não commitar — já deve estar no `.gitignore`):
+
+```bash
+RACHAO_TOKEN=eyJ...
+RACHAO_API_URL=https://api.rachao.app/api/v1   # ou staging se houver
+RACHAO_MCP_READ_ONLY=true                       # seguro para explorar sem risco de escrita
+```
+
+Para carregar no shell: `export $(cat .env | xargs)` antes de rodar `make dev` ou `make check`.
+
+---
+
 ## Deploy — GitHub Actions
 
 O MCP segue o mesmo pipeline CI/CD da API e do frontend. Um novo job `build-mcp` é adicionado ao workflow existente em `.github/workflows/main.yml`.
@@ -661,82 +769,83 @@ CMD ["python", "-m", "rachao_mcp"]
 
 ## Infraestrutura VPS — mcp.rachao.app
 
-### Serviço no `docker-compose.prod.yml`
+O projeto já usa **Traefik v3** como reverse proxy com Let's Encrypt integrado (`certificatesresolvers.letsencrypt`). Não é necessário nginx nem Certbot separado — basta adicionar o serviço no Compose e um router no arquivo dinâmico.
+
+### 1. Serviço no `docker-compose.prod.yml`
+
+Adicionar ao final da seção `services` (antes de `volumes:`):
 
 ```yaml
-mcp:
-  image: ghcr.io/<owner>/football-manager-mcp:latest
-  restart: unless-stopped
-  environment:
-    RACHAO_TOKEN: ${MCP_RACHAO_TOKEN}       # token de serviço da API
-    RACHAO_API_URL: https://api.rachao.app/api/v1
-    MCP_TRANSPORT: sse                       # modo remoto
-    MCP_HOST: 0.0.0.0
-    MCP_PORT: 8080
-    MCP_SECRET_KEY: ${MCP_SECRET_KEY}        # header X-Mcp-Key para autenticação
-    RACHAO_MCP_READ_ONLY: "false"
-  expose:
-    - "8080"
-  networks:
-    - proxy                                  # rede interna compartilhada com nginx
+  # ── MCP Server ────────────────────────────────────────────────
+  mcp:
+    image: ghcr.io/thiagotn/football-manager-mcp:latest
+    container_name: football-mcp
+    restart: unless-stopped
+    environment:
+      RACHAO_TOKEN: ${MCP_RACHAO_TOKEN}
+      RACHAO_API_URL: https://api.rachao.app/api/v1
+      MCP_TRANSPORT: sse
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8080
+      MCP_SECRET_KEY: ${MCP_SECRET_KEY}
+      RACHAO_MCP_READ_ONLY: "false"
+    expose:
+      - "8080"
+    networks:
+      - app-net
 ```
 
-O container **não** expõe a porta 8080 diretamente ao host — apenas via nginx.
+O container **não** expõe a porta 8080 diretamente ao host — o Traefik roteia via `app-net`.
 
-### Variáveis de ambiente no VPS (`.env.prod`)
+### 2. Router e service no `traefik-dynamic.yml`
+
+Adicionar nas seções correspondentes do arquivo existente em `football-api/traefik-dynamic.yml`:
+
+```yaml
+# Em http.routers — adicionar:
+    mcp:
+      rule: "Host(`mcp.rachao.app`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      middlewares: [mcp-sse]
+      service: mcp
+
+# Em http.services — adicionar:
+    mcp:
+      loadBalancer:
+        servers:
+          - url: "http://mcp:8080"
+        responseForwarding:
+          flushInterval: "100ms"   # flush imediato dos eventos SSE
+
+# Em http.middlewares — adicionar:
+    mcp-sse:
+      headers:
+        customResponseHeaders:
+          X-Accel-Buffering: "no"  # desativa buffer de resposta para SSE
+```
+
+O Traefik emite e renova o certificado TLS para `mcp.rachao.app` automaticamente via ACME HTTP-01 (mesma configuração dos outros subdomínios).
+
+### 3. Variáveis de ambiente no VPS (`.env.prod`)
 
 ```bash
 MCP_RACHAO_TOKEN=<jwt-do-admin-ou-service-account>
 MCP_SECRET_KEY=<string-longa-aleatória-usada-como-chave-de-acesso>
 ```
 
-### Configuração nginx — `mcp.rachao.app`
+### 4. DNS
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name mcp.rachao.app;
+Adicionar registro A apontando `mcp.rachao.app` para o mesmo IP do VPS — não é necessário servidor separado.
 
-    ssl_certificate     /etc/letsencrypt/live/mcp.rachao.app/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mcp.rachao.app/privkey.pem;
+### Arquivos alterados no deploy
 
-    # SSE requer que o nginx não faça buffer da resposta
-    proxy_buffering          off;
-    proxy_cache              off;
-    proxy_read_timeout       3600s;     # conexão SSE pode durar minutos
-    proxy_send_timeout       3600s;
-    proxy_http_version       1.1;
-    proxy_set_header         Connection "";
-
-    proxy_set_header Host              $host;
-    proxy_set_header X-Real-IP         $remote_addr;
-    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto https;
-
-    location / {
-        proxy_pass http://mcp:8080;
-    }
-}
-
-server {
-    listen 80;
-    server_name mcp.rachao.app;
-    return 301 https://$host$request_uri;
-}
-```
-
-### SSL — Certbot
-
-```bash
-# Emitir certificado para o subdomínio
-certbot certonly --nginx -d mcp.rachao.app
-
-# Renovação automática já está configurada via cronjob do certbot
-```
-
-### DNS
-
-Adicionar registro A apontando `mcp.rachao.app` para o mesmo IP do VPS onde a API está hospedada. Não é necessário um servidor separado.
+| Arquivo | Tipo de mudança |
+|---------|----------------|
+| `football-api/docker-compose.prod.yml` | Adicionar serviço `mcp` |
+| `football-api/traefik-dynamic.yml` | Adicionar router, service e middleware `mcp-sse` |
+| `football-api/.env.prod` (VPS) | Adicionar `MCP_RACHAO_TOKEN` e `MCP_SECRET_KEY` |
 
 ### Config do cliente remoto (VS Code Copilot / Claude CLI)
 
