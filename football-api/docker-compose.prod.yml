@@ -80,8 +80,7 @@ services:
       MCP_TRANSPORT: http
       MCP_HOST: 0.0.0.0
       MCP_PORT: 8080
-      MCP_SECRET_KEY: ${MCP_SECRET_KEY}
-      RACHAO_MCP_READ_ONLY: "false"
+RACHAO_MCP_READ_ONLY: "false"
     expose:
       - "8080"
     networks:
