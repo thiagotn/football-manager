@@ -1,6 +1,7 @@
 import os
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from rachao_mcp.auth import get_token
 from rachao_mcp.tools import groups, matches, players, teams
@@ -13,7 +14,11 @@ def create_server() -> FastMCP:
     _allowed_raw = os.getenv("RACHAO_MCP_ALLOWED_TOOLS", "")
     allowed_tools: set[str] | None = set(_allowed_raw.split(",")) if _allowed_raw else None
 
-    server = FastMCP("rachao.app")
+    allowed_hosts = os.getenv("MCP_ALLOWED_HOSTS", "").split(",")
+    allowed_hosts = [h.strip() for h in allowed_hosts if h.strip()]
+    transport_security = TransportSecuritySettings(allowed_hosts=allowed_hosts) if allowed_hosts else None
+
+    server = FastMCP("rachao.app", transport_security=transport_security)
 
     def register(tool_list: list[tuple]) -> None:
         for fn, annotations in tool_list:
