@@ -19,7 +19,8 @@
   <a href="#estrutura-do-repositório">Estrutura</a> ·
   <a href="#variáveis-de-ambiente">Variáveis de ambiente</a> ·
   <a href="#deploy-em-produção-vps">Deploy</a> ·
-  <a href="#funcionalidades">Funcionalidades</a>
+  <a href="#funcionalidades">Funcionalidades</a> ·
+  <a href="#servidor-mcp-football-mcp">MCP</a>
 </p>
 
 ---
@@ -70,6 +71,7 @@ Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
 | **Traefik** | Traefik v3 | Proxy reverso + TLS automático (produção). |
 | **Adminer** | Adminer 4 | Interface web para inspecionar o banco (opcional, via Docker profile). |
 | **E2E** | Playwright + pytest (Python) | Testes end-to-end dos cenários principais. Roda em CI a cada push. |
+| **MCP** | Python + FastMCP | Servidor MCP que expõe a API do rachao.app para agentes de IA (Claude). |
 
 ---
 
@@ -206,10 +208,20 @@ football-manager/
 │   │   │   └── components/         # Componentes reutilizáveis
 │   │   └── app.css                 # Estilos globais (Tailwind)
 │   └── Dockerfile                  # Multi-stage: builder e production
-└── football-e2e/                   # Testes end-to-end
-    ├── conftest.py                 # Fixtures: login, contextos autenticados
-    ├── pages/                      # Page Object Model
-    └── tests/                      # Suites por domínio (auth, groups, matches…)
+├── football-e2e/                   # Testes end-to-end
+│   ├── conftest.py                 # Fixtures: login, contextos autenticados
+│   ├── pages/                      # Page Object Model
+│   └── tests/                      # Suites por domínio (auth, groups, matches…)
+└── football-mcp/                   # Servidor MCP (Model Context Protocol)
+    ├── rachao_mcp/
+    │   ├── server.py               # Entrypoint FastMCP — registra tools read/write
+    │   ├── auth.py                 # Leitura e validação do RACHAO_TOKEN
+    │   ├── client.py               # Cliente HTTP (httpx) para a API
+    │   └── tools/                  # Tools por domínio (groups, matches, players, teams)
+    ├── tests/                      # Testes unitários do servidor MCP
+    ├── Dockerfile                  # Imagem para execução em produção
+    ├── Makefile                    # install / dev / register / test
+    └── pyproject.toml
 ```
 
 ---
@@ -349,3 +361,66 @@ Run workflow (manual)
 - Confirmação de presença por link público (sem login obrigatório)
 - Convites por link com expiração (30 min, uso único)
 - Controle de administradores por grupo
+
+---
+
+## Servidor MCP (`football-mcp/`)
+
+O **rachao MCP** expõe a API do rachao.app como um servidor [Model Context Protocol](https://modelcontextprotocol.io), permitindo que agentes de IA (como o Claude) interajam com grupos, partidas e jogadores de forma natural.
+
+### Tools disponíveis
+
+| Tool | Tipo | Descrição |
+|------|------|-----------|
+| `list_groups` | read | Lista todos os grupos do jogador autenticado |
+| `get_group` | read | Retorna detalhes de um grupo |
+| `get_group_stats` | read | Estatísticas e métricas de um grupo |
+| `list_matches` | read | Lista partidas de um grupo |
+| `get_match` | read | Retorna detalhes de uma partida pelo hash |
+| `discover_matches` | read | Descobre partidas disponíveis para confirmação |
+| `list_players` | read | Lista jogadores de um grupo |
+| `get_my_stats` | read | Estatísticas pessoais do jogador autenticado |
+| `get_ranking` | read | Ranking de jogadores |
+| `get_teams` | read | Times sorteados de uma partida |
+| `create_match` | write | Cria uma nova partida |
+| `update_match` | write | Atualiza dados de uma partida |
+| `set_attendance` | write | Confirma ou cancela presença em uma partida |
+| `draw_teams` | write | Realiza o sorteio de times de uma partida |
+
+### Variáveis de ambiente
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `RACHAO_TOKEN` | Sim | JWT de autenticação obtido via login na API |
+| `RACHAO_API_URL` | Não | URL base da API (padrão: `https://api.rachao.app/api/v1`) |
+| `RACHAO_MCP_READ_ONLY` | Não | `true` para desabilitar tools de escrita |
+| `RACHAO_MCP_ALLOWED_TOOLS` | Não | Lista separada por vírgula de tools permitidas |
+
+### Uso local
+
+```bash
+cd football-mcp
+
+# 1. Instalar dependências
+make install   # ou: uv pip install -e ".[dev]"
+
+# 2. Executar o servidor (stdio)
+make dev RACHAO_TOKEN=<jwt>
+
+# 3. Registrar no Claude CLI
+make register RACHAO_TOKEN=<jwt>
+
+# 4. Rodar os testes
+make test
+```
+
+### Integração com Claude CLI
+
+```bash
+claude mcp add rachao \
+  -e RACHAO_TOKEN="<jwt>" \
+  -e RACHAO_API_URL="https://api.rachao.app/api/v1" \
+  -- /caminho/para/football-mcp/.venv/bin/python -m rachao_mcp
+```
+
+Após registrado, o Claude passa a ter acesso a todos os dados e ações do rachao.app diretamente na conversa.

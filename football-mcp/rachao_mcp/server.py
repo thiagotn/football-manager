@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -32,12 +33,51 @@ def create_server() -> FastMCP:
     return server
 
 
-mcp = create_server()
+class _BearerAuthMiddleware:
+    """ASGI middleware: rejeita requisições sem o bearer token correto."""
+
+    def __init__(self, app: Any, secret_key: str) -> None:
+        self.app = app
+        self.secret_key = secret_key
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] in ("http", "websocket"):
+            headers = {k.lower(): v for k, v in scope.get("headers", [])}
+            auth = headers.get(b"authorization", b"").decode()
+            if not auth.startswith("Bearer "):
+                token = ""
+            else:
+                token = auth[len("Bearer "):].strip()
+            if token != self.secret_key:
+                await send({
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [
+                        (b"content-type", b"text/plain"),
+                        (b"www-authenticate", b"Bearer"),
+                    ],
+                })
+                await send({"type": "http.response.body", "body": b"Unauthorized"})
+                return
+        await self.app(scope, receive, send)
 
 
 def main() -> None:
-    mcp.run()
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
 
+    if transport in ("sse", "http"):
+        import uvicorn
 
-if __name__ == "__main__":
-    main()
+        mcp = create_server()
+        app = mcp.streamable_http_app() if transport == "http" else mcp.sse_app()
+
+        secret_key = os.getenv("MCP_SECRET_KEY")
+        if secret_key:
+            app = _BearerAuthMiddleware(app, secret_key)  # type: ignore[assignment]
+
+        host = os.getenv("MCP_HOST", "127.0.0.1")
+        port = int(os.getenv("MCP_PORT", "8080"))
+        uvicorn.run(app, host=host, port=port)
+    else:
+        mcp = create_server()
+        mcp.run()

@@ -77,7 +77,7 @@ services:
     environment:
       RACHAO_TOKEN: ${MCP_RACHAO_TOKEN}
       RACHAO_API_URL: https://api.rachao.app/api/v1
-      MCP_TRANSPORT: sse
+      MCP_TRANSPORT: http
       MCP_HOST: 0.0.0.0
       MCP_PORT: 8080
       MCP_SECRET_KEY: ${MCP_SECRET_KEY}

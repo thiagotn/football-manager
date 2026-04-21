@@ -31,7 +31,6 @@ http:
       entrypoints: [websecure]
       tls:
         certResolver: letsencrypt
-      middlewares: [mcp-sse]
       service: mcp
 
     # ── Monitoramento ────────────────────────────────────────────
@@ -111,11 +110,6 @@ http:
         regex: ".*"
         replacement: "https://uptime.rachao.app/status/rachao"
         permanent: true
-
-    mcp-sse:
-      headers:
-        customResponseHeaders:
-          X-Accel-Buffering: "no"
 
     # Basic Auth para o Prometheus
     # Senha padrão: monitoring123 — troque no VPS com: htpasswd -nb admin NOVA_SENHA
