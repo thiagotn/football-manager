@@ -13,8 +13,8 @@ async def get_my_stats() -> dict:
     return await api.get("/players/me/stats/full")
 
 
-async def get_ranking() -> list[dict]:
-    """Ranking geral da plataforma."""
+async def get_ranking() -> dict:
+    """Ranking geral da plataforma. Retorna year, month, type e items com position, name, nickname e total_points."""
     return await api.get("/ranking")
 
 
