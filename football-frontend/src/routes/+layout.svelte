@@ -32,7 +32,8 @@
     if ($sessionExpiredStore) {
       sessionExpiredStore.set(false);
       toastInfo($t('layout.session_expired'));
-      goto('/login?expired=1');
+      const next = encodeURIComponent($page.url.pathname + $page.url.search);
+      goto(`/login?expired=1&next=${next}`);
     }
   });
 
@@ -53,7 +54,8 @@
           const isMobile = window.innerWidth < 768;
           goto(isMobile ? '/login' : '/lp');
         } else {
-          goto('/login');
+          const next = encodeURIComponent($page.url.pathname + $page.url.search);
+          goto(`/login?next=${next}`);
         }
       }
     }
