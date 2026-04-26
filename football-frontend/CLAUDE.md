@@ -39,6 +39,7 @@
 | `/profile` | Perfil, troca de senha, upload/remoção de avatar |
 | `/profile/stats` | Estatísticas pessoais |
 | `/account/subscription` | Plano atual + upgrade |
+| `/account/mcp-tokens` | Tokens MCP pessoais — criação, listagem e revogação |
 | `/account/checkout` | Retorno do checkout Stripe (success/failure) |
 | `/review` | Avaliação do app |
 | `/players` | Listagem de jogadores (admin do grupo) |
@@ -81,6 +82,7 @@
 | `VoteResults.svelte` | Exibição do pódio e ranking de votação |
 | `WaitlistModal.svelte` | Modal de candidatura à lista de espera |
 | `WaitlistPanel.svelte` | Painel admin para aprovar/rejeitar candidatos |
+| `MCPTokenCreateModal.svelte` | Modal dois passos: form de criação de token MCP + exibição única do token gerado. Props: `bind:open`, `onCreated`, `onClose` |
 
 ---
 
@@ -108,7 +110,7 @@
 
 ## Namespaces de `api.ts`
 
-`auth` · `players` (inclui `getPublicStats`) · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking`
+`auth` · `players` (inclui `getPublicStats`) · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking` · `mcpTokens`
 
 ---
 

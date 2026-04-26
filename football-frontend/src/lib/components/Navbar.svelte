@@ -3,7 +3,7 @@
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle, Gamepad2 } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle, Gamepad2, Key } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -280,6 +280,11 @@
         <UserCircle size={15} /> {$t('nav.my_account')}
       </a>
       {#if !$isAdmin}
+        <a href="/account/mcp-tokens" onclick={() => showAccountDropdown = false}
+          class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
+            {$page.url.pathname === '/account/mcp-tokens' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+          <Key size={15} /> {$t('nav.mcp_tokens')}
+        </a>
         <a href="/review" onclick={() => showAccountDropdown = false}
           class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
             {$page.url.pathname === '/review' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
@@ -386,6 +391,11 @@
             <HelpCircle size={18} /> {$t('nav.faq')}
           </a>
           {#if !$isAdmin}
+            <a href="/account/mcp-tokens" onclick={closeMenu}
+              class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                {$page.url.pathname === '/account/mcp-tokens' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+              <Key size={18} /> {$t('nav.mcp_tokens')}
+            </a>
             <a href="/review" onclick={closeMenu}
               class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
                 {$page.url.pathname === '/review' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">

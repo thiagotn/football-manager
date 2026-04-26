@@ -684,6 +684,38 @@ export type AndroidBetaSignupListResponse = {
   items: AndroidBetaSignupItem[];
 };
 
+// ── MCP Tokens ───────────────────────────────────────────────────────────────
+
+export type MCPTokenCreate = {
+  name: string;
+  expires_in: '24h' | '7d' | null;
+};
+
+export type MCPTokenCreated = {
+  id: string;
+  name: string;
+  token: string;
+  token_prefix: string;
+  expires_at: string | null;
+  created_at: string;
+};
+
+export type MCPTokenResponse = {
+  id: string;
+  name: string;
+  token_prefix: string;
+  expires_at: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  is_expired: boolean;
+};
+
+export const mcpTokens = {
+  list: () => get<MCPTokenResponse[]>('/mcp-tokens'),
+  create: (body: MCPTokenCreate) => post<MCPTokenCreated>('/mcp-tokens', body),
+  revoke: (id: string) => del(`/mcp-tokens/${id}`),
+};
+
 export const androidBeta = {
   submit: (google_email: string) =>
     post<{ status: string }>('/beta/android-signup', { google_email }),

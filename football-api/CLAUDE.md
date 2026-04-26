@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `039_group_team_slots.sql`.
+A última migration criada é `040_mcp_tokens.sql`.
 
-**A próxima deve ser numerada `040_`.**
+**A próxima deve ser numerada `041_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -35,6 +35,7 @@ A última migration criada é `039_group_team_slots.sql`.
 | `teams.py` | Sorteio de times |
 | `votes.py` | Votação pós-partida |
 | `webhooks.py` | Webhooks do Stripe |
+| `mcp_tokens.py` | Tokens MCP pessoais (criação, listagem, revogação) |
 
 ---
 
@@ -46,13 +47,13 @@ A última migration criada é `039_group_team_slots.sql`.
 
 ## Models existentes (`app/models/`)
 
-`app_review`, `base`, `finance`, `group`, `invite`, `match`, `match_vote`, `player`, `push_subscription`, `subscription`, `team`, `user`, `waitlist`
+`app_review`, `base`, `finance`, `group`, `invite`, `match`, `match_vote`, `mcp_token`, `player`, `push_subscription`, `subscription`, `team`, `user`, `waitlist`
 
 ---
 
 ## Schemas existentes (`app/schemas/`)
 
-`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `player`, `player_public`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
+`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `mcp_token`, `player`, `player_public`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
 
 ---
 

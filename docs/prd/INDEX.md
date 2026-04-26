@@ -103,6 +103,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
 | 039 | [mcp-server.md](039-mcp-server.md) | 📋 | Servidor MCP para usar a API do rachao.app no Claude CLI e GitHub Copilot |
+| 040 | [mcp-personal-access-tokens.md](040-mcp-personal-access-tokens.md) | 📋 | Tokens MCP pessoais por usuário — criação com expiração, listagem e revogação |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
 | 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |

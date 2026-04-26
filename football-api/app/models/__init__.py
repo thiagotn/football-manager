@@ -5,6 +5,7 @@ from app.models.invite import InviteToken
 from app.models.push_subscription import PushSubscription
 from app.models.finance import FinancePeriod, FinancePayment
 from app.models.waitlist import MatchWaitlist, WaitlistStatus
+from app.models.mcp_token import MCPToken
 
 __all__ = [
     "Player", "PlayerRole",
@@ -14,4 +15,5 @@ __all__ = [
     "PushSubscription",
     "FinancePeriod", "FinancePayment",
     "MatchWaitlist", "WaitlistStatus",
+    "MCPToken",
 ]
