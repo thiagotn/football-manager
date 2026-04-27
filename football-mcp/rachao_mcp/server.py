@@ -7,9 +7,7 @@ from rachao_mcp.auth import get_token
 from rachao_mcp.tools import groups, matches, players, teams
 
 
-def create_server() -> FastMCP:
-    get_token()  # fail fast — RuntimeError se RACHAO_TOKEN não estiver definido
-
+def _build_mcp_server() -> FastMCP:
     read_only = os.getenv("RACHAO_MCP_READ_ONLY", "false").lower() == "true"
     _allowed_raw = os.getenv("RACHAO_MCP_ALLOWED_TOOLS", "")
     allowed_tools: set[str] | None = set(_allowed_raw.split(",")) if _allowed_raw else None
@@ -37,14 +35,23 @@ def create_server() -> FastMCP:
     return server
 
 
+def create_server() -> FastMCP:
+    get_token()  # fail fast — RuntimeError se RACHAO_TOKEN não estiver definido
+    return _build_mcp_server()
+
+
 def main() -> None:
     transport = os.getenv("MCP_TRANSPORT", "stdio")
 
     if transport in ("sse", "http"):
         import uvicorn
 
-        mcp = create_server()
-        app = mcp.streamable_http_app() if transport == "http" else mcp.sse_app()
+        from rachao_mcp.middleware import BearerTokenMiddleware
+
+        # In HTTP/SSE mode tokens arrive per-request — no RACHAO_TOKEN env var required.
+        mcp = _build_mcp_server()
+        raw_app = mcp.streamable_http_app() if transport == "http" else mcp.sse_app()
+        app = BearerTokenMiddleware(raw_app)
 
         host = os.getenv("MCP_HOST", "127.0.0.1")
         port = int(os.getenv("MCP_PORT", "8080"))

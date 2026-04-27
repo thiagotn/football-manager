@@ -14,6 +14,23 @@ def test_get_token_missing_raises(monkeypatch):
         get_token()
 
 
+def test_get_token_context_var_takes_precedence(monkeypatch):
+    monkeypatch.setenv("RACHAO_TOKEN", "env-token")
+    from rachao_mcp.auth import _request_token, get_token
+    ctx = _request_token.set("request-token")
+    try:
+        assert get_token() == "request-token"
+    finally:
+        _request_token.reset(ctx)
+
+
+def test_get_token_falls_back_to_env_when_context_empty(monkeypatch):
+    monkeypatch.setenv("RACHAO_TOKEN", "env-token")
+    from rachao_mcp.auth import _request_token, get_token
+    assert _request_token.get() is None
+    assert get_token() == "env-token"
+
+
 def test_get_api_url_default(monkeypatch):
     monkeypatch.delenv("RACHAO_API_URL", raising=False)
     from rachao_mcp.auth import get_api_url
