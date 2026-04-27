@@ -1,8 +1,10 @@
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import UnauthorizedError, ForbiddenError
@@ -10,10 +12,29 @@ from app.core.security import decode_access_token
 from app.db.repositories.player_repo import PlayerRepository
 from app.db.repositories.group_repo import GroupRepository
 from app.db.session import get_db
+from app.models.mcp_token import MCPToken
 from app.models.player import Player, PlayerRole
 from app.models.group import GroupMemberRole
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+async def _authenticate_mcp_token(token: str, db: AsyncSession) -> Player | None:
+    token_hash = MCPToken.hash_token(token)
+    result = await db.execute(
+        select(MCPToken).where(MCPToken.token_hash == token_hash, MCPToken.revoked_at.is_(None))
+    )
+    mcp = result.scalar_one_or_none()
+    if not mcp:
+        return None
+    now = datetime.now(timezone.utc)
+    if mcp.expires_at and mcp.expires_at < now:
+        return None
+    await db.execute(
+        update(MCPToken).where(MCPToken.id == mcp.id).values(last_used_at=now)
+    )
+    result = await db.execute(select(Player).where(Player.id == mcp.player_id))
+    return result.scalar_one_or_none()
 
 
 async def get_current_player(
@@ -23,7 +44,15 @@ async def get_current_player(
     if not credentials:
         raise UnauthorizedError("Token de acesso requerido")
 
-    player_id = decode_access_token(credentials.credentials)
+    token = credentials.credentials
+
+    if token.startswith("rachao_"):
+        player = await _authenticate_mcp_token(token, db)
+        if not player or not player.active:
+            raise UnauthorizedError("Token inválido ou expirado")
+        return player
+
+    player_id = decode_access_token(token)
     if not player_id:
         raise UnauthorizedError("Token inválido ou expirado")
 
@@ -64,7 +93,11 @@ async def get_optional_player(
 ) -> Player | None:
     if not credentials:
         return None
-    player_id = decode_access_token(credentials.credentials)
+    token = credentials.credentials
+    if token.startswith("rachao_"):
+        player = await _authenticate_mcp_token(token, db)
+        return player if player and player.active else None
+    player_id = decode_access_token(token)
     if not player_id:
         return None
     repo = PlayerRepository(db)
