@@ -404,16 +404,89 @@ chat-frontend:
 |---------|--------|-------------|
 | Definir limite de rate limit | 10, 20 ou 30 mensagens/hora por usuário | Thiago |
 | Persistir histórico de conversa entre sessões na v1.0? | Sim (Supabase) / Não (somente sessão) | Thiago |
-| Budget mensal máximo de API | A definir | Thiago |
+| Budget mensal máximo de API | Ver seção 13 para estimativas | Thiago |
 | Critério para habilitar acesso em massa | Manual / automático por plano | Thiago |
+| Escolha do modelo de IA | Ver seção 13 — trade-off entre custo e MCP nativo | Thiago |
+
+---
+
+## 13. Custos e Alternativas de Modelo
+
+### 13.1 Premissas para Estimativa
+
+Cenário de referência: **100 usuários ativos/mês × 50 mensagens cada = 5.000 mensagens/mês**
+
+| Parâmetro | Valor estimado |
+|-----------|---------------|
+| Tokens de input por mensagem | ~1.500 (system prompt ~300 + histórico ~1.000 + pergunta ~200) |
+| Tokens de output por mensagem | ~400 |
+| Total de input/mês | ~7,5M tokens |
+| Total de output/mês | ~2M tokens |
+
+> Os tokens de input crescem conforme o histórico acumula na sessão. O system prompt fixo se beneficia de **prompt caching** (90% de desconto na Anthropic).
+
+---
+
+### 13.2 Comparativo de Custo Mensal (cenário 100 usuários × 50 msgs)
+
+| Provedor | Modelo | Input/M | Output/M | Custo estimado/mês | Suporte MCP nativo |
+|----------|--------|---------|----------|-------------------|--------------------|
+| Anthropic | **claude-sonnet-4-6** | $3,00 | $15,00 | **~R$ 290** (~$53) | ✅ Nativo |
+| Anthropic | **claude-haiku-4-5** | $1,00 | $5,00 | **~R$ 98** (~$18) | ✅ Nativo |
+| Anthropic | claude-haiku-4-5 + cache | $0,10* | $5,00 | **~R$ 55** (~$10) | ✅ Nativo |
+| Google | **Gemini 2.5 Flash** | $0,30 | $2,50 | **~R$ 22** (~$4) | ✅ Nativo |
+| Google | Gemini 2.5 Flash (free tier) | grátis | grátis | **$0** | ✅ Nativo |
+| Groq | Llama 3 70B Tool-Use | $0,59 | $0,79 | **~R$ 10** (~$2) | ⚠️ Parcial |
+| Groq | Llama 3 8B Tool-Use | $0,05 | $0,08 | **~R$ 1** (~$0,15) | ⚠️ Parcial |
+| Groq | Free tier | grátis | grátis | **$0** | ⚠️ Parcial |
+
+*Tokens do system prompt cacheados (90% off); demais tokens pagos normalmente.  
+*Câmbio de referência: US$1 ≈ R$5,80.*
+
+---
+
+### 13.3 Limites dos Planos Gratuitos
+
+| Provedor | Limite free | Suficiente para? |
+|----------|-------------|-----------------|
+| **Gemini 2.5 Flash** | 10 RPM · 250 req/dia (~7.500/mês) | ✅ Suficiente para beta fechado (< 50 usuários × 50 msgs) |
+| **Groq** | 30 RPM · 6.000 tokens/min | ✅ Suficiente para beta fechado, mas sem garantia de SLA |
+
+---
+
+### 13.4 Restrição Crítica: MCP Nativo
+
+O PRD usa o MCP server `mcp.rachao.app/mcp` para fornecer contexto real do produto ao assistente. **Apenas Anthropic e Google Gemini têm suporte nativo ao protocolo MCP** no SDK/API.
+
+| Provedor | Suporte MCP | Observação |
+|----------|-------------|-----------|
+| **Anthropic Claude** | ✅ Nativo via API | MCP connector direto na chamada, suporte a OAuth |
+| **Google Gemini** | ✅ Nativo via SDK | SDKs Python/JS com auto-execução de ferramentas MCP |
+| **Groq (Llama)** | ⚠️ Parcial | Suporta function calling, mas **não o protocolo MCP**. Exigiria camada de adaptação no backend para traduzir chamadas MCP em function calls — esforço adicional de implementação |
+
+---
+
+### 13.5 Recomendação por Fase
+
+| Fase | Modelo recomendado | Justificativa |
+|------|--------------------|---------------|
+| **Beta fechado (< 50 usuários)** | Gemini 2.5 Flash (free tier) ou claude-haiku-4-5 | Custo zero ou mínimo; validar utilidade antes de investir |
+| **Crescimento (50–500 usuários)** | claude-haiku-4-5 com prompt caching | MCP nativo + custo controlado (~R$ 50–200/mês) |
+| **Escala (500+ usuários)** | Reavaliar: Gemini 2.5 Flash pago (~4× mais barato que Haiku) ou manter Haiku se MCP for crítico | Decisão por Thiago |
+
+> **Sugestão para v1.0:** iniciar com `claude-haiku-4-5` (MCP nativo garantido, custo ~R$ 20–100/mês em beta) e configurar o modelo como variável de ambiente (`LLM_MODEL`) para trocar sem redeploy.
 
 ---
 
 ## Apêndice A — Variáveis de Ambiente Necessárias
 
 ```env
-# Anthropic
+# Anthropic (obrigatório se usar Claude)
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Modelo de IA (permite trocar sem redeploy)
+# Opções: claude-sonnet-4-6 | claude-haiku-4-5 | gemini-2.5-flash (requer SDK diferente)
+LLM_MODEL=claude-haiku-4-5
 
 # Já existentes — reutilizadas
 SUPABASE_URL=...
