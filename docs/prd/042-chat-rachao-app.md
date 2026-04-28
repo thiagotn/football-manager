@@ -74,6 +74,8 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 - Desabilitar acesso individualmente se necessário
 - Ter visibilidade de quais usuários estão com acesso ativo
 
+> Role no sistema: `admin` (única role administrativa — verificada via `AdminPlayer` dependency no backend)
+
 ---
 
 ## 4. Requisitos Funcionais
@@ -102,7 +104,7 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 | A-03 | O admin deve poder desabilitar o acesso ao chat individualmente por usuário | Must |
 | A-04 | O acesso deve ser **desabilitado por padrão** para todo novo usuário cadastrado | Must |
 | A-05 | A alteração de status deve ter efeito imediato (sem necessidade de relogin do usuário) | Must |
-| A-06 | O painel admin deve ser acessível apenas para usuários com role `admin_global` | Must |
+| A-06 | O painel admin deve ser acessível apenas para usuários com role `admin` (validado via `AdminPlayer` dependency no backend) | Must |
 | A-07 | Deve haver busca/filtro de usuários no painel admin | Should |
 
 ### 4.3 Backend — Proxy da Anthropic API
@@ -114,7 +116,7 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 | B-03 | O endpoint deve validar se o usuário tem acesso habilitado antes de chamar a Anthropic API | Must |
 | B-04 | A resposta deve ser entregue via Server-Sent Events (streaming) | Must |
 | B-05 | O MCP server `mcp.rachao.app/mcp` deve ser referenciado em todas as requisições | Must |
-| B-06 | Deve haver rate limiting por usuário (ex: máximo de 20 mensagens/hora) | Must |
+| B-06 | Deve haver rate limiting por usuário (ex: máximo de 20 mensagens/hora) via tabela PostgreSQL (Redis não está na stack) | Must |
 | B-07 | O system prompt deve restringir o assistente ao contexto do rachao.app | Must |
 | B-08 | Deve haver logging das requisições (sem conteúdo das mensagens) para monitoramento de custo | Should |
 
@@ -143,13 +145,13 @@ Usuário autenticado
         ▼
 https://chat.rachao.app   (SvelteKit — componente de chat)
         │
-        │  POST /api/chat  (streaming SSE)
+        │  POST /api/v1/chat  (streaming SSE)
         ▼
 https://api.rachao.app    (FastAPI — endpoint proxy)
         │
         ├──► Valida JWT / sessão do usuário
-        ├──► Valida flag `chat_enabled` no Supabase
-        ├──► Aplica rate limiting (Redis ou Supabase)
+        ├──► Valida flag `chat_enabled` na tabela `players` (PostgreSQL)
+        ├──► Aplica rate limiting (PostgreSQL)
         │
         ▼
 Anthropic API  ◄──► MCP Server (mcp.rachao.app/mcp)
@@ -161,23 +163,25 @@ Anthropic API  ◄──► MCP Server (mcp.rachao.app/mcp)
 |--------|------------|
 | Frontend | SvelteKit 5 (rota `chat.rachao.app`) |
 | Backend proxy | FastAPI (rota nova em `api.rachao.app`) |
-| Banco de dados | Supabase PostgreSQL (campo `chat_enabled` em `profiles`) |
-| IA | Anthropic API — `claude-sonnet-4-20250514` |
+| Banco de dados | Supabase PostgreSQL (campo `chat_enabled` em `players`) |
+| IA | Anthropic API — `claude-sonnet-4-6` |
 | Contexto | MCP Server proprietário (`mcp.rachao.app/mcp`) |
 | Reverse proxy | Traefik (novo router para `chat.rachao.app`) |
 | Deploy | GitHub Actions (pipeline existente) |
 
 ### 6.3 Mudanças no Banco de Dados
 
-#### Tabela `profiles` — novo campo
+#### Migration: `041_chat_enabled.sql`
 
 ```sql
-ALTER TABLE profiles
-ADD COLUMN chat_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE players
+ADD COLUMN IF NOT EXISTS chat_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 
-COMMENT ON COLUMN profiles.chat_enabled IS
-  'Controla se o usuário tem acesso ao assistente de IA em chat.rachao.app. Gerenciado pelo admin global. Padrão: FALSE.';
+COMMENT ON COLUMN players.chat_enabled IS
+  'Controla se o usuário tem acesso ao assistente de IA em chat.rachao.app. Gerenciado pelo admin. Padrão: FALSE.';
 ```
+
+> **Nota:** A tabela é `players` (não `profiles`). Migrations ficam em `football-api/migrations/` numeradas sequencialmente. Próximo número disponível: `041`.
 
 #### View administrativa (opcional)
 
@@ -185,17 +189,19 @@ COMMENT ON COLUMN profiles.chat_enabled IS
 CREATE VIEW admin_chat_access AS
 SELECT
   id,
-  full_name,
-  phone,
+  name,
+  whatsapp,
   created_at,
   chat_enabled
-FROM profiles
+FROM players
 ORDER BY created_at DESC;
 ```
 
 ### 6.4 Endpoints de API
 
-#### `POST /api/chat`
+> **Convenção:** Todas as rotas usam o prefixo `/api/v1/` (padrão da plataforma). FastAPI usa `{param}` para path params.
+
+#### `POST /api/v1/chat`
 
 Recebe a mensagem do usuário e retorna a resposta em streaming.
 
@@ -212,7 +218,7 @@ Recebe a mensagem do usuário e retorna a resposta em streaming.
 
 **Fluxo de validação:**
 1. Extrai e valida JWT do header `Authorization`
-2. Verifica `chat_enabled = true` em `profiles` para o usuário autenticado
+2. Verifica `chat_enabled = true` em `players` para o usuário autenticado
 3. Verifica rate limit do usuário
 4. Chama Anthropic API com MCP server
 5. Faz stream da resposta
@@ -225,22 +231,22 @@ Recebe a mensagem do usuário e retorna a resposta em streaming.
 | 429 | Rate limit atingido |
 | 500 | Erro interno ou falha na Anthropic API |
 
-#### `GET /api/admin/chat-users`
+#### `GET /api/v1/admin/chat-users`
 
-Lista usuários com status de acesso ao chat. **Apenas admin global.**
+Lista usuários com status de acesso ao chat. **Apenas admin (`AdminPlayer` dependency).**
 
 **Response:**
 ```json
 {
   "users": [
-    { "id": "uuid", "full_name": "João Silva", "phone": "+55...", "chat_enabled": false }
+    { "id": "uuid", "name": "João Silva", "whatsapp": "+55...", "chat_enabled": false }
   ]
 }
 ```
 
-#### `PATCH /api/admin/chat-users/:user_id`
+#### `PATCH /api/v1/admin/chat-users/{user_id}`
 
-Habilita ou desabilita acesso ao chat de um usuário específico. **Apenas admin global.**
+Habilita ou desabilita acesso ao chat de um usuário específico. **Apenas admin (`AdminPlayer` dependency).**
 
 **Request:**
 ```json
@@ -268,17 +274,21 @@ Regras:
 
 ### 6.6 Configuração do Traefik
 
-Adicionar ao `docker-compose.yml` ou arquivo de rotas Traefik:
+O projeto usa **arquivo de configuração dinâmica** (`football-api/traefik-dynamic.yml`) — não usa labels Docker nos serviços.
+
+Adicionar em `traefik-dynamic.yml`, seção `http.routers`:
 
 ```yaml
-# Router para chat.rachao.app
-- "traefik.http.routers.chat-frontend.rule=Host(`chat.rachao.app`)"
-- "traefik.http.routers.chat-frontend.tls=true"
-- "traefik.http.routers.chat-frontend.tls.certresolver=letsencrypt"
-- "traefik.http.routers.chat-frontend.service=frontend"
+chat-frontend:
+  rule: "Host(`chat.rachao.app`)"
+  entryPoints:
+    - websecure
+  tls:
+    certResolver: letsencrypt
+  service: frontend
 ```
 
-> O subdomínio `chat.rachao.app` aponta para o mesmo serviço SvelteKit existente, com rota dedicada. Não é necessário um novo container.
+> O subdomínio `chat.rachao.app` aponta para o mesmo serviço `frontend` (SvelteKit) existente, com rota dedicada. Não é necessário um novo container nem novo `service` no Traefik.
 
 ---
 
@@ -286,8 +296,12 @@ Adicionar ao `docker-compose.yml` ou arquivo de rotas Traefik:
 
 ### 7.1 Tela de Chat (`chat.rachao.app`)
 
+> **Padrão obrigatório:** Seguir o padrão de layout do app — envolver em `<PageBackground>`, usar `h1 text-2xl font-bold text-white flex items-center gap-2`, ícone Lucide `size={24} class="text-primary-400"`. Ver seção "Frontend — Padrões de Página" no CLAUDE.md.
+>
+> **i18n obrigatório:** Todo texto visível usa `$t('chat.*')`. Adicionar chaves em `pt-BR.json`, `en.json` e `es.json`.
+
 **Layout:**
-- Header simples com logo do rachao.app e nome "Assistente rachao"
+- Header com logo do rachao.app e título "Assistente rachao" (ícone sugerido: `<MessageCircle size={24} />`)
 - Área de mensagens com scroll automático para o final
 - Bolhas de mensagem diferenciadas (usuário à direita, assistente à esquerda)
 - Input fixo no rodapé com botão de envio
@@ -303,9 +317,9 @@ Adicionar ao `docker-compose.yml` ou arquivo de rotas Traefik:
 **Localização:** Seção existente de administração global da plataforma
 
 **Componentes:**
-- Lista de usuários com colunas: Nome, Telefone, Cadastro, Acesso ao Chat
+- Lista de usuários com colunas: Nome (`name`), WhatsApp (`whatsapp`), Cadastro (`created_at`), Acesso ao Chat (`chat_enabled`)
 - Toggle (switch) por linha para habilitar/desabilitar instantaneamente
-- Campo de busca por nome ou telefone
+- Campo de busca por nome ou WhatsApp
 - Indicador de quantos usuários têm acesso ativo (ex: "3 de 47 usuários com acesso")
 
 ---
@@ -315,11 +329,11 @@ Adicionar ao `docker-compose.yml` ou arquivo de rotas Traefik:
 | Ameaça | Mitigação |
 |--------|-----------|
 | Exposição da API key | Key exclusivamente no backend via env var |
-| Acesso não autorizado | Validação de JWT em toda requisição ao `/api/chat` |
+| Acesso não autorizado | Validação de JWT em toda requisição ao `/api/v1/chat` |
 | Uso indevido (spam/custo) | Rate limiting por usuário + flag `chat_enabled` |
 | Prompt injection via MCP | MCP server proprietário e controlado |
 | CORS | Configurar `allow_origins` no FastAPI apenas para `chat.rachao.app` |
-| Escalada de privilégio no admin | Verificação de `role = admin_global` no servidor, nunca só no cliente |
+| Escalada de privilégio no admin | Verificação de `role = admin` via `AdminPlayer` dependency no servidor, nunca só no cliente |
 
 ---
 
@@ -327,20 +341,23 @@ Adicionar ao `docker-compose.yml` ou arquivo de rotas Traefik:
 
 ### Fase 1 — Backend e banco (Semana 1)
 
-- [ ] Migration SQL: adicionar `chat_enabled` em `profiles`
-- [ ] Implementar endpoint `POST /api/chat` com streaming e validações
-- [ ] Implementar endpoints admin `GET` e `PATCH /api/admin/chat-users`
-- [ ] Configurar rate limiting
+- [ ] Migration `041_chat_enabled.sql`: adicionar `chat_enabled` em `players`
+- [ ] Implementar endpoint `POST /api/v1/chat` com streaming SSE e validações
+- [ ] Implementar endpoints admin `GET` e `PATCH /api/v1/admin/chat-users`
+- [ ] Configurar rate limiting via PostgreSQL (tabela de controle de janela por usuário)
 - [ ] Testes de integração com Anthropic API + MCP server
 - [ ] Configurar variáveis de ambiente no VPS (`ANTHROPIC_API_KEY`)
 
 ### Fase 2 — Frontend (Semana 1-2)
 
-- [ ] Criar rota `/` em `chat.rachao.app` (SvelteKit)
-- [ ] Componente `ChatInterface.svelte` com streaming SSE
+- [ ] Criar rota `/` em `chat.rachao.app` (SvelteKit — grupo de rotas ou rota raiz com detecção de subdomínio)
+- [ ] Componente `ChatInterface.svelte` com streaming SSE (EventSource)
 - [ ] Tela de "acesso indisponível"
-- [ ] Painel admin: componente de listagem e toggle de usuários
-- [ ] Configurar roteamento Traefik para `chat.rachao.app`
+- [ ] Painel admin: componente de listagem e toggle de usuários (em `/admin/chat`)
+- [ ] Adicionar chaves i18n `chat.*` nos 3 arquivos: `messages/pt-BR.json`, `messages/en.json`, `messages/es.json`
+- [ ] Garantir que toda string visível usa `$t('chat.*')` — nunca string literal
+- [ ] Layout deve seguir padrão obrigatório: `<PageBackground>`, `h1 text-2xl font-bold text-white`, ícone Lucide `size={24} class="text-primary-400"`
+- [ ] Configurar roteamento Traefik para `chat.rachao.app` em `traefik-dynamic.yml`
 - [ ] Atualizar CI/CD para incluir deploy da nova rota
 
 ### Fase 3 — Beta interno (Semana 2)
