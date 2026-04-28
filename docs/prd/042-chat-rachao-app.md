@@ -1,6 +1,6 @@
 # PRD — Assistente de IA do rachao.app
 
-**Produto:** chat.rachao.app  
+**Produto:** rachao.app/chat  
 **Versão:** 1.0  
 **Status:** Draft  
 **Autor:** Thiago  
@@ -14,7 +14,7 @@
 
 O rachao.app é uma plataforma SaaS para organização de peladas e rachões. À medida que a base de usuários cresce, cresce também a demanda por suporte contextualizado — dúvidas sobre funcionalidades, fluxos de uso, convites, pagamentos e organização de jogos.
 
-Este PRD descreve o desenvolvimento de um **assistente de IA acessível via `chat.rachao.app`**, capaz de responder perguntas dos usuários com base exclusivamente no contexto do produto rachao.app, utilizando a Anthropic API com acesso ao MCP server proprietário da plataforma.
+Este PRD descreve o desenvolvimento de um **assistente de IA acessível em `rachao.app/chat`**, capaz de responder perguntas dos usuários com base exclusivamente no contexto do produto rachao.app, utilizando a Anthropic API com acesso ao MCP server proprietário da plataforma.
 
 ### 1.2 Objetivo
 
@@ -30,7 +30,7 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 
 ### 2.1 Dentro do Escopo (v1.0)
 
-- Interface de chat acessível via subdomínio dedicado `chat.rachao.app`
+- Interface de chat acessível em `rachao.app/chat` (rota dedicada no app SvelteKit existente — sem novo subdomínio)
 - Assistente restrito ao contexto do rachao.app (sem respostas fora do produto)
 - Painel administrativo para habilitar/desabilitar acesso por usuário
 - Acesso desabilitado por padrão para todos os usuários
@@ -80,11 +80,11 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 
 ## 4. Requisitos Funcionais
 
-### 4.1 Interface do Chat (`chat.rachao.app`)
+### 4.1 Interface do Chat (`rachao.app/chat`)
 
 | ID | Requisito | Prioridade |
 |----|-----------|------------|
-| F-01 | A interface deve ser acessível via `https://chat.rachao.app` | Must |
+| F-01 | A interface deve ser acessível via `https://rachao.app/chat` | Must |
 | F-02 | O usuário deve estar autenticado na plataforma para acessar o chat | Must |
 | F-03 | Usuário sem acesso habilitado deve ver uma tela de "acesso indisponível" clara e amigável | Must |
 | F-04 | O chat deve exibir as mensagens em tempo real via streaming (SSE) | Must |
@@ -128,7 +128,7 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 |----|-----------|------|
 | NF-01 | Latência para primeira palavra aparecer (TTFW) | < 2 segundos |
 | NF-02 | Disponibilidade do serviço | ≥ 99,5% (alinhado ao SLA geral do VPS) |
-| NF-03 | O serviço não deve impactar a performance do app principal | Isolamento via subdomínio |
+| NF-03 | O serviço não deve impactar a performance do app principal | Chat em rota dedicada `/chat` — sem novo container ou processo |
 | NF-04 | Custo de API deve ser controlado por rate limiting | Máximo R$ X/mês (definir por Thiago) |
 | NF-05 | O deploy deve seguir o pipeline CI/CD existente (GitHub Actions) | Must |
 | NF-06 | Secrets devem ser gerenciados via variáveis de ambiente no VPS | Must |
@@ -143,8 +143,8 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 Usuário autenticado
         │
         ▼
-https://chat.rachao.app   (SvelteKit — componente de chat)
-        │
+https://rachao.app/chat   (SvelteKit — rota /chat no app existente)
+        │                  (auth via localStorage — mesma origem)
         │  POST /api/v1/chat  (streaming SSE)
         ▼
 https://api.rachao.app    (FastAPI — endpoint proxy)
@@ -161,12 +161,12 @@ Anthropic API  ◄──► MCP Server (mcp.rachao.app/mcp)
 
 | Camada | Tecnologia |
 |--------|------------|
-| Frontend | SvelteKit 5 (rota `chat.rachao.app`) |
+| Frontend | SvelteKit 2 + Svelte 5 (rota `/chat` no app existente — `src/routes/chat/`) |
 | Backend proxy | FastAPI (rota nova em `api.rachao.app`) |
 | Banco de dados | Supabase PostgreSQL (campo `chat_enabled` em `players`) |
-| IA | Anthropic API — `claude-sonnet-4-6` |
+| IA | Anthropic API — `claude-haiku-4-5` (configurável via `LLM_MODEL`) |
 | Contexto | MCP Server proprietário (`mcp.rachao.app/mcp`) |
-| Reverse proxy | Traefik (novo router para `chat.rachao.app`) |
+| Reverse proxy | Traefik — **sem alteração** (rota `/chat` serve pelo mesmo router existente) |
 | Deploy | GitHub Actions (pipeline existente) |
 
 ### 6.3 Mudanças no Banco de Dados
@@ -178,7 +178,7 @@ ALTER TABLE players
 ADD COLUMN IF NOT EXISTS chat_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 
 COMMENT ON COLUMN players.chat_enabled IS
-  'Controla se o usuário tem acesso ao assistente de IA em chat.rachao.app. Gerenciado pelo admin. Padrão: FALSE.';
+  'Controla se o usuário tem acesso ao assistente de IA em rachao.app/chat. Gerenciado pelo admin. Padrão: FALSE.';
 ```
 
 > **Nota:** A tabela é `players` (não `profiles`). Migrations ficam em `football-api/migrations/` numeradas sequencialmente. Próximo número disponível: `041`.
@@ -272,29 +272,15 @@ Regras:
 - Nunca invente funcionalidades que não existem no app.
 ```
 
-### 6.6 Configuração do Traefik
+### 6.6 Infraestrutura
 
-O projeto usa **arquivo de configuração dinâmica** (`football-api/traefik-dynamic.yml`) — não usa labels Docker nos serviços.
-
-Adicionar em `traefik-dynamic.yml`, seção `http.routers`:
-
-```yaml
-chat-frontend:
-  rule: "Host(`chat.rachao.app`)"
-  entryPoints:
-    - websecure
-  tls:
-    certResolver: letsencrypt
-  service: frontend
-```
-
-> O subdomínio `chat.rachao.app` aponta para o mesmo serviço `frontend` (SvelteKit) existente, com rota dedicada. Não é necessário um novo container nem novo `service` no Traefik.
+**Nenhuma alteração de infraestrutura necessária.** A rota `/chat` é servida pelo mesmo container SvelteKit e pelo mesmo router Traefik já configurado para `rachao.app`. Não é necessário novo subdomínio, novo certificado TLS, nova entrada no `traefik-dynamic.yml` nem novo serviço Docker.
 
 ---
 
 ## 7. Interface do Usuário
 
-### 7.1 Tela de Chat (`chat.rachao.app`)
+### 7.1 Tela de Chat (`rachao.app/chat`)
 
 > **Padrão obrigatório:** Seguir o padrão de layout do app — envolver em `<PageBackground>`, usar `h1 text-2xl font-bold text-white flex items-center gap-2`, ícone Lucide `size={24} class="text-primary-400"`. Ver seção "Frontend — Padrões de Página" no CLAUDE.md.
 >
@@ -332,7 +318,7 @@ chat-frontend:
 | Acesso não autorizado | Validação de JWT em toda requisição ao `/api/v1/chat` |
 | Uso indevido (spam/custo) | Rate limiting por usuário + flag `chat_enabled` |
 | Prompt injection via MCP | MCP server proprietário e controlado |
-| CORS | Configurar `allow_origins` no FastAPI apenas para `chat.rachao.app` |
+| CORS | `rachao.app` já está em `allow_origins` no FastAPI — sem alteração necessária |
 | Escalada de privilégio no admin | Verificação de `role = admin` via `AdminPlayer` dependency no servidor, nunca só no cliente |
 
 ---
@@ -350,15 +336,15 @@ chat-frontend:
 
 ### Fase 2 — Frontend (Semana 1-2)
 
-- [ ] Criar rota `/` em `chat.rachao.app` (SvelteKit — grupo de rotas ou rota raiz com detecção de subdomínio)
-- [ ] Componente `ChatInterface.svelte` com streaming SSE (EventSource)
-- [ ] Tela de "acesso indisponível"
-- [ ] Painel admin: componente de listagem e toggle de usuários (em `/admin/chat`)
+- [ ] Criar rota `src/routes/chat/+page.svelte` no app SvelteKit existente
+- [ ] Componente `ChatInterface.svelte` com streaming SSE (EventSource nativo do browser)
+- [ ] Tela de "acesso indisponível" (exibida quando `chat_enabled = false`)
+- [ ] Adicionar link de acesso ao chat no menu/dashboard do app para usuários com acesso
+- [ ] Painel admin: componente de listagem e toggle de usuários (em `src/routes/admin/chat/+page.svelte`)
 - [ ] Adicionar chaves i18n `chat.*` nos 3 arquivos: `messages/pt-BR.json`, `messages/en.json`, `messages/es.json`
 - [ ] Garantir que toda string visível usa `$t('chat.*')` — nunca string literal
 - [ ] Layout deve seguir padrão obrigatório: `<PageBackground>`, `h1 text-2xl font-bold text-white`, ícone Lucide `size={24} class="text-primary-400"`
-- [ ] Configurar roteamento Traefik para `chat.rachao.app` em `traefik-dynamic.yml`
-- [ ] Atualizar CI/CD para incluir deploy da nova rota
+- [ ] Nenhuma alteração de Traefik ou CI/CD necessária
 
 ### Fase 3 — Beta interno (Semana 2)
 
@@ -379,12 +365,12 @@ chat-frontend:
 
 | Critério | Como verificar |
 |----------|----------------|
-| Usuário sem `chat_enabled` vê tela de bloqueio | Acessar `chat.rachao.app` com usuário padrão |
-| Admin habilita usuário e ele consegue acessar imediatamente | Testar toggle no painel e recarregar chat no mesmo momento |
+| Usuário sem `chat_enabled` vê tela de bloqueio | Acessar `rachao.app/chat` com usuário padrão |
+| Admin habilita usuário e ele consegue acessar imediatamente | Testar toggle no painel e recarregar `rachao.app/chat` no mesmo momento |
 | Assistente recusa perguntas fora do rachao.app | Enviar "qual a capital do Brasil?" e verificar redirecionamento |
 | Rate limit bloqueia após N mensagens | Enviar mais de 20 mensagens em sequência e verificar 429 |
 | API key não aparece em nenhum response do frontend | Inspecionar network no DevTools |
-| Chat funciona corretamente no mobile | Testar em viewport 375px |
+| Chat funciona corretamente no mobile | Testar `rachao.app/chat` em viewport 375px |
 
 ---
 
@@ -502,3 +488,4 @@ JWT_SECRET=...
 - MCP Server rachao.app: https://mcp.rachao.app/mcp
 - API rachao.app: https://api.rachao.app/docs
 - Plataforma: https://rachao.app
+- Chat: https://rachao.app/chat
