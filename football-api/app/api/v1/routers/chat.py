@@ -75,6 +75,9 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
 
     async def event_stream():
         try:
+            if not settings.anthropic_api_key:
+                yield f"data: {json.dumps({'error': 'Assistente não configurado. Contate o administrador.'})}\n\n"
+                return
             client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
             async with client.beta.messages.stream(
@@ -101,7 +104,7 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
             yield f"data: {json.dumps({'error': 'Erro ao conectar com o assistente. Tente novamente.'})}\n\n"
         except Exception as e:
             logger.error("chat_stream_error type=%s error=%s", type(e).__name__, str(e))
-            yield f"data: {json.dumps({'error': f'[DEBUG] {type(e).__name__}: {str(e)[:200]}'})}\n\n"
+            yield f"data: {json.dumps({'error': 'Erro interno. Tente novamente.'})}\n\n"
 
     logger.info("chat_request player_id=%s model=%s", str(current_player.id), settings.llm_model)
 
