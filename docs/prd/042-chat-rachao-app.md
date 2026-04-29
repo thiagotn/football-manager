@@ -33,7 +33,7 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 - Interface de chat acessível em `rachao.app/chat` (rota dedicada no app SvelteKit existente — sem novo subdomínio)
 - Assistente restrito ao contexto do rachao.app (sem respostas fora do produto)
 - Painel administrativo para habilitar/desabilitar acesso por usuário
-- Acesso desabilitado por padrão para todos os usuários
+- Funcionalidade **invisível por padrão** para todos os usuários — o chat não aparece no menu nem é acessível via URL para quem não tiver o acesso habilitado pelo admin
 - Integração com MCP server do rachao.app (`mcp.rachao.app/mcp`)
 - Autenticação via sessão existente da plataforma (mesmo login)
 - Histórico de conversa por sessão (não persistido entre sessões na v1.0)
@@ -86,7 +86,8 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 |----|-----------|------------|
 | F-01 | A interface deve ser acessível via `https://rachao.app/chat` | Must |
 | F-02 | O usuário deve estar autenticado na plataforma para acessar o chat | Must |
-| F-03 | Usuário sem acesso habilitado deve ver uma tela de "acesso indisponível" clara e amigável | Must |
+| F-03 | O link/entrada de menu para o chat deve ser **invisível** para usuários com `chat_enabled = false` — a funcionalidade não deve existir visualmente para eles | Must |
+| F-04a | Acesso direto via URL (`/chat`) por usuário sem `chat_enabled` deve redirecionar para `/dashboard` — sem tela de "acesso indisponível" exposta | Must |
 | F-04 | O chat deve exibir as mensagens em tempo real via streaming (SSE) | Must |
 | F-05 | O assistente deve responder apenas sobre o contexto do rachao.app | Must |
 | F-06 | O histórico deve ser mantido durante a sessão ativa | Must |
@@ -102,7 +103,7 @@ Reduzir a carga de suporte manual oferecendo um assistente inteligente, contextu
 | A-01 | O admin global deve poder listar todos os usuários cadastrados com o status de acesso ao chat | Must |
 | A-02 | O admin deve poder habilitar o acesso ao chat individualmente por usuário | Must |
 | A-03 | O admin deve poder desabilitar o acesso ao chat individualmente por usuário | Must |
-| A-04 | O acesso deve ser **desabilitado por padrão** para todo novo usuário cadastrado | Must |
+| A-04 | O chat deve ser **invisível por padrão** para todo novo usuário cadastrado (`chat_enabled = false`) | Must |
 | A-05 | A alteração de status deve ter efeito imediato (sem necessidade de relogin do usuário) | Must |
 | A-06 | O painel admin deve ser acessível apenas para usuários com role `admin` (validado via `AdminPlayer` dependency no backend) | Must |
 | A-07 | Deve haver busca/filtro de usuários no painel admin | Should |
@@ -286,17 +287,18 @@ Regras:
 >
 > **i18n obrigatório:** Todo texto visível usa `$t('chat.*')`. Adicionar chaves em `pt-BR.json`, `en.json` e `es.json`.
 
-**Layout:**
+**Visibilidade no menu/navegação:**
+- O link para `/chat` só aparece na navegação quando `chat_enabled = true` para o usuário autenticado
+- Para usuários sem acesso: o chat é inexistente — sem entrada no menu, sem hint de que a feature existe
+- Acesso direto via URL por usuário sem `chat_enabled`: redirecionar silenciosamente para `/dashboard` (guard na rota SvelteKit via `+page.server.ts` ou `+page.svelte`)
+
+**Layout (apenas para usuários com `chat_enabled = true`):**
 - Header com logo do rachao.app e título "Assistente rachao" (ícone sugerido: `<MessageCircle size={24} />`)
 - Área de mensagens com scroll automático para o final
 - Bolhas de mensagem diferenciadas (usuário à direita, assistente à esquerda)
 - Input fixo no rodapé com botão de envio
 - Indicador de "digitando..." durante o streaming
 - Botão "Nova conversa" no header
-
-**Tela de acesso não habilitado:**
-- Mensagem clara: _"O assistente de IA ainda não está disponível para sua conta. Entre em contato com o suporte."_
-- Sem formulário de chat visível
 
 ### 7.2 Painel Admin — Gestão de Acesso ao Chat
 
@@ -339,7 +341,8 @@ Regras:
 - [ ] Criar rota `src/routes/chat/+page.svelte` no app SvelteKit existente
 - [ ] Componente `ChatInterface.svelte` com streaming SSE (EventSource nativo do browser)
 - [ ] Tela de "acesso indisponível" (exibida quando `chat_enabled = false`)
-- [ ] Adicionar link de acesso ao chat no menu/dashboard do app para usuários com acesso
+- [ ] Adicionar link para `/chat` no menu **somente** quando `chat_enabled = true` (verificar `currentPlayer.chat_enabled` no store de auth)
+- [ ] Implementar guard na rota `src/routes/chat/+page.svelte`: redirecionar para `/dashboard` se `chat_enabled = false` (sem mensagem de erro exposta)
 - [ ] Painel admin: componente de listagem e toggle de usuários (em `src/routes/admin/chat/+page.svelte`)
 - [ ] Adicionar chaves i18n `chat.*` nos 3 arquivos: `messages/pt-BR.json`, `messages/en.json`, `messages/es.json`
 - [ ] Garantir que toda string visível usa `$t('chat.*')` — nunca string literal
@@ -365,7 +368,8 @@ Regras:
 
 | Critério | Como verificar |
 |----------|----------------|
-| Usuário sem `chat_enabled` vê tela de bloqueio | Acessar `rachao.app/chat` com usuário padrão |
+| Usuário sem `chat_enabled` não vê o chat no menu | Logar com usuário padrão e confirmar que o link não aparece na navegação |
+| Acesso direto via URL sem `chat_enabled` redireciona | Acessar `rachao.app/chat` com usuário sem acesso e verificar redirect para `/dashboard` |
 | Admin habilita usuário e ele consegue acessar imediatamente | Testar toggle no painel e recarregar `rachao.app/chat` no mesmo momento |
 | Assistente recusa perguntas fora do rachao.app | Enviar "qual a capital do Brasil?" e verificar redirecionamento |
 | Rate limit bloqueia após N mensagens | Enviar mais de 20 mensagens em sequência e verificar 429 |
