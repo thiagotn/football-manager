@@ -141,22 +141,23 @@
 <svelte:head><title>{$t('chat.title')} | rachao.app</title></svelte:head>
 
 <PageBackground>
-  <main class="relative z-10 max-w-3xl mx-auto px-4 py-8 flex flex-col h-[calc(100vh-4rem)]">
+  <main class="relative z-10 max-w-3xl mx-auto px-4 py-3 sm:py-8 flex flex-col h-[calc(100vh-4rem)]">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-4 shrink-0 bg-black/40 backdrop-blur-sm rounded-2xl px-4 py-3">
-      <div>
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-          <MessageCircle size={24} class="text-primary-400" /> {$t('chat.title')}
-        </h1>
-        <p class="text-sm text-white/60 mt-0.5">{$t('chat.subtitle')}</p>
+    <div class="flex items-center justify-between mb-2 sm:mb-4 shrink-0 bg-black/40 backdrop-blur-sm rounded-2xl px-3 py-2 sm:px-4 sm:py-3">
+      <div class="flex items-center gap-2 min-w-0">
+        <MessageCircle size={20} class="text-primary-400 shrink-0" />
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-xl font-bold text-white leading-tight truncate">{$t('chat.title')}</h1>
+          <p class="text-xs text-white/50 hidden sm:block">{$t('chat.subtitle')}</p>
+        </div>
       </div>
       {#if messages.length > 0}
         <button
           onclick={newConversation}
-          class="btn-sm btn-ghost text-white/70 hover:text-white flex items-center gap-1.5"
+          class="btn-sm btn-ghost text-white/70 hover:text-white flex items-center gap-1.5 shrink-0 ml-2"
         >
-          <RotateCcw size={14} /> {$t('chat.new_conversation')}
+          <RotateCcw size={14} /> <span class="hidden sm:inline">{$t('chat.new_conversation')}</span>
         </button>
       {/if}
     </div>
@@ -164,7 +165,7 @@
     <!-- Messages area -->
     <div
       bind:this={messagesEl}
-      class="flex-1 overflow-y-auto space-y-4 py-4 px-3 my-2 bg-black/40 backdrop-blur-sm rounded-2xl"
+      class="flex-1 overflow-y-auto space-y-3 py-3 px-3 my-1.5 sm:my-2 bg-black/40 backdrop-blur-sm rounded-2xl"
     >
       {#if messages.length === 0}
         <div class="flex flex-col items-center justify-center h-full text-center gap-3 text-white/40 select-none">
