@@ -39,31 +39,27 @@ function createAuthStore() {
         return;
       }
 
-      // Tenta restaurar player do localStorage
+      // Usa o cache para renderizar imediatamente sem flash
       const playerStr = localStorage.getItem('player');
-      let player: Player | null = null;
       if (playerStr) {
         try {
-          player = JSON.parse(playerStr);
+          const cached = JSON.parse(playerStr);
+          set({ token, player: cached, loading: true });
         } catch {
           localStorage.removeItem('player');
         }
       }
 
-      // Player não encontrado — busca na API
-      if (!player) {
-        try {
-          const { auth } = await import('$lib/api');
-          player = await auth.me();
-          localStorage.setItem('player', JSON.stringify(player));
-        } catch {
-          localStorage.removeItem('token');
-          set({ token: null, player: null, loading: false });
-          return;
-        }
+      // Sempre busca dados frescos da API (garante campos como chat_enabled atualizados)
+      try {
+        const { auth } = await import('$lib/api');
+        const player = await auth.me();
+        localStorage.setItem('player', JSON.stringify(player));
+        set({ token, player, loading: false });
+      } catch {
+        localStorage.removeItem('token');
+        set({ token: null, player: null, loading: false });
       }
-
-      set({ token, player, loading: false });
     },
     login(token: string, player: { player_id: string; name: string; nickname?: string | null; role: string; must_change_password?: boolean; avatar_url?: string | null }) {
       const p = { id: player.player_id, name: player.name, nickname: player.nickname ?? null, role: player.role, must_change_password: player.must_change_password ?? false, avatar_url: player.avatar_url ?? null } as unknown as Player;
