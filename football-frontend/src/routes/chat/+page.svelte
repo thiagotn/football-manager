@@ -9,7 +9,7 @@
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
-  type Message = { role: 'user' | 'assistant'; content: string; streaming?: boolean };
+  type Message = { role: 'user' | 'assistant'; content: string; streaming?: boolean; timestamp: Date };
 
   let messages = $state<Message[]>([]);
   let input = $state('');
@@ -34,9 +34,10 @@
     const text = input.trim();
     if (!text || streaming) return;
 
+    const now = new Date();
     input = '';
-    messages = [...messages, { role: 'user', content: text }];
-    messages = [...messages, { role: 'assistant', content: '', streaming: true }];
+    messages = [...messages, { role: 'user', content: text, timestamp: now }];
+    messages = [...messages, { role: 'assistant', content: '', streaming: true, timestamp: now }];
     streaming = true;
 
     setTimeout(scrollToBottom, 0);
@@ -136,6 +137,10 @@
   function renderMarkdown(text: string): string {
     return marked.parse(text, { async: false }) as string;
   }
+
+  function formatTime(date: Date): string {
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
 </script>
 
 <svelte:head><title>{$t('chat.title')} | rachao.app</title></svelte:head>
@@ -194,8 +199,10 @@
                 [&_strong]:text-white [&_a]:text-primary-300">
                 {@html renderMarkdown(msg.content)}
               </div>
+              <p class="text-[10px] text-white/40 text-right mt-1 leading-none">{formatTime(msg.timestamp)}</p>
             {:else}
-              {msg.content}
+              <span>{msg.content}</span>
+              <p class="text-[10px] text-white/30 text-right mt-1 leading-none">{formatTime(msg.timestamp)}</p>
             {/if}
           </div>
         </div>
