@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { authStore, isAdmin, currentPlayer } from '$lib/stores/auth';
+  import { authStore, isAdmin, isChatEnabled, currentPlayer } from '$lib/stores/auth';
   import { themeStore } from '$lib/stores/theme';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle, Gamepad2, Key } from 'lucide-svelte';
+  import { Users, LogOut, Home, Trophy, BookOpen, UserCircle, Menu, X, Sun, Moon, ChevronLeft, Star, HelpCircle, FileText, Shield, BarChart2, Calendar, CreditCard, Download, Compass, Globe, Award, ChevronDown, Shuffle, Gamepad2, Key, MessageCircle } from 'lucide-svelte';
   import { billingEnabled } from '$lib/billing';
   import { pwaInstall } from '$lib/stores/pwaInstall';
   import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
@@ -115,6 +115,7 @@
     if (pathname === '/plans')    return '/';
     if (pathname === '/simulator') return '/';
     if (pathname === '/tetris')    return '/';
+    if (pathname === '/chat')      return '/';
     if (pathname.startsWith('/account/')) return '/profile';
     if (pathname === '/faq')      return '/';
     if (pathname === '/terms')    return '/';
@@ -280,6 +281,13 @@
         <UserCircle size={15} /> {$t('nav.my_account')}
       </a>
       {#if !$isAdmin}
+        {#if $isChatEnabled}
+          <a href="/chat" onclick={() => showAccountDropdown = false}
+            class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
+              {$page.url.pathname === '/chat' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <MessageCircle size={15} /> {$t('nav.chat')}
+          </a>
+        {/if}
         <a href="/account/mcp-tokens" onclick={() => showAccountDropdown = false}
           class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
             {$page.url.pathname === '/account/mcp-tokens' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
@@ -391,6 +399,13 @@
             <HelpCircle size={18} /> {$t('nav.faq')}
           </a>
           {#if !$isAdmin}
+            {#if $isChatEnabled}
+              <a href="/chat" onclick={closeMenu}
+                class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                  {$page.url.pathname === '/chat' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+                <MessageCircle size={18} /> {$t('nav.chat')}
+              </a>
+            {/if}
             <a href="/account/mcp-tokens" onclick={closeMenu}
               class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
                 {$page.url.pathname === '/account/mcp-tokens' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">

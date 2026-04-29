@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `040_mcp_tokens.sql`.
+A última migration criada é `041_chat_enabled.sql`.
 
-**A próxima deve ser numerada `041_`.**
+**A próxima deve ser numerada `042_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -36,6 +36,7 @@ A última migration criada é `040_mcp_tokens.sql`.
 | `votes.py` | Votação pós-partida |
 | `webhooks.py` | Webhooks do Stripe |
 | `mcp_tokens.py` | Tokens MCP pessoais (criação, listagem, revogação) |
+| `chat.py` | Assistente IA — `POST /chat` (SSE), `GET/PATCH /admin/chat-users` |
 
 ---
 
@@ -53,7 +54,7 @@ A última migration criada é `040_mcp_tokens.sql`.
 
 ## Schemas existentes (`app/schemas/`)
 
-`admin`, `auth`, `finance`, `group`, `group_stats`, `invite`, `match`, `mcp_token`, `player`, `player_public`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
+`admin`, `auth`, `chat`, `finance`, `group`, `group_stats`, `invite`, `match`, `mcp_token`, `player`, `player_public`, `player_stats`, `ranking`, `review`, `subscription`, `team`, `vote`
 
 ---
 

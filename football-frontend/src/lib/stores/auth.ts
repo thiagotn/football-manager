@@ -99,3 +99,4 @@ export const authStore = createAuthStore();
 export const isLoggedIn = derived(authStore, $a => !!$a.token);
 export const currentPlayer = derived(authStore, $a => $a.player);
 export const isAdmin = derived(authStore, $a => $a.player?.role === 'admin');
+export const isChatEnabled = derived(authStore, $a => $a.player?.chat_enabled === true);

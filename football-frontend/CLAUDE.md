@@ -40,6 +40,7 @@
 | `/profile/stats` | Estatísticas pessoais |
 | `/account/subscription` | Plano atual + upgrade |
 | `/account/mcp-tokens` | Tokens MCP pessoais — criação, listagem e revogação |
+| `/chat` | Assistente IA — visível e acessível apenas para players com `chat_enabled = true` |
 | `/account/checkout` | Retorno do checkout Stripe (success/failure) |
 | `/review` | Avaliação do app |
 | `/players` | Listagem de jogadores (admin do grupo) |
@@ -55,6 +56,7 @@
 | `/admin/players` | Gestão de jogadores |
 | `/admin/reviews` | Avaliações do app |
 | `/admin/subscriptions` | Gestão de assinaturas |
+| `/admin/chat` | Gestão de acesso ao Assistente IA — habilitar/desabilitar por usuário |
 
 ---
 
@@ -90,7 +92,7 @@
 
 | Store | Responsabilidade |
 |-------|-----------------|
-| `auth.ts` | `authStore`, `isAdmin`, `currentPlayer` — estado de autenticação global |
+| `auth.ts` | `authStore`, `isAdmin`, `currentPlayer`, `isChatEnabled` — estado de autenticação global |
 | `pwaInstall.ts` | Evento `beforeinstallprompt` para botão de instalação PWA |
 | `sessionExpired.ts` | Flag para exibir modal de sessão expirada |
 | `theme.ts` | Tema claro/escuro |
@@ -110,7 +112,7 @@
 
 ## Namespaces de `api.ts`
 
-`auth` · `players` (inclui `getPublicStats`) · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking` · `mcpTokens`
+`auth` · `players` (inclui `getPublicStats`) · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking` · `mcpTokens` · `chat`
 
 ---
 

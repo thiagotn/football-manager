@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.routers import admin, auth, beta, finance, groups, invites, matches, mcp_tokens, players, push, ranking, reviews, subscriptions, teams, votes, webhooks
+from app.api.v1.routers import admin, auth, beta, chat, finance, groups, invites, matches, mcp_tokens, players, push, ranking, reviews, subscriptions, teams, votes, webhooks
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -20,3 +20,4 @@ api_router.include_router(webhooks.router)
 api_router.include_router(ranking.router)
 api_router.include_router(beta.router)
 api_router.include_router(mcp_tokens.router)
+api_router.include_router(chat.router)

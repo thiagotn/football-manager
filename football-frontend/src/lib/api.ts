@@ -79,6 +79,7 @@ export type Player = {
   whatsapp: string; role: 'admin' | 'player'; active: boolean;
   must_change_password: boolean;
   avatar_url: string | null;
+  chat_enabled: boolean;
   created_at: string; updated_at: string;
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string; avatar_url: string | null };
@@ -726,4 +727,16 @@ export const androidBeta = {
     const qs = q.toString();
     return get<AndroidBetaSignupListResponse>(`/admin/beta-signups${qs ? '?' + qs : ''}`);
   },
+};
+
+// ── Chat ──────────────────────────────────────────────────────
+export type ChatUserItem = {
+  id: string; name: string; whatsapp: string; chat_enabled: boolean; created_at: string;
+};
+export type ChatUsersResponse = { users: ChatUserItem[]; total_enabled: number };
+
+export const chat = {
+  adminListUsers: () => get<ChatUsersResponse>('/admin/chat-users'),
+  adminUpdateAccess: (userId: string, chat_enabled: boolean) =>
+    patch<ChatUserItem>(`/admin/chat-users/${userId}`, { chat_enabled }),
 };

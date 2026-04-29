@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     supabase_url: str = ""              # ex: https://xxxx.supabase.co
     supabase_service_role_key: str = "" # service_role key (nunca expor ao cliente)
 
+    # AI Chat
+    anthropic_api_key: str = ""
+    llm_model: str = "claude-haiku-4-5"
+    chat_rate_limit: int = 20  # messages per hour per user
+
     # Billing (Stripe)
     billing_provider: str = "stripe"
     stripe_secret_key: str = ""

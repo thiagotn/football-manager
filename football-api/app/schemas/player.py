@@ -78,6 +78,7 @@ class PlayerResponse(BaseModel):
     active: bool
     must_change_password: bool
     avatar_url: str | None = None
+    chat_enabled: bool = False
     created_at: datetime
     updated_at: datetime
 

@@ -1,8 +1,9 @@
 import uuid
+from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
-from sqlalchemy.dialects.postgresql import ENUM as PgEnum, UUID
+from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import TimestampMixin, UUIDMixin
@@ -35,6 +36,9 @@ class Player(Base, UUIDMixin, TimestampMixin):
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    chat_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    chat_req_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    chat_req_window: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
     # Relationships
     group_members = relationship("GroupMember", back_populates="player", cascade="all, delete-orphan")
