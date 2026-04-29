@@ -26,6 +26,7 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "lucide-svelte": "^0.460.0",
+    "marked": "^18.0.2",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.5",
     "three": "0.128.0"

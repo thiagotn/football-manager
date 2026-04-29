@@ -5,6 +5,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { MessageCircle, Send, RotateCcw } from 'lucide-svelte';
   import { t } from '$lib/i18n';
+  import { marked } from 'marked';
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -133,13 +134,7 @@
   }
 
   function renderMarkdown(text: string): string {
-    return text
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/gs, '<em>$1</em>')
-      .replace(/\n\n/g, '</p><p class="mt-2">')
-      .replace(/\n/g, '<br>')
-      .replace(/^/, '<p>').replace(/$/, '</p>');
+    return marked.parse(text, { async: false }) as string;
   }
 </script>
 
@@ -190,7 +185,14 @@
                 <span class="animate-bounce [animation-delay:300ms]">·</span>
               </span>
             {:else if msg.role === 'assistant'}
-              {@html renderMarkdown(msg.content)}
+              <div class="prose prose-invert prose-sm max-w-none
+                [&_table]:w-full [&_table]:text-xs [&_table]:border-collapse [&_table]:mt-1
+                [&_th]:border [&_th]:border-white/20 [&_th]:px-2 [&_th]:py-1 [&_th]:bg-white/10 [&_th]:text-left
+                [&_td]:border [&_td]:border-white/20 [&_td]:px-2 [&_td]:py-1
+                [&_p]:mb-1 [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:mb-0.5
+                [&_strong]:text-white [&_a]:text-primary-300">
+                {@html renderMarkdown(msg.content)}
+              </div>
             {:else}
               {msg.content}
             {/if}
