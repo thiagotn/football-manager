@@ -72,6 +72,7 @@ class TokenResponse(BaseModel):
     role: str
     must_change_password: bool = False
     avatar_url: str | None = None
+    chat_enabled: bool = False
 
 
 class ChangePasswordRequest(BaseModel):

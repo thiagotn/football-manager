@@ -50,6 +50,7 @@ async def login(body: LoginRequest, db: DB):
         role=player.role,
         must_change_password=player.must_change_password,
         avatar_url=player.avatar_url,
+        chat_enabled=player.chat_enabled,
     )
 
 
