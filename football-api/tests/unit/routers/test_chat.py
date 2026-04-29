@@ -67,15 +67,19 @@ async def test_chat_streams_sse_for_enabled_player(api_client, mock_db, player_u
     player_user.chat_req_window = None
     player_user.chat_req_count = 0
 
+    async def fake_text_stream():
+        yield "Hello"
+        yield " world"
+
     mock_stream = MagicMock()
-    mock_stream.__enter__ = MagicMock(return_value=mock_stream)
-    mock_stream.__exit__ = MagicMock(return_value=False)
-    mock_stream.text_stream = iter(["Hello", " world"])
+    mock_stream.__aenter__ = AsyncMock(return_value=mock_stream)
+    mock_stream.__aexit__ = AsyncMock(return_value=None)
+    mock_stream.text_stream = fake_text_stream()
 
     mock_client = MagicMock()
     mock_client.beta.messages.stream.return_value = mock_stream
 
-    with patch("app.api.v1.routers.chat.anthropic.Anthropic", return_value=mock_client):
+    with patch("app.api.v1.routers.chat.anthropic.AsyncAnthropic", return_value=mock_client):
         response = await api_client.post(
             "/api/v1/chat",
             json={"messages": [{"role": "user", "content": "Hi"}]},
