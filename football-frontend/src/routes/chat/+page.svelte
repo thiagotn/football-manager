@@ -176,9 +176,9 @@
 
       {#each messages as msg}
         <div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-          <div class="max-w-[85%] {msg.role === 'user'
+          <div class="{msg.role === 'user' ? 'max-w-[85%]' : 'max-w-[92%]'} {msg.role === 'user'
             ? 'bg-primary-600 text-white rounded-2xl rounded-br-sm'
-            : 'bg-white/20 text-white rounded-2xl rounded-bl-sm'} px-4 py-2.5 text-sm leading-relaxed">
+            : 'bg-white/20 text-white rounded-2xl rounded-bl-sm'} px-4 py-2.5 text-sm leading-relaxed min-w-0">
             {#if msg.streaming && !msg.content}
               <span class="inline-flex gap-1 items-center text-white/50">
                 <span class="animate-bounce [animation-delay:0ms]">·</span>
@@ -186,10 +186,10 @@
                 <span class="animate-bounce [animation-delay:300ms]">·</span>
               </span>
             {:else if msg.role === 'assistant'}
-              <div class="prose prose-invert prose-sm max-w-none
-                [&_table]:w-full [&_table]:text-xs [&_table]:border-collapse [&_table]:mt-1
-                [&_th]:border [&_th]:border-white/20 [&_th]:px-2 [&_th]:py-1 [&_th]:bg-white/10 [&_th]:text-left
-                [&_td]:border [&_td]:border-white/20 [&_td]:px-2 [&_td]:py-1
+              <div class="prose prose-invert prose-sm max-w-none overflow-x-auto
+                [&_table]:text-xs [&_table]:border-collapse [&_table]:mt-1
+                [&_th]:border [&_th]:border-white/20 [&_th]:px-2 [&_th]:py-1 [&_th]:bg-white/10 [&_th]:text-left [&_th]:whitespace-nowrap
+                [&_td]:border [&_td]:border-white/20 [&_td]:px-2 [&_td]:py-1 [&_td]:whitespace-nowrap
                 [&_p]:mb-1 [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:mb-0.5
                 [&_strong]:text-white [&_a]:text-primary-300">
                 {@html renderMarkdown(msg.content)}
