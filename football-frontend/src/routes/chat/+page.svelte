@@ -139,7 +139,7 @@
   <main class="relative z-10 max-w-3xl mx-auto px-4 py-8 flex flex-col h-[calc(100vh-4rem)]">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-4 shrink-0">
+    <div class="flex items-center justify-between mb-4 shrink-0 bg-black/40 backdrop-blur-sm rounded-2xl px-4 py-3">
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <MessageCircle size={24} class="text-primary-400" /> {$t('chat.title')}
@@ -159,7 +159,7 @@
     <!-- Messages area -->
     <div
       bind:this={messagesEl}
-      class="flex-1 overflow-y-auto space-y-4 py-2 pr-1"
+      class="flex-1 overflow-y-auto space-y-4 py-4 px-3 my-2 bg-black/40 backdrop-blur-sm rounded-2xl"
     >
       {#if messages.length === 0}
         <div class="flex flex-col items-center justify-center h-full text-center gap-3 text-white/40 select-none">
@@ -172,7 +172,7 @@
         <div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
           <div class="max-w-[85%] {msg.role === 'user'
             ? 'bg-primary-600 text-white rounded-2xl rounded-br-sm'
-            : 'bg-white/10 text-white rounded-2xl rounded-bl-sm'} px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
+            : 'bg-white/20 text-white rounded-2xl rounded-bl-sm'} px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
             {#if msg.streaming && !msg.content}
               <span class="inline-flex gap-1 items-center text-white/50">
                 <span class="animate-bounce [animation-delay:0ms]">·</span>
@@ -188,8 +188,8 @@
     </div>
 
     <!-- Input -->
-    <div class="shrink-0 pt-3">
-      <div class="flex gap-2 items-end bg-white/10 rounded-2xl p-2">
+    <div class="shrink-0 pt-1">
+      <div class="flex gap-2 items-end bg-black/50 backdrop-blur-sm rounded-2xl p-2">
         <textarea
           bind:value={input}
           onkeydown={onKeydown}

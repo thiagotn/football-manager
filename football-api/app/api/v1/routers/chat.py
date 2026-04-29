@@ -75,9 +75,9 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
 
     async def event_stream():
         try:
-            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-            with client.beta.messages.stream(
+            async with client.beta.messages.stream(
                 model=settings.llm_model,
                 max_tokens=1024,
                 system=SYSTEM_PROMPT,
@@ -92,7 +92,7 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
                     }
                 ],
             ) as stream:
-                for text_chunk in stream.text_stream:
+                async for text_chunk in stream.text_stream:
                     yield f"data: {json.dumps({'text': text_chunk})}\n\n"
 
             yield "data: [DONE]\n\n"
@@ -100,7 +100,7 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
             logger.error("anthropic_api_error error=%s", str(e))
             yield f"data: {json.dumps({'error': 'Erro ao conectar com o assistente. Tente novamente.'})}\n\n"
         except Exception as e:
-            logger.error("chat_stream_error error=%s", str(e))
+            logger.error("chat_stream_error type=%s error=%s", type(e).__name__, str(e))
             yield f"data: {json.dumps({'error': 'Erro interno. Tente novamente.'})}\n\n"
 
     logger.info("chat_request player_id=%s model=%s", str(current_player.id), settings.llm_model)
