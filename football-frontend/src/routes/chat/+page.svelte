@@ -131,6 +131,16 @@
       send();
     }
   }
+
+  function renderMarkdown(text: string): string {
+    return text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/gs, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p class="mt-2">')
+      .replace(/\n/g, '<br>')
+      .replace(/^/, '<p>').replace(/$/, '</p>');
+  }
 </script>
 
 <svelte:head><title>{$t('chat.title')} | rachao.app</title></svelte:head>
@@ -172,13 +182,15 @@
         <div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
           <div class="max-w-[85%] {msg.role === 'user'
             ? 'bg-primary-600 text-white rounded-2xl rounded-br-sm'
-            : 'bg-white/20 text-white rounded-2xl rounded-bl-sm'} px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
+            : 'bg-white/20 text-white rounded-2xl rounded-bl-sm'} px-4 py-2.5 text-sm leading-relaxed">
             {#if msg.streaming && !msg.content}
               <span class="inline-flex gap-1 items-center text-white/50">
                 <span class="animate-bounce [animation-delay:0ms]">·</span>
                 <span class="animate-bounce [animation-delay:150ms]">·</span>
                 <span class="animate-bounce [animation-delay:300ms]">·</span>
               </span>
+            {:else if msg.role === 'assistant'}
+              {@html renderMarkdown(msg.content)}
             {:else}
               {msg.content}
             {/if}

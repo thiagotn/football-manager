@@ -95,8 +95,19 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
                     }
                 ],
             ) as stream:
-                async for text_chunk in stream.text_stream:
-                    yield f"data: {json.dumps({'text': text_chunk})}\n\n"
+                last_block_was_tool = False
+                async for event in stream:
+                    event_type = getattr(event, "type", None)
+                    if event_type == "content_block_start":
+                        block = getattr(event, "content_block", None)
+                        if block:
+                            if block.type == "text" and last_block_was_tool:
+                                yield f"data: {json.dumps({'text': '\n\n'})}\n\n"
+                            last_block_was_tool = block.type == "tool_use"
+                    elif event_type == "content_block_delta":
+                        delta = getattr(event, "delta", None)
+                        if delta and getattr(delta, "type", None) == "text_delta":
+                            yield f"data: {json.dumps({'text': delta.text})}\n\n"
 
             yield "data: [DONE]\n\n"
         except anthropic.APIError as e:

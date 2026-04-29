@@ -67,14 +67,24 @@ async def test_chat_streams_sse_for_enabled_player(api_client, mock_db, player_u
     player_user.chat_req_window = None
     player_user.chat_req_count = 0
 
-    async def fake_text_stream():
-        yield "Hello"
-        yield " world"
+    async def fake_event_stream():
+        block_start = MagicMock()
+        block_start.type = "content_block_start"
+        block_start.content_block = MagicMock()
+        block_start.content_block.type = "text"
+        yield block_start
+
+        delta_event = MagicMock()
+        delta_event.type = "content_block_delta"
+        delta_event.delta = MagicMock()
+        delta_event.delta.type = "text_delta"
+        delta_event.delta.text = "Hello world"
+        yield delta_event
 
     mock_stream = MagicMock()
     mock_stream.__aenter__ = AsyncMock(return_value=mock_stream)
     mock_stream.__aexit__ = AsyncMock(return_value=None)
-    mock_stream.text_stream = fake_text_stream()
+    mock_stream.__aiter__ = lambda self: fake_event_stream()
 
     mock_client = MagicMock()
     mock_client.beta.messages.stream.return_value = mock_stream
