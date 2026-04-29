@@ -79,7 +79,13 @@ async def test_chat_streams_sse_for_enabled_player(api_client, mock_db, player_u
     mock_client = MagicMock()
     mock_client.beta.messages.stream.return_value = mock_stream
 
-    with patch("app.api.v1.routers.chat.anthropic.AsyncAnthropic", return_value=mock_client):
+    mock_settings = MagicMock()
+    mock_settings.anthropic_api_key = "test-key"
+    mock_settings.llm_model = "claude-haiku-4-5"
+    mock_settings.chat_rate_limit = 20
+
+    with patch("app.api.v1.routers.chat.get_settings", return_value=mock_settings), \
+         patch("app.api.v1.routers.chat.anthropic.AsyncAnthropic", return_value=mock_client):
         response = await api_client.post(
             "/api/v1/chat",
             json={"messages": [{"role": "user", "content": "Hi"}]},
