@@ -107,7 +107,7 @@ def test_no_allowed_tools_registers_all_read(monkeypatch):
     names = _registered_tool_names(server)
     expected_read = {
         "list_groups", "get_group", "get_group_stats",
-        "list_matches", "get_match", "discover_matches",
+        "list_my_matches", "list_matches", "get_match", "discover_matches",
         "list_players", "get_my_stats", "get_ranking",
         "get_teams",
         "create_match", "update_match", "set_attendance",
