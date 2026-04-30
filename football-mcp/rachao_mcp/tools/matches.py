@@ -1,8 +1,28 @@
+import asyncio
+
 from rachao_mcp.client import api
 
 _READ = {"readOnlyHint": True, "idempotentHint": True}
 _WRITE = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False}
 _WRITE_IDEM = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True}
+
+
+async def list_my_matches() -> list[dict]:
+    """Lista todos os rachões do usuário em todos os seus grupos de uma só vez. Use sempre que precisar de partidas sem um grupo específico em mente (ex: próximas partidas, confirmações de hoje)."""
+    groups = await api.get("/groups")
+    if not groups:
+        return []
+    results = await asyncio.gather(
+        *[api.get(f"/groups/{g['id']}/matches") for g in groups],
+        return_exceptions=True,
+    )
+    out: list[dict] = []
+    for group, group_matches in zip(groups, results):
+        if isinstance(group_matches, Exception):
+            continue
+        for match in group_matches:
+            out.append({**match, "group_name": group.get("name", ""), "group_id": group["id"]})
+    return out
 
 
 async def list_matches(group_id: str) -> list[dict]:
@@ -70,6 +90,7 @@ async def set_attendance(
 
 
 READ_TOOLS: list[tuple] = [
+    (list_my_matches, _READ),
     (list_matches, _READ),
     (get_match, _READ),
     (discover_matches, _READ),

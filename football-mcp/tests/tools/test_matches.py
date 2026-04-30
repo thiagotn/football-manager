@@ -9,9 +9,38 @@ from rachao_mcp.tools.matches import (
     discover_matches,
     get_match,
     list_matches,
+    list_my_matches,
     set_attendance,
     update_match,
 )
+
+
+@pytest.mark.asyncio
+async def test_list_my_matches_aggregates_all_groups(mock_api):
+    mock_api.get("/groups").mock(
+        return_value=httpx.Response(200, json=[
+            {"id": "g1", "name": "Futebol GQC"},
+            {"id": "g2", "name": "Alliance FC"},
+        ])
+    )
+    mock_api.get("/groups/g1/matches").mock(
+        return_value=httpx.Response(200, json=[{"id": "m1", "match_date": "2026-05-01"}])
+    )
+    mock_api.get("/groups/g2/matches").mock(
+        return_value=httpx.Response(200, json=[{"id": "m2", "match_date": "2026-05-07"}])
+    )
+    result = await list_my_matches()
+    assert len(result) == 2
+    group_names = {m["group_name"] for m in result}
+    assert group_names == {"Futebol GQC", "Alliance FC"}
+    assert all("group_id" in m for m in result)
+
+
+@pytest.mark.asyncio
+async def test_list_my_matches_empty_when_no_groups(mock_api):
+    mock_api.get("/groups").mock(return_value=httpx.Response(200, json=[]))
+    result = await list_my_matches()
+    assert result == []
 
 
 @pytest.mark.asyncio
