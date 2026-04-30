@@ -141,6 +141,20 @@
   function formatTime(date: Date): string {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
+
+  function parseOptions(content: string): { text: string; options: string[] } {
+    const match = content.match(/<opcoes>([\s\S]*?)<\/opcoes>/);
+    if (!match) return { text: content, options: [] };
+    const options = match[1].split('|').map(s => s.trim()).filter(Boolean);
+    const text = content.replace(/<opcoes>[\s\S]*?<\/opcoes>/, '').trim();
+    return { text, options };
+  }
+
+  function sendOption(opt: string) {
+    if (streaming) return;
+    input = opt;
+    send();
+  }
 </script>
 
 <svelte:head><title>{$t('chat.title')} | rachao.app</title></svelte:head>
@@ -191,14 +205,28 @@
                 <span class="animate-bounce [animation-delay:300ms]">·</span>
               </span>
             {:else if msg.role === 'assistant'}
+              {@const parsed = msg.streaming ? null : parseOptions(msg.content)}
               <div class="prose prose-invert prose-sm max-w-none overflow-x-auto
                 [&_table]:text-xs [&_table]:border-collapse [&_table]:mt-1
                 [&_th]:border [&_th]:border-white/20 [&_th]:px-2 [&_th]:py-1 [&_th]:bg-white/10 [&_th]:text-left [&_th]:whitespace-nowrap
                 [&_td]:border [&_td]:border-white/20 [&_td]:px-2 [&_td]:py-1 [&_td]:whitespace-nowrap
                 [&_p]:mb-1 [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:mb-0.5
                 [&_strong]:text-white [&_a]:text-primary-300">
-                {@html renderMarkdown(msg.content)}
+                {@html renderMarkdown(msg.streaming ? msg.content.replace(/<opcoes>[\s\S]*/, '') : (parsed?.text ?? msg.content))}
               </div>
+              {#if !msg.streaming && parsed && parsed.options.length > 0}
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                  {#each parsed.options as opt}
+                    <button
+                      onclick={() => sendOption(opt)}
+                      disabled={streaming}
+                      class="text-xs bg-white/15 hover:bg-white/25 active:bg-white/30 text-white px-3 py-1.5 rounded-full border border-white/25 disabled:opacity-40 transition-colors cursor-pointer"
+                    >
+                      {opt}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
               <p class="text-[10px] text-white/40 text-right mt-1 leading-none">{formatTime(msg.timestamp)}</p>
             {:else}
               <span>{msg.content}</span>
