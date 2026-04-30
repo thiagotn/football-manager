@@ -161,6 +161,10 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
     token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
     messages = [{"role": m.role, "content": m.content} for m in body.messages]
 
+    brazil_tz = timezone(timedelta(hours=-3))
+    today_str = datetime.now(brazil_tz).strftime("%d/%m/%Y")
+    system_prompt = f"Hoje é {today_str} (horário de Brasília).\n\n{SYSTEM_PROMPT}"
+
     async def event_stream():
         try:
             if not settings.anthropic_api_key:
@@ -171,7 +175,7 @@ async def chat(body: ChatRequest, request: Request, current_player: CurrentPlaye
             async with client.beta.messages.stream(
                 model=settings.llm_model,
                 max_tokens=1024,
-                system=SYSTEM_PROMPT,
+                system=system_prompt,
                 messages=messages,
                 betas=["mcp-client-2025-04-04"],
                 mcp_servers=[
