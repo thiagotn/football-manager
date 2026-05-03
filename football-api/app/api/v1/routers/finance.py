@@ -135,7 +135,7 @@ async def update_payment(
     if body.status == "paid":
         if not body.payment_type:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="payment_type é obrigatório ao marcar como pago",
             )
         if body.payment_type == "monthly":

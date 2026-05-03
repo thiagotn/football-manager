@@ -218,7 +218,7 @@ async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
 
     if verify_password(body.new_password, player.password_hash):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="SAME_PASSWORD",
         )
 
@@ -266,13 +266,13 @@ async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentP
             raise UnauthorizedError("Senha atual incorreta")
     else:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Informe a senha atual ou verifique via SMS.",
         )
 
     if verify_password(body.new_password, current.password_hash):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="SAME_PASSWORD",
         )
 
