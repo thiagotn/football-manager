@@ -15,12 +15,15 @@ from app.core.security import (
     verify_password,
 )
 from app.db.repositories.player_repo import PlayerRepository
+from app.db.repositories.refresh_token_repo import RefreshTokenRepository
 from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.models.player import PlayerRole
 from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordResetRequest,
     LoginRequest,
+    RefreshRequest,
+    RefreshResponse,
     RegisterRequest,
     SendOtpRequest,
     SendOtpResponse,
@@ -76,10 +79,12 @@ async def login(body: LoginRequest, request: Request, db: DB):
         logger.warning("auth_login_failed", ip=ip)
         raise UnauthorizedError("Conta desativada")
 
-    token = create_access_token(str(player.id))
+    access_token = create_access_token(str(player.id))
+    refresh_token = await RefreshTokenRepository(db).create(player.id)
     logger.info("auth_login_success", player_id=str(player.id), ip=ip)
     return TokenResponse(
-        access_token=token,
+        access_token=access_token,
+        refresh_token=refresh_token,
         player_id=str(player.id),
         name=player.name,
         nickname=player.nickname,
@@ -149,9 +154,11 @@ async def register(body: RegisterRequest, request: Request, db: DB):
     await SubscriptionRepository(db).get_or_create(player.id)
     logger.info("auth_register", player_id=str(player.id), ip=_client_ip(request))
 
-    token = create_access_token(str(player.id))
+    access_token = create_access_token(str(player.id))
+    refresh_token = await RefreshTokenRepository(db).create(player.id)
     return TokenResponse(
-        access_token=token,
+        access_token=access_token,
+        refresh_token=refresh_token,
         player_id=str(player.id),
         name=player.name,
         nickname=player.nickname,
@@ -224,6 +231,7 @@ async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
 
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
+    await RefreshTokenRepository(db).revoke_all_for_player(player.id)
     await db.flush()
     logger.info("auth_password_reset", player_id=str(player.id))
 
@@ -280,5 +288,21 @@ async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentP
     player = await repo.get(current.id)
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
+    await RefreshTokenRepository(db).revoke_all_for_player(current.id)
     await db.flush()
     logger.info("auth_password_changed", player_id=str(current.id))
+
+
+@router.post("/refresh", response_model=RefreshResponse)
+async def refresh(body: RefreshRequest, db: DB):
+    """Troca um refresh token válido por um novo par access + refresh (rotativo)."""
+    rt_repo = RefreshTokenRepository(db)
+    rt = await rt_repo.get_valid(body.refresh_token)
+    if not rt:
+        raise UnauthorizedError("Refresh token inválido ou expirado")
+
+    await rt_repo.revoke(rt)
+    new_refresh = await rt_repo.create(rt.player_id)
+    new_access = create_access_token(str(rt.player_id))
+
+    return RefreshResponse(access_token=new_access, refresh_token=new_refresh)

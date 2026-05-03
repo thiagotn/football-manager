@@ -58,12 +58,14 @@ function createAuthStore() {
         set({ token, player, loading: false });
       } catch {
         localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
         set({ token: null, player: null, loading: false });
       }
     },
-    login(token: string, player: { player_id: string; name: string; nickname?: string | null; role: string; must_change_password?: boolean; avatar_url?: string | null; chat_enabled?: boolean }) {
+    login(token: string, refreshToken: string | null, player: { player_id: string; name: string; nickname?: string | null; role: string; must_change_password?: boolean; avatar_url?: string | null; chat_enabled?: boolean }) {
       const p = { id: player.player_id, name: player.name, nickname: player.nickname ?? null, role: player.role, must_change_password: player.must_change_password ?? false, avatar_url: player.avatar_url ?? null, chat_enabled: player.chat_enabled ?? false } as unknown as Player;
       localStorage.setItem('token', token);
+      if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
       localStorage.setItem('player', JSON.stringify(p));
       set({ token, player: p, loading: false });
     },
@@ -85,6 +87,7 @@ function createAuthStore() {
     },
     logout() {
       localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
       localStorage.removeItem('player');
       set({ token: null, player: null, loading: false });
     },

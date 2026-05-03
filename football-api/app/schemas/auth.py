@@ -65,6 +65,7 @@ class RegisterRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
     player_id: str
     name: str
@@ -73,6 +74,16 @@ class TokenResponse(BaseModel):
     must_change_password: bool = False
     avatar_url: str | None = None
     chat_enabled: bool = False
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class RefreshResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
 
 
 class ChangePasswordRequest(BaseModel):

@@ -44,7 +44,7 @@
     loading = true;
     try {
       const res = await auth.login(whatsapp, password);
-      authStore.login(res.access_token, res);
+      authStore.login(res.access_token, res.refresh_token ?? null, res);
       if (res.must_change_password) {
         goto('/profile');
       } else {

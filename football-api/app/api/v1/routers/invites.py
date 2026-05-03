@@ -16,6 +16,7 @@ from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.invite_repo import InviteRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.player_repo import PlayerRepository
+from app.db.repositories.refresh_token_repo import RefreshTokenRepository
 from app.models.group import GroupMemberRole
 from app.models.player import PlayerRole
 from app.schemas.auth import TokenResponse
@@ -166,8 +167,10 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
     await db.flush()
 
     access_token = create_access_token(str(player.id))
+    refresh_token = await RefreshTokenRepository(db).create(player.id)
     return TokenResponse(
         access_token=access_token,
+        refresh_token=refresh_token,
         player_id=str(player.id),
         name=player.name,
         role=player.role,

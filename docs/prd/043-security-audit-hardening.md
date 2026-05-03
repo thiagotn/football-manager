@@ -50,7 +50,7 @@ Os controles abaixo estão corretamente implementados e **não requerem ação**
 
 | ID | Achado | Arquivo(s) | Severidade |
 |----|--------|-----------|------------|
-| S-03 | JWT com expiração de 24h e sem refresh token — token vazado dá acesso por 24h | `config.py:23` | Médio-Alto |
+| S-03 | ~~JWT com expiração de 24h e sem refresh token~~ — **resolvido em 2026-05-03** | `config.py`, `auth.py` | ✅ |
 
 ### Médio
 
@@ -79,8 +79,8 @@ Os controles abaixo estão corretamente implementados e **não requerem ação**
 | ~~P2~~ | ~~S-01~~ | ~~Rate limiting no login (5 req/min por IP)~~ — **✅ feito em 2026-05-03** | 1 dia |
 | ~~P2~~ | ~~S-05~~ | ~~Audit logging estruturado para ações sensíveis~~ — **✅ feito em 2026-05-03** | 4h |
 | ~~P3~~ | ~~S-04~~ | ~~Refatorar SQL f-string para SQLAlchemy Core~~ — **✅ feito em 2026-05-03** | 1 dia |
-| P4 | S-03 | Reduzir JWT para 8h (quick win) | 2h |
-| Backlog | S-03 | Implementar refresh token rotativo | 3 dias |
+| ~~P4~~ | ~~S-03~~ | ~~Reduzir JWT para 8h (quick win)~~ — **✅ feito em 2026-05-03 (15min + refresh rotativo)** | 2h |
+| ~~Backlog~~ | ~~S-03~~ | ~~Implementar refresh token rotativo~~ — **✅ feito em 2026-05-03** | 3 dias |
 
 ---
 

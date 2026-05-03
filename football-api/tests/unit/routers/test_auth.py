@@ -16,6 +16,8 @@ Regras de negócio cobertas:
 - forgot_password/reset com mesma senha → 422 SAME_PASSWORD
 - Rate limit: 6ª tentativa de login do mesmo IP retorna 429
 - Rate limit: IPs distintos não interferem entre si
+- POST /auth/refresh com token válido → novo par access + refresh
+- POST /auth/refresh com token inválido → 401
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -64,6 +66,10 @@ async def test_login_correct_credentials_returns_token(api_client, mocker):
         "app.api.v1.routers.auth.PlayerRepository.get_by_whatsapp",
         new=AsyncMock(return_value=player),
     )
+    mocker.patch(
+        "app.api.v1.routers.auth.RefreshTokenRepository.create",
+        new=AsyncMock(return_value="mock_refresh_token"),
+    )
 
     response = await api_client.post(
         "/api/v1/auth/login",
@@ -73,6 +79,7 @@ async def test_login_correct_credentials_returns_token(api_client, mocker):
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
+    assert "refresh_token" in data
     assert data["player_id"] == str(player.id)
 
 
@@ -342,6 +349,60 @@ async def test_login_rate_limit_blocks_on_6th_attempt(api_client, mocker):
         headers={"X-Forwarded-For": "10.0.0.1"},
     )
     assert r.status_code == 429
+
+
+# ── POST /auth/refresh ────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_refresh_valid_token_returns_new_pair(api_client, mocker):
+    from unittest.mock import MagicMock
+    from uuid import uuid4
+
+    fake_rt = MagicMock()
+    fake_rt.player_id = uuid4()
+
+    mocker.patch(
+        "app.api.v1.routers.auth.RefreshTokenRepository.get_valid",
+        new=AsyncMock(return_value=fake_rt),
+    )
+    mocker.patch(
+        "app.api.v1.routers.auth.RefreshTokenRepository.revoke",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.auth.RefreshTokenRepository.create",
+        new=AsyncMock(return_value="new_refresh_token_abc"),
+    )
+
+    response = await api_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": "any_valid_token"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["refresh_token"] == "new_refresh_token_abc"
+    assert data["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_refresh_invalid_token_returns_401(api_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.auth.RefreshTokenRepository.get_valid",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": "expired_or_invalid"},
+    )
+
+    assert response.status_code == 401
+
+
+# ── Rate limiting ──────────────────────────────────────────────────────────────
 
 
 @pytest.mark.asyncio

@@ -78,7 +78,7 @@
         if (form.nickname) payload.nickname = form.nickname;
       }
       const res = await invites.accept(token, payload);
-      authStore.login(res.access_token, res);
+      authStore.login(res.access_token, res.refresh_token ?? null, res);
       done = true;
       setTimeout(() => goto('/'), 2000);
     } catch (e) {

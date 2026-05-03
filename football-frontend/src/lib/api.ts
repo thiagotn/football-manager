@@ -10,7 +10,39 @@ export class ApiError extends Error {
 // Reset to false on the next successful request (i.e. after the user logs back in).
 let sessionExpiredTriggered = false;
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// Shared promise while a token refresh is in progress — concurrent 401s all wait on the same attempt.
+let pendingRefresh: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (pendingRefresh) return pendingRefresh;
+
+  const refreshToken = typeof localStorage !== 'undefined'
+    ? localStorage.getItem('refresh_token') : null;
+  if (!refreshToken) return false;
+
+  pendingRefresh = (async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data: { access_token: string; refresh_token: string } = await res.json();
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      pendingRefresh = null;
+    }
+  })();
+
+  return pendingRefresh;
+}
+
+async function request<T>(path: string, options: RequestInit = {}, _retried = false): Promise<T> {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
 
   const res = await fetch(`${API_BASE}${path}`, {
@@ -23,6 +55,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
+    // On first 401: silently try to refresh and retry the original request once.
+    if (
+      res.status === 401 &&
+      !_retried &&
+      path !== '/auth/refresh' &&
+      typeof window !== 'undefined' &&
+      localStorage.getItem('player')
+    ) {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) {
+        return request<T>(path, options, true);
+      }
+    }
+
     if (
       res.status === 401 &&
       !sessionExpiredTriggered &&
@@ -49,15 +95,29 @@ const patch = <T>(path: string, body?: unknown) => request<T>(path, { method: 'P
 const del = (path: string) => request<void>(path, { method: 'DELETE' });
 
 // ── Auth ──────────────────────────────────────────────────────
+export type AuthTokenResponse = {
+  access_token: string;
+  refresh_token: string | null;
+  player_id: string;
+  name: string;
+  nickname: string | null;
+  role: string;
+  must_change_password: boolean;
+  avatar_url: string | null;
+  chat_enabled?: boolean;
+};
+
 export const auth = {
   login: (whatsapp: string, password: string) =>
-    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean; avatar_url: string | null }>('/auth/login', { whatsapp, password }),
+    post<AuthTokenResponse>('/auth/login', { whatsapp, password }),
   sendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/send-otp', { whatsapp }),
   verifyOtp: (whatsapp: string, otp_code: string) =>
     post<{ otp_token: string }>('/auth/verify-otp', { whatsapp, otp_code }),
   register: (data: { name: string; whatsapp: string; password: string; nickname?: string; otp_token: string }) =>
-    post<{ access_token: string; player_id: string; name: string; nickname: string | null; role: string; must_change_password: boolean; avatar_url: string | null }>('/auth/register', data),
+    post<AuthTokenResponse>('/auth/register', data),
+  refresh: (refresh_token: string) =>
+    post<{ access_token: string; refresh_token: string }>('/auth/refresh', { refresh_token }),
   me: () => get<Player>('/auth/me'),
   forgotPasswordSendOtp: (whatsapp: string) =>
     post<{ status: string; expires_in_seconds: number }>('/auth/forgot-password/send-otp', { whatsapp }),

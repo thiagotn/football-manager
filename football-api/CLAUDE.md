@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `041_chat_enabled.sql`.
+A última migration criada é `042_refresh_tokens.sql`.
 
-**A próxima deve ser numerada `042_`.**
+**A próxima deve ser numerada `043_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 

@@ -121,7 +121,7 @@
     loading = true;
     try {
       const res = await auth.register({ name, whatsapp, password, nickname: nickname || undefined, otp_token: otpToken });
-      authStore.login(res.access_token, res);
+      authStore.login(res.access_token, res.refresh_token ?? null, res);
       const nextUrl = $page.url.searchParams.get('next');
       const joinWaitlist = $page.url.searchParams.get('join_waitlist');
       if (nextUrl) {
