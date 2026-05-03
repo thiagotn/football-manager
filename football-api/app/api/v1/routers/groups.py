@@ -3,6 +3,7 @@ import re
 import secrets
 import uuid
 
+import structlog
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,6 +61,7 @@ def _fmt_date(d) -> str:
     return f"{d.day} de {_MONTHS_PT[d.month - 1]}"
 
 router = APIRouter(prefix="/groups", tags=["groups"])
+logger = structlog.get_logger()
 
 
 def _auto_slug(name: str, existing_slugs: set[str] = set()) -> str:
@@ -251,6 +253,7 @@ async def add_member(group_id: uuid.UUID, body: AddMemberRequest, db: DB, curren
                 raise PlanLimitError()
 
     member = await g_repo.add_member(group_id, body.player_id, body.role)
+    logger.info("group_member_added", actor_id=str(current.id), group_id=str(group_id), player_id=str(body.player_id))
 
     # Adiciona o novo membro como pendente nas partidas abertas/em andamento
     m_repo = MatchRepository(db)
@@ -311,6 +314,8 @@ async def update_member(
         raise NotFoundError("Membro não encontrado")
 
     if body.role is not None:
+        if body.role != member.role:
+            logger.info("group_member_role_changed", actor_id=str(current.id), group_id=str(group_id), player_id=str(player_id), role=body.role.value)
         member.role = body.role
     if body.skill_stars is not None:
         member.skill_stars = body.skill_stars
@@ -345,6 +350,7 @@ async def remove_member(
     m_repo = MatchRepository(db)
     await m_repo.delete_player_attendances_in_open_matches(group_id, player_id)
     await repo.delete(member)
+    logger.warning("group_member_removed", actor_id=str(current.id), group_id=str(group_id), player_id=str(player_id))
 
 
 # ── Add member by phone ───────────────────────────────────────────────────────
@@ -474,6 +480,7 @@ async def add_member_by_phone(
         is_new = True
 
     member = await g_repo.add_member(group_id, player.id, GroupMemberRole.MEMBER)
+    logger.info("group_member_added_by_phone", actor_id=str(current.id), group_id=str(group_id), player_id=str(player.id), is_new=is_new)
     member.skill_stars = body.skill_stars
     member.position = body.position
     await db.flush()

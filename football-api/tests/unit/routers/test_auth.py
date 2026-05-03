@@ -14,14 +14,27 @@ Regras de negócio cobertas:
 - change_password com mesma senha (via otp_token) → 422 SAME_PASSWORD
 - forgot_password/reset com token inválido → 401
 - forgot_password/reset com mesma senha → 422 SAME_PASSWORD
+- Rate limit: 6ª tentativa de login do mesmo IP retorna 429
+- Rate limit: IPs distintos não interferem entre si
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
+from app.api.v1.routers.auth import _login_attempts
 from app.core.security import create_otp_token, hash_password
 from app.models.player import PlayerRole
+
+
+# ── Fixtures ──────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def reset_login_rate_limit():
+    _login_attempts.clear()
+    yield
+    _login_attempts.clear()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -303,3 +316,51 @@ async def test_forgot_password_reset_same_password_returns_422(api_client, mocke
 
     assert response.status_code == 422
     assert response.json()["detail"] == "SAME_PASSWORD"
+
+
+# ── Rate limiting ──────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_login_rate_limit_blocks_on_6th_attempt(api_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.auth.PlayerRepository.get_by_whatsapp",
+        new=AsyncMock(return_value=None),
+    )
+
+    for _ in range(5):
+        r = await api_client.post(
+            "/api/v1/auth/login",
+            json={"whatsapp": "+5511000000000", "password": "x"},
+            headers={"X-Forwarded-For": "10.0.0.1"},
+        )
+        assert r.status_code == 401
+
+    r = await api_client.post(
+        "/api/v1/auth/login",
+        json={"whatsapp": "+5511000000000", "password": "x"},
+        headers={"X-Forwarded-For": "10.0.0.1"},
+    )
+    assert r.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_login_rate_limit_different_ips_are_independent(api_client, mocker):
+    mocker.patch(
+        "app.api.v1.routers.auth.PlayerRepository.get_by_whatsapp",
+        new=AsyncMock(return_value=None),
+    )
+
+    for _ in range(5):
+        await api_client.post(
+            "/api/v1/auth/login",
+            json={"whatsapp": "+5511000000000", "password": "x"},
+            headers={"X-Forwarded-For": "10.0.0.2"},
+        )
+
+    r = await api_client.post(
+        "/api/v1/auth/login",
+        json={"whatsapp": "+5511000000000", "password": "x"},
+        headers={"X-Forwarded-For": "10.0.0.3"},
+    )
+    assert r.status_code == 401

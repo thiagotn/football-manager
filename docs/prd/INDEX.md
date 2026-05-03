@@ -104,6 +104,9 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 |---|-----|--------|-------|
 | 039 | [mcp-server.md](039-mcp-server.md) | 📋 | Servidor MCP para usar a API do rachao.app no Claude CLI e GitHub Copilot |
 | 040 | [mcp-personal-access-tokens.md](040-mcp-personal-access-tokens.md) | 📋 | Tokens MCP pessoais por usuário — criação com expiração, listagem e revogação |
+| 041 | [mcp-http-bearer-auth.md](041-mcp-http-bearer-auth.md) | ✅ | Repasse do Bearer token do usuário ao backend no modo HTTP do MCP |
+| 042 | [chat-rachao-app.md](042-chat-rachao-app.md) | ✅ | Assistente IA via Claude + MCP — chat em linguagem natural sobre rachões |
+| 043 | [security-audit-hardening.md](043-security-audit-hardening.md) | 📋 | Auditoria de segurança do repositório — 7 achados classificados com plano de remediação |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
 | 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |

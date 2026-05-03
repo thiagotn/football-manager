@@ -3,6 +3,7 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import structlog
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, status
 from PIL import Image, ImageOps, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
@@ -28,6 +29,7 @@ from app.schemas.player_public import PlayerPublicStats
 from app.services import storage as storage_service
 
 router = APIRouter(prefix="/players", tags=["players"])
+logger = structlog.get_logger()
 
 AVATAR_RATE_LIMIT = 5        # uploads por janela
 AVATAR_RATE_WINDOW = "1 hour"  # janela de tempo
@@ -233,6 +235,7 @@ async def update_player(player_id: uuid.UUID, body: PlayerUpdate, db: DB, curren
         if existing and existing.id != player_id:
             raise ConflictError(f"WhatsApp {body.whatsapp} já está em uso")
 
+    old_role = player.role
     update_data = body.model_dump(exclude_unset=True)
     if "password" in update_data:
         update_data["password_hash"] = hash_password(update_data.pop("password"))
@@ -240,13 +243,16 @@ async def update_player(player_id: uuid.UUID, body: PlayerUpdate, db: DB, curren
     for field, value in update_data.items():
         setattr(player, field, value)
 
+    if body.role is not None and body.role != old_role:
+        logger.info("player_role_changed", actor_id=str(current.id), target_id=str(player_id), old_role=old_role.value, new_role=body.role.value)
+
     await db.flush()
     await db.refresh(player)
     return player
 
 
 @router.post("/{player_id}/reset-password", response_model=ResetPasswordResponse)
-async def reset_player_password(player_id: uuid.UUID, db: DB, _: AdminPlayer):
+async def reset_player_password(player_id: uuid.UUID, request: Request, db: DB, admin: AdminPlayer):
     repo = PlayerRepository(db)
     player = await repo.get(player_id)
     if not player:
@@ -256,6 +262,7 @@ async def reset_player_password(player_id: uuid.UUID, db: DB, _: AdminPlayer):
     player.password_hash = hash_password(temp_password)
     player.must_change_password = True
     await db.flush()
+    logger.info("admin_password_reset", actor_id=str(admin.id), target_id=str(player_id), ip=_real_ip(request))
 
     return ResetPasswordResponse(temp_password=temp_password)
 
@@ -366,7 +373,7 @@ async def remove_my_avatar(db: DB, current: CurrentPlayer):
 
 
 @router.delete("/{player_id}", status_code=204)
-async def delete_player(player_id: uuid.UUID, db: DB, _: AdminPlayer):
+async def delete_player(player_id: uuid.UUID, request: Request, db: DB, admin: AdminPlayer):
     repo = PlayerRepository(db)
     player = await repo.get(player_id)
     if not player:
@@ -374,3 +381,4 @@ async def delete_player(player_id: uuid.UUID, db: DB, _: AdminPlayer):
     # Soft delete
     player.active = False
     await db.flush()
+    logger.warning("admin_player_deleted", actor_id=str(admin.id), target_id=str(player_id), ip=_real_ip(request))

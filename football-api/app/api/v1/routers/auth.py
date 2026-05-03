@@ -1,4 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+
+import structlog
+from fastapi import APIRouter, HTTPException, Request, status
 from twilio.base.exceptions import TwilioRestException
 
 from app.core.dependencies import DB, CurrentPlayer
@@ -29,19 +33,51 @@ from app.schemas.player import PlayerResponse
 from app.services import twilio_verify
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = structlog.get_logger()
+
+_login_attempts: dict[str, list[datetime]] = defaultdict(list)
+_LOGIN_WINDOW = timedelta(minutes=1)
+_LOGIN_MAX = 5
+
+
+def _client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _check_login_rate_limit(request: Request) -> None:
+    ip = _client_ip(request)
+    now = datetime.now(timezone.utc)
+    cutoff = now - _LOGIN_WINDOW
+    recent = [t for t in _login_attempts[ip] if t > cutoff]
+    _login_attempts[ip] = recent
+    if len(recent) >= _LOGIN_MAX:
+        logger.warning("auth_login_rate_limited", ip=ip)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas de login. Aguarde 1 minuto e tente novamente.",
+        )
+    _login_attempts[ip].append(now)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: DB):
+async def login(body: LoginRequest, request: Request, db: DB):
+    _check_login_rate_limit(request)
+    ip = _client_ip(request)
     repo = PlayerRepository(db)
     player = await repo.get_by_whatsapp(body.whatsapp)
 
     if not player or not verify_password(body.password, player.password_hash):
+        logger.warning("auth_login_failed", ip=ip)
         raise UnauthorizedError("WhatsApp ou senha incorretos")
     if not player.active:
+        logger.warning("auth_login_failed", ip=ip)
         raise UnauthorizedError("Conta desativada")
 
     token = create_access_token(str(player.id))
+    logger.info("auth_login_success", player_id=str(player.id), ip=ip)
     return TokenResponse(
         access_token=token,
         player_id=str(player.id),
@@ -90,7 +126,7 @@ async def verify_otp(body: VerifyOtpRequest, db: DB):
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-async def register(body: RegisterRequest, db: DB):
+async def register(body: RegisterRequest, request: Request, db: DB):
     """Create new player account with free plan. Requires a valid otp_token."""
     verified_whatsapp = decode_otp_token(body.otp_token)
     if not verified_whatsapp:
@@ -111,6 +147,7 @@ async def register(body: RegisterRequest, db: DB):
         role=PlayerRole.PLAYER,
     )
     await SubscriptionRepository(db).get_or_create(player.id)
+    logger.info("auth_register", player_id=str(player.id), ip=_client_ip(request))
 
     token = create_access_token(str(player.id))
     return TokenResponse(
@@ -188,6 +225,7 @@ async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
     await db.flush()
+    logger.info("auth_password_reset", player_id=str(player.id))
 
 
 @router.post("/send-otp/me", response_model=SendOtpResponse)
@@ -243,3 +281,4 @@ async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentP
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
     await db.flush()
+    logger.info("auth_password_changed", player_id=str(current.id))
