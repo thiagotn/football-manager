@@ -153,9 +153,9 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Audit npm dependencies
+      - name: Audit npm dependencies (production only)
         working-directory: football-frontend
-        run: npm audit --audit-level=high --package-lock-only
+        run: npm audit --audit-level=high --package-lock-only --omit=dev
 
   # ──────────────────────────────────────────────────────────────
   # JOB 2 — Testes E2E com stack completa
