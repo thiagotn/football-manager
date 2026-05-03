@@ -64,7 +64,7 @@ Os controles abaixo estão corretamente implementados e **não requerem ação**
 
 | ID | Achado | Arquivo(s) | Severidade |
 |----|--------|-----------|------------|
-| S-07 | `allow_methods=["*"]` e `allow_headers=["*"]` no CORS — mais permissivo que necessário | `main.py:90-91` | Baixo-Médio |
+| S-07 | ~~`allow_methods=["*"]` e `allow_headers=["*"]` no CORS~~ — **resolvido em 2026-05-03** | `main.py` | ✅ |
 
 ---
 
@@ -73,7 +73,7 @@ Os controles abaixo estão corretamente implementados e **não requerem ação**
 | Prioridade | ID | Ação | Esforço estimado |
 |------------|-----|------|-----------------|
 | ~~P1~~ | ~~S-08~~ | ~~Habilitar RLS em todas as tabelas no Supabase~~ — **✅ feito em 2026-05-03** | 2h |
-| P1 | S-07 | CORS: restringir methods e headers | 10 min |
+| ~~P1~~ | ~~S-07~~ | ~~CORS: restringir methods e headers~~ — **✅ feito em 2026-05-03** | 10 min |
 | ~~P1~~ | ~~S-02~~ | ~~Adicionar security headers HTTP ao middleware~~ — **✅ feito em 2026-05-03** | 4h |
 | ~~P1~~ | ~~S-06~~ | ~~Adicionar `pip-audit` e `npm audit` ao CI~~ — **✅ feito em 2026-05-03** | 1h |
 | ~~P2~~ | ~~S-01~~ | ~~Rate limiting no login (5 req/min por IP)~~ — **✅ feito em 2026-05-03** | 1 dia |
