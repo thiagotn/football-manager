@@ -56,7 +56,7 @@ Os controles abaixo estão corretamente implementados e **não requerem ação**
 
 | ID | Achado | Arquivo(s) | Severidade |
 |----|--------|-----------|------------|
-| S-04 | SQL construído via f-string — anti-pattern que pode virar injection futuramente | `routers/admin.py:93,238,355,361` | Médio |
+| S-04 | ~~SQL construído via f-string~~ — **resolvido em 2026-05-03** | `routers/admin.py` | ✅ |
 | S-05 | ~~Sem log de auditoria para ações sensíveis~~ — **resolvido em 2026-05-03** | `routers/auth.py`, `players.py`, `groups.py` | ✅ |
 | S-06 | ~~Sem dependency vulnerability scanning no CI/CD~~ — **resolvido em 2026-05-03** | `.github/workflows/main.yml` | ✅ |
 
@@ -78,7 +78,7 @@ Os controles abaixo estão corretamente implementados e **não requerem ação**
 | ~~P1~~ | ~~S-06~~ | ~~Adicionar `pip-audit` e `npm audit` ao CI~~ — **✅ feito em 2026-05-03** | 1h |
 | ~~P2~~ | ~~S-01~~ | ~~Rate limiting no login (5 req/min por IP)~~ — **✅ feito em 2026-05-03** | 1 dia |
 | ~~P2~~ | ~~S-05~~ | ~~Audit logging estruturado para ações sensíveis~~ — **✅ feito em 2026-05-03** | 4h |
-| P3 | S-04 | Refatorar SQL f-string para SQLAlchemy Core | 1 dia |
+| ~~P3~~ | ~~S-04~~ | ~~Refatorar SQL f-string para SQLAlchemy Core~~ — **✅ feito em 2026-05-03** | 1 dia |
 | P4 | S-03 | Reduzir JWT para 8h (quick win) | 2h |
 | Backlog | S-03 | Implementar refresh token rotativo | 3 dias |
 

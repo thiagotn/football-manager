@@ -84,24 +84,24 @@ async def list_admin_matches(
     offset: int = Query(0),
 ):
     """Lista global de todas as partidas. Exclusivo para super admins."""
-    where = "WHERE m.status = :status" if status else ""
-    params: dict = {"limit": limit, "offset": offset}
-    if status:
-        params["status"] = status
+    params: dict = {"status": status, "limit": limit, "offset": offset}
 
     count_result = await db.execute(
-        text(f"SELECT COUNT(*)::int FROM matches m {where}"),
+        text("""
+            SELECT COUNT(*)::int FROM matches m
+            WHERE CAST(:status AS TEXT) IS NULL OR m.status = :status
+        """),
         params,
     )
     total = count_result.scalar_one()
 
     rows = await db.execute(
-        text(f"""
+        text("""
             SELECT m.id, m.hash, m.number, m.group_id, g.name AS group_name,
                    m.match_date, m.start_time, m.end_time, m.location, m.status
             FROM matches m
             JOIN groups g ON g.id = m.group_id
-            {where}
+            WHERE CAST(:status AS TEXT) IS NULL OR m.status = :status
             ORDER BY m.match_date DESC, m.start_time DESC
             LIMIT :limit OFFSET :offset
         """),
@@ -211,31 +211,28 @@ async def list_subscriptions(
     page_size: int = Query(20, ge=1, le=100),
 ):
     """Lista paginada de assinantes. Exclusivo para super admins."""
-    conditions: list[str] = ["p.role != 'admin'"]
-    params: dict = {"limit": page_size, "offset": (page - 1) * page_size}
-
-    if status:
-        conditions.append("ps.status = :status")
-        params["status"] = status
-    if plan:
-        conditions.append("ps.plan = :plan")
-        params["plan"] = plan
-
-    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    params: dict = {
+        "filter_status": status,
+        "filter_plan": plan,
+        "limit": page_size,
+        "offset": (page - 1) * page_size,
+    }
 
     count_result = await db.execute(
-        text(f"""
+        text("""
             SELECT COUNT(*)::int
             FROM player_subscriptions ps
             JOIN players p ON p.id = ps.player_id
-            {where}
+            WHERE p.role != 'admin'
+              AND (CAST(:filter_status AS TEXT) IS NULL OR ps.status = :filter_status)
+              AND (CAST(:filter_plan   AS TEXT) IS NULL OR ps.plan   = :filter_plan)
         """),
         params,
     )
     total = count_result.scalar_one()
 
     rows = await db.execute(
-        text(f"""
+        text("""
             SELECT
                 p.id        AS player_id,
                 p.name      AS player_name,
@@ -249,7 +246,9 @@ async def list_subscriptions(
                 ps.created_at
             FROM player_subscriptions ps
             JOIN players p ON p.id = ps.player_id
-            {where}
+            WHERE p.role != 'admin'
+              AND (CAST(:filter_status AS TEXT) IS NULL OR ps.status = :filter_status)
+              AND (CAST(:filter_plan   AS TEXT) IS NULL OR ps.plan   = :filter_plan)
             ORDER BY
                 CASE ps.status WHEN 'past_due' THEN 0 ELSE 1 END,
                 ps.current_period_end ASC NULLS LAST
@@ -340,25 +339,27 @@ async def list_admin_players(
     page_size: int = Query(20, ge=1, le=100),
 ):
     """Lista paginada de todos os players, ordenada por cadastro mais recente. Exclusivo para super admins."""
-    conditions: list[str] = ["p.role != 'admin'"]
-    params: dict = {"limit": page_size, "offset": (page - 1) * page_size}
-
-    if search:
-        conditions.append(
-            "(p.name ILIKE :search OR p.nickname ILIKE :search OR p.whatsapp LIKE :search)"
-        )
-        params["search"] = f"%{search}%"
-
-    where = "WHERE " + " AND ".join(conditions)
+    params: dict = {
+        "search": f"%{search}%" if search else None,
+        "limit": page_size,
+        "offset": (page - 1) * page_size,
+    }
 
     count_result = await db.execute(
-        text(f"SELECT COUNT(*)::int FROM players p {where}"),
+        text("""
+            SELECT COUNT(*)::int FROM players p
+            WHERE p.role != 'admin'
+              AND (CAST(:search AS TEXT) IS NULL
+                   OR p.name     ILIKE :search
+                   OR p.nickname ILIKE :search
+                   OR p.whatsapp LIKE  :search)
+        """),
         params,
     )
     total = count_result.scalar_one()
 
     rows = await db.execute(
-        text(f"""
+        text("""
             SELECT
                 p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at,
                 p.avatar_url,
@@ -367,7 +368,11 @@ async def list_admin_players(
             FROM players p
             LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
             LEFT JOIN group_members gm ON gm.player_id = p.id
-            {where}
+            WHERE p.role != 'admin'
+              AND (CAST(:search AS TEXT) IS NULL
+                   OR p.name     ILIKE :search
+                   OR p.nickname ILIKE :search
+                   OR p.whatsapp LIKE  :search)
             GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
             ORDER BY p.created_at DESC
             LIMIT :limit OFFSET :offset
