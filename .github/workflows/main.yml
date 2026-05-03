@@ -141,7 +141,7 @@ jobs:
   # JOB 1c — Auditoria de vulnerabilidades npm
   # ──────────────────────────────────────────────────────────────
   npm-audit:
-    name: npm Audit
+    name: Frontend Audit
     runs-on: ubuntu-latest
     needs: changes
     if: >-
