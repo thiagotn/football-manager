@@ -353,6 +353,29 @@ Run workflow (manual)
 
 ---
 
+## URLs de produção
+
+### Aplicação
+
+| Serviço | URL | Descrição |
+|---------|-----|-----------|
+| App | https://rachao.app | PWA principal |
+| API | https://api.rachao.app | REST API |
+| Swagger | https://api.rachao.app/docs | Documentação interativa (OpenAPI) |
+| ReDoc | https://api.rachao.app/redoc | Documentação alternativa |
+| MCP | https://mcp.rachao.app | Servidor MCP para agentes de IA |
+
+### Monitoramento
+
+| Serviço | URL | Auth | Descrição |
+|---------|-----|------|-----------|
+| Grafana | https://grafana.rachao.app | Login nativo | Dashboards de métricas |
+| Prometheus | https://prometheus.rachao.app | Basic Auth (`admin` / ver `traefik-dynamic.yml`) | Banco de métricas |
+| Uptime Kuma | https://uptime.rachao.app | Login nativo | Monitoramento de uptime |
+| Status page | https://status.rachao.app | Pública | Redirect para `/status/rachao` no Uptime Kuma |
+
+---
+
 ## Funcionalidades
 
 - Cadastro e autenticação de jogadores (JWT)
