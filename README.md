@@ -409,31 +409,35 @@ Estas não são GitHub secrets — devem ser definidas diretamente em `/opt/foot
 
 ### Passo 4 — Fazer o deploy
 
-No GitHub, acesse **Actions → Deploy to Production → Run workflow → Run workflow**.
+No GitHub, acesse **Actions → Build & Deploy Web → Run workflow → Run workflow**.
 
-O pipeline executa os jobs em sequência:
+O pipeline executa os seguintes jobs:
 
 ```
 Run workflow (manual)
        │
        ▼
-  Job: unit-tests  (testes unitários da API)
+  Job: changes          (detecta quais paths mudaram — pula jobs desnecessários)
+       │
+       ├──────────────────────────────────┐
+       ▼                                  ▼
+  Job: unit-tests       (API)        Job: mcp-tests        (MCP)
+  Job: npm-audit        (frontend)
        │
        ▼
-  Job: e2e         (testes E2E com stack completa)
+  Job: e2e              (stack Docker completa + Playwright)
        │
        ▼
   Job: build
-  ├── Build API image   → ghcr.io/thiagotn/football-manager-api:latest
-  └── Build Frontend    → ghcr.io/thiagotn/football-manager-frontend:latest
+  ├── Build & push API image     → ghcr.io/thiagotn/football-manager-api:latest
+  ├── Build & push MCP image     → ghcr.io/thiagotn/football-manager-mcp:latest
+  └── Build & push Frontend      → ghcr.io/thiagotn/football-manager-frontend:latest
        │
        ▼
   Job: deploy
-  ├── SCP: envia docker-compose.prod.yml + migrations para o VPS
-  └── SSH: docker compose pull → up -d → image prune
+  ├── SCP: envia docker-compose.prod.yml + traefik-dynamic.yml + migrations para o VPS
+  └── SSH: atualiza .env.prod → docker compose pull → up -d --force-recreate → image prune
 ```
-
-> Use o input **"Skip tests"** para pular testes e fazer deploy direto (útil para re-deploy sem alterações de código).
 
 > O certificado TLS é emitido automaticamente pelo Traefik via Let's Encrypt na primeira vez que o deploy sobe. Aguarde ~30 segundos após o primeiro deploy para o certificado estar ativo.
 
