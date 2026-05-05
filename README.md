@@ -349,10 +349,6 @@ Run workflow (manual)
 
 ---
 
-### Secrets do GitHub
-
----
-
 ## URLs de produção
 
 ### Aplicação
