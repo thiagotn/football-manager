@@ -110,8 +110,23 @@ async def test_set_attendance_posts_correct_body(mock_api):
     mock_api.post("/groups/g1/matches/m1/attendance").mock(
         return_value=httpx.Response(200, json={"status": "confirmed"})
     )
-    result = await set_attendance("g1", "m1", "player-uuid", "confirmed")
+    result = await set_attendance("g1", "m1", "confirmed", player_id="player-uuid")
     body = json.loads(mock_api.calls[0].request.content)
     assert body["player_id"] == "player-uuid"
+    assert body["status"] == "confirmed"
+    assert result["status"] == "confirmed"
+
+
+@pytest.mark.asyncio
+async def test_set_attendance_resolves_player_id_from_me(mock_api):
+    mock_api.get("/auth/me").mock(
+        return_value=httpx.Response(200, json={"id": "resolved-uuid", "name": "Jogador"})
+    )
+    mock_api.post("/groups/g1/matches/m1/attendance").mock(
+        return_value=httpx.Response(200, json={"status": "confirmed"})
+    )
+    result = await set_attendance("g1", "m1", "confirmed")
+    body = json.loads(mock_api.calls[1].request.content)
+    assert body["player_id"] == "resolved-uuid"
     assert body["status"] == "confirmed"
     assert result["status"] == "confirmed"

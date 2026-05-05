@@ -80,10 +80,14 @@ async def update_match(
 async def set_attendance(
     group_id: str,
     match_id: str,
-    player_id: str,
     status: str,
+    player_id: str | None = None,
 ) -> dict:
-    """Confirma ou recusa presença de um jogador. status: confirmed | declined | pending."""
+    """Confirma ou recusa presença. status: confirmed | declined | pending.
+    player_id é opcional: se omitido, usa o jogador autenticado automaticamente."""
+    if player_id is None:
+        me = await api.get("/auth/me")
+        player_id = me["id"]
     return await api.post(
         f"/groups/{group_id}/matches/{match_id}/attendance",
         json={"player_id": player_id, "status": status},

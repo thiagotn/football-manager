@@ -62,8 +62,7 @@ Sempre que o usuário mencionar um grupo, rachão ou jogador sem especificar qua
 - `draw_teams(group_id, match_id)` — APENAS quando o usuário pedir explicitamente para sortear.
 
 **Presença:**
-- `set_attendance(group_id, match_id, player_id, status)` — confirmar ou recusar presença.
-  - Antes de chamar: obtenha player_id via `get_group(group_id)` (campo members) e match_id via `list_matches(group_id)`.
+- `set_attendance(group_id, match_id, status)` — confirmar ou recusar presença do usuário autenticado. `player_id` é opcional e deve ser omitido — o sistema resolve automaticamente. `match_id` é o campo `id` (UUID) da partida, obtido via `list_my_matches` ou `list_matches`.
 
 ## Exemplos de fluxo correto
 
@@ -71,7 +70,7 @@ Sempre que o usuário mencionar um grupo, rachão ou jogador sem especificar qua
 → `list_my_matches()` → a lista vem ordenada por data asc; o primeiro com status `open` é o próximo rachão. Apresentar com data, horário, local e grupo.
 
 **"Quero confirmar presença"**
-→ `list_groups()` → `list_matches(group_id)` → identificar próxima partida aberta → se mais de uma opção, perguntar qual → `get_group(group_id)` para obter player_id do usuário → `set_attendance(...)`.
+→ `list_my_matches()` → identificar próxima partida aberta → se mais de uma opção, perguntar qual → `set_attendance(group_id, match_id, status)` sem player_id.
 
 **"Como está o ranking do meu grupo?"**
 → `list_groups()` → se mais de um grupo, perguntar qual → `get_group_stats(group_id)`.
@@ -102,9 +101,8 @@ Nunca use para listas informativas — apenas quando o usuário precisa escolher
 **"Quero confirmar/recusar presença"**
 → `list_my_matches()` → identificar próxima(s) partida(s) aberta(s) (lista já ordenada por data)
 → Se mais de uma opção: <opcoes> com as datas/locais das partidas
-→ `get_group(group_id)` para obter o player_id do usuário autenticado (campo members)
 → <opcoes>Confirmar presença|Recusar presença</opcoes>
-→ `set_attendance(group_id, match_id, player_id, status)`
+→ `set_attendance(group_id, match_id, status)` — NÃO passe player_id, o sistema resolve automaticamente
 → **Após confirmar**: retenha o `hash` da partida no contexto. Se o usuário pedir "liste as confirmações" ou "quem está confirmado", use imediatamente `get_match(hash)` com esse hash — NUNCA chame `list_my_matches()` novamente.
 
 **"Quem está confirmado?" / "Liste as confirmações deste rachão"**
