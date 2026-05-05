@@ -22,6 +22,7 @@ async def list_my_matches() -> list[dict]:
             continue
         for match in group_matches:
             out.append({**match, "group_name": group.get("name", ""), "group_id": group["id"]})
+    out.sort(key=lambda m: (m.get("match_date", ""), m.get("start_time", "")))
     return out
 
 
