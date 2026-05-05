@@ -301,12 +301,14 @@ ACME_EMAIL=seu@email.com        # para notificações de certificado SSL
 
 Acesse **Settings → Secrets and variables → Actions** no repositório e crie:
 
-| Secret | Valor |
-|---|---|
+#### Acesso ao VPS (`main.yml` + `deploy-monitoring.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
 | `VPS_HOST` | IP público do VPS |
-| `VPS_USER` | `root` (ou usuário com acesso ao Docker) |
-| `VPS_SSH_KEY` | Conteúdo da chave privada SSH (`~/.ssh/id_ed25519`) |
-| `VPS_PORT` | `22` (padrão) |
+| `VPS_USER` | Usuário SSH (ex: `root`) |
+| `VPS_SSH_KEY` | Chave privada SSH (`~/.ssh/id_ed25519`) |
+| `VPS_PORT` | Porta SSH (padrão: `22`) |
 
 > Para gerar um par de chaves dedicado ao deploy:
 > ```bash
@@ -314,6 +316,94 @@ Acesse **Settings → Secrets and variables → Actions** no repositório e crie
 > ssh-copy-id -i ~/.ssh/football_deploy.pub root@<IP_DO_VPS>
 > # Cole o conteúdo de ~/.ssh/football_deploy no secret VPS_SSH_KEY
 > ```
+
+#### Banco de dados (`main.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `DATABASE_URL` | Connection string do Supabase (`postgresql+asyncpg://...`) |
+| `SUPABASE_URL` | URL do projeto Supabase (para Storage) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço do Supabase |
+
+#### Autenticação / OTP (`main.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `TWILIO_ACCOUNT_SID` | SID da conta Twilio |
+| `TWILIO_AUTH_TOKEN` | Token de autenticação Twilio |
+| `TWILIO_VERIFY_SID` | SID do serviço Twilio Verify (OTP via WhatsApp) |
+
+#### Pagamentos — Stripe (`main.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `STRIPE_SECRET_KEY` | Chave secreta da API Stripe |
+| `STRIPE_WEBHOOK_SECRET` | Segredo para validar webhooks do Stripe |
+| `STRIPE_PRICE_BASIC_MONTHLY` | ID do preço Stripe — plano Basic mensal |
+| `STRIPE_PRICE_BASIC_YEARLY` | ID do preço Stripe — plano Basic anual |
+| `STRIPE_PRICE_PRO_MONTHLY` | ID do preço Stripe — plano Pro mensal |
+| `STRIPE_PRICE_PRO_YEARLY` | ID do preço Stripe — plano Pro anual |
+
+#### Web Push / VAPID (`main.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `VAPID_PUBLIC_KEY` | Chave pública VAPID para Web Push |
+| `VAPID_PRIVATE_KEY` | Chave privada VAPID para Web Push |
+| `VAPID_CLAIMS_EMAIL` | E-mail do remetente VAPID (ex: `mailto:admin@rachao.app`) |
+
+#### MCP (`main.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `MCP_RACHAO_TOKEN` | Token JWT usado pelo servidor MCP para autenticar na API |
+| `MCP_SECRET_KEY` | Chave secreta para assinar tokens MCP internos |
+
+#### Frontend — dados legais (`main.yml`)
+
+Injetados como variáveis de build públicas (`PUBLIC_*`):
+
+| Secret | Descrição |
+|--------|-----------|
+| `LEGAL_CONTROLLER_NAME` | Nome do controlador de dados (LGPD) |
+| `LEGAL_CONTROLLER_DOC` | CPF/CNPJ do controlador |
+| `LEGAL_FORUM_CITY` | Foro competente (ex: `São Paulo`) |
+| `LEGAL_CONTACT_EMAIL` | E-mail de contato para questões legais |
+
+#### CI (`main.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `CODECOV_TOKEN` | Token para upload de cobertura de testes no Codecov |
+
+#### Monitoramento (`deploy-monitoring.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `GRAFANA_ADMIN_USER` | Usuário admin do Grafana (padrão: `admin`) |
+| `GRAFANA_ADMIN_PASSWORD` | Senha admin do Grafana |
+| `TELEGRAM_BOT_TOKEN` | Token do bot Telegram para alertas |
+| `TELEGRAM_CHAT_ID` | Chat ID do Telegram que recebe os alertas |
+
+#### Android / TWA (`build-twa.yml`)
+
+| Secret | Descrição |
+|--------|-----------|
+| `ANDROID_KEYSTORE_BASE64` | Keystore de assinatura do APK em Base64 |
+| `ANDROID_STORE_PASSWORD` | Senha do keystore |
+| `ANDROID_KEY_ALIAS` | Alias da chave no keystore |
+| `ANDROID_KEY_PASSWORD` | Senha da chave |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | JSON da conta de serviço para publicação na Play Store |
+
+#### Variáveis manuais no VPS (`.env.prod`)
+
+Estas não são GitHub secrets — devem ser definidas diretamente em `/opt/football-manager/.env.prod` no VPS:
+
+| Variável | Descrição |
+|----------|-----------|
+| `ANTHROPIC_API_KEY` | Chave da API Anthropic (assistente IA / chat) |
+| `LLM_MODEL` | Modelo a usar (padrão: `claude-haiku-4-5`) |
+| `ACME_EMAIL` | E-mail para notificações do Let's Encrypt |
 
 ---
 
