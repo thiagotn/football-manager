@@ -73,6 +73,15 @@
         fetched.push(...ms.map(m => ({ ...m, group_name: g.name, group_slug: g.slug, group_id: g.id })));
       }));
       allMatches = fetched;
+      // Fetched after authenticated endpoints to guarantee a fresh token is used.
+      // OptionalPlayer endpoints like /matches/discover silently succeed with an expired token
+      // (returning all public matches including the user's own groups), so we must not call
+      // them until after a 401-triggered refresh has already run.
+      if (!$isAdmin) {
+        matches.discover({ limit: 3 })
+          .then(r => { discoverMatches = r; })
+          .catch(() => {});
+      }
     } catch (e) { console.error('[dashboard] erro:', e); }
     loading = false;
   }
@@ -89,14 +98,6 @@
     if ($authStore.loading || $isAdmin || !$isLoggedIn) return;
     votesApi.getPending()
       .then(r => { pendingVotes = r.items; })
-      .catch(() => {});
-  });
-
-  // Feed de descoberta — apenas jogadores não-admin
-  $effect(() => {
-    if ($authStore.loading || $isAdmin || !$isLoggedIn) return;
-    matches.discover({ limit: 3 })
-      .then(r => { discoverMatches = r; })
       .catch(() => {});
   });
 
