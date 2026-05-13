@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
@@ -34,6 +35,7 @@ from app.schemas.auth import (
 )
 from app.schemas.player import PlayerResponse
 from app.services import twilio_verify
+from app.services.telegram import notify_new_player
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = structlog.get_logger()
@@ -151,6 +153,7 @@ async def register(body: RegisterRequest, request: Request, db: DB):
         password_hash=hash_password(body.password),
         role=PlayerRole.PLAYER,
     )
+    asyncio.create_task(notify_new_player(player.name, player.whatsapp, "cadastro"))
     await SubscriptionRepository(db).get_or_create(player.id)
     logger.info("auth_register", player_id=str(player.id), ip=_client_ip(request))
 

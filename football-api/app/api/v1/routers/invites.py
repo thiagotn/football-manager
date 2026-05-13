@@ -1,3 +1,4 @@
+import asyncio
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -21,6 +22,7 @@ from app.models.group import GroupMemberRole
 from app.models.player import PlayerRole
 from app.schemas.auth import TokenResponse
 from app.schemas.invite import InviteAcceptRequest, InviteCheckResponse, InviteCreateRequest, InviteResponse
+from app.services.telegram import notify_new_player
 
 router = APIRouter(prefix="/invites", tags=["invites"])
 
@@ -140,6 +142,7 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
             password_hash=hash_password(body.password),
             role=PlayerRole.PLAYER,
         )
+        asyncio.create_task(notify_new_player(player.name, player.whatsapp, "convite"))
         # Auto-cria subscription gratuita para o novo player
         sub_repo = SubscriptionRepository(db)
         await sub_repo.get_or_create(player.id)

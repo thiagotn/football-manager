@@ -1,3 +1,4 @@
+import asyncio
 import io
 import secrets
 import uuid
@@ -24,6 +25,7 @@ from app.db.repositories.player_stats_repo import PlayerStatsRepository
 from app.models.player import Player, PlayerRole
 from app.schemas.match import MatchResponse, PlayerMatchItem
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
+from app.services.telegram import notify_new_player
 from app.schemas.player_stats import PlayerFullStats
 from app.schemas.player_public import PlayerPublicStats
 from app.services import storage as storage_service
@@ -137,6 +139,7 @@ async def create_player(body: PlayerCreate, db: DB, _: AdminPlayer):
         password_hash=hash_password(body.password),
         role=body.role,
     )
+    asyncio.create_task(notify_new_player(player.name, player.whatsapp, "admin"))
     return player
 
 

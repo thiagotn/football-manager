@@ -66,7 +66,9 @@
 {#if isAppPage}
   <Navbar />
 {/if}
-<slot />
+<div class="{browser && !$page.url.pathname.startsWith('/admin') ? 'pb-44 min-[940px]:pb-0' : ''}">
+  <slot />
+</div>
 {#if browser && !$page.url.pathname.startsWith('/admin')}
   <AndroidBetaBanner />
 {/if}

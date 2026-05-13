@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     stripe_price_pro_monthly: str = ""
     stripe_price_pro_yearly: str = ""
 
+    # Telegram (notificações de novos cadastros)
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
     def get_price_id(self, plan: str, billing_cycle: str) -> str:
         mapping = {
             ("basic", "monthly"): self.stripe_price_basic_monthly,
