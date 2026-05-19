@@ -59,6 +59,7 @@ class GroupMember(Base, UUIDMixin, TimestampMixin):
     )
     skill_stars: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=2)
     position: Mapped[str] = mapped_column(String(3), nullable=False, default="mei")
+    nickname: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Relationships
     group = relationship("Group", back_populates="members")

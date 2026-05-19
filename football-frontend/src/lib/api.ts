@@ -146,7 +146,7 @@ export type PlayerPublic = { id: string; name: string; nickname: string | null; 
 export type PlayerMemberView = PlayerPublic & { whatsapp: string };
 export type TeamSlot = { color: string | null; name: string | null };
 export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; timezone: string; team_slots: TeamSlot[] | null; created_at: string; updated_at: string };
-export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; position: string | null; created_at: string };
+export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; position: string | null; group_nickname: string | null; created_at: string };
 export type GroupDetail = Group & { members: GroupMember[]; total_members: number };
 export type WaitlistEntry = { id: string; match_id: string; player_id: string; player_name: string; player_nickname: string | null; intro: string | null; status: 'pending' | 'accepted' | 'rejected'; created_at: string };
 export type Match = {
@@ -158,7 +158,7 @@ export type Match = {
   notes: string | null; hash: string; status: 'open' | 'in_progress' | 'closed';
   created_at: string; updated_at: string;
 };
-export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string; position: string | null };
+export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string; position: string | null; group_nickname: string | null };
 export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean; group_timezone: string };
 export type PlayerMatchItem = Match & { group_name: string; my_attendance: 'confirmed' | 'declined' | 'pending' | null; group_timezone: string };
 export type DiscoverMatch = Match & { group_name: string; confirmed_count: number; spots_left: number | null; group_timezone: string };

@@ -264,13 +264,13 @@
   function shareWhatsApp() {
     if (!match) return;
     const confirmedList = match.confirmed_count > 0
-      ? confirmed.map((a, i) => `${i + 1} - ${playerDisplayName(a.player.name, a.player.nickname)}`).join('\n')
+      ? confirmed.map((a, i) => `${i + 1} - ${playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname)}`).join('\n')
       : $t('match.share_confirmed');
     const declinedList = match.declined_count > 0
-      ? declined.map(a => `- ${playerDisplayName(a.player.name, a.player.nickname)}`).join('\n')
+      ? declined.map(a => `- ${playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname)}`).join('\n')
       : $t('match.share_none');
     const pendingList = match.pending_count > 0
-      ? pending.map(a => `- ${playerDisplayName(a.player.name, a.player.nickname)}`).join('\n')
+      ? pending.map(a => `- ${playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname)}`).join('\n')
       : $t('match.share_none');
     const confirmedHeader = match.max_players
       ? $t('match.share_confirmed_header_max').replace('{n}', String(match.confirmed_count)).replace('{max}', String(match.max_players))
@@ -595,7 +595,7 @@
                     {@const pos = API_TO_POS[a.position]}
                     <span class="text-[9px] px-1 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
                   {/if}
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{playerDisplayName(a.player.name, a.player.nickname)}</p>
+                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname)}</p>
                   {#if voteStatus && voteStatus.status !== 'not_open'}
                     <span class="text-sm shrink-0" title="{voteStatus.voted_player_ids.includes(a.player.id) ? 'Votou' : 'Não votou ainda'}">
                       {voteStatus.voted_player_ids.includes(a.player.id) ? '✅' : '⏳'}
@@ -638,7 +638,7 @@
                     {@const pos = API_TO_POS[a.position]}
                     <span class="text-[9px] px-1 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
                   {/if}
-                  <span class="flex-1">{playerDisplayName(a.player.name, a.player.nickname)}</span>
+                  <span class="flex-1">{playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname)}</span>
                   {#if !$isAdmin && a.player.id === $currentPlayer?.id && (match.status === 'open' || match.status === 'in_progress')}
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1 shrink-0"
@@ -676,7 +676,7 @@
                     {@const pos = API_TO_POS[a.position]}
                     <span class="text-[9px] px-1 rounded font-bold shrink-0 {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
                   {/if}
-                  <span class="flex-1">{playerDisplayName(a.player.name, a.player.nickname)}</span>
+                  <span class="flex-1">{playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname)}</span>
                   {#if !showRsvpBanner && a.player.id === $currentPlayer?.id && !$isAdmin && (match.status === 'open' || match.status === 'in_progress')}
                     <div class="flex gap-1 shrink-0">
                       <button
@@ -725,7 +725,7 @@
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
               {#each absentMembers as mb}
                 <li class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2.5">
-                  <span class="flex-1 font-medium text-gray-800 dark:text-gray-200">{playerDisplayName(mb.player.name, mb.player.nickname)}</span>
+                  <span class="flex-1 font-medium text-gray-800 dark:text-gray-200">{playerDisplayName(mb.player.name, mb.group_nickname ?? mb.player.nickname)}</span>
                   <div class="flex gap-1 shrink-0">
                     <button
                       class="text-xs px-2 py-0.5 rounded border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20 disabled:opacity-40 flex items-center gap-1"

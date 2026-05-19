@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `042_refresh_tokens.sql`.
+A última migration criada é `043_group_member_nickname.sql`.
 
-**A próxima deve ser numerada `043_`.**
+**A próxima deve ser numerada `044_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 

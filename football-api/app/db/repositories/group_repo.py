@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -76,7 +76,7 @@ class GroupRepository(BaseRepository[Group]):
             select(
                 Attendance.player_id,
                 Player.name,
-                Player.nickname,
+                func.coalesce(GroupMember.nickname, Player.nickname).label("nickname"),
                 GroupMember.skill_stars,
                 GroupMember.position,
             )
@@ -102,6 +102,14 @@ class GroupRepository(BaseRepository[Group]):
             }
             for row in result.all()
         ]
+
+    async def get_nicknames_map(self, group_id: UUID) -> dict[UUID, str | None]:
+        """Retorna mapa player_id → apelido por grupo para todos os membros do grupo."""
+        result = await self.session.execute(
+            select(GroupMember.player_id, GroupMember.nickname)
+            .where(GroupMember.group_id == group_id)
+        )
+        return {row.player_id: row.nickname for row in result.all()}
 
     async def get_member_skills(self, group_id: UUID, player_ids: list[UUID]) -> dict[UUID, dict]:
         """Retorna skill_stars e position de membros específicos do grupo."""

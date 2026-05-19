@@ -41,7 +41,11 @@ def _generate_hash() -> str:
     return secrets.token_urlsafe(8)[:10]
 
 
-def _build_detail(match: Match, position_map: dict | None = None) -> MatchDetailResponse:
+def _build_detail(
+    match: Match,
+    position_map: dict | None = None,
+    nicknames_map: dict | None = None,
+) -> MatchDetailResponse:
     # Exclui o super admin (role=admin) das listas de presença
     attendances = [a for a in match.attendances if a.player.role != PlayerRole.ADMIN]
     confirmed = [a for a in attendances if a.status == AttendanceStatus.CONFIRMED]
@@ -50,8 +54,13 @@ def _build_detail(match: Match, position_map: dict | None = None) -> MatchDetail
 
     def _attendance(a) -> AttendanceResponse:
         r = AttendanceResponse.model_validate(a)
+        updates: dict = {}
         if position_map:
-            r = r.model_copy(update={"position": position_map.get(str(a.player.id))})
+            updates["position"] = position_map.get(str(a.player.id))
+        if nicknames_map:
+            updates["group_nickname"] = nicknames_map.get(a.player.id)
+        if updates:
+            r = r.model_copy(update=updates)
         return r
 
     return MatchDetailResponse(
@@ -150,7 +159,8 @@ async def get_match_public(match_hash: str, db: DB):
     g_repo = GroupRepository(db)
     skills = await g_repo.get_member_skills(match.group_id, player_ids)
     position_map = {str(pid): data["position"] for pid, data in skills.items()}
-    return _build_detail(match, position_map)
+    nicknames_map = await g_repo.get_nicknames_map(match.group_id)
+    return _build_detail(match, position_map, nicknames_map)
 
 
 # ── Group matches ─────────────────────────────────────────────────────────────
@@ -259,7 +269,8 @@ async def get_match(group_id: uuid.UUID, match_id: uuid.UUID, db: DB, current: C
     g_repo = GroupRepository(db)
     skills = await g_repo.get_member_skills(group_id, player_ids)
     position_map = {str(pid): data["position"] for pid, data in skills.items()}
-    return _build_detail(match, position_map)
+    nicknames_map = await g_repo.get_nicknames_map(group_id)
+    return _build_detail(match, position_map, nicknames_map)
 
 
 @router.patch("/groups/{group_id}/matches/{match_id}", response_model=MatchResponse)

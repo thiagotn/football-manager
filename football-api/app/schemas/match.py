@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime, time
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.match import AttendanceStatus, CourtType, MatchStatus
 from app.schemas.player import PlayerPublic
@@ -41,6 +41,14 @@ class AttendanceResponse(BaseModel):
     status: AttendanceStatus
     updated_at: datetime
     position: str | None = None
+    group_nickname: str | None = None
+
+    @field_validator("group_nickname", mode="before")
+    @classmethod
+    def coerce_group_nickname(cls, v: object) -> str | None:
+        if isinstance(v, str):
+            return v or None
+        return None
 
 
 class MatchResponse(BaseModel):

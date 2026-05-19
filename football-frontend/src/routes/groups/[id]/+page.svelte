@@ -199,9 +199,11 @@
 
   let nonAdminMembers = $derived(
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
-      .sort((a, b) => playerDisplayName(a.player.name, a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
+      .sort((a, b) => playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
   );
   let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string } | null>(null);
+  let selfEditNickname = $state('');
+  let selfEditOpen = $state(false);
   let skillSaving = $state(false);
   let selectedMember = $state<GroupMember | null>(null);
   let showMemberDetail = $state(false);
@@ -466,6 +468,17 @@
     try {
       await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, position, nickname: nickname.trim() || null });
       group = await groupsApi.get(groupId);
+    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
+    skillSaving = false;
+  }
+
+  async function saveOwnGroupNickname() {
+    skillSaving = true;
+    try {
+      await groupsApi.updateMemberSkill(groupId, $currentPlayer!.id, { nickname: selfEditNickname.trim() || null });
+      group = await groupsApi.get(groupId);
+      selfEditOpen = false;
+      toastSuccess($t('groups.member_nickname_saved'));
     } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
     skillSaving = false;
   }
@@ -871,7 +884,7 @@
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                {playerDisplayName(m.player.name, m.player.nickname)}
+                {playerDisplayName(m.player.name, m.group_nickname ?? m.player.nickname)}
               </p>
               {#if isGroupAdmin() && m.skill_stars != null}
                 <div class="mt-0.5">
@@ -892,12 +905,18 @@
                 </div>
               {/if}
             </div>
-            <!-- Details button -->
+            <!-- Details button (admin) / Self-edit button (own member) -->
             {#if isGroupAdmin()}
               <button
                 onclick={() => { selectedMember = m; showMemberDetail = true; }}
                 class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
                 <ChevronRight size={12} /> {$t('group.member_details')}
+              </button>
+            {:else if m.player.id === $currentPlayer?.id}
+              <button
+                onclick={() => { selfEditNickname = m.group_nickname ?? ''; selfEditOpen = true; }}
+                class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
+                <Pencil size={12} /> {$t('groups.edit_my_nickname')}
               </button>
             {/if}
           </div>
@@ -1242,7 +1261,7 @@
         <AvatarImage name={selectedMember.player.name} avatarUrl={selectedMember.player.avatar_url} size={52} />
         <div>
           <p class="font-semibold text-gray-900 dark:text-gray-100">
-            {playerDisplayName(selectedMember.player.name, selectedMember.player.nickname)}
+            {playerDisplayName(selectedMember.player.name, selectedMember.group_nickname ?? selectedMember.player.nickname)}
           </p>
           <p class="text-xs text-gray-400">{selectedMember.player.name}</p>
         </div>
@@ -1254,7 +1273,11 @@
           <p class="font-medium">{selectedMember.player.name}</p>
         </div>
         <div>
-          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_nickname')}</p>
+          <p class="text-xs text-gray-400 mb-0.5">{$t('groups.member_group_nickname')}</p>
+          <p class="font-medium">{selectedMember.group_nickname || '—'}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 mb-0.5">{$t('groups.member_global_nickname')}</p>
           <p class="font-medium">{selectedMember.player.nickname || '—'}</p>
         </div>
         <div>
@@ -1287,7 +1310,7 @@
       <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
         <button
           onclick={() => {
-            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.player.nickname ?? '' };
+            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.group_nickname ?? '' };
             showMemberDetail = false;
           }}
           class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
@@ -1329,12 +1352,12 @@
 
       <!-- Nickname -->
       <div>
-        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('groups.add_manual.nickname_label')}</p>
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('groups.member_group_nickname')}</p>
         <input
           class="input w-full text-sm"
           type="text"
           bind:value={roleEditMember.nickname}
-          placeholder={$t('groups.add_manual.nickname_placeholder')}
+          placeholder={$t('groups.member_nickname_placeholder')}
           maxlength="50"
         />
       </div>
@@ -1385,6 +1408,33 @@
           {$t('group.cancel')}
         </button>
       </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Self-edit group nickname bottom sheet -->
+{#if selfEditOpen}
+  <button class="fixed inset-0 z-40 bg-black/40" onclick={() => selfEditOpen = false} aria-label={$t('aria.close')} />
+  <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto space-y-5">
+      <p class="text-gray-800 dark:text-gray-200 font-semibold text-center text-base">{$t('groups.member_group_nickname')}</p>
+      <input
+        class="input w-full text-sm"
+        type="text"
+        bind:value={selfEditNickname}
+        placeholder={$t('groups.member_nickname_placeholder')}
+        maxlength="50"
+        autofocus
+      />
+      <button
+        class="btn btn-primary w-full justify-center"
+        disabled={skillSaving}
+        onclick={saveOwnGroupNickname}>
+        {skillSaving ? $t('group.saving') : $t('group.save_skill')}
+      </button>
+      <button class="btn btn-secondary w-full justify-center py-2.5" onclick={() => selfEditOpen = false}>
+        {$t('group.cancel')}
+      </button>
     </div>
   </div>
 {/if}

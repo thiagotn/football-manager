@@ -137,6 +137,7 @@ async def get_group(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
 
     def _member_response(m, include_skill: bool) -> GroupMemberResponse:
         r = GroupMemberResponse.model_validate(m)
+        r.group_nickname = m.nickname
         if include_skill:
             r.skill_stars = m.skill_stars
             r.position = m.position
@@ -209,6 +210,7 @@ async def list_members(group_id: uuid.UUID, db: DB, current: CurrentPlayer):
 
     def _member_response(m, include_skill: bool) -> GroupMemberResponse:
         r = GroupMemberResponse.model_validate(m)
+        r.group_nickname = m.nickname
         if include_skill:
             r.skill_stars = m.skill_stars
             r.position = m.position
@@ -304,10 +306,17 @@ async def update_member(
     current: CurrentPlayer,
 ):
     repo = GroupRepository(db)
-    if current.role != PlayerRole.ADMIN:
+    caller_is_admin = current.role == PlayerRole.ADMIN
+    if not caller_is_admin:
         caller = await repo.get_member(group_id, current.id)
-        if not caller or caller.role != GroupMemberRole.ADMIN:
-            raise ForbiddenError()
+        caller_is_admin = caller is not None and caller.role == GroupMemberRole.ADMIN
+        if not caller_is_admin:
+            # Self-service: jogador só pode alterar o próprio apelido no grupo
+            if player_id != current.id:
+                raise ForbiddenError()
+            non_nickname = {k for k in body.model_dump(exclude_unset=True) if k != "nickname"}
+            if non_nickname:
+                raise ForbiddenError()
 
     member = await repo.get_member(group_id, player_id)
     if not member:
@@ -322,12 +331,12 @@ async def update_member(
     if body.position is not None:
         member.position = body.position
     if body.nickname is not None:
-        await db.refresh(member, ["player"])
-        member.player.nickname = body.nickname or None
+        member.nickname = body.nickname or None
 
     await db.flush()
     await db.refresh(member, ["player"])
     r = GroupMemberResponse.model_validate(member)
+    r.group_nickname = member.nickname
     r.skill_stars = member.skill_stars
     r.position = member.position
     return r
@@ -469,7 +478,6 @@ async def add_member_by_phone(
         temp_password = secrets.token_urlsafe(16)
         player = await p_repo.create(
             name=body.name.strip(),
-            nickname=body.nickname.strip() if body.nickname else None,
             whatsapp=normalized,
             password_hash=hash_password(temp_password),
             must_change_password=True,
@@ -483,6 +491,8 @@ async def add_member_by_phone(
     logger.info("group_member_added_by_phone", actor_id=str(current.id), group_id=str(group_id), player_id=str(player.id), is_new=is_new)
     member.skill_stars = body.skill_stars
     member.position = body.position
+    if body.nickname:
+        member.nickname = body.nickname.strip() or None
     await db.flush()
 
     # Add as PENDING to open matches
@@ -499,6 +509,7 @@ async def add_member_by_phone(
 
     await db.refresh(member, ["player"])
     member_response = GroupMemberResponse.model_validate(member)
+    member_response.group_nickname = member.nickname
     member_response.skill_stars = member.skill_stars
     member_response.position = member.position
 

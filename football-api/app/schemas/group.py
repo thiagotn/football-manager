@@ -99,7 +99,17 @@ class GroupMemberResponse(BaseModel):
     role: GroupMemberRole
     skill_stars: int | None = None
     position: str | None = None
+    group_nickname: str | None = None
     created_at: datetime
+
+    @field_validator("group_nickname", mode="before")
+    @classmethod
+    def coerce_group_nickname(cls, v: object) -> str | None:
+        # group_nickname não existe como coluna ORM (coluna é nickname);
+        # coerce não-string para None (evita MagicMock em testes e tipos inesperados)
+        if isinstance(v, str):
+            return v or None
+        return None
 
 
 class GroupResponse(BaseModel):
