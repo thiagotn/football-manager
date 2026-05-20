@@ -31,7 +31,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 010 | [planos-precificacao.md](010-planos-precificacao.md) | 📖 | Referência de precificação — preços confirmados: Basic R$19,90/mês · Pro R$39,90/mês |
+| 010 | [planos-precificacao.md](010-planos-precificacao.md) | ✅ | Referência de precificação — preços confirmados: Basic R$19,90/mês · Pro R$39,90/mês |
 | 001 | [planos-assinatura.md](001-planos-assinatura.md) | ✅ | Sistema completo de planos e assinatura via Stripe |
 | 004 | [minha-conta-plano.md](004-minha-conta-plano.md) | ✅ | `/account/subscription` e `/plans` implementados |
 | 014 | [admin-subscriptions.md](014-admin-subscriptions.md) | ✅ | Painel `/admin/subscriptions` — resumo, breakdown, tabela de assinantes, ativação manual |
@@ -42,7 +42,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 027 | [avatar-jogador.md](027-avatar-jogador.md) | 📋 | Upload de foto de perfil com fallback de iniciais e armazenamento no Supabase Storage |
+| 027 | [avatar-jogador.md](027-avatar-jogador.md) | ✅ | Upload de foto de perfil com fallback de iniciais e armazenamento no Supabase Storage |
 
 ---
 
@@ -50,7 +50,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 033 | [simulador-sorteio-publico.md](033-simulador-sorteio-publico.md) | 📋 | Página pública `/draw` — sorteio de times com posições e estrelas, sem login, sem backend |
+| 033 | [simulador-sorteio-publico.md](033-simulador-sorteio-publico.md) | ✅ | Página pública `/draw` — sorteio de times com posições e estrelas, sem login, sem backend |
 | 038 | [mapa-discover.md](038-mapa-discover.md) | ❌ | Mapa interativo em `/discover` — cancelado; backend e frontend totalmente revertidos |
 
 ---
@@ -60,7 +60,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
 | 034 | [adicionar-jogador-manual.md](034-adicionar-jogador-manual.md) | ✅ | Admin adiciona jogador pelo WhatsApp — cria conta se necessário, sem link de convite |
-| 035 | [posicao-jogador-grupo.md](035-posicao-jogador-grupo.md) | 📋 | Substituir flag "goleiro" por seletor de posição (GK/ZAG/LAT/MEI/ATA) em group_members |
+| 035 | [posicao-jogador-grupo.md](035-posicao-jogador-grupo.md) | ✅ | Substituir flag "goleiro" por seletor de posição (GK/ZAG/LAT/MEI/ATA) em group_members |
 
 ---
 
@@ -76,8 +76,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 006 | [avaliacao-app.md](006-avaliacao-app.md) | ✅ | Votação pós-partida v1.5 com banner de pendências e estatísticas com filtro por período |
 | 015 | [financeiro-grupo.md](015-financeiro-grupo.md) | ✅ | Controle financeiro por grupo (mensalidade, avulso, histórico) |
 | 021 | [timezone-por-grupo.md](021-timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
-| 036 | [gols-e-assistencias.md](036-gols-e-assistencias.md) | 📋 | Registro de gols e assistências por partida — somente admin do grupo |
-| 037 | [cores-de-coletes.md](037-cores-de-coletes.md) | 📋 | Cores de coletes e nomes customizados por time no grupo — até 5 slots por grupo |
+| 036 | [gols-e-assistencias.md](036-gols-e-assistencias.md) | ✅ | Registro de gols e assistências por partida — somente admin do grupo |
+| 037 | [cores-de-coletes.md](037-cores-de-coletes.md) | ✅ | Cores de coletes e nomes customizados por time no grupo — até 5 slots por grupo |
 
 ---
 
@@ -102,11 +102,11 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 039 | [mcp-server.md](039-mcp-server.md) | 📋 | Servidor MCP para usar a API do rachao.app no Claude CLI e GitHub Copilot |
-| 040 | [mcp-personal-access-tokens.md](040-mcp-personal-access-tokens.md) | 📋 | Tokens MCP pessoais por usuário — criação com expiração, listagem e revogação |
+| 039 | [mcp-server.md](039-mcp-server.md) | ✅ | Servidor MCP para usar a API do rachao.app no Claude CLI e GitHub Copilot |
+| 040 | [mcp-personal-access-tokens.md](040-mcp-personal-access-tokens.md) | ✅ | Tokens MCP pessoais por usuário — criação com expiração, listagem e revogação |
 | 041 | [mcp-http-bearer-auth.md](041-mcp-http-bearer-auth.md) | ✅ | Repasse do Bearer token do usuário ao backend no modo HTTP do MCP |
 | 042 | [chat-rachao-app.md](042-chat-rachao-app.md) | ✅ | Assistente IA via Claude + MCP — chat em linguagem natural sobre rachões |
-| 043 | [security-audit-hardening.md](043-security-audit-hardening.md) | 📋 | Auditoria de segurança do repositório — 7 achados classificados com plano de remediação |
+| 043 | [security-audit-hardening.md](043-security-audit-hardening.md) | ✅ | Auditoria de segurança do repositório — 7 achados classificados com plano de remediação |
 | 044 | [football-api-go.md](044-football-api-go.md) | 📋 | Port da API rachao.app em Go (Chi + sqlc + pgx/v5) — `/api/v2`, mesmo DB, paridade total de endpoints |
 | 045 | [guia-go-football-api.md](045-guia-go-football-api.md) | 📖 | Guia de estudo Go estruturado como livro — 16 capítulos guiados pela implementação da football-api-go |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
