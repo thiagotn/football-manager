@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | 📋 Proposto |
+| **Status** | 🚧 Em implementação (Fase 1 completa) |
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 |
 
@@ -507,19 +507,23 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 
 ## 9. Plano de Rollout
 
-### Fase 1 — Scaffolding e Auth
-- [ ] Criar `football-api-go/` com estrutura de diretórios completa
-- [ ] `go.mod` com todas as dependências declaradas
-- [ ] `config.go` (envconfig, mirrors Python `Settings`)
-- [ ] Conexão pgx pool + `GET /api/v2/health`
-- [ ] Middleware: CORS, recovery, request-id
-- [ ] Middleware de auth: JWT HS256 + MCP tokens `rachao_*`
-- [ ] Handler `auth.go` — todos os 12 endpoints
-- [ ] Testes unitários de auth
-- [ ] Dockerfile (dev + production)
-- [ ] `docker-compose.yml` local (postgres + api-go)
-- [ ] Migration `044_api_v2_enabled.sql` — adicionar `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` à tabela `players` (Python API migrations, shared DB)
-- [ ] `mintlify/quickstart.mdx` — setup local completo
+### Fase 1 — Scaffolding e Auth ✅
+- [x] Criar `football-api-go/` com estrutura de diretórios completa
+- [x] `go.mod` com todas as dependências declaradas
+- [x] `config.go` (envconfig, mirrors Python `Settings`)
+- [x] Conexão pgx pool + `GET /api/v2/health`
+- [x] Middleware: CORS, recovery, rate-limiter por IP
+- [x] Middleware de auth: JWT HS256 + MCP tokens `rachao_*`
+- [x] Middleware `api_v2_access.go` — gate `403 API_V2_NOT_ENABLED` (antecipado da Fase 5)
+- [x] Handler `auth.go` — todos os 12 endpoints
+- [x] `internal/db/queries.go` — camada de queries hand-crafted (substitui sqlc output para Fase 1)
+- [x] `sql/queries/players.sql` + `sql/queries/auth.sql` — anotadas para futura geração sqlc
+- [x] Testes unitários de auth (11 testes: login, register, refresh, OTP, get-me)
+- [x] Dockerfile (dev + production/scratch)
+- [x] `docker-compose.yml` local (postgres + api-go)
+- [x] `.air.toml`, `sqlc.yaml`, `.golangci.yml`, `.env.example`, `.gitignore`
+- [x] Migration `044_api_v2_enabled.sql` — adicionar `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` à tabela `players` (Python API migrations, shared DB)
+- [x] `mintlify/quickstart.mdx` — setup local completo
 
 ### Fase 2 — Core domain
 - [ ] Handler `groups.go` (14 endpoints) + testes
@@ -556,7 +560,7 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [ ] Adicionar router `/api/v2` em `football-api/traefik-dynamic.yml`
 - [ ] Push image para GHCR: `ghcr.io/thiagotn/football-manager-api-go`
 - [ ] Atualizar deploy job em `main.yml` para incluir `api-go`
-- [ ] Implementar middleware `api_v2_access.go` + testes unitários do gate
+- [x] Implementar middleware `api_v2_access.go` + testes unitários do gate (antecipado — implementado na Fase 1)
 - [ ] Implementar `GET /admin/api-v2-users` e `PATCH /admin/api-v2-users/{player_id}` em `handlers/admin.go`
 - [ ] Criar página `/admin/api-v2` no SvelteKit frontend (espelho de `/admin/chat`)
 - [ ] Anotar handlers Go com `swaggo/swag` (`// @Summary`, `// @Param`, `// @Success`, `// @Router`)
