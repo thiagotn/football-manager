@@ -32,9 +32,10 @@ Construir `football-api-go/` com paridade total de endpoints em relação à `fo
 
 ### 2.1 Incluído em v1.0
 
-- Todos os ~95 endpoints dos 16 domínios atuais (paridade total de contrato HTTP)
-- Mesmo banco PostgreSQL, schema e migrations existentes (sem DDL novo)
-- Documentação dedicada: setup local, arquitetura, conexão via docker-compose
+- Todos os ~97 endpoints dos 16 domínios atuais (paridade total de contrato HTTP)
+- Mesmo banco PostgreSQL, schema e migrations existentes (migration `044_api_v2_enabled.sql` adicionada)
+- Painel admin para controle de acesso à API v2 por usuário (rollout por amostragem)
+- Documentação interativa via Mintlify em `docs.rachao.app` com OpenAPI playground e `/llms.txt`
 - Testes unitários de handlers + testes de integração com banco real
 - Dockerfile multi-stage (dev + production)
 - GitHub Actions dedicado (`football-api-go/**`)
@@ -113,6 +114,42 @@ Mesmas variáveis de ambiente da API Python (DATABASE_URL, SECRET_KEY, etc.) —
 - Integração com banco real via service container no CI (`postgres:16-alpine`)
 - Cobertura reportada para Codecov com `flags: api-go`
 
+### 3.8 Controle de acesso por usuário — `api_v2_enabled`
+
+**Decisão: flag por usuário controlada pelo super admin, com middleware gate na Go API**
+
+A Go API implementa um middleware `api_v2_access.go` que, após a autenticação JWT, verifica se o player autenticado possui `api_v2_enabled = true` no banco. Se não, retorna `403 {"detail":"API_V2_NOT_ENABLED"}` antes de chegar ao handler.
+
+| Componente | Detalhe |
+|---|---|
+| **DB column** | `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` na tabela `players` |
+| **Migration** | `044_api_v2_enabled.sql` (Python API migrations, aplicada no shared DB) |
+| **Middleware** | `internal/middleware/api_v2_access.go` — aplicado em todo o router `/api/v2`, exceto sub-routers públicos |
+| **Isenções** | `GET /api/v2/health`, todos os endpoints sem auth (`OptionalPlayer` e públicos), e o super admin (`role = 'admin'`) |
+| **Admin endpoints** | `GET /admin/api-v2-users` (lista jogadores + status) e `PATCH /admin/api-v2-users/{player_id}` (toggle) |
+| **Frontend** | Página `/admin/api-v2` no SvelteKit — espelho exato de `/admin/chat` |
+
+Esse mecanismo permite rollout por amostragem: o super admin habilita acesso a usuários específicos (ex: equipe interna, beta testers) antes de abrir para todos, sem necessidade de feature flags externas ou variáveis de ambiente por usuário.
+
+### 3.9 Documentação — Mintlify
+
+**Decisão: [Mintlify](https://mintlify.com/) com OpenAPI interativo em `docs.rachao.app`**
+
+| Opção | Prós | Contras |
+|---|---|---|
+| **Mintlify** ✅ | OpenAPI playground, `/llms.txt`, search, theming, sem ops de infra | Plano pago para domínio customizado |
+| Markdown plain | Zero custo, simples | Sem playground, sem search, sem `/llms.txt` |
+| Redoc / Swagger UI | Open-source, OpenAPI nativo | Só referência de API, sem narrativa/setup |
+
+Mintlify é usado por Anthropic, Vercel, Coinbase e Linear. Gera `/llms.txt` automaticamente para compatibilidade com agentes de IA (como o próprio `chat.rachao.app`).
+
+**Setup:**
+- Diretório `football-api-go/mintlify/` com `mint.json`, páginas MDX e `openapi.yaml`
+- `openapi.yaml` gerado automaticamente com `swaggo/swag` a partir de annotations nos handlers Go (`// @Summary`, `// @Param`, `// @Success`)
+- `make docs` = `swag init` → `openapi.yaml` + `mintlify dev` para preview local
+- Deploy contínuo: Mintlify Cloud monitora `football-api-go/mintlify/` via GitHub integration
+- URL final: `docs.rachao.app` (CNAME para `mintlify.app`)
+
 ---
 
 ## 4. Estrutura de Diretórios
@@ -130,6 +167,7 @@ football-api-go/
 │   │   └── queries/                 # código gerado pelo sqlc (não editar)
 │   ├── middleware/
 │   │   ├── auth.go                  # JWT parsing + MCP tokens → ctx player
+│   │   ├── api_v2_access.go         # gate: 403 se player não tem api_v2_enabled=true
 │   │   ├── cors.go
 │   │   ├── ratelimit.go             # rate limit por IP (login)
 │   │   └── recovery.go
@@ -188,10 +226,13 @@ football-api-go/
 │       ├── auth_integration_test.go
 │       ├── groups_integration_test.go
 │       └── matches_integration_test.go
-├── docs/
-│   ├── setup.md                     # pré-requisitos, .env, docker-compose, make
-│   ├── architecture.md              # decisões de stack + diagrama
-│   └── endpoints.md                 # referência de todos os ~95 endpoints
+├── mintlify/
+│   ├── mint.json                    # config: nav, colors, logo, baseUrl=docs.rachao.app
+│   ├── openapi.yaml                 # gerado por `make docs` (swaggo/swag) — não editar manualmente
+│   ├── quickstart.mdx               # pré-requisitos, .env, docker-compose, make run
+│   ├── authentication.mdx           # JWT, MCP tokens, api_v2_enabled
+│   ├── architecture.mdx             # decisões de stack + diagrama de componentes
+│   └── llms.txt                     # gerado automaticamente pelo Mintlify
 ├── Dockerfile                       # stage dev (air) + stage production (scratch)
 ├── docker-compose.yml               # postgres:16-alpine + api-go para dev local
 ├── .air.toml                        # configuração do live-reload (air)
@@ -220,6 +261,7 @@ football-api-go/
 | `joho/godotenv` | v1.x | Carregar `.env` em dev |
 | `anthropics/anthropic-sdk-go` | latest | Anthropic API (chat/SSE) |
 | `cosmtrek/air` | v1.x | Live-reload em dev (tool) |
+| `swaggo/swag` | v1.x | Geração de `openapi.yaml` a partir de annotations nos handlers (tool) |
 
 ---
 
@@ -369,7 +411,7 @@ Todos os paths abaixo são espelhados da `football-api/` com prefixo `/api/v2` e
 |---|---|---|
 | POST | `/webhooks/payment` | HMAC Stripe |
 
-### Admin (10 endpoints)
+### Admin (12 endpoints)
 | Método | Path | Auth |
 |---|---|---|
 | GET | `/admin/stats` | super-admin |
@@ -382,15 +424,17 @@ Todos os paths abaixo são espelhados da `football-api/` com prefixo `/api/v2` e
 | GET | `/admin/players` | super-admin |
 | DELETE | `/admin/players/{player_id}/avatar` | super-admin |
 | GET | `/admin/beta-signups` | super-admin |
+| GET | `/admin/api-v2-users` | super-admin |
+| PATCH | `/admin/api-v2-users/{player_id}` | super-admin |
 
-**Total: ~97 endpoints** (+ `GET /api/v2/health`)
+**Total: ~99 endpoints** (+ `GET /api/v2/health`)
 
 ---
 
 ## 7. Requisitos Funcionais
 
 ### RF-01 — Paridade de endpoints (Must)
-Todos os ~97 endpoints acima devem estar implementados com o mesmo contrato HTTP: método, path, request body, response schema e HTTP status codes idênticos à versão Python.
+Todos os ~99 endpoints acima devem estar implementados com o mesmo contrato HTTP: método, path, request body, response schema e HTTP status codes idênticos à versão Python.
 
 ### RF-02 — Prefixo `/api/v2` (Must)
 Todos os routes montados sob `/api/v2/`. A constante `API_PREFIX = "/api/v2"` definida em `config.go`.
@@ -401,8 +445,14 @@ Conectar ao mesmo PostgreSQL sem DDL adicional. Schema idêntico ao atual.
 ### RF-04 — JWT cross-compatível (Must)
 Tokens gerados pela Python API (HS256, `SECRET_KEY`) devem ser aceitos pela Go API e vice-versa. O middleware de auth deve suportar também MCP tokens com prefixo `rachao_`.
 
-### RF-05 — Documentação local dedicada (Must)
-`football-api-go/docs/setup.md` com: pré-requisitos (Go 1.24, Docker, sqlc, golangci-lint), `.env.example`, passo-a-passo para rodar localmente (`make run`), rodar testes (`make test`, `make test-integration`) e gerar código do banco (`make generate`).
+### RF-05 — Documentação Mintlify (Must)
+Documentação pública em `docs.rachao.app` com:
+- `quickstart.mdx`: pré-requisitos (Go 1.24, Docker, sqlc, golangci-lint), `.env.example`, `make run`, `make test`, `make generate`
+- `authentication.mdx`: JWT cross-API, MCP tokens, `api_v2_enabled`
+- `architecture.mdx`: decisões de stack, diagrama de componentes, comparativo com Python API
+- `openapi.yaml` (gerado via `swaggo/swag`) integrado ao Mintlify com playground interativo para todos os endpoints
+- `/llms.txt` gerado automaticamente pelo Mintlify (para compatibilidade com agentes IA)
+- `make docs`: comando que roda `swag init` + abre `mintlify dev` localmente
 
 ### RF-06 — Testes unitários (Must)
 Cada handler com ao menos: 1 teste de caminho feliz + testes dos erros documentados. Cobertura mínima: 70% das linhas dos pacotes `internal/handlers` e `internal/services`.
@@ -424,7 +474,15 @@ Regra em `traefik-dynamic.yml` e serviço em `docker-compose.prod.yml` para rote
 `POST /api/v2/chat` com Server-Sent Events usando o mesmo MCP server existente (`mcp.rachao.app`). Rate limit de 20 mensagens/hora por usuário via coluna `chat_req_count` + `chat_req_window`.
 
 ### RF-12 — Makefile (Should)
-Comandos: `make run`, `make test`, `make test-integration`, `make lint`, `make generate`, `make migrate`, `make build`.
+Comandos: `make run`, `make test`, `make test-integration`, `make lint`, `make generate`, `make migrate`, `make build`, `make docs`.
+
+### RF-13 — Controle de acesso por usuário para API v2 (Must)
+A Go API deve implementar um gate de acesso por usuário:
+- Middleware `api_v2_access.go` aplicado em todo o router `/api/v2`, verificando `api_v2_enabled = true` no player autenticado
+- Retorna `403 {"detail":"API_V2_NOT_ENABLED"}` para players autenticados sem o flag ativo
+- **Isenções:** endpoints sem autenticação (públicos e `OptionalPlayer`), `GET /api/v2/health`, e super admin (`role = 'admin'` sempre tem acesso)
+- Super admin pode habilitar/desabilitar por usuário via `PATCH /admin/api-v2-users/{player_id}`
+- Página `/admin/api-v2` no SvelteKit para gerenciamento visual (mesmo padrão de `/admin/chat`)
 
 ---
 
@@ -460,7 +518,8 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [ ] Testes unitários de auth
 - [ ] Dockerfile (dev + production)
 - [ ] `docker-compose.yml` local (postgres + api-go)
-- [ ] `docs/setup.md`
+- [ ] Migration `044_api_v2_enabled.sql` — adicionar `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` à tabela `players` (Python API migrations, shared DB)
+- [ ] `mintlify/quickstart.mdx` — setup local completo
 
 ### Fase 2 — Core domain
 - [ ] Handler `groups.go` (14 endpoints) + testes
@@ -496,8 +555,15 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [ ] Adicionar serviço `api-go` em `football-api/docker-compose.prod.yml`
 - [ ] Adicionar router `/api/v2` em `football-api/traefik-dynamic.yml`
 - [ ] Push image para GHCR: `ghcr.io/thiagotn/football-manager-api-go`
-- [ ] `docs/architecture.md` + `docs/endpoints.md`
 - [ ] Atualizar deploy job em `main.yml` para incluir `api-go`
+- [ ] Implementar middleware `api_v2_access.go` + testes unitários do gate
+- [ ] Implementar `GET /admin/api-v2-users` e `PATCH /admin/api-v2-users/{player_id}` em `handlers/admin.go`
+- [ ] Criar página `/admin/api-v2` no SvelteKit frontend (espelho de `/admin/chat`)
+- [ ] Anotar handlers Go com `swaggo/swag` (`// @Summary`, `// @Param`, `// @Success`, `// @Router`)
+- [ ] Configurar `mintlify/mint.json` com branding rachao.app (cores, logo, nav)
+- [ ] Criar `mintlify/authentication.mdx` e `mintlify/architecture.mdx`
+- [ ] `make docs` gera `openapi.yaml` atualizado
+- [ ] Conectar repositório ao Mintlify Cloud → deploy em `docs.rachao.app`
 
 ---
 
@@ -666,6 +732,11 @@ api-go:
 - [ ] Imagem Docker production ≤ 30MB
 - [ ] GitHub Actions workflow verde (lint + unit + integration + build)
 - [ ] Response JSON de `GET /api/v2/groups` é estruturalmente equivalente a `GET /api/v1/groups` para os mesmos dados
+- [ ] Request autenticado de player com `api_v2_enabled = false` retorna `403 {"detail":"API_V2_NOT_ENABLED"}` em qualquer endpoint autenticado
+- [ ] Endpoints públicos (ex: `GET /api/v2/ranking`, `POST /api/v2/auth/login`) NÃO são bloqueados pelo gate
+- [ ] Super admin (`role = 'admin'`) passa pelo gate sem bloqueio independente do flag
+- [ ] `PATCH /admin/api-v2-users/{id}` com `{"api_v2_enabled": true}` habilita o acesso e a próxima requisição do player passa a ser aceita
+- [ ] `docs.rachao.app` está acessível com playground Mintlify funcional para ao menos `POST /api/v2/auth/login`, `GET /api/v2/groups` e `GET /api/v2/health`
 
 ---
 
