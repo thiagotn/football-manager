@@ -1,0 +1,71 @@
+---
+title: "Quickstart"
+description: "Run football-api-go locally in 3 steps"
+---
+
+## Prerequisites
+
+- [Go 1.24+](https://go.dev/dl/)
+- [Docker](https://docs.docker.com/get-docker/) (for local Postgres)
+- [Air](https://github.com/air-verse/air) for live-reload: `go install github.com/air-verse/air@latest`
+
+## 1. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+The defaults work out of the box for local development. Twilio is optional — without it,
+any OTP code `123456` is accepted for any number.
+
+## 2. Start Postgres
+
+```bash
+docker compose up postgres -d
+```
+
+Then apply migrations (requires the Python API's migration files):
+
+```bash
+export DATABASE_URL="postgres://football:football@localhost:5433/football_dev?sslmode=disable"
+make migrate
+```
+
+## 3. Run the server
+
+```bash
+make run      # live-reload via air
+# or
+make build && ./tmp/server
+```
+
+The API is now available at `http://localhost:8080`.
+
+---
+
+## Health check
+
+```bash
+curl http://localhost:8080/api/v2/health
+# {"status":"ok"}
+```
+
+## Run tests
+
+```bash
+make test          # unit tests only (no database)
+make test-race     # unit tests with race detector
+```
+
+## Generate OpenAPI spec
+
+```bash
+make docs
+# openapi.yaml written to mintlify/
+```
+
+Then preview the docs locally:
+
+```bash
+npx mintlify dev
+```

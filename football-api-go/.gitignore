@@ -1,0 +1,29 @@
+# binaries
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# test coverage
+coverage.out
+
+# environment
+.env
+
+# editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# build artifacts
+build-errors.log
+
+# generated files (sqlc output — not committed; regenerated via make generate)
+internal/db/generated/
+
+# OS
+.DS_Store
+Thumbs.db
