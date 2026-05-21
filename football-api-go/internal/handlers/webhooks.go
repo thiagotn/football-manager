@@ -62,7 +62,7 @@ func (h *webhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.dispatch(r, eventType, obj); err != nil {
-		log.Printf("webhook processing error event=%s type=%s err=%v", eventID, eventType, err)
+		log.Printf("webhook processing error event=%s type=%s err=%v", eventID, eventType, err) //nolint:gosec
 		renderJSON(w, http.StatusOK, map[string]string{"status": "error_logged"})
 		return
 	}

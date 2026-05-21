@@ -93,6 +93,6 @@ func (s *StorageService) DeleteAvatarByURL(ctx context.Context, avatarURL string
 	if err != nil {
 		return nil
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	return nil
 }

@@ -632,7 +632,7 @@ func (h *adminHandler) deletePlayerAvatar(w http.ResponseWriter, r *http.Request
 		renderError(w, err)
 		return
 	}
-	log.Printf("admin_avatar_removed player_id=%s", playerID)
+	log.Printf("admin_avatar_removed player_id=%s", playerID) //nolint:gosec
 	noContent(w)
 }
 

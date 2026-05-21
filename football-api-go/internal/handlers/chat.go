@@ -168,7 +168,7 @@ func (h *chatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		emitError("erro ao conectar com o assistente. Tente novamente.")
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		emitError("erro ao conectar com o assistente. Tente novamente.")

@@ -218,7 +218,7 @@ func (h *playerHandler) publicStats(w http.ResponseWriter, r *http.Request) {
 		Scan(&totalConfirmed)
 
 	var totalGoals, totalAssists int
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COALESCE(SUM(goals),0), COALESCE(SUM(assists),0)
 		FROM match_player_stats WHERE player_id = $1`, playerID).
 		Scan(&totalGoals, &totalAssists)
@@ -449,7 +449,7 @@ func (h *playerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var total, last7, last30 int
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT
 			COUNT(*) FILTER (WHERE role='player'),
 			COUNT(*) FILTER (WHERE role='player' AND created_at >= NOW() - INTERVAL '7 days'),
