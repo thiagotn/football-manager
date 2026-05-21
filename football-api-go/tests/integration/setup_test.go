@@ -20,7 +20,7 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/server"
 )
 
-const testOTPBypassCode = "test-bypass-123"
+const testOTPBypassCode = "123456"
 
 var (
 	poolOnce sync.Once
