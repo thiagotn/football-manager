@@ -17,7 +17,9 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version: '1.24' }
       - uses: golangci/golangci-lint-action@v8
-        with: { working-directory: football-api-go }
+        with:
+          working-directory: football-api-go
+          args: --timeout=5m
 
   unit-tests:
     name: Unit Tests
