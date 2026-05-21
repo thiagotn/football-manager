@@ -190,3 +190,14 @@ func registerGroupCleanup(t *testing.T, groupIDStr string) {
 		}
 	})
 }
+
+// makeAdmin promotes a player to admin role in the database.
+func makeAdmin(t *testing.T, playerIDStr string) {
+	t.Helper()
+	pool := getPool(t)
+	playerID, err := uuid.Parse(playerIDStr)
+	require.NoError(t, err)
+	_, err = pool.Exec(context.Background(),
+		`UPDATE players SET role='admin' WHERE id=$1`, playerID)
+	require.NoError(t, err)
+}
