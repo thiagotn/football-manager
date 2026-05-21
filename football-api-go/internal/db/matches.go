@@ -11,22 +11,25 @@ import (
 
 // Match represents a football match.
 type Match struct {
-	ID             uuid.UUID `json:"id"`
-	GroupID        uuid.UUID `json:"group_id"`
-	Number         int       `json:"number"`
-	Hash           string    `json:"hash"`
-	MatchDate      string    `json:"match_date"`  // "YYYY-MM-DD"
-	StartTime      string    `json:"start_time"`  // "HH:MM:SS"
-	EndTime        *string   `json:"end_time"`    // nullable
-	Location       string    `json:"location"`
-	Address        *string   `json:"address"`
-	CourtType      *string   `json:"court_type"`
-	PlayersPerTeam *int      `json:"players_per_team"`
-	MaxPlayers     *int      `json:"max_players"`
-	Notes          *string   `json:"notes"`
-	Status         string    `json:"status"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID                   uuid.UUID `json:"id"`
+	GroupID              uuid.UUID `json:"group_id"`
+	Number               int       `json:"number"`
+	Hash                 string    `json:"hash"`
+	MatchDate            string    `json:"match_date"`  // "YYYY-MM-DD"
+	StartTime            string    `json:"start_time"`  // "HH:MM:SS"
+	EndTime              *string   `json:"end_time"`    // nullable
+	Location             string    `json:"location"`
+	Address              *string   `json:"address"`
+	CourtType            *string   `json:"court_type"`
+	PlayersPerTeam       *int      `json:"players_per_team"`
+	MaxPlayers           *int      `json:"max_players"`
+	Notes                *string   `json:"notes"`
+	Status               string    `json:"status"`
+	VoteOpenDelayMinutes int       `json:"vote_open_delay_minutes"`
+	VoteDurationHours    int       `json:"vote_duration_hours"`
+	VoteNotified         bool      `json:"-"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
 }
 
 // AttendanceWithPlayer is an attendance record joined with player info.
@@ -68,7 +71,8 @@ const matchCols = `
 	m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
 	m.location, m.address, m.court_type::TEXT,
 	m.players_per_team, m.max_players, m.notes,
-	m.status::TEXT, m.created_at, m.updated_at`
+	m.status::TEXT, m.vote_open_delay_minutes, m.vote_duration_hours, m.vote_notified,
+	m.created_at, m.updated_at`
 
 func scanMatch(scanFn func(dest ...any) error) (*Match, error) {
 	var m Match
@@ -77,7 +81,8 @@ func scanMatch(scanFn func(dest ...any) error) (*Match, error) {
 		&m.MatchDate, &m.StartTime, &m.EndTime,
 		&m.Location, &m.Address, &m.CourtType,
 		&m.PlayersPerTeam, &m.MaxPlayers, &m.Notes,
-		&m.Status, &m.CreatedAt, &m.UpdatedAt,
+		&m.Status, &m.VoteOpenDelayMinutes, &m.VoteDurationHours, &m.VoteNotified,
+		&m.CreatedAt, &m.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -232,7 +237,8 @@ func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, limit, offset i
 			m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
 			m.location, m.address, m.court_type::TEXT,
 			m.players_per_team, m.max_players, m.notes,
-			m.status::TEXT, m.created_at, m.updated_at,
+			m.status::TEXT, m.vote_open_delay_minutes, m.vote_duration_hours, m.vote_notified,
+			m.created_at, m.updated_at,
 			g.name, g.timezone,
 			COUNT(a.id) FILTER (WHERE a.status = 'confirmed') AS confirmed_count
 		FROM matches m
@@ -255,7 +261,8 @@ func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, limit, offset i
 			&d.MatchDate, &d.StartTime, &d.EndTime,
 			&d.Location, &d.Address, &d.CourtType,
 			&d.PlayersPerTeam, &d.MaxPlayers, &d.Notes,
-			&d.Status, &d.CreatedAt, &d.UpdatedAt,
+			&d.Status, &d.VoteOpenDelayMinutes, &d.VoteDurationHours, &d.VoteNotified,
+			&d.CreatedAt, &d.UpdatedAt,
 			&d.GroupName, &d.GroupTimezone, &d.ConfirmedCount,
 		); err != nil {
 			return nil, err

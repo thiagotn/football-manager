@@ -100,7 +100,6 @@ func scanPlayer(row pgx.Row) (*Player, error) {
 // CreatePlayerParams is the canonical params type for creating players.
 // (Alias of CreatePlayerArgs for backward compat.)
 type CreatePlayerParams = CreatePlayerArgs
-}
 
 const playerColumns = `
 	id, name, nickname, whatsapp, password_hash,

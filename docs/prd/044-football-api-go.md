@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | 🚧 Em implementação (Fase 2 completa) |
+| **Status** | 🚧 Em implementação (Fase 3 completa) |
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 |
 
@@ -536,16 +536,16 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Testes de integração: `auth_integration_test.go`, `groups_integration_test.go`, `matches_integration_test.go`
 
 ### Fase 3 — Domínios secundários
-- [ ] Handler `votes.go` (3 endpoints)
-- [ ] Handler `finance.go` (3 endpoints)
-- [ ] Handler `subscriptions.go` + `services/billing_stripe.go`
-- [ ] Handler `webhooks.go` (HMAC Stripe)
-- [ ] Handler `push.go` + `services/push_service.go` (VAPID)
-- [ ] Handler `ranking.go`
-- [ ] Handler `reviews.go`
-- [ ] Handler `mcp_tokens.go`
-- [ ] Handler `beta.go`
-- [ ] Testes unitários para cada handler
+- [x] Handler `votes.go` (7 endpoints)
+- [x] Handler `finance.go` (3 endpoints)
+- [x] Handler `subscriptions.go` + `services/billing_stripe.go`
+- [x] Handler `webhooks.go` (HMAC Stripe)
+- [x] Handler `push.go` + `services/push_service.go` (VAPID)
+- [x] Handler `ranking.go`
+- [x] Handler `reviews.go`
+- [x] Handler `mcp_tokens.go`
+- [x] Handler `beta.go`
+- [x] Testes unitários para cada handler
 
 ### Fase 4 — Admin e Chat
 - [ ] Handler `admin.go` (10 endpoints)

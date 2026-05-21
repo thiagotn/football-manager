@@ -107,7 +107,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 041 | [mcp-http-bearer-auth.md](041-mcp-http-bearer-auth.md) | ✅ | Repasse do Bearer token do usuário ao backend no modo HTTP do MCP |
 | 042 | [chat-rachao-app.md](042-chat-rachao-app.md) | ✅ | Assistente IA via Claude + MCP — chat em linguagem natural sobre rachões |
 | 043 | [security-audit-hardening.md](043-security-audit-hardening.md) | ✅ | Auditoria de segurança do repositório — 7 achados classificados com plano de remediação |
-| 044 | [football-api-go.md](044-football-api-go.md) | 🚧 | Port da API rachao.app em Go (Chi + sqlc + pgx/v5) — `/api/v2`, mesmo DB, paridade total de endpoints — Fase 2 completa |
+| 044 | [football-api-go.md](044-football-api-go.md) | 🚧 | Port da API rachao.app em Go (Chi + sqlc + pgx/v5) — `/api/v2`, mesmo DB, paridade total de endpoints — Fase 3 completa |
 | 045 | [guia-go-football-api.md](045-guia-go-football-api.md) | 📖 | Guia de estudo Go estruturado como livro — 16 capítulos guiados pela implementação da football-api-go |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
