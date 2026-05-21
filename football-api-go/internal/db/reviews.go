@@ -18,8 +18,8 @@ type AppReview struct {
 }
 
 type ReviewSummary struct {
-	TotalReviews  int     `json:"total_reviews"`
-	AverageRating float64 `json:"average_rating"`
+	TotalReviews  int         `json:"total_reviews"`
+	AverageRating float64     `json:"average_rating"`
 	Distribution  map[int]int `json:"distribution"` // rating -> count
 }
 

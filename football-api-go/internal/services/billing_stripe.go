@@ -19,8 +19,8 @@ const stripeAPIBase = "https://api.stripe.com/v1"
 
 // StripeService handles Stripe API interactions.
 type StripeService struct {
-	secretKey      string
-	webhookSecret  string
+	secretKey         string
+	webhookSecret     string
 	priceBasicMonthly string
 	priceBasicYearly  string
 	priceProMonthly   string

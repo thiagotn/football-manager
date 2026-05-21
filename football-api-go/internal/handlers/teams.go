@@ -41,7 +41,7 @@ type teamResp struct {
 }
 
 type teamsResp struct {
-	Teams    []teamResp      `json:"teams"`
+	Teams    []teamResp       `json:"teams"`
 	Reserves []teamPlayerResp `json:"reserves"`
 }
 

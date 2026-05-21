@@ -243,9 +243,9 @@ func TestMatchVotingClosed(t *testing.T) {
 		startTime := "10:00:00"
 
 		match := &db.Match{
-			MatchDate:           matchDate,
-			StartTime:           startTime,
-			EndTime:             nil,
+			MatchDate:            matchDate,
+			StartTime:            startTime,
+			EndTime:              nil,
 			VoteOpenDelayMinutes: 0,
 			VoteDurationHours:    24,
 		}
@@ -260,9 +260,9 @@ func TestMatchVotingClosed(t *testing.T) {
 		startTime := "10:00:00"
 
 		match := &db.Match{
-			MatchDate:           matchDate,
-			StartTime:           startTime,
-			EndTime:             nil,
+			MatchDate:            matchDate,
+			StartTime:            startTime,
+			EndTime:              nil,
 			VoteOpenDelayMinutes: 0,
 			VoteDurationHours:    24,
 		}
@@ -277,9 +277,9 @@ func TestMatchVotingClosed(t *testing.T) {
 		endTime := "10:00:00"
 
 		match := &db.Match{
-			MatchDate:           matchDate,
-			StartTime:           "09:00:00",
-			EndTime:             &endTime,
+			MatchDate:            matchDate,
+			StartTime:            "09:00:00",
+			EndTime:              &endTime,
 			VoteOpenDelayMinutes: 0,
 			VoteDurationHours:    24,
 		}
@@ -290,9 +290,9 @@ func TestMatchVotingClosed(t *testing.T) {
 
 	t.Run("handles invalid match date gracefully", func(t *testing.T) {
 		match := &db.Match{
-			MatchDate:           "invalid-date",
-			StartTime:           "10:00:00",
-			EndTime:             nil,
+			MatchDate:            "invalid-date",
+			StartTime:            "10:00:00",
+			EndTime:              nil,
 			VoteOpenDelayMinutes: 0,
 			VoteDurationHours:    24,
 		}
@@ -307,9 +307,9 @@ func TestMatchVotingClosed(t *testing.T) {
 		matchDate := fmt.Sprintf("%04d-%02d-%02d", twoDaysAgo.Year(), twoDaysAgo.Month(), twoDaysAgo.Day())
 		// But with a very large open delay
 		match := &db.Match{
-			MatchDate:           matchDate,
-			StartTime:           "10:00:00",
-			EndTime:             nil,
+			MatchDate:            matchDate,
+			StartTime:            "10:00:00",
+			EndTime:              nil,
 			VoteOpenDelayMinutes: 10000, // 7+ days delay
 			VoteDurationHours:    1,
 		}

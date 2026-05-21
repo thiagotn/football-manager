@@ -246,12 +246,12 @@ func (h *chatHandler) listChatUsers(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type chatUserItem struct {
-		ID           uuid.UUID `json:"id"`
-		Name         string    `json:"name"`
-		Nickname     *string   `json:"nickname"`
-		AvatarURL    *string   `json:"avatar_url"`
-		ChatEnabled  bool      `json:"chat_enabled"`
-		ApiV2Enabled bool      `json:"api_v2_enabled"`
+		ID           uuid.UUID   `json:"id"`
+		Name         string      `json:"name"`
+		Nickname     *string     `json:"nickname"`
+		AvatarURL    *string     `json:"avatar_url"`
+		ChatEnabled  bool        `json:"chat_enabled"`
+		ApiV2Enabled bool        `json:"api_v2_enabled"`
 		CreatedAt    interface{} `json:"created_at"`
 	}
 

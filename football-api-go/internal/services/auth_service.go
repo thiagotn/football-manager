@@ -38,8 +38,8 @@ type SendOTPRequest struct {
 }
 
 type SendOTPResponse struct {
-	Status          string `json:"status"`
-	ExpiresInSeconds int   `json:"expires_in_seconds"`
+	Status           string `json:"status"`
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 type VerifyOTPRequest struct {
@@ -78,17 +78,17 @@ type TokenResponse struct {
 }
 
 type PlayerResponse struct {
-	ID                 string     `json:"id"`
-	Name               string     `json:"name"`
-	Nickname           *string    `json:"nickname,omitempty"`
-	WhatsApp           string     `json:"whatsapp"`
-	Role               string     `json:"role"`
-	Active             bool       `json:"active"`
-	MustChangePassword bool       `json:"must_change_password"`
-	AvatarURL          *string    `json:"avatar_url,omitempty"`
-	ChatEnabled        bool       `json:"chat_enabled"`
-	ApiV2Enabled       bool       `json:"api_v2_enabled"`
-	CreatedAt          time.Time  `json:"created_at"`
+	ID                 string    `json:"id"`
+	Name               string    `json:"name"`
+	Nickname           *string   `json:"nickname,omitempty"`
+	WhatsApp           string    `json:"whatsapp"`
+	Role               string    `json:"role"`
+	Active             bool      `json:"active"`
+	MustChangePassword bool      `json:"must_change_password"`
+	AvatarURL          *string   `json:"avatar_url,omitempty"`
+	ChatEnabled        bool      `json:"chat_enabled"`
+	ApiV2Enabled       bool      `json:"api_v2_enabled"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 type RefreshRequest struct {

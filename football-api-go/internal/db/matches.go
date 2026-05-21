@@ -15,9 +15,9 @@ type Match struct {
 	GroupID              uuid.UUID `json:"group_id"`
 	Number               int       `json:"number"`
 	Hash                 string    `json:"hash"`
-	MatchDate            string    `json:"match_date"`  // "YYYY-MM-DD"
-	StartTime            string    `json:"start_time"`  // "HH:MM:SS"
-	EndTime              *string   `json:"end_time"`    // nullable
+	MatchDate            string    `json:"match_date"` // "YYYY-MM-DD"
+	StartTime            string    `json:"start_time"` // "HH:MM:SS"
+	EndTime              *string   `json:"end_time"`   // nullable
 	Location             string    `json:"location"`
 	Address              *string   `json:"address"`
 	CourtType            *string   `json:"court_type"`
@@ -34,25 +34,25 @@ type Match struct {
 
 // AttendanceWithPlayer is an attendance record joined with player info.
 type AttendanceWithPlayer struct {
-	ID            uuid.UUID `json:"id"`
-	MatchID       uuid.UUID `json:"match_id"`
-	PlayerID      uuid.UUID `json:"player_id"`
-	Status        string    `json:"status"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	PlayerName    string    `json:"player_name"`
-	PlayerNickname *string  `json:"player_nickname"`
-	PlayerAvatarURL *string `json:"player_avatar_url"`
-	PlayerRole    string    `json:"player_role"`
-	Position      string    `json:"position"`    // from group_members
-	GroupNickname *string   `json:"group_nickname"` // from group_members
+	ID              uuid.UUID `json:"id"`
+	MatchID         uuid.UUID `json:"match_id"`
+	PlayerID        uuid.UUID `json:"player_id"`
+	Status          string    `json:"status"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	PlayerName      string    `json:"player_name"`
+	PlayerNickname  *string   `json:"player_nickname"`
+	PlayerAvatarURL *string   `json:"player_avatar_url"`
+	PlayerRole      string    `json:"player_role"`
+	Position        string    `json:"position"`       // from group_members
+	GroupNickname   *string   `json:"group_nickname"` // from group_members
 }
 
 // DiscoverMatch is a match row for the discover feed.
 type DiscoverMatch struct {
 	Match
-	GroupName    string `json:"group_name"`
-	GroupTimezone string `json:"group_timezone"`
-	ConfirmedCount int  `json:"confirmed_count"`
+	GroupName      string `json:"group_name"`
+	GroupTimezone  string `json:"group_timezone"`
+	ConfirmedCount int    `json:"confirmed_count"`
 }
 
 // MatchPlayerStat is a record of goals/assists for a player in a match.

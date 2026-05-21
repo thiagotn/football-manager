@@ -40,23 +40,23 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	loginRL := middleware.NewLoginRateLimiter()
 
 	// Handlers
-	authH         := handlers.NewAuthHandler(authSvc, loginRL)
-	groupH        := handlers.NewGroupHandler(pool)
-	matchH        := handlers.NewMatchHandler(pool)
-	playerH       := handlers.NewPlayerHandler(pool, storageSvc)
-	inviteH       := handlers.NewInviteHandler(pool)
-	teamH         := handlers.NewTeamHandler(pool)
-	voteH         := handlers.NewVoteHandler(pool)
-	financeH      := handlers.NewFinanceHandler(pool)
+	authH := handlers.NewAuthHandler(authSvc, loginRL)
+	groupH := handlers.NewGroupHandler(pool)
+	matchH := handlers.NewMatchHandler(pool)
+	playerH := handlers.NewPlayerHandler(pool, storageSvc)
+	inviteH := handlers.NewInviteHandler(pool)
+	teamH := handlers.NewTeamHandler(pool)
+	voteH := handlers.NewVoteHandler(pool)
+	financeH := handlers.NewFinanceHandler(pool)
 	subscriptionH := handlers.NewSubscriptionHandler(pool, stripeSvc)
-	webhookH      := handlers.NewWebhookHandler(pool, stripeSvc)
-	pushH         := handlers.NewPushHandler(pool, cfg.VAPIDPublicKey)
-	rankingH      := handlers.NewRankingHandler(pool)
-	reviewH       := handlers.NewReviewHandler(pool)
-	mcpTokenH     := handlers.NewMCPTokenHandler(pool)
-	betaH         := handlers.NewBetaHandler(pool)
-	adminH        := handlers.NewAdminHandler(pool, stripeSvc, storageSvc)
-	chatH         := handlers.NewChatHandler(pool, cfg.AnthropicAPIKey, cfg.LLMModel, cfg.ChatRateLimit)
+	webhookH := handlers.NewWebhookHandler(pool, stripeSvc)
+	pushH := handlers.NewPushHandler(pool, cfg.VAPIDPublicKey)
+	rankingH := handlers.NewRankingHandler(pool)
+	reviewH := handlers.NewReviewHandler(pool)
+	mcpTokenH := handlers.NewMCPTokenHandler(pool)
+	betaH := handlers.NewBetaHandler(pool)
+	adminH := handlers.NewAdminHandler(pool, stripeSvc, storageSvc)
+	chatH := handlers.NewChatHandler(pool, cfg.AnthropicAPIKey, cfg.LLMModel, cfg.ChatRateLimit)
 
 	r := chi.NewRouter()
 
@@ -73,7 +73,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
-	authMw  := middleware.Auth(cfg.SecretKey, pool)
+	authMw := middleware.Auth(cfg.SecretKey, pool)
 	apiV2Mw := middleware.ApiV2Access
 
 	r.Route("/api/v2", func(r chi.Router) {

@@ -245,4 +245,3 @@ func (h *inviteHandler) acceptInvite(w http.ResponseWriter, r *http.Request) {
 		"message":   "joined group successfully",
 	})
 }
-

@@ -142,8 +142,8 @@ func buildAttendanceResp(a db.AttendanceWithPlayer) attendanceResp {
 
 func buildMatchDetail(match *db.Match, atts []db.AttendanceWithPlayer, groupName string) matchDetailResp {
 	resp := matchDetailResp{
-		Match:      *match,
-		GroupName:  groupName,
+		Match:       *match,
+		GroupName:   groupName,
 		Attendances: make([]attendanceResp, 0, len(atts)),
 	}
 	for _, a := range atts {

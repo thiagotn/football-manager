@@ -20,14 +20,14 @@ type MatchTeam struct {
 
 // MatchTeamPlayer is a player assigned to a team.
 type MatchTeamPlayer struct {
-	TeamID    uuid.UUID `json:"team_id"`
-	PlayerID  uuid.UUID `json:"player_id"`
-	IsReserve bool      `json:"is_reserve"`
-	Name      string    `json:"name"`
-	Nickname  *string   `json:"nickname"`
-	AvatarURL *string   `json:"avatar_url"`
-	SkillStars int      `json:"skill_stars"`
-	Position  string    `json:"position"`
+	TeamID     uuid.UUID `json:"team_id"`
+	PlayerID   uuid.UUID `json:"player_id"`
+	IsReserve  bool      `json:"is_reserve"`
+	Name       string    `json:"name"`
+	Nickname   *string   `json:"nickname"`
+	AvatarURL  *string   `json:"avatar_url"`
+	SkillStars int       `json:"skill_stars"`
+	Position   string    `json:"position"`
 }
 
 // PlayerForDraw holds the data needed by the team builder algorithm.

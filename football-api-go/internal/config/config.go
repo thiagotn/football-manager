@@ -10,8 +10,8 @@ import (
 
 type Config struct {
 	// App
-	AppEnv  string `envconfig:"APP_ENV" default:"development"`
-	Port    int    `envconfig:"PORT" default:"8080"`
+	AppEnv      string `envconfig:"APP_ENV" default:"development"`
+	Port        int    `envconfig:"PORT" default:"8080"`
 	FrontendURL string `envconfig:"FRONTEND_URL" default:"http://localhost:3000"`
 	CORSOrigins string `envconfig:"CORS_ORIGINS" default:"http://localhost:3000"`
 
@@ -19,11 +19,11 @@ type Config struct {
 	DatabaseURL string `envconfig:"DATABASE_URL" required:"true"`
 
 	// JWT & Security
-	SecretKey                  string `envconfig:"SECRET_KEY" required:"true"`
-	AccessTokenExpireMinutes   int    `envconfig:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
+	SecretKey                string `envconfig:"SECRET_KEY" required:"true"`
+	AccessTokenExpireMinutes int    `envconfig:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
 
 	// OTP
-	OTPBypassCode   string `envconfig:"OTP_BYPASS_CODE"`
+	OTPBypassCode    string `envconfig:"OTP_BYPASS_CODE"`
 	TwilioAccountSID string `envconfig:"TWILIO_ACCOUNT_SID"`
 	TwilioAuthToken  string `envconfig:"TWILIO_AUTH_TOKEN"`
 	TwilioVerifySID  string `envconfig:"TWILIO_VERIFY_SID"`
@@ -38,17 +38,17 @@ type Config struct {
 	ChatRateLimit   int    `envconfig:"CHAT_RATE_LIMIT" default:"20"`
 
 	// Stripe
-	StripeSecretKey       string `envconfig:"STRIPE_SECRET_KEY"`
-	StripeWebhookSecret   string `envconfig:"STRIPE_WEBHOOK_SECRET"`
+	StripeSecretKey         string `envconfig:"STRIPE_SECRET_KEY"`
+	StripeWebhookSecret     string `envconfig:"STRIPE_WEBHOOK_SECRET"`
 	StripePriceBasicMonthly string `envconfig:"STRIPE_PRICE_BASIC_MONTHLY"`
 	StripePriceBasicYearly  string `envconfig:"STRIPE_PRICE_BASIC_YEARLY"`
 	StripePriceProMonthly   string `envconfig:"STRIPE_PRICE_PRO_MONTHLY"`
 	StripePriceProYearly    string `envconfig:"STRIPE_PRICE_PRO_YEARLY"`
 
 	// VAPID
-	VAPIDPrivateKey   string `envconfig:"VAPID_PRIVATE_KEY"`
-	VAPIDPublicKey    string `envconfig:"VAPID_PUBLIC_KEY"`
-	VAPIDClaimsEmail  string `envconfig:"VAPID_CLAIMS_EMAIL" default:"admin@rachao.app"`
+	VAPIDPrivateKey  string `envconfig:"VAPID_PRIVATE_KEY"`
+	VAPIDPublicKey   string `envconfig:"VAPID_PUBLIC_KEY"`
+	VAPIDClaimsEmail string `envconfig:"VAPID_CLAIMS_EMAIL" default:"admin@rachao.app"`
 }
 
 func Load() (*Config, error) {

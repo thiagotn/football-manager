@@ -124,14 +124,14 @@ func (h *adminHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderJSON(w, http.StatusOK, map[string]any{
-		"total_matches":          totalMatches,
-		"total_groups":           totalGroups,
-		"total_players":          totalPlayers,
+		"total_matches":           totalMatches,
+		"total_groups":            totalGroups,
+		"total_players":           totalPlayers,
 		"platform_minutes_played": platformMinutes,
-		"signups_total":          signupsTotal,
-		"signups_last_7_days":    signups7d,
-		"signups_last_30_days":   signups30d,
-		"total_reviews":          totalReviews,
+		"signups_total":           signupsTotal,
+		"signups_last_7_days":     signups7d,
+		"signups_last_30_days":    signups30d,
+		"total_reviews":           totalReviews,
 	})
 }
 

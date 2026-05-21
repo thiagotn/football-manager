@@ -61,21 +61,21 @@ type createGroupReq struct {
 }
 
 type updateGroupReq struct {
-	Name                 *string      `json:"name"`
-	Description          *string      `json:"description"`
-	PerMatchAmount       *float64     `json:"per_match_amount"`
-	MonthlyAmount        *float64     `json:"monthly_amount"`
-	RecurrenceEnabled    *bool        `json:"recurrence_enabled"`
-	IsPublic             *bool        `json:"is_public"`
-	VoteOpenDelayMinutes *int         `json:"vote_open_delay_minutes"`
-	VoteDurationHours    *int         `json:"vote_duration_hours"`
-	Timezone             *string      `json:"timezone"`
+	Name                 *string       `json:"name"`
+	Description          *string       `json:"description"`
+	PerMatchAmount       *float64      `json:"per_match_amount"`
+	MonthlyAmount        *float64      `json:"monthly_amount"`
+	RecurrenceEnabled    *bool         `json:"recurrence_enabled"`
+	IsPublic             *bool         `json:"is_public"`
+	VoteOpenDelayMinutes *int          `json:"vote_open_delay_minutes"`
+	VoteDurationHours    *int          `json:"vote_duration_hours"`
+	Timezone             *string       `json:"timezone"`
 	TeamSlots            []db.TeamSlot `json:"team_slots"`
 }
 
 type addMemberReq struct {
-	PlayerID uuid.UUID           `json:"player_id"`
-	Role     db.GroupMemberRole  `json:"role"`
+	PlayerID uuid.UUID          `json:"player_id"`
+	Role     db.GroupMemberRole `json:"role"`
 }
 
 type updateMemberReq struct {

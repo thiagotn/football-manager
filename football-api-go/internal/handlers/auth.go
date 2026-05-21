@@ -10,8 +10,8 @@ import (
 )
 
 type authHandler struct {
-	svc       services.AuthService
-	loginRL   *middleware.LoginRateLimiter
+	svc     services.AuthService
+	loginRL *middleware.LoginRateLimiter
 }
 
 func NewAuthHandler(svc services.AuthService, loginRL *middleware.LoginRateLimiter) *authHandler {

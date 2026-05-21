@@ -31,8 +31,8 @@ func (h *pushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Endpoint  string `json:"endpoint"`
-		Keys      struct {
+		Endpoint string `json:"endpoint"`
+		Keys     struct {
 			P256dh string `json:"p256dh"`
 			Auth   string `json:"auth"`
 		} `json:"keys"`

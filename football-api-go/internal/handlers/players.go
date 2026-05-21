@@ -102,9 +102,9 @@ func (h *playerHandler) myMatches(w http.ResponseWriter, r *http.Request) {
 
 	type matchItem struct {
 		db.Match
-		GroupName    string `json:"group_name"`
+		GroupName     string `json:"group_name"`
 		GroupTimezone string `json:"group_timezone"`
-		MyAttendance string `json:"my_attendance"`
+		MyAttendance  string `json:"my_attendance"`
 	}
 
 	result := make([]matchItem, 0)
@@ -463,11 +463,11 @@ func (h *playerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type recentSignup struct {
-		ID        uuid.UUID `json:"id"`
-		Name      string    `json:"name"`
-		Nickname  *string   `json:"nickname"`
-		WhatsApp  string    `json:"whatsapp"`
-		Active    bool      `json:"active"`
+		ID        uuid.UUID   `json:"id"`
+		Name      string      `json:"name"`
+		Nickname  *string     `json:"nickname"`
+		WhatsApp  string      `json:"whatsapp"`
+		Active    bool        `json:"active"`
 		CreatedAt interface{} `json:"created_at"`
 	}
 	recent := make([]recentSignup, 0)
