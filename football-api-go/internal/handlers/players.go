@@ -2,6 +2,8 @@ package handlers
 
 import (
 	cryptorand "crypto/rand"
+	"encoding/hex"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,14 +16,16 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
+	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
 type playerHandler struct {
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
+	storage *services.StorageService
 }
 
-func NewPlayerHandler(pool *pgxpool.Pool) *playerHandler {
-	return &playerHandler{pool: pool}
+func NewPlayerHandler(pool *pgxpool.Pool, storage *services.StorageService) *playerHandler {
+	return &playerHandler{pool: pool, storage: storage}
 }
 
 func (h *playerHandler) Routes() chi.Router {
@@ -479,9 +483,64 @@ func (h *playerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *playerHandler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
-	renderJSON(w, http.StatusNotImplemented, map[string]string{"detail": "avatar upload not implemented in Go API yet"})
+	if h.storage == nil || !h.storage.IsConfigured() {
+		renderError(w, apierror.Internal("storage not configured"))
+		return
+	}
+
+	player := middleware.PlayerFromCtx(r.Context())
+
+	const maxSize = 5 << 20 // 5 MB
+	r.Body = http.MaxBytesReader(w, r.Body, maxSize)
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		renderError(w, apierror.Unprocessable("failed to read upload body"))
+		return
+	}
+	if len(data) == 0 {
+		renderError(w, apierror.Unprocessable("empty file"))
+		return
+	}
+
+	// Generate a random token to prevent enumeration by player_id
+	tokenBytes := make([]byte, 8)
+	if _, err := cryptorand.Read(tokenBytes); err != nil {
+		renderError(w, err)
+		return
+	}
+	token := hex.EncodeToString(tokenBytes)
+
+	// Delete previous avatar if exists
+	if player.AvatarURL != nil {
+		_ = h.storage.DeleteAvatarByURL(r.Context(), *player.AvatarURL)
+	}
+
+	publicURL, err := h.storage.UploadAvatar(r.Context(), player.ID.String(), token, data)
+	if err != nil {
+		renderError(w, apierror.Internal("failed to upload avatar"))
+		return
+	}
+
+	if _, err := h.pool.Exec(r.Context(),
+		`UPDATE players SET avatar_url=$2 WHERE id=$1`, player.ID, publicURL); err != nil {
+		renderError(w, err)
+		return
+	}
+
+	renderJSON(w, http.StatusOK, map[string]string{"avatar_url": publicURL})
 }
 
 func (h *playerHandler) deleteAvatar(w http.ResponseWriter, r *http.Request) {
-	renderJSON(w, http.StatusNotImplemented, map[string]string{"detail": "avatar delete not implemented in Go API yet"})
+	player := middleware.PlayerFromCtx(r.Context())
+
+	if player.AvatarURL != nil && h.storage != nil {
+		_ = h.storage.DeleteAvatarByURL(r.Context(), *player.AvatarURL)
+	}
+
+	if _, err := h.pool.Exec(r.Context(),
+		`UPDATE players SET avatar_url=NULL WHERE id=$1`, player.ID); err != nil {
+		renderError(w, err)
+		return
+	}
+	noContent(w)
 }

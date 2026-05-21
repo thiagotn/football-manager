@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | 🚧 Em implementação (Fase 3 completa) |
+| **Status** | 🚧 Em implementação (Fase 4 completa) |
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 |
 
@@ -548,12 +548,12 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Testes unitários para cada handler
 
 ### Fase 4 — Admin e Chat
-- [ ] Handler `admin.go` (10 endpoints)
-- [ ] Handler `chat.go` (SSE + Anthropic SDK Go)
-- [ ] `services/twilio.go` (OTP via Twilio Verify)
-- [ ] `services/storage.go` (Supabase avatar upload)
-- [ ] `services/recurrence.go` (geração de partidas recorrentes)
-- [ ] Testes dos handlers restantes
+- [x] Handler `admin.go` (12 endpoints — stats, matches, groups, subscriptions CRUD, players, avatar, beta-signups, api-v2-users)
+- [x] Handler `chat.go` (SSE + Anthropic direct HTTP com MCP beta)
+- [x] `services/twilio.go` (OTP via Twilio Verify)
+- [x] `services/storage.go` (Supabase avatar upload/delete)
+- [x] `services/recurrence.go` (geração de partidas recorrentes + status sync job)
+- [x] Testes dos handlers restantes (93 testes no total)
 
 ### Fase 5 — CI/CD e Produção
 - [ ] `.github/workflows/api-go.yml` (lint + unit + integration + build + push GHCR)

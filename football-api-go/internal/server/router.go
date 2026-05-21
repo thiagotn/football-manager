@@ -31,6 +31,11 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		)
 	}
 
+	var storageSvc *services.StorageService
+	if cfg.SupabaseURL != "" && cfg.SupabaseServiceRoleKey != "" {
+		storageSvc = services.NewStorageService(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
+	}
+
 	// Rate limiters
 	loginRL := middleware.NewLoginRateLimiter()
 
@@ -38,7 +43,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	authH         := handlers.NewAuthHandler(authSvc, loginRL)
 	groupH        := handlers.NewGroupHandler(pool)
 	matchH        := handlers.NewMatchHandler(pool)
-	playerH       := handlers.NewPlayerHandler(pool)
+	playerH       := handlers.NewPlayerHandler(pool, storageSvc)
 	inviteH       := handlers.NewInviteHandler(pool)
 	teamH         := handlers.NewTeamHandler(pool)
 	voteH         := handlers.NewVoteHandler(pool)
@@ -50,6 +55,8 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	reviewH       := handlers.NewReviewHandler(pool)
 	mcpTokenH     := handlers.NewMCPTokenHandler(pool)
 	betaH         := handlers.NewBetaHandler(pool)
+	adminH        := handlers.NewAdminHandler(pool, stripeSvc, storageSvc)
+	chatH         := handlers.NewChatHandler(pool, cfg.AnthropicAPIKey, cfg.LLMModel, cfg.ChatRateLimit)
 
 	r := chi.NewRouter()
 
@@ -133,6 +140,9 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 			r.Put("/reviews/me", reviewH.UpsertMyReview)
 			r.Get("/reviews/summary", reviewH.GetSummary)
 			r.Get("/reviews", reviewH.ListReviews)
+
+			// Chat
+			r.Post("/chat", chatH.Chat)
 		})
 
 		// ── Admin-only routes ──────────────────────────────────────────
@@ -140,7 +150,9 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 			r.Use(middleware.Auth(cfg.SecretKey, pool))
 			r.Use(middleware.RequireAdmin)
 
-			// TODO Phase 4: r.Mount("/admin", adminH.Routes())
+			r.Mount("/admin", adminH.Routes())
+			r.Get("/admin/chat-users", chatH.ListChatUsers)
+			r.Patch("/admin/chat-users/{userID}", chatH.UpdateChatAccess)
 		})
 	})
 

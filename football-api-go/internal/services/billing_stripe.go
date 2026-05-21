@@ -151,6 +151,25 @@ func (s *StripeService) VerifyWebhookSignature(payload []byte, sigHeader string)
 	return event, nil
 }
 
+// CancelSubscription cancels a Stripe subscription immediately.
+func (s *StripeService) CancelSubscription(subID string) error {
+	req, err := http.NewRequest(http.MethodDelete, stripeAPIBase+"/subscriptions/"+subID, nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(s.secretKey, "")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("stripe cancel: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("stripe cancel HTTP %d: %s", resp.StatusCode, body)
+	}
+	return nil
+}
+
 func (s *StripeService) post(path string, params url.Values) (map[string]any, error) {
 	req, err := http.NewRequest(http.MethodPost, stripeAPIBase+path, strings.NewReader(params.Encode()))
 	if err != nil {

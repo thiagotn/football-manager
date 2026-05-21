@@ -23,7 +23,7 @@ func playersRouter(player *db.Player) http.Handler {
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	r.Mount("/players", handlers.NewPlayerHandler(nil).Routes())
+	r.Mount("/players", handlers.NewPlayerHandler(nil, nil).Routes())
 	return r
 }
 
