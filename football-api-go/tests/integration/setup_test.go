@@ -91,7 +91,7 @@ func apiCall(t *testing.T, srv *httptest.Server, method, path, token string, pay
 		bodyBytes, err = json.Marshal(payload)
 		require.NoError(t, err)
 	}
-	req, err := http.NewRequest(method, srv.URL+path, bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest(method, srv.URL+path, bytes.NewBuffer(bodyBytes)) //nolint:noctx
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {

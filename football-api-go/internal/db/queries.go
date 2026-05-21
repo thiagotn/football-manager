@@ -201,7 +201,7 @@ func GetPlayerByMCPToken(ctx context.Context, pool *pgxpool.Pool, tokenHash stri
 		return nil, fmt.Errorf("GetPlayerByMCPToken: %w", err)
 	}
 	// Update last_used_at asynchronously (best-effort)
-	go func() {
+	go func() { //nolint:gosec
 		_, _ = pool.Exec(context.Background(),
 			`UPDATE mcp_tokens SET last_used_at = now() WHERE token_hash = $1`, tokenHash)
 	}()

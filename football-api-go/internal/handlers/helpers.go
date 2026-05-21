@@ -28,7 +28,7 @@ func renderError(w http.ResponseWriter, err error) {
 // decodeJSON decodes the request body into dst.
 // Returns an Unprocessable error if the body is invalid or contains unknown fields.
 func decodeJSON(r *http.Request, dst any) error {
-	defer r.Body.Close()
+	defer r.Body.Close() //nolint:errcheck
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(dst); err != nil {

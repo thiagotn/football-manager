@@ -28,7 +28,7 @@ func loginRouter(svc services.AuthService) http.Handler {
 }
 
 func postJSON(router http.Handler, path, body string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body)) //nolint:noctx
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -196,7 +196,7 @@ func TestGetMe_Success(t *testing.T) {
 	})
 	r.Mount("/auth", h.ProtectedRoutes())
 
-	req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/auth/me", nil) //nolint:noctx
 	req.Header.Set("Authorization", "Bearer fake-token")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)

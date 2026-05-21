@@ -130,7 +130,7 @@ func (h *playerHandler) myStats(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 
 	var minutesPlayed int
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COALESCE(SUM(
 			EXTRACT(EPOCH FROM (
 				CASE
@@ -149,7 +149,7 @@ func (h *playerHandler) myStats(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{"minutes_played": minutesPlayed}
 	if player.Role == db.PlayerRoleAdmin {
 		var platMinutes, platTotal int
-		h.pool.QueryRow(r.Context(), `
+		_ = h.pool.QueryRow(r.Context(), `
 			SELECT
 				COALESCE(COUNT(*) FILTER (WHERE m.status='closed'), 0),
 				COALESCE(COUNT(DISTINCT a.player_id) FILTER (WHERE m.status='closed'), 0)
@@ -211,7 +211,7 @@ func (h *playerHandler) publicStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var totalConfirmed int
-	h.pool.QueryRow(r.Context(), `
+	_ = h.pool.QueryRow(r.Context(), `
 		SELECT COUNT(*) FROM attendances a
 		JOIN matches m ON m.id = a.match_id
 		WHERE a.player_id = $1 AND a.status = 'confirmed' AND m.status = 'closed'`, playerID).

@@ -62,10 +62,6 @@ type toggleApiV2Req struct {
 	ApiV2Enabled bool `json:"api_v2_enabled"`
 }
 
-type toggleChatReq struct {
-	ChatEnabled bool `json:"chat_enabled"`
-}
-
 // ── Pagination helpers ────────────────────────────────────────────────────────
 
 func pageParams(r *http.Request, defaultSize int) (page, pageSize, limit, offset int) {
@@ -496,7 +492,7 @@ func (h *adminHandler) updateSubscription(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.Printf("admin_subscription_manual_update player_id=%s plan=%s status=%s", playerID, req.Plan, req.Status)
+	log.Printf("admin_subscription_manual_update player_id=%s plan=%s status=%s", playerID, req.Plan, req.Status) //nolint:gosec
 	renderJSON(w, http.StatusOK, map[string]string{"status": "ok", "plan": req.Plan})
 }
 
@@ -520,7 +516,7 @@ func (h *adminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request
 
 	if sub.GatewaySubID != nil && *sub.GatewaySubID != "" && h.stripe != nil {
 		if err := h.stripe.CancelSubscription(*sub.GatewaySubID); err != nil {
-			log.Printf("stripe cancel warning player_id=%s err=%v", playerID, err)
+			log.Printf("stripe cancel warning player_id=%s err=%v", playerID, err) //nolint:gosec
 			// Continue — update DB even if Stripe cancel failed (already canceled there)
 		}
 	}
@@ -533,7 +529,7 @@ func (h *adminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.Printf("admin_subscription_canceled player_id=%s", playerID)
+	log.Printf("admin_subscription_canceled player_id=%s", playerID) //nolint:gosec
 	renderJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

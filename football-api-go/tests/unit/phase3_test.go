@@ -93,9 +93,8 @@ func TestReviews_Admin_Forbidden(t *testing.T) {
 
 func TestReviews_Upsert_InvalidRating(t *testing.T) {
 	r := reviewRouter(fakePlayer())
-	w := postJSON(r, "/reviews/me", `{"rating":6}`)
 	// HTTP PUT, not POST
-	w = doRequest(r, http.MethodPut, "/reviews/me", `{"rating":6}`)
+	w := doRequest(r, http.MethodPut, "/reviews/me", `{"rating":6}`)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 

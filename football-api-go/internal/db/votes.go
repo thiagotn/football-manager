@@ -111,7 +111,7 @@ func SubmitVote(ctx context.Context, pool *pgxpool.Pool, matchID, voterID uuid.U
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback(ctx) //nolint:errcheck
 
 	var voteID uuid.UUID
 	err = tx.QueryRow(ctx,

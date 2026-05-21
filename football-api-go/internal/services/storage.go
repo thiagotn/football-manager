@@ -60,7 +60,7 @@ func (s *StorageService) UploadAvatar(ctx context.Context, playerID, token strin
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return "", fmt.Errorf("storage upload failed: HTTP %d", resp.StatusCode)

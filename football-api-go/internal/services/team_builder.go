@@ -121,11 +121,12 @@ func optimizeTeams(teams [][]db.PlayerForDraw) {
 						newMax, newMin := newA, newA
 						for k, v := range totals {
 							var vv int
-							if k == a {
+							switch k {
+							case a:
 								vv = newA
-							} else if k == b {
+							case b:
 								vv = newB
-							} else {
+							default:
 								vv = v
 							}
 							if vv > newMax {

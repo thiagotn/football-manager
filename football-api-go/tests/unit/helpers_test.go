@@ -17,10 +17,10 @@ import (
 func doRequest(router http.Handler, method, path, body string) *httptest.ResponseRecorder {
 	var r *http.Request
 	if body != "" {
-		r = httptest.NewRequest(method, path, bytes.NewBufferString(body))
+		r = httptest.NewRequest(method, path, bytes.NewBufferString(body)) //nolint:noctx
 		r.Header.Set("Content-Type", "application/json")
 	} else {
-		r = httptest.NewRequest(method, path, nil)
+		r = httptest.NewRequest(method, path, nil) //nolint:noctx
 	}
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
@@ -48,10 +48,6 @@ func fakePlayer(opts ...func(*db.Player)) *db.Player {
 
 func asAdmin() func(*db.Player) {
 	return func(p *db.Player) { p.Role = db.PlayerRoleAdmin }
-}
-
-func withApiV2Disabled() func(*db.Player) {
-	return func(p *db.Player) { p.ApiV2Enabled = false }
 }
 
 // mockAuthService implements services.AuthService for testing.

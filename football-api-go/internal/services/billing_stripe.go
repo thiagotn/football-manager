@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -153,7 +154,7 @@ func (s *StripeService) VerifyWebhookSignature(payload []byte, sigHeader string)
 
 // CancelSubscription cancels a Stripe subscription immediately.
 func (s *StripeService) CancelSubscription(subID string) error {
-	req, err := http.NewRequest(http.MethodDelete, stripeAPIBase+"/subscriptions/"+subID, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, stripeAPIBase+"/subscriptions/"+subID, nil)
 	if err != nil {
 		return err
 	}
@@ -162,7 +163,7 @@ func (s *StripeService) CancelSubscription(subID string) error {
 	if err != nil {
 		return fmt.Errorf("stripe cancel: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("stripe cancel HTTP %d: %s", resp.StatusCode, body)
@@ -171,7 +172,7 @@ func (s *StripeService) CancelSubscription(subID string) error {
 }
 
 func (s *StripeService) post(path string, params url.Values) (map[string]any, error) {
-	req, err := http.NewRequest(http.MethodPost, stripeAPIBase+path, strings.NewReader(params.Encode()))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, stripeAPIBase+path, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +183,7 @@ func (s *StripeService) post(path string, params url.Values) (map[string]any, er
 	if err != nil {
 		return nil, fmt.Errorf("stripe HTTP error: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, _ := io.ReadAll(resp.Body)
 	var result map[string]any

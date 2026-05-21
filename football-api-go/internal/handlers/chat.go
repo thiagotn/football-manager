@@ -119,7 +119,7 @@ func (h *chatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	flusher, canFlush := w.(http.Flusher)
 
 	emit := func(data string) {
-		fmt.Fprintf(w, "data: %s\n\n", data)
+		fmt.Fprintf(w, "data: %s\n\n", data) //nolint:errcheck
 		if canFlush {
 			flusher.Flush()
 		}
