@@ -41,6 +41,24 @@ func (h *inviteHandler) AuthRoutes() chi.Router {
 	return r
 }
 
+// Routes: combined public and auth routes (auth middleware applied at router level).
+func (h *inviteHandler) Routes(authMw func(http.Handler) http.Handler) chi.Router {
+	r := chi.NewRouter()
+
+	// Public routes (no auth)
+	r.Get("/{token}", h.getInvite)
+	r.Get("/{token}/check", h.checkInvite)
+	r.Post("/{token}/accept", h.acceptInvite)
+
+	// Auth-required routes
+	r.Group(func(r chi.Router) {
+		r.Use(authMw)
+		r.Post("/", h.createInvite)
+	})
+
+	return r
+}
+
 // ── Request types ─────────────────────────────────────────────────────────────
 
 type createInviteReq struct {

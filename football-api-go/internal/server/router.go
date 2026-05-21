@@ -86,7 +86,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		r.Get("/matches/public/{hash}/player-stats", matchH.GetPublicMatchStats)
 		r.Get("/matches/public/{hash}/votes/results", voteH.GetPublicVoteResults)
 		r.Get("/matches/public/{hash}/votes/ballots", voteH.GetPublicVoteBallots)
-		r.Mount("/invites", inviteH.PublicRoutes())
+		r.Mount("/invites", inviteH.Routes(authMw))
 		r.Get("/matches/{matchID}/teams", teamH.GetTeams)
 		r.Get("/ranking", rankingH.GetRanking)
 		r.Get("/push/vapid-public-key", pushH.GetVapidKey)
@@ -107,7 +107,6 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 			// Domain routes
 			r.Mount("/groups", groupH.Routes())
 			r.Mount("/players", playerH.Routes())
-			r.Mount("/invites", inviteH.AuthRoutes())
 			r.Mount("/mcp-tokens", mcpTokenH.Routes())
 
 			// Match routes nested under groups
