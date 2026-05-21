@@ -57,6 +57,7 @@
 | `/admin/reviews` | Avaliações do app |
 | `/admin/subscriptions` | Gestão de assinaturas |
 | `/admin/chat` | Gestão de acesso ao Assistente IA — habilitar/desabilitar por usuário |
+| `/admin/api-v2` | Gestão de acesso à API Go (/api/v2) — habilitar/desabilitar por usuário |
 
 ---
 

@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | 🚧 Em implementação (Fase 4 completa) |
+| **Status** | 🚧 Em implementação (Fase 5 completa — swaggo/Mintlify Cloud pendentes) |
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 |
 
@@ -555,18 +555,18 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] `services/recurrence.go` (geração de partidas recorrentes + status sync job)
 - [x] Testes dos handlers restantes (93 testes no total)
 
-### Fase 5 — CI/CD e Produção
-- [ ] `.github/workflows/api-go.yml` (lint + unit + integration + build + push GHCR)
-- [ ] Adicionar serviço `api-go` em `football-api/docker-compose.prod.yml`
-- [ ] Adicionar router `/api/v2` em `football-api/traefik-dynamic.yml`
-- [ ] Push image para GHCR: `ghcr.io/thiagotn/football-manager-api-go`
-- [ ] Atualizar deploy job em `main.yml` para incluir `api-go`
+### Fase 5 — CI/CD e Produção ✅ Fase 5 completa
+- [x] `.github/workflows/api-go.yml` (lint + unit + integration + build + push GHCR)
+- [x] Adicionar serviço `api-go` em `football-api/docker-compose.prod.yml`
+- [x] Adicionar router `/api/v2` em `football-api/traefik-dynamic.yml`
+- [x] Push image para GHCR: `ghcr.io/thiagotn/football-manager-api-go` (via api-go.yml)
+- [x] Atualizar deploy job em `main.yml` para incluir `api-go` (unit-tests-go job + build step + ANTHROPIC_API_KEY/LLM_MODEL)
 - [x] Implementar middleware `api_v2_access.go` + testes unitários do gate (antecipado — implementado na Fase 1)
-- [ ] Implementar `GET /admin/api-v2-users` e `PATCH /admin/api-v2-users/{player_id}` em `handlers/admin.go`
-- [ ] Criar página `/admin/api-v2` no SvelteKit frontend (espelho de `/admin/chat`)
+- [x] `GET /admin/api-v2-users` e `PATCH /admin/api-v2-users/{player_id}` em `handlers/admin.go` (implementado na Fase 4)
+- [x] Criar página `/admin/api-v2` no SvelteKit frontend (espelho de `/admin/chat`) + card no painel admin
 - [ ] Anotar handlers Go com `swaggo/swag` (`// @Summary`, `// @Param`, `// @Success`, `// @Router`)
-- [ ] Configurar `mintlify/mint.json` com branding rachao.app (cores, logo, nav)
-- [ ] Criar `mintlify/authentication.mdx` e `mintlify/architecture.mdx`
+- [x] Configurar `mintlify/mint.json` com branding rachao.app (cores, logo, nav)
+- [x] Criar `mintlify/authentication.mdx` e `mintlify/architecture.mdx`
 - [ ] `make docs` gera `openapi.yaml` atualizado
 - [ ] Conectar repositório ao Mintlify Cloud → deploy em `docs.rachao.app`
 

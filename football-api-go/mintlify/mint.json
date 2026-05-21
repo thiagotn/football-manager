@@ -1,0 +1,66 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "rachao.app API v2",
+  "logo": {
+    "dark": "/logo/logo-dark.svg",
+    "light": "/logo/logo-light.svg"
+  },
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#6366f1",
+    "light": "#818cf8",
+    "dark": "#4f46e5",
+    "anchors": {
+      "from": "#6366f1",
+      "to": "#818cf8"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "rachao.app",
+      "url": "https://rachao.app"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://rachao.app/dashboard"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/thiagotn/football-manager"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["quickstart", "authentication"]
+    },
+    {
+      "group": "Architecture",
+      "pages": ["architecture"]
+    },
+    {
+      "group": "API Reference",
+      "pages": ["api-reference/overview"]
+    }
+  ],
+  "openapi": "openapi.yaml",
+  "baseUrl": "https://api.rachao.app",
+  "api": {
+    "baseUrl": "https://api.rachao.app",
+    "auth": {
+      "method": "bearer"
+    }
+  },
+  "footerSocials": {
+    "website": "https://rachao.app"
+  }
+}

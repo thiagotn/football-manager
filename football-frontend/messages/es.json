@@ -1349,5 +1349,19 @@
   "admin.chat.empty": "Ningún usuario encontrado.",
   "admin.chat.error_load": "Error al cargar usuarios.",
   "admin.chat.success_enabled": "Acceso habilitado.",
-  "admin.chat.success_disabled": "Acceso deshabilitado."
+  "admin.chat.success_disabled": "Acceso deshabilitado.",
+  "admin.apiv2.title": "Acceso a la API v2",
+  "admin.apiv2.subtitle": "Controla qué jugadores pueden acceder a la API Go (/api/v2)",
+  "admin.apiv2.enabled_count": "{count} de {total} usuarios con acceso",
+  "admin.apiv2.col_player": "Jugador",
+  "admin.apiv2.col_whatsapp": "WhatsApp",
+  "admin.apiv2.col_since": "Registro",
+  "admin.apiv2.col_access": "Acceso",
+  "admin.apiv2.search_placeholder": "Buscar por nombre o WhatsApp…",
+  "admin.apiv2.empty": "Ningún usuario encontrado.",
+  "admin.apiv2.error_load": "Error al cargar usuarios.",
+  "admin.apiv2.success_enabled": "Acceso habilitado.",
+  "admin.apiv2.success_disabled": "Acceso deshabilitado.",
+  "admin.apiv2.toggle_enable": "Habilitar acceso",
+  "admin.apiv2.toggle_disable": "Deshabilitar acceso"
 }

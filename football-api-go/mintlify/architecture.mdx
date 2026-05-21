@@ -1,0 +1,83 @@
+---
+title: "Architecture"
+description: "How football-api-go fits into the rachao.app platform"
+---
+
+## Overview
+
+`football-api-go` is a port of the Python/FastAPI backend in Go (Chi + sqlc + pgx/v5). It runs as a separate service under the same subdomain, routing `/api/v2` traffic.
+
+```
+Client
+  │
+  ▼
+Traefik (api.rachao.app)
+  ├── /api/v1  ──▶  football-api  (FastAPI, Python)
+  └── /api/v2  ──▶  football-api-go  (Chi, Go)
+                          │
+                          ▼
+                    PostgreSQL (Supabase, shared DB)
+```
+
+Both APIs share the same PostgreSQL database. Migrations live in `football-api/migrations/` and are applied once at startup.
+
+## Tech stack
+
+| Layer | Choice |
+|-------|--------|
+| Router | [Chi](https://github.com/go-chi/chi) |
+| DB driver | [pgx/v5](https://github.com/jackc/pgx) with `pgxpool` |
+| Query layer | [sqlc](https://sqlc.dev) (type-safe SQL generation) |
+| Auth | JWT (HS256) — same `SECRET_KEY` as Python API |
+| Streaming | Server-Sent Events (SSE) for `/api/v2/chat` |
+| Storage | Supabase Storage (direct HTTP — no SDK) |
+| OTP | Twilio Verify (optional; any code accepted in dev) |
+
+## Directory layout
+
+```
+football-api-go/
+├── cmd/server/         # main.go — entry point
+├── internal/
+│   ├── config/         # env parsing
+│   ├── db/             # sqlc-generated queries + hand-written helpers
+│   ├── handlers/       # HTTP handlers (one file per domain)
+│   ├── middleware/     # auth, rate limiting, recovery, CORS, api_v2_access
+│   ├── server/         # router assembly
+│   └── services/       # external integrations (Stripe, Twilio, Supabase, Anthropic, recurrence)
+├── tests/
+│   ├── unit/           # no database required
+│   └── integration/    # requires real PostgreSQL
+├── mintlify/           # this documentation
+└── Dockerfile
+```
+
+## Endpoint parity
+
+API v2 exposes the same ~99 endpoints as API v1, grouped by domain:
+
+| Domain | Endpoints |
+|--------|-----------|
+| Auth | 8 |
+| Groups | 14 |
+| Matches | 16 |
+| Players | 8 |
+| Teams | 3 |
+| Votes | 7 |
+| Finance | 4 |
+| Invites | 5 |
+| Subscriptions | 3 |
+| Webhooks | 1 |
+| Push | 3 |
+| Ranking | 1 |
+| Reviews | 4 |
+| MCP Tokens | 3 |
+| Beta | 1 |
+| Chat | 1 |
+| Admin | 12 |
+
+## Deployment
+
+The service is packaged as a scratch-based Docker image (~10 MB binary). It is deployed alongside the Python API and MCP server via `docker-compose.prod.yml` and exposed through Traefik with automatic TLS.
+
+SSE endpoints (`/api/v2/chat`) require `responseForwarding.flushInterval: "100ms"` in the Traefik service config to stream events without buffering.

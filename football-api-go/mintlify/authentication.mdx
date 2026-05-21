@@ -1,0 +1,49 @@
+---
+title: "Authentication"
+description: "How to authenticate with the rachao.app API v2"
+---
+
+## Overview
+
+API v2 uses the same JWT tokens as API v1. A token issued by either version is accepted by both.
+
+## Obtaining a token
+
+```bash
+curl -X POST https://api.rachao.app/api/v2/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"whatsapp": "+5511999990000", "password": "yourpassword"}'
+```
+
+Response:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "player": { "id": "...", "name": "...", "role": "user" }
+}
+```
+
+## Using the token
+
+Pass the token in the `Authorization` header on every authenticated request:
+
+```bash
+curl https://api.rachao.app/api/v2/auth/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## MCP Tokens
+
+Personal access tokens for MCP integrations (Claude CLI, GitHub Copilot) follow the same format but are prefixed with `rachao_`. They are created at `/account/mcp-tokens` in the web app and work identically to JWT tokens for authentication purposes.
+
+## Access control
+
+Access to authenticated endpoints requires `api_v2_enabled = true` on the player record. Super admins are always exempt. If your account does not have access, requests return:
+
+```json
+{ "detail": "API_V2_NOT_ENABLED" }
+```
+
+Contact the platform admin to request access.

@@ -1,6 +1,13 @@
 http:
 
   routers:
+    api-go:
+      rule: "Host(`api.rachao.app`) && PathPrefix(`/api/v2`)"
+      entrypoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: api-go
+
     api:
       rule: "Host(`api.rachao.app`)"
       entrypoints: [websecure]
@@ -65,6 +72,13 @@ http:
       service: uptime-kuma
 
   services:
+    api-go:
+      loadBalancer:
+        servers:
+          - url: "http://api-go:8080"
+        responseForwarding:
+          flushInterval: "100ms"
+
     api:
       loadBalancer:
         servers:

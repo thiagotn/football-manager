@@ -800,3 +800,15 @@ export const chat = {
   adminUpdateAccess: (userId: string, chat_enabled: boolean) =>
     patch<ChatUserItem>(`/admin/chat-users/${userId}`, { chat_enabled }),
 };
+
+// ── API v2 Admin ──────────────────────────────────────────────
+export type ApiV2UserItem = {
+  id: string; name: string; whatsapp: string; api_v2_enabled: boolean; created_at: string;
+};
+export type ApiV2UsersResponse = { users: ApiV2UserItem[]; total_enabled: number };
+
+export const apiV2Admin = {
+  listUsers: () => get<ApiV2UsersResponse>('/admin/api-v2-users'),
+  updateAccess: (userId: string, api_v2_enabled: boolean) =>
+    patch<ApiV2UserItem>(`/admin/api-v2-users/${userId}`, { api_v2_enabled }),
+};

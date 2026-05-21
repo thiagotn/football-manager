@@ -3,7 +3,7 @@
   import { authStore, isAdmin } from '$lib/stores/auth';
   import { admin as adminApi } from '$lib/api';
   import type { AdminStatsResponse, AdminSubscriptionSummary } from '$lib/api';
-  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight, CreditCard, AlertTriangle, TrendingUp, Smartphone, MessageCircle } from 'lucide-svelte';
+  import { Users, Calendar, Clock, UserPlus, Star, ChevronRight, CreditCard, AlertTriangle, TrendingUp, Smartphone, MessageCircle, Zap } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
 
   let stats = $state<AdminStatsResponse | null>(null);
@@ -129,6 +129,16 @@
           <p class="text-3xl font-bold text-emerald-400">IA</p>
           <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
             Assistente IA <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
+          </p>
+        </a>
+
+        <a href="/admin/api-v2" class="card p-5 text-center group hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-center gap-1 mb-1">
+            <Zap size={14} class="text-yellow-400 opacity-70" />
+          </div>
+          <p class="text-3xl font-bold text-yellow-400">v2</p>
+          <p class="text-xs text-gray-400 mt-1 flex items-center justify-center gap-0.5">
+            API Go <ChevronRight size={11} class="group-hover:translate-x-0.5 transition-transform" />
           </p>
         </a>
 

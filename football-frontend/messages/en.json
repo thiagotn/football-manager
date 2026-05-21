@@ -1349,5 +1349,19 @@
   "admin.chat.empty": "No users found.",
   "admin.chat.error_load": "Error loading users.",
   "admin.chat.success_enabled": "Access enabled.",
-  "admin.chat.success_disabled": "Access disabled."
+  "admin.chat.success_disabled": "Access disabled.",
+  "admin.apiv2.title": "API v2 Access",
+  "admin.apiv2.subtitle": "Control which players can access the Go API (/api/v2)",
+  "admin.apiv2.enabled_count": "{count} of {total} users with access",
+  "admin.apiv2.col_player": "Player",
+  "admin.apiv2.col_whatsapp": "WhatsApp",
+  "admin.apiv2.col_since": "Registered",
+  "admin.apiv2.col_access": "Access",
+  "admin.apiv2.search_placeholder": "Search by name or WhatsApp…",
+  "admin.apiv2.empty": "No users found.",
+  "admin.apiv2.error_load": "Error loading users.",
+  "admin.apiv2.success_enabled": "Access enabled.",
+  "admin.apiv2.success_disabled": "Access disabled.",
+  "admin.apiv2.toggle_enable": "Enable access",
+  "admin.apiv2.toggle_disable": "Disable access"
 }
