@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -20,7 +21,7 @@ func TestWebhooks_PaymentWebhook_InvalidSignature(t *testing.T) {
 	payload := []byte(`{"type":"checkout.session.completed"}`)
 
 	// POST with invalid signature
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Stripe-Signature", "invalid-signature")
 
@@ -38,7 +39,7 @@ func TestWebhooks_PaymentWebhook_MissingSignature(t *testing.T) {
 	payload := []byte(`{"type":"checkout.session.completed"}`)
 
 	// POST without signature header
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 
 	client := http.DefaultClient
@@ -55,7 +56,7 @@ func TestWebhooks_PaymentWebhook_InvalidJSON(t *testing.T) {
 	payload := []byte(`{invalid json}`)
 
 	// POST with invalid JSON
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Stripe-Signature", "t=timestamp,v1=signature")
 
@@ -83,7 +84,7 @@ func TestWebhooks_PaymentWebhook_ValidSignature(t *testing.T) {
 	sigHeader := fmt.Sprintf("t=%s,v1=%s", timestamp, sig)
 
 	// POST with valid signature
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Stripe-Signature", sigHeader)
 
@@ -112,7 +113,7 @@ func TestWebhooks_PaymentWebhook_TimestampTooOld(t *testing.T) {
 	sigHeader := fmt.Sprintf("t=%s,v1=%s", timestamp, sig)
 
 	// POST with old timestamp
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL+"/api/v2/webhooks/payment", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Stripe-Signature", sigHeader)
 
