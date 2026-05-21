@@ -7,15 +7,12 @@ linters:
     - staticcheck
     - gosec
     - misspell
-    - goimports
     - exhaustive
     - noctx
     - bodyclose
     - ineffassign
     - unused
   settings:
-    goimports:
-      local-prefixes: github.com/thiagotn/football-manager/football-api-go
     gosec:
       excludes:
         - G115
