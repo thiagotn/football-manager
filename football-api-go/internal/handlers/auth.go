@@ -18,7 +18,36 @@ func NewAuthHandler(svc services.AuthService, loginRL *middleware.LoginRateLimit
 	return &authHandler{svc: svc, loginRL: loginRL}
 }
 
-// PublicRoutes returns routes that don't require authentication.
+// Routes returns a single router with both public and protected auth routes.
+// Protected routes are wrapped with the provided auth and apiV2 middlewares.
+// Use this instead of PublicRoutes/ProtectedRoutes to avoid chi double-mount conflicts.
+func (h *authHandler) Routes(authMw, apiV2Mw func(http.Handler) http.Handler) http.Handler {
+	r := chi.NewRouter()
+
+	// Public routes
+	r.With(h.loginRL.Middleware).Post("/login", h.login)
+	r.Post("/send-otp", h.sendOTP)
+	r.Post("/verify-otp", h.verifyOTP)
+	r.Post("/register", h.register)
+	r.Post("/forgot-password/send-otp", h.forgotPasswordSendOTP)
+	r.Post("/forgot-password/verify-otp", h.forgotPasswordVerifyOTP)
+	r.Post("/forgot-password/reset", h.forgotPasswordReset)
+	r.Post("/refresh", h.refresh)
+
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(authMw)
+		r.Use(apiV2Mw)
+		r.Get("/me", h.getMe)
+		r.Post("/send-otp/me", h.sendOTPMe)
+		r.Post("/verify-otp/me", h.verifyOTPMe)
+		r.Post("/change-password", h.changePassword)
+	})
+
+	return r
+}
+
+// PublicRoutes returns only the public auth routes (no auth middleware required).
 func (h *authHandler) PublicRoutes() http.Handler {
 	r := chi.NewRouter()
 	r.With(h.loginRL.Middleware).Post("/login", h.login)
@@ -32,7 +61,7 @@ func (h *authHandler) PublicRoutes() http.Handler {
 	return r
 }
 
-// ProtectedRoutes returns routes that require a valid JWT.
+// ProtectedRoutes returns only the protected auth routes (caller must apply auth middleware).
 func (h *authHandler) ProtectedRoutes() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/me", h.getMe)

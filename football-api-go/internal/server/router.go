@@ -73,9 +73,14 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
+	authMw  := middleware.Auth(cfg.SecretKey, pool)
+	apiV2Mw := middleware.ApiV2Access
+
 	r.Route("/api/v2", func(r chi.Router) {
-		// ── Public routes (no auth required) ──────────────────────────
-		r.Mount("/auth", authH.PublicRoutes())
+		// ── Auth routes (public + protected combined — avoids chi double-mount) ──
+		r.Mount("/auth", authH.Routes(authMw, apiV2Mw))
+
+		// ── Other public routes (no auth required) ────────────────────
 		r.Get("/matches/discover", matchH.DiscoverMatches)
 		r.Get("/matches/public/{hash}", matchH.GetPublicMatch)
 		r.Get("/matches/public/{hash}/player-stats", matchH.GetPublicMatchStats)
@@ -94,11 +99,10 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 
 		// ── Authenticated routes (JWT + api_v2_enabled gate) ──────────
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(cfg.SecretKey, pool))
-			r.Use(middleware.ApiV2Access)
+			r.Use(authMw)
+			r.Use(apiV2Mw)
 
-			// Auth protected routes
-			r.Mount("/auth", authH.ProtectedRoutes())
+			// (auth routes already mounted above via authH.Routes)
 
 			// Domain routes
 			r.Mount("/groups", groupH.Routes())
