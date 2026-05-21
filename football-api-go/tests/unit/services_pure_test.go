@@ -1,6 +1,7 @@
 package unit_test
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -200,21 +201,21 @@ func TestStorageExtractStoragePath(t *testing.T) {
 func TestTwilioCheckOTPBypass(t *testing.T) {
 	t.Run("accepts bypass code in non-prod mode", func(t *testing.T) {
 		twilio := services.NewTwilioService("", "", "", "test-bypass-123", false)
-		ok, err := twilio.CheckOTP(nil, "+5511999990000", "test-bypass-123")
+		ok, err := twilio.CheckOTP(context.TODO(), "+5511999990000", "test-bypass-123")
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
 
 	t.Run("rejects wrong code in bypass mode", func(t *testing.T) {
 		twilio := services.NewTwilioService("", "", "", "test-bypass-123", false)
-		ok, err := twilio.CheckOTP(nil, "+5511999990000", "wrong-code")
+		ok, err := twilio.CheckOTP(context.TODO(), "+5511999990000", "wrong-code")
 		require.NoError(t, err)
 		assert.False(t, ok)
 	})
 
 	t.Run("ignores bypass code in prod mode", func(t *testing.T) {
 		twilio := services.NewTwilioService("", "", "", "test-bypass-123", true)
-		ok, err := twilio.CheckOTP(nil, "+5511999990000", "test-bypass-123")
+		ok, err := twilio.CheckOTP(context.TODO(), "+5511999990000", "test-bypass-123")
 		// In prod with no Twilio configured, should return false, nil
 		assert.False(t, ok)
 		assert.NoError(t, err)
@@ -222,7 +223,7 @@ func TestTwilioCheckOTPBypass(t *testing.T) {
 
 	t.Run("bypass code is empty", func(t *testing.T) {
 		twilio := services.NewTwilioService("", "", "", "", false)
-		ok, err := twilio.CheckOTP(nil, "+5511999990000", "any-code")
+		ok, err := twilio.CheckOTP(context.TODO(), "+5511999990000", "any-code")
 		// No bypass, no Twilio configured
 		assert.False(t, ok)
 		assert.NoError(t, err)

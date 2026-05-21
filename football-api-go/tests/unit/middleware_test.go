@@ -15,6 +15,8 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
+var testCtx = context.Background()
+
 // ────── Recovery Middleware ──────
 
 func TestRecoveryMiddleware(t *testing.T) {
@@ -27,7 +29,7 @@ func TestRecoveryMiddleware(t *testing.T) {
 		router.Use(middleware.Recovery)
 		router.Get("/", panicHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 
 		router.ServeHTTP(rec, req)
@@ -51,7 +53,7 @@ func TestRecoveryMiddleware(t *testing.T) {
 		router.Use(middleware.Recovery)
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 
 		router.ServeHTTP(rec, req)
@@ -73,7 +75,7 @@ func TestCORSMiddleware(t *testing.T) {
 		router.Use(middleware.CORS([]string{"https://example.com"}))
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req.Header.Set("Origin", "https://example.com")
 		rec := httptest.NewRecorder()
 
@@ -149,7 +151,7 @@ func TestCORSMiddleware(t *testing.T) {
 		router.Use(middleware.CORS([]string{"https://example.com"}))
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req.Header.Set("Origin", "https://example.com")
 		rec := httptest.NewRecorder()
 
