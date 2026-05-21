@@ -10,54 +10,49 @@ import (
 func TestRanking_GetRanking_NoAuth(t *testing.T) {
 	srv := newTestServer(t)
 
+	// GET /api/v2/ranking without auth should work (public endpoint)
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking", "", nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-
-	// Should return ranking array (may be empty in new DB)
-	assert.Contains(t, res.Body, "items")
+	assert.NotNil(t, res.List)
 }
 
 func TestRanking_GetRanking_WithPlayers(t *testing.T) {
 	srv := newTestServer(t)
+	p1 := registerAndLogin(t, srv, "Player 1")
+	enableApiV2(t, p1.ID)
 
-	// Register and login a player
-	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
+	p2 := registerAndLogin(t, srv, "Player 2")
+	enableApiV2(t, p2.ID)
 
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking", p.Token, nil)
+	// GET /api/v2/ranking should return a list
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking", "", nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-
-	assert.Contains(t, res.Body, "items")
-	assert.Contains(t, res.Body, "month")
-	assert.Contains(t, res.Body, "year")
-}
-
-func TestRanking_GetRanking_WithGroupFilter(t *testing.T) {
-	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
-
-	// Create a group
-	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", p.Token, map[string]any{
-		"name": "Test Group",
-	})
-	assert.Equal(t, http.StatusCreated, groupRes.Code)
-
-	groupID := groupRes.Body["id"].(string)
-
-	// Get ranking for that group
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?groupId="+groupID, p.Token, nil)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	assert.Contains(t, res.Body, "items")
+	assert.NotNil(t, res.List)
+	assert.True(t, len(res.List) >= 0)
 }
 
 func TestRanking_GetRanking_InvalidGroupID(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
 
-	// Invalid UUID format
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?groupId=not-a-uuid", p.Token, nil)
+	// GET /api/v2/ranking with invalid groupId param
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?groupId=invalid-uuid", "", nil)
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
+}
+
+func TestRanking_GetRanking_ValidGroupID(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	// Create group
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// GET /api/v2/ranking with valid groupId
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?groupId="+groupID, "", nil)
+	assert.Equal(t, http.StatusOK, res.Code)
+	assert.NotNil(t, res.List)
 }

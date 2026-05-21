@@ -1,0 +1,165 @@
+package integration_test
+
+import (
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestFinance_GetPeriods_AsMember(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	player := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, player.ID)
+
+	// Create group
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// Add player to group
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
+		"playerID": player.ID,
+		"position": "ZAG",
+	})
+
+	// GET /api/v2/groups/{id}/finance/periods as member
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/groups/"+groupID+"/finance/periods", player.Token, nil)
+	assert.Equal(t, http.StatusOK, res.Code)
+	assert.NotNil(t, res.List)
+}
+
+func TestFinance_GetPeriods_NonMember(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	player := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, player.ID)
+
+	// Create group (without adding player)
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// GET /api/v2/groups/{id}/finance/periods as non-member
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/groups/"+groupID+"/finance/periods", player.Token, nil)
+	assert.Equal(t, http.StatusForbidden, res.Code)
+}
+
+func TestFinance_GetPeriod_Existing(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	player := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, player.ID)
+
+	// Create group
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// Add player to group
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
+		"playerID": player.ID,
+		"position": "ZAG",
+	})
+
+	// GET /api/v2/groups/{id}/finance/periods/{year}/{month}
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/groups/"+groupID+"/finance/periods/2024/01", player.Token, nil)
+	// Might return 200 or 404 depending on data
+	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusNotFound)
+}
+
+func TestFinance_GetPeriod_InvalidMonth(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	player := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, player.ID)
+
+	// Create group
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// Add player to group
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
+		"playerID": player.ID,
+		"position": "ZAG",
+	})
+
+	// GET with invalid month
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/groups/"+groupID+"/finance/periods/2024/13", player.Token, nil)
+	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
+}
+
+func TestFinance_UpdatePayment_AsAdmin(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	player := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, player.ID)
+
+	// Create group
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// Add player to group
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
+		"playerID": player.ID,
+		"position": "ZAG",
+	})
+
+	// Try to update a payment (payment ID is typically a UUID)
+	res := apiCall(t, srv, http.MethodPatch, "/api/v2/finance/payments/00000000-0000-0000-0000-000000000000", admin.Token, map[string]any{
+		"status": "paid",
+	})
+	// Should return 404 if payment doesn't exist
+	assert.True(t, res.Code == http.StatusNotFound || res.Code == http.StatusBadRequest)
+}
+
+func TestFinance_UpdatePayment_NonAdmin(t *testing.T) {
+	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
+
+	player := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, player.ID)
+
+	// Create group
+	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
+		"name": "Test Group",
+	})
+	groupID := groupRes.Body["id"].(string)
+
+	// Add player to group
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
+		"playerID": player.ID,
+		"position": "ZAG",
+	})
+
+	// Regular member tries to update payment
+	res := apiCall(t, srv, http.MethodPatch, "/api/v2/finance/payments/00000000-0000-0000-0000-000000000000", player.Token, map[string]any{
+		"status": "paid",
+	})
+	assert.Equal(t, http.StatusForbidden, res.Code)
+}

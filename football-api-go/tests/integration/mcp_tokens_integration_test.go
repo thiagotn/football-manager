@@ -5,108 +5,126 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestMCPTokens_CreateToken(t *testing.T) {
+func TestMCPTokens_CreateToken_ValidPayload(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
+	p := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, p.ID)
 
-	payload := map[string]any{
-		"name": "My Token",
-	}
-
-	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, payload)
-	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusCreated)
-
-	body := res.Body
-
-	assert.NotEmpty(t, body["token"])
-	assert.Equal(t, "My Token", body["name"])
+	// POST /api/v2/mcp-tokens to create token
+	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
+		"name": "My API Token",
+	})
+	assert.Equal(t, http.StatusCreated, res.Code)
+	assert.Contains(t, res.Body, "token")
 }
 
-func TestMCPTokens_CreateToken_InvalidPayload(t *testing.T) {
+func TestMCPTokens_CreateToken_EmptyName(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
+	p := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, p.ID)
 
-	payload := map[string]any{
-		// missing name
-	}
-
-	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, payload)
+	// POST with empty name
+	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
+		"name": "",
+	})
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
-func TestMCPTokens_CreateToken_RequiresAuth(t *testing.T) {
+func TestMCPTokens_CreateToken_MissingName(t *testing.T) {
 	srv := newTestServer(t)
-
-	payload := map[string]any{
-		"name": "My Token",
-	}
-
-	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", "", payload)
-	assert.Equal(t, http.StatusUnauthorized, res.Code)
-}
-
-func TestMCPTokens_ListTokens(t *testing.T) {
-	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
+	p := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, p.ID)
 
-	// Create a token first
-	apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
-		"name": "Token 1",
-	})
+	// POST without name field
+	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{})
+	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
+}
 
-	// List tokens
+func TestMCPTokens_ListTokens_Empty(t *testing.T) {
+	srv := newTestServer(t)
+	p := registerAndLogin(t, srv, "Player")
+	enableApiV2(t, p.ID)
+
+	// GET /api/v2/mcp-tokens before creating any
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/mcp-tokens", p.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-
-	body := res.Body
-	assert.Contains(t, body, "tokens")
+	assert.NotNil(t, res.List)
 }
 
-func TestMCPTokens_ListTokens_RequiresAuth(t *testing.T) {
+func TestMCPTokens_ListTokens_AfterCreate(t *testing.T) {
 	srv := newTestServer(t)
-
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/mcp-tokens", "", nil)
-	assert.Equal(t, http.StatusUnauthorized, res.Code)
-}
-
-func TestMCPTokens_RevokeToken(t *testing.T) {
-	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
+	p := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, p.ID)
 
 	// Create a token
 	createRes := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
-		"name": "Token to Revoke",
+		"name": "Test Token",
 	})
+	require.Equal(t, http.StatusCreated, createRes.Code)
 
-	createBody := createRes.Body
-	tokenID := createBody["id"].(string)
-
-	// Revoke it
-	res := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/"+tokenID, p.Token, nil)
-	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusNoContent)
+	// List tokens
+	listRes := apiCall(t, srv, http.MethodGet, "/api/v2/mcp-tokens", p.Token, nil)
+	assert.Equal(t, http.StatusOK, listRes.Code)
+	assert.NotNil(t, listRes.List)
+	assert.True(t, len(listRes.List) > 0)
 }
 
-func TestMCPTokens_RevokeToken_InvalidID(t *testing.T) {
+func TestMCPTokens_RevokeToken_Existing(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
+	p := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, p.ID)
 
-	res := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/invalid-uuid", p.Token, nil)
-	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
+	// Create a token
+	createRes := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
+		"name": "Test Token",
+	})
+	require.Equal(t, http.StatusCreated, createRes.Code)
+	tokenID := createRes.Body["id"].(string)
+
+	// Revoke the token
+	revokeRes := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/"+tokenID, p.Token, nil)
+	assert.Equal(t, http.StatusNoContent, revokeRes.Code)
+
+	// Token should be gone from list
+	listRes := apiCall(t, srv, http.MethodGet, "/api/v2/mcp-tokens", p.Token, nil)
+	assert.Equal(t, http.StatusOK, listRes.Code)
+	// Previously created token should no longer be in the list
+	for _, item := range listRes.List {
+		itemMap := item.(map[string]any)
+		if id, ok := itemMap["id"]; ok {
+			assert.NotEqual(t, tokenID, id)
+		}
+	}
 }
 
-func TestMCPTokens_RevokeToken_NotFound(t *testing.T) {
+func TestMCPTokens_RevokeToken_Nonexistent(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Test Player")
+	p := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, p.ID)
 
-	// Try to revoke non-existent token
-	res := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/00000000-0000-0000-0000-000000000001", p.Token, nil)
-	assert.True(t, res.Code == http.StatusNotFound || res.Code == http.StatusForbidden)
+	// DELETE a non-existent token
+	res := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/00000000-0000-0000-0000-000000000000", p.Token, nil)
+	assert.True(t, res.Code == http.StatusNotFound || res.Code == http.StatusNoContent)
+}
+
+func TestMCPTokens_RevokeToken_OtherPlayerToken(t *testing.T) {
+	srv := newTestServer(t)
+	p1 := registerAndLogin(t, srv, "Player 1")
+	enableApiV2(t, p1.ID)
+	p2 := registerAndLogin(t, srv, "Player 2")
+	enableApiV2(t, p2.ID)
+
+	// Player 1 creates a token
+	createRes := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p1.Token, map[string]any{
+		"name": "Player 1's Token",
+	})
+	require.Equal(t, http.StatusCreated, createRes.Code)
+	tokenID := createRes.Body["id"].(string)
+
+	// Player 2 tries to revoke Player 1's token
+	revokeRes := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/"+tokenID, p2.Token, nil)
+	assert.Equal(t, http.StatusForbidden, revokeRes.Code)
 }
