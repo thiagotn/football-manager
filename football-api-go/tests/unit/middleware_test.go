@@ -95,7 +95,7 @@ func TestCORSMiddleware(t *testing.T) {
 		router.Use(middleware.CORS([]string{"https://example.com"}))
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req.Header.Set("Origin", "https://other.com")
 		rec := httptest.NewRecorder()
 
@@ -114,7 +114,7 @@ func TestCORSMiddleware(t *testing.T) {
 		router.Use(middleware.CORS([]string{}))
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req.Header.Set("Origin", "https://any-domain.com")
 		rec := httptest.NewRecorder()
 
@@ -133,7 +133,7 @@ func TestCORSMiddleware(t *testing.T) {
 		router.Options("/", okHandler)
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodOptions, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodOptions, "/", nil)
 		req.Header.Set("Origin", "https://example.com")
 		rec := httptest.NewRecorder()
 
