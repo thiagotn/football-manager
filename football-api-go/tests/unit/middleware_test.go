@@ -180,7 +180,7 @@ func TestLoginRateLimiter(t *testing.T) {
 
 		// Make 5 requests from same IP — all should succeed
 		for i := 0; i < 5; i++ {
-			req := httptest.NewRequest(http.MethodPost, "/login", nil)
+			req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 			req.RemoteAddr = "192.0.2.1:8080"
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
@@ -200,7 +200,7 @@ func TestLoginRateLimiter(t *testing.T) {
 
 		// Make 6 requests from same IP — 6th should be blocked
 		for i := 0; i < 6; i++ {
-			req := httptest.NewRequest(http.MethodPost, "/login", nil)
+			req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 			req.RemoteAddr = "192.0.2.1:8080"
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
@@ -230,7 +230,7 @@ func TestLoginRateLimiter(t *testing.T) {
 
 		// IP 1: 6 requests (should hit limit on 6th)
 		for i := 0; i < 6; i++ {
-			req := httptest.NewRequest(http.MethodPost, "/login", nil)
+			req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 			req.RemoteAddr = "192.0.2.1:8080"
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
@@ -243,7 +243,7 @@ func TestLoginRateLimiter(t *testing.T) {
 		}
 
 		// IP 2: 1 request (should succeed because different IP)
-		req := httptest.NewRequest(http.MethodPost, "/login", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 		req.RemoteAddr = "192.0.2.2:8080"
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
@@ -262,7 +262,7 @@ func TestLoginRateLimiter(t *testing.T) {
 
 		// Make 6 requests with X-Forwarded-For (should hit limit on 6th)
 		for i := 0; i < 6; i++ {
-			req := httptest.NewRequest(http.MethodPost, "/login", nil)
+			req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 			req.Header.Set("X-Forwarded-For", "203.0.113.5, 198.51.100.178")
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
@@ -289,14 +289,14 @@ func TestLoginRateLimiter(t *testing.T) {
 
 		// Hit limit
 		for i := 0; i < 5; i++ {
-			req := httptest.NewRequest(http.MethodPost, "/login", nil)
+			req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 			req.RemoteAddr = ip
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
 		}
 
 		// 6th request blocked
-		req := httptest.NewRequest(http.MethodPost, "/login", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodPost, "/login", nil)
 		req.RemoteAddr = ip
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
@@ -319,7 +319,7 @@ func TestApiV2AccessMiddleware(t *testing.T) {
 		router.Use(middleware.ApiV2Access)
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 
 		router.ServeHTTP(rec, req)
@@ -339,7 +339,7 @@ func TestApiV2AccessMiddleware(t *testing.T) {
 		admin := fakePlayer(asAdmin())
 		ctx := middleware.InjectPlayerForTest(context.Background(), admin)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
 
@@ -362,7 +362,7 @@ func TestApiV2AccessMiddleware(t *testing.T) {
 		})
 		ctx := middleware.InjectPlayerForTest(context.Background(), player)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
 
@@ -390,7 +390,7 @@ func TestApiV2AccessMiddleware(t *testing.T) {
 		})
 		ctx := middleware.InjectPlayerForTest(context.Background(), player)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
 
@@ -413,7 +413,7 @@ func TestApiV2AccessMiddleware(t *testing.T) {
 		})
 		ctx := middleware.InjectPlayerForTest(context.Background(), admin)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
 
@@ -438,7 +438,7 @@ func TestRequireAdminMiddleware(t *testing.T) {
 		player := fakePlayer()
 		ctx := middleware.InjectPlayerForTest(context.Background(), player)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
 
@@ -459,7 +459,7 @@ func TestRequireAdminMiddleware(t *testing.T) {
 		admin := fakePlayer(asAdmin())
 		ctx := middleware.InjectPlayerForTest(context.Background(), admin)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
 
@@ -477,7 +477,7 @@ func TestRequireAdminMiddleware(t *testing.T) {
 		router.Use(middleware.RequireAdmin)
 		router.Get("/", okHandler)
 
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 
 		router.ServeHTTP(rec, req)
