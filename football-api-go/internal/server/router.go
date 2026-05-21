@@ -22,7 +22,12 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	loginRL := middleware.NewLoginRateLimiter()
 
 	// Handlers
-	authH := handlers.NewAuthHandler(authSvc, loginRL)
+	authH   := handlers.NewAuthHandler(authSvc, loginRL)
+	groupH  := handlers.NewGroupHandler(pool)
+	matchH  := handlers.NewMatchHandler(pool)
+	playerH := handlers.NewPlayerHandler(pool)
+	inviteH := handlers.NewInviteHandler(pool)
+	teamH   := handlers.NewTeamHandler(pool)
 
 	r := chi.NewRouter()
 
@@ -33,40 +38,52 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	r.Use(middleware.Recovery)
 	r.Use(middleware.CORS(cfg.CORSOriginsList()))
 
-	// Health check — no auth, no api_v2_enabled gate
+	// Health check — no auth, exempt from api_v2_enabled gate
 	r.Get("/api/v2/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
 	r.Route("/api/v2", func(r chi.Router) {
-		// Public auth routes (login, register, OTP, refresh)
+		// ── Public routes (no auth required) ──────────────────────────
 		r.Mount("/auth", authH.PublicRoutes())
+		r.Get("/matches/discover", matchH.DiscoverMatches)
+		r.Get("/matches/public/{hash}", matchH.GetPublicMatch)
+		r.Get("/matches/public/{hash}/player-stats", matchH.GetPublicMatchStats)
+		r.Mount("/invites", inviteH.PublicRoutes())
+		r.Get("/matches/{matchID}/teams", teamH.GetTeams)
 
-		// Authenticated routes (require valid JWT + api_v2_enabled gate)
+		// ── Authenticated routes (JWT + api_v2_enabled gate) ──────────
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cfg.SecretKey, pool))
 			r.Use(middleware.ApiV2Access)
 
-			// Protected auth routes (/me, change-password, etc.)
+			// Auth protected routes
 			r.Mount("/auth", authH.ProtectedRoutes())
 
-			// TODO: mount remaining domain handlers in Phase 2+
-			// r.Mount("/groups",     groupH.AuthRoutes())
-			// r.Mount("/matches",    matchH.AuthRoutes())
-			// r.Mount("/players",    playerH.AuthRoutes())
-			// r.Mount("/votes",      voteH.Routes())
-			// r.Mount("/finance",    financeH.Routes())
-			// r.Mount("/chat",       chatH.Routes())
-			// r.Mount("/mcp-tokens", mcpTokenH.Routes())
+			// Domain routes
+			r.Mount("/groups", groupH.Routes())
+			r.Mount("/players", playerH.Routes())
+			r.Mount("/invites", inviteH.AuthRoutes())
+
+			// Match routes nested under groups
+			r.Route("/groups/{groupID}/matches", func(r chi.Router) {
+				r.Mount("/", matchH.GroupMatchRoutes())
+			})
+
+			// Match routes at top level (player-stats write, team draw)
+			r.Put("/matches/{hash}/player-stats", matchH.UpsertPlayerStats)
+			r.Post("/matches/{matchID}/teams", teamH.DrawTeams)
+
+			// Rankings, push, reviews, mcp-tokens — Phase 3
 		})
 
-		// Super-admin routes
+		// ── Admin-only routes ──────────────────────────────────────────
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cfg.SecretKey, pool))
 			r.Use(middleware.RequireAdmin)
 
-			// TODO: r.Mount("/admin", adminH.Routes())
+			// TODO Phase 4: r.Mount("/admin", adminH.Routes())
 		})
 	})
 

@@ -25,21 +25,21 @@ const (
 
 // Player mirrors the players table.
 type Player struct {
-	ID                 uuid.UUID
-	Name               string
-	Nickname           *string
-	WhatsApp           string
-	PasswordHash       string
-	Role               PlayerRole
-	Active             bool
-	MustChangePassword bool
-	AvatarURL          *string
-	ChatEnabled        bool
-	ChatReqCount       int32
-	ChatReqWindow      *time.Time
-	ApiV2Enabled       bool
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                 uuid.UUID  `json:"id"`
+	Name               string     `json:"name"`
+	Nickname           *string    `json:"nickname"`
+	WhatsApp           string     `json:"whatsapp"`
+	PasswordHash       string     `json:"-"`
+	Role               PlayerRole `json:"role"`
+	Active             bool       `json:"active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	AvatarURL          *string    `json:"avatar_url"`
+	ChatEnabled        bool       `json:"chat_enabled"`
+	ChatReqCount       int32      `json:"-"`
+	ChatReqWindow      *time.Time `json:"-"`
+	ApiV2Enabled       bool       `json:"-"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 // RefreshToken mirrors the refresh_tokens table.
@@ -67,19 +67,39 @@ type MCPToken struct {
 
 var ErrNotFound = pgx.ErrNoRows
 
-// scanPlayer scans a pgx Row into a Player struct.
-func scanPlayer(row pgx.Row) (*Player, error) {
+// PlayerSelectCols is the column list for SELECT queries on the players table.
+const PlayerSelectCols = `
+	id, name, nickname, whatsapp, password_hash,
+	role, active, must_change_password, avatar_url,
+	chat_enabled, chat_req_count, chat_req_window,
+	api_v2_enabled, created_at, updated_at`
+
+// ScanPlayer scans player fields from any pgx scan function (Row or Rows).
+func ScanPlayer(scanFn func(dest ...any) error) (*Player, error) {
 	var p Player
-	err := row.Scan(
+	err := scanFn(
 		&p.ID, &p.Name, &p.Nickname, &p.WhatsApp, &p.PasswordHash,
 		&p.Role, &p.Active, &p.MustChangePassword, &p.AvatarURL,
 		&p.ChatEnabled, &p.ChatReqCount, &p.ChatReqWindow,
 		&p.ApiV2Enabled, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &p, nil
+}
+
+// scanPlayer wraps ScanPlayer for the legacy pgx.Row interface used in auth queries.
+func scanPlayer(row pgx.Row) (*Player, error) {
+	return ScanPlayer(row.Scan)
+}
+
+// CreatePlayerParams is the canonical params type for creating players.
+// (Alias of CreatePlayerArgs for backward compat.)
+type CreatePlayerParams = CreatePlayerArgs
 }
 
 const playerColumns = `

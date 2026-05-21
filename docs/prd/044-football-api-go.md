@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Versão** | 1.0 |
-| **Status** | 🚧 Em implementação (Fase 1 completa) |
+| **Status** | 🚧 Em implementação (Fase 2 completa) |
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 |
 
@@ -525,14 +525,15 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Migration `044_api_v2_enabled.sql` — adicionar `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` à tabela `players` (Python API migrations, shared DB)
 - [x] `mintlify/quickstart.mdx` — setup local completo
 
-### Fase 2 — Core domain
-- [ ] Handler `groups.go` (14 endpoints) + testes
-- [ ] Handler `matches.go` (10 endpoints) + testes
-- [ ] Handler `players.go` (12 endpoints) + testes
-- [ ] Handler `invites.go` (4 endpoints) + testes
-- [ ] `services/team_builder.go` (port do snake-draft Python)
-- [ ] Handler `teams.go` (2 endpoints) + testes
-- [ ] Testes de integração: auth, groups, matches
+### Fase 2 — Core domain ✅
+- [x] Handler `groups.go` (14 endpoints)
+- [x] Handler `matches.go` (10 endpoints)
+- [x] Handler `players.go` (12 endpoints)
+- [x] Handler `invites.go` (4 endpoints)
+- [x] `services/team_builder.go` (port do snake-draft Python)
+- [x] Handler `teams.go` (2 endpoints)
+- [x] Testes unitários: `groups_test.go`, `matches_test.go`, `players_test.go`, `team_builder_test.go`
+- [x] Testes de integração: `auth_integration_test.go`, `groups_integration_test.go`, `matches_integration_test.go`
 
 ### Fase 3 — Domínios secundários
 - [ ] Handler `votes.go` (3 endpoints)

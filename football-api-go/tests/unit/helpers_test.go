@@ -1,7 +1,10 @@
 package unit_test
 
 import (
+	"bytes"
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,6 +12,20 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
+
+// doRequest fires an arbitrary HTTP method with an optional JSON body.
+func doRequest(router http.Handler, method, path, body string) *httptest.ResponseRecorder {
+	var r *http.Request
+	if body != "" {
+		r = httptest.NewRequest(method, path, bytes.NewBufferString(body))
+		r.Header.Set("Content-Type", "application/json")
+	} else {
+		r = httptest.NewRequest(method, path, nil)
+	}
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+	return w
+}
 
 // fakePlayer builds a Player for use in tests.
 func fakePlayer(opts ...func(*db.Player)) *db.Player {
