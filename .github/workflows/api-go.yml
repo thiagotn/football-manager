@@ -34,7 +34,7 @@ jobs:
         env:
           DATABASE_URL: "postgres://fake:fake@localhost/fake"
           SECRET_KEY: "test-secret-key-ci-only"
-        run: go test ./internal/... -coverprofile=coverage.out -covermode=atomic
+        run: go test ./tests/unit/... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/...
       - uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -65,10 +65,12 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version: '1.24' }
       - name: Apply migrations
+        env:
+          PGPASSWORD: postgres
         run: |
-          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-          migrate -path football-api/migrations \
-            -database "postgres://postgres:postgres@localhost/rachao_test?sslmode=disable" up
+          for f in $(ls football-api/migrations/*.sql | sort); do
+            psql -h localhost -U postgres -d rachao_test -f "$f" || true
+          done
       - name: Run integration tests
         working-directory: football-api-go
         env:

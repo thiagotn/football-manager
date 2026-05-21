@@ -162,7 +162,7 @@ jobs:
         env:
           DATABASE_URL: "postgres://fake:fake@localhost/fake"
           SECRET_KEY: "test-secret-key-ci-only"
-        run: go test ./internal/... -coverprofile=coverage.out -covermode=atomic
+        run: go test ./tests/unit/... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
