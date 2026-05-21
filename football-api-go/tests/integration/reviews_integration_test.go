@@ -26,7 +26,7 @@ func TestReviews_CreateReview(t *testing.T) {
 
 	// PUT /api/v2/reviews/me to create review
 	res := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
-		"rating": 5,
+		"rating":  5,
 		"comment": "Great experience!",
 	})
 	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusCreated)
@@ -40,14 +40,14 @@ func TestReviews_UpdateReview(t *testing.T) {
 
 	// Create initial review
 	createRes := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
-		"rating": 4,
+		"rating":  4,
 		"comment": "Good",
 	})
 	assert.True(t, createRes.Code == http.StatusOK || createRes.Code == http.StatusCreated)
 
 	// Update review
 	updateRes := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
-		"rating": 5,
+		"rating":  5,
 		"comment": "Excellent!",
 	})
 	assert.Equal(t, http.StatusOK, updateRes.Code)
@@ -61,7 +61,7 @@ func TestReviews_CreateReview_InvalidRating(t *testing.T) {
 
 	// PUT with invalid rating (out of bounds)
 	res := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
-		"rating": 10,
+		"rating":  10,
 		"comment": "Invalid rating",
 	})
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)

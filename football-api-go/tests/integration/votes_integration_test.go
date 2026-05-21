@@ -58,7 +58,7 @@ func TestVotes_CreateVote_Success(t *testing.T) {
 
 	// POST /api/v2/matches/{id}/votes
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/votes", player.Token, map[string]any{
-		"rating": 5,
+		"rating":  5,
 		"comment": "Great match!",
 	})
 	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusCreated)
@@ -88,7 +88,7 @@ func TestVotes_CreateVote_InvalidRating(t *testing.T) {
 
 	// POST with invalid rating
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/votes", player.Token, map[string]any{
-		"rating": 10,
+		"rating":  10,
 		"comment": "Invalid",
 	})
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
