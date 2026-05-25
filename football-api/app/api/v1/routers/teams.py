@@ -27,7 +27,7 @@ def _serialize_teams(teams_db, group_member_skills: dict[uuid.UUID, dict]) -> Te
             item = TeamPlayerItem(
                 player_id=tp.player_id,
                 name=tp.player.name,
-                nickname=tp.player.nickname,
+                nickname=skill_data.get("nickname") or tp.player.nickname,
                 skill_stars=skill_data.get("skill_stars", 2),
                 position=skill_data.get("position", "mei"),
             )
@@ -87,7 +87,7 @@ async def generate_teams(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     # Opção mais simples: armazenar reservas como is_reserve=True no time 1
     # Mas vamos criar times reais e um time de reservas com position=0
     skill_map: dict[uuid.UUID, dict] = {
-        p["player_id"]: {"skill_stars": p["skill_stars"], "position": p["position"]}
+        p["player_id"]: {"skill_stars": p["skill_stars"], "position": p["position"], "nickname": p["nickname"]}
         for p in confirmed
     }
 
@@ -159,7 +159,7 @@ async def get_teams(match_id: uuid.UUID, db: DB):
             result.reserves.append(TeamPlayerItem(
                 player_id=tp.player_id,
                 name=tp.player.name,
-                nickname=tp.player.nickname,
+                nickname=skill_data.get("nickname") or tp.player.nickname,
                 skill_stars=skill_data.get("skill_stars", 2),
                 position=skill_data.get("position", "mei"),
             ))

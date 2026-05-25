@@ -112,18 +112,18 @@ class GroupRepository(BaseRepository[Group]):
         return {row.player_id: row.nickname for row in result.all()}
 
     async def get_member_skills(self, group_id: UUID, player_ids: list[UUID]) -> dict[UUID, dict]:
-        """Retorna skill_stars e position de membros específicos do grupo."""
+        """Retorna skill_stars, position e nickname de membros específicos do grupo."""
         if not player_ids:
             return {}
         result = await self.session.execute(
-            select(GroupMember.player_id, GroupMember.skill_stars, GroupMember.position)
+            select(GroupMember.player_id, GroupMember.skill_stars, GroupMember.position, GroupMember.nickname)
             .where(
                 GroupMember.group_id == group_id,
                 GroupMember.player_id.in_(player_ids),
             )
         )
         return {
-            row.player_id: {"skill_stars": row.skill_stars, "position": row.position}
+            row.player_id: {"skill_stars": row.skill_stars, "position": row.position, "nickname": row.nickname}
             for row in result.all()
         }
 
