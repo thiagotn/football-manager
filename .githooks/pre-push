@@ -15,8 +15,15 @@ if ! command -v poetry &> /dev/null; then
     exit 0
 fi
 
-# Run pip-audit and capture output
-AUDIT_OUTPUT=$(poetry run pip-audit --skip-editable 2>&1 || true)
+# Get poetry virtualenv path and audit only project dependencies
+POETRY_VENV=$(poetry env info --path 2>/dev/null || echo "")
+if [ -z "$POETRY_VENV" ]; then
+    echo "⚠️  Could not find poetry virtualenv. Skipping security audit."
+    exit 0
+fi
+
+# Run pip-audit against poetry virtualenv only
+AUDIT_OUTPUT=$("$POETRY_VENV/bin/pip" audit --skip-editable 2>&1 || true)
 
 # Check if there are any vulnerabilities (look for "Found X known vulnerabilities")
 VULNERABILITY_COUNT=$(echo "$AUDIT_OUTPUT" | grep -oP "Found \K[0-9]+" || echo "0")
