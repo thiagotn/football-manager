@@ -35,6 +35,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 001 | [planos-assinatura.md](001-planos-assinatura.md) | ✅ | Sistema completo de planos e assinatura via Stripe |
 | 004 | [minha-conta-plano.md](004-minha-conta-plano.md) | ✅ | `/account/subscription` e `/plans` implementados |
 | 014 | [admin-subscriptions.md](014-admin-subscriptions.md) | ✅ | Painel `/admin/subscriptions` — resumo, breakdown, tabela de assinantes, ativação manual |
+| 046 | [admin-alteracao-manual-plano.md](046-admin-alteracao-manual-plano.md) | 📋 | Admin: alteração manual de plano para assinantes ativos (sem passar por Stripe) |
 
 ---
 

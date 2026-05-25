@@ -4,7 +4,7 @@
   import { authStore, isAdmin } from '$lib/stores/auth';
   import { admin as adminApi } from '$lib/api';
   import type { AdminSubscriptionSummary, AdminSubscriptionListResponse, AdminSubscriptionItem } from '$lib/api';
-  import { CreditCard, AlertTriangle, TrendingUp, Users, ExternalLink, ChevronLeft, ChevronRight, X, XCircle } from 'lucide-svelte';
+  import { CreditCard, AlertTriangle, TrendingUp, Users, ExternalLink, ChevronLeft, ChevronRight, X, XCircle, Pencil } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
@@ -52,6 +52,8 @@
   let modalCycle = $state<'monthly' | 'yearly'>('monthly');
   let modalSaving = $state(false);
   let modalError = $state('');
+  let modalMode = $state<'activate' | 'change'>('activate');
+  let modalReason = $state('');
 
   // ── Auth guard ─────────────────────────────────────────────────
   let loaded = false;
@@ -135,10 +137,12 @@
   const totalPages = $derived(list ? Math.ceil(list.total / 20) : 1);
 
   // ── Modal ──────────────────────────────────────────────────────
-  function openModal(item: AdminSubscriptionItem) {
+  function openModal(item: AdminSubscriptionItem, mode: 'activate' | 'change' = 'activate') {
     modalPlayer = item;
+    modalMode = mode;
     modalPlan = item.plan === 'free' ? 'basic' : item.plan;
     modalCycle = (item.billing_cycle as 'monthly' | 'yearly') ?? 'monthly';
+    modalReason = '';
     modalError = '';
     modalOpen = true;
   }
@@ -158,7 +162,7 @@
         plan: modalPlan,
         status: 'active',
         billing_cycle: modalCycle,
-        reason: 'manual_admin_override',
+        reason: modalReason || 'manual_admin_override',
       });
       closeModal();
       await Promise.all([loadSummary(), loadList()]);
@@ -367,8 +371,13 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   {#if item.status !== 'active'}
-                    <button onclick={() => openModal(item)} class="btn-sm btn-ghost text-xs">
+                    <button onclick={() => openModal(item, 'activate')} class="btn-sm btn-ghost text-xs">
                       <CreditCard size={12} /> Ativar
+                    </button>
+                  {/if}
+                  {#if item.status === 'active'}
+                    <button onclick={() => openModal(item, 'change')} class="btn-sm btn-ghost text-xs">
+                      <Pencil size={12} /> Alterar
                     </button>
                   {/if}
                   {#if item.status !== 'canceled' && item.plan !== 'free'}
@@ -425,7 +434,9 @@
   <div class="fixed z-50 inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center">
     <div class="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold text-white">Ativar plano manualmente</h2>
+        <h2 class="text-base font-semibold text-white">
+          {modalMode === 'activate' ? 'Ativar plano manualmente' : 'Alterar plano manualmente'}
+        </h2>
         <button onclick={closeModal} class="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-400">
           <X size={18} />
         </button>
@@ -437,6 +448,7 @@
         <div>
           <label class="block text-xs text-gray-400 mb-1">Plano</label>
           <select bind:value={modalPlan} class="input w-full">
+            <option value="free">Grátis</option>
             <option value="basic">Basic</option>
             <option value="pro">Pro</option>
           </select>
@@ -447,6 +459,15 @@
             <option value="monthly">Mensal</option>
             <option value="yearly">Anual</option>
           </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Motivo (opcional)</label>
+          <input
+            type="text"
+            bind:value={modalReason}
+            placeholder="ex: cortesia comercial, webhook falhado..."
+            class="input w-full text-xs"
+          />
         </div>
       </div>
 
