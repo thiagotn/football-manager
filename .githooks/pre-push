@@ -18,19 +18,20 @@ fi
 # Run pip-audit and capture output
 AUDIT_OUTPUT=$(poetry run pip-audit --skip-editable 2>&1 || true)
 
-# Check if there are any vulnerabilities (only in PyPI packages, not system packages)
-if echo "$AUDIT_OUTPUT" | grep -q "Found [1-9] known vulnerabilities"; then
-    echo "⚠️  Security vulnerabilities detected:"
+# Check if there are any vulnerabilities (look for "Found X known vulnerabilities")
+VULNERABILITY_COUNT=$(echo "$AUDIT_OUTPUT" | grep -oP "Found \K[0-9]+" || echo "0")
+
+if [ "$VULNERABILITY_COUNT" -gt 0 ]; then
+    echo "❌ Security vulnerabilities found!"
     echo ""
-    echo "$AUDIT_OUTPUT" | grep -E "^(Name|----|-)" | head -20
+    echo "$AUDIT_OUTPUT" | grep -v "^Name" | head -50
     echo ""
-    echo "💡 To see full details and fix:"
+    echo "💡 To fix, run:"
     echo "   cd football-api && poetry run pip-audit"
     echo "   cd football-api && poetry update"
     echo ""
-    echo "ℹ️  Continuing with push (CI will perform stricter checks)"
+    exit 1
 else
     echo "✅ No vulnerabilities in project dependencies!"
+    exit 0
 fi
-
-exit 0
