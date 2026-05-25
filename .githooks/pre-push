@@ -1,0 +1,32 @@
+#!/bin/bash
+# Pre-push hook: check for security vulnerabilities in Python dependencies
+# Run pip-audit before allowing push to avoid CI failures
+
+set -e
+
+echo "🔍 Running security audit before push..."
+echo ""
+
+cd football-api
+
+# Check if poetry is available
+if ! command -v poetry &> /dev/null; then
+    echo "⚠️  Poetry not found. Skipping security audit."
+    exit 0
+fi
+
+# Run pip-audit via poetry
+if ! poetry run pip-audit; then
+    echo ""
+    echo "❌ Security vulnerabilities found!"
+    echo "   Please fix the issues above before pushing."
+    echo ""
+    echo "💡 To fix dependencies, run:"
+    echo "   cd football-api && poetry update"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "✅ No security vulnerabilities detected. Ready to push!"
+exit 0
