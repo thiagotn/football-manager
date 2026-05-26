@@ -489,15 +489,8 @@ jobs:
           fi
 
           JOBS="$(icon "$R_UNIT") Unit  |  $(icon "$R_MCP") MCP  |  $(icon "$R_AUDIT") Audit  |  $(icon "$R_E2E") E2E  |  $(icon "$R_BUILD") Build  |  $(icon "$R_DEPLOY") Deploy"
-
-          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>
-
-🔀 <code>${REF_NAME}</code>  👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>
-
-${JOBS}
-
-<b>${STATUS}</b>
-🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
+          NL=$'\n'
+          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>${NL}${NL}🔀 <code>${REF_NAME}</code>  👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>${NL}${NL}${JOBS}${NL}${NL}<b>${STATUS}</b>${NL}🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
 
           jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" \
             '{chat_id: $chat_id, parse_mode: "HTML", text: $text, disable_web_page_preview: true}' \

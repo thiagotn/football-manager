@@ -112,16 +112,10 @@ jobs:
             STATUS="❌ Falha"
           fi
 
+          NL=$'\n'
           UPLOAD_LINE=""
-          [[ "$UPLOAD" == "true" ]] && UPLOAD_LINE="
-📲 Play Store: <b>${TRACK}</b>"
-
-          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>
-
-👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>${UPLOAD_LINE}
-
-<b>${STATUS}</b>
-🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
+          [[ "$UPLOAD" == "true" ]] && UPLOAD_LINE="${NL}📲 Play Store: <b>${TRACK}</b>"
+          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>${NL}${NL}👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>${UPLOAD_LINE}${NL}${NL}<b>${STATUS}</b>${NL}🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
 
           jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" \
             '{chat_id: $chat_id, parse_mode: "HTML", text: $text, disable_web_page_preview: true}' \
