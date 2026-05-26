@@ -23,9 +23,9 @@ func TestVotes_GetVoteStatus_Before(t *testing.T) {
 	groupID := groupRes.Body["id"].(string)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
-		"location":  "Test Court",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
+		"location":   "Test Court",
 	})
 	matchID := matchRes.Body["id"].(string)
 
@@ -50,8 +50,8 @@ func TestVotes_CreateVote_Success(t *testing.T) {
 	groupID := groupRes.Body["id"].(string)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
 		"location":  "Test Court",
 	})
 	matchID := matchRes.Body["id"].(string)
@@ -80,8 +80,8 @@ func TestVotes_CreateVote_InvalidRating(t *testing.T) {
 	groupID := groupRes.Body["id"].(string)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
 		"location":  "Test Court",
 	})
 	matchID := matchRes.Body["id"].(string)
@@ -118,8 +118,8 @@ func TestVotes_GetVoteResults_BeforeClosing(t *testing.T) {
 	groupID := groupRes.Body["id"].(string)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
 		"location":  "Test Court",
 	})
 	matchID := matchRes.Body["id"].(string)
@@ -143,8 +143,8 @@ func TestVotes_CloseVoting_AsAdmin(t *testing.T) {
 	groupID := groupRes.Body["id"].(string)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
 		"location":  "Test Court",
 	})
 	matchID := matchRes.Body["id"].(string)
@@ -167,8 +167,8 @@ func TestVotes_GetPublicResults_NoAuth(t *testing.T) {
 	groupID := groupRes.Body["id"].(string)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
 		"location":  "Test Court",
 	})
 	matchBody := matchRes.Body
