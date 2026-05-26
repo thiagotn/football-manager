@@ -16,10 +16,17 @@ jobs:
         with:
           go-version: '1.24'
           cache-dependency-path: football-api-go/go.sum
+      - name: Configure git credentials
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Install golangci-lint
         run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin
       - name: Run golangci-lint
         working-directory: football-api-go
+        env:
+          GOPRIVATE: "github.com/thiagotn/*"
+          GONOSUMDB: "*"
         run: golangci-lint run ./... --timeout=5m
 
   unit-tests:
