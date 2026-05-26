@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: golangci/golangci-lint-action@v8
+      - uses: golangci/golangci-lint-action@v6
         with:
           working-directory: football-api-go
           args: --timeout=5m
