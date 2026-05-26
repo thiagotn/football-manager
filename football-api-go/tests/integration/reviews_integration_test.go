@@ -81,22 +81,24 @@ func TestReviews_CreateReview_MissingRating(t *testing.T) {
 
 func TestReviews_GetSummary(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
 
-	// GET /api/v2/reviews/summary
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews/summary", p.Token, nil)
+	// GET /api/v2/reviews/summary (admin only)
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews/summary", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
 	assert.NotNil(t, res.Body)
 }
 
 func TestReviews_GetAllReviews(t *testing.T) {
 	srv := newTestServer(t)
-	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
 
-	// GET /api/v2/reviews to list all reviews
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews", p.Token, nil)
+	// GET /api/v2/reviews to list all reviews (admin only)
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
 }

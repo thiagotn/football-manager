@@ -181,6 +181,6 @@ func TestInvites_AcceptInvite_Twice(t *testing.T) {
 		"whatsapp": newPlayer.WhatsApp,
 		"password": newPlayer.Password,
 	})
-	// Should return conflict since already accepted
-	assert.True(t, res2.Code == http.StatusConflict || res2.Code == http.StatusBadRequest)
+	// Should fail — invite already used (404 = invalid/used, 409 = already member, 400 = bad request)
+	assert.True(t, res2.Code == http.StatusConflict || res2.Code == http.StatusBadRequest || res2.Code == http.StatusNotFound)
 }

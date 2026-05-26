@@ -79,7 +79,7 @@ func CreateMatchForRecurrence(ctx context.Context, pool *pgxpool.Pool, p CreateM
 		VALUES
 			($1,$2,$3,$4::DATE,$5::TIME,$6::TIME,
 			 $7,$8,$9::court_type,$10,$11,$12,$13,$14)
-		RETURNING `+matchCols,
+		RETURNING `+matchReturnCols,
 		p.GroupID, p.Hash, p.Number, p.MatchDate, p.StartTime, p.EndTime,
 		p.Location, p.Address, p.CourtType, p.PlayersPerTeam, p.MaxPlayers, p.Notes,
 		p.VoteOpenDelayMinutes, p.VoteDurationHours,

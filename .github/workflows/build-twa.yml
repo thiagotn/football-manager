@@ -87,3 +87,44 @@ jobs:
           releaseFiles: football-android/app-release-bundle.aab
           track: ${{ github.event.inputs.track }}
           status: completed
+
+  notify:
+    name: Notify Telegram
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: always()
+    steps:
+      - name: Send Telegram notification
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          R_BUILD: ${{ needs.build.result }}
+          TRACK: ${{ github.event.inputs.track }}
+          UPLOAD: ${{ github.event.inputs.upload_to_play_store }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+          SHA: ${{ github.sha }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          if [[ "$R_BUILD" == "success" ]]; then
+            STATUS="✅ Sucesso"
+          else
+            STATUS="❌ Falha"
+          fi
+
+          UPLOAD_LINE=""
+          [[ "$UPLOAD" == "true" ]] && UPLOAD_LINE="
+📲 Play Store: <b>${TRACK}</b>"
+
+          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>
+
+👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>${UPLOAD_LINE}
+
+<b>${STATUS}</b>
+🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
+
+          jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" \
+            '{chat_id: $chat_id, parse_mode: "HTML", text: $text, disable_web_page_preview: true}' \
+          | curl -sf -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" -d @- \
+          || echo "::warning::Falha ao enviar notificação Telegram"

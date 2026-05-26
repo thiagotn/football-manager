@@ -661,7 +661,7 @@ func (h *adminHandler) listBetaSignups(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]map[string]any, 0)
 	for rows.Next() {
-		var id int
+		var id uuid.UUID
 		var email string
 		var playerID *uuid.UUID
 		var playerName *string

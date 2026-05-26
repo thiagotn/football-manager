@@ -15,18 +15,20 @@ func TestTeams_DrawTeams_NoConfirmedPlayers(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", p.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Teams Test Group " + p.ID,
 	})
-	groupBody := groupRes.Body
-	groupID := groupBody["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, _ := groupRes.Body["id"].(string)
+	assert.NotEmpty(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", p.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
-		"location":  "Test Court",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
+		"location":   "Test Court",
 	})
-	matchBody := matchRes.Body
-	matchID := matchBody["id"].(string)
+	assert.Equal(t, http.StatusCreated, matchRes.Code)
+	matchID, _ := matchRes.Body["id"].(string)
+	assert.NotEmpty(t, matchID)
 
 	// Try to draw teams with no confirmed players
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", p.Token, nil)
@@ -44,10 +46,11 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 
 	// Create group
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Teams Draw Success Group " + admin.ID,
 	})
-	groupBody := groupRes.Body
-	groupID := groupBody["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, _ := groupRes.Body["id"].(string)
+	assert.NotEmpty(t, groupID)
 
 	// Add members
 	player1 := registerAndLogin(t, srv, "Player 1")
@@ -56,22 +59,23 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 	enableApiV2(t, player2.ID)
 
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player1.ID,
-		"position": "ZAG",
+		"player_id": player1.ID,
+		"role":      "member",
 	})
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player2.ID,
-		"position": "MEI",
+		"player_id": player2.ID,
+		"role":      "member",
 	})
 
 	// Create match
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
-		"location":  "Test Court",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
+		"location":   "Test Court",
 	})
-	matchBody := matchRes.Body
-	matchID := matchBody["id"].(string)
+	assert.Equal(t, http.StatusCreated, matchRes.Code)
+	matchID, _ := matchRes.Body["id"].(string)
+	assert.NotEmpty(t, matchID)
 
 	// Confirm attendance
 	apiCall(t, srv, http.MethodPatch, "/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player1.Token, map[string]any{
@@ -98,18 +102,20 @@ func TestTeams_GetTeams_NoAuth(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Teams GetTeams Group " + admin.ID,
 	})
-	groupBody := groupRes.Body
-	groupID := groupBody["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, _ := groupRes.Body["id"].(string)
+	assert.NotEmpty(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
-		"matchDate": "2099-12-31",
-		"startTime": "18:00:00",
-		"location":  "Test Court",
+		"match_date": "2099-12-31",
+		"start_time": "18:00:00",
+		"location":   "Test Court",
 	})
-	matchBody := matchRes.Body
-	matchID := matchBody["id"].(string)
+	assert.Equal(t, http.StatusCreated, matchRes.Code)
+	matchID, _ := matchRes.Body["id"].(string)
+	assert.NotEmpty(t, matchID)
 
 	// Get teams without auth (public endpoint)
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+matchID+"/teams", "", nil)

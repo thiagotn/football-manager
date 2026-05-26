@@ -74,6 +74,16 @@ const matchCols = `
 	m.status::TEXT, m.vote_open_delay_minutes, m.vote_duration_hours, m.vote_notified,
 	m.created_at, m.updated_at`
 
+// matchReturnCols is the same as matchCols but without the "m." alias prefix,
+// for use in INSERT...RETURNING clauses where no table alias is available.
+const matchReturnCols = `
+	id, group_id, number, hash,
+	match_date::TEXT, start_time::TEXT, end_time::TEXT,
+	location, address, court_type::TEXT,
+	players_per_team, max_players, notes,
+	status::TEXT, vote_open_delay_minutes, vote_duration_hours, vote_notified,
+	created_at, updated_at`
+
 func scanMatch(scanFn func(dest ...any) error) (*Match, error) {
 	var m Match
 	err := scanFn(
@@ -148,7 +158,7 @@ func CreateMatch(ctx context.Context, pool *pgxpool.Pool, p CreateMatchParams) (
 		VALUES
 			($1,$2,$3,$4::DATE,$5::TIME,$6::TIME,
 			 $7,$8,$9::court_type,$10,$11,$12,$13)
-		RETURNING `+matchCols,
+		RETURNING `+matchReturnCols,
 		p.GroupID, p.Hash, p.Number, p.MatchDate, p.StartTime, p.EndTime,
 		p.Location, p.Address, p.CourtType, p.PlayersPerTeam, p.MaxPlayers, p.Notes, p.CreatedByID,
 	)
@@ -209,7 +219,7 @@ func UpdateMatch(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID, p U
 			location=$4, address=$5, court_type=$6::court_type,
 			players_per_team=$7, max_players=$8, notes=$9, status=$10
 		WHERE id=$11
-		RETURNING `+matchCols,
+		RETURNING `+matchReturnCols,
 		m.MatchDate, m.StartTime, m.EndTime,
 		m.Location, m.Address, m.CourtType,
 		m.PlayersPerTeam, m.MaxPlayers, m.Notes, m.Status, matchID,

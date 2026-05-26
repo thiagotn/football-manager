@@ -32,8 +32,12 @@ func (h *reviewHandler) GetMyReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	review, err := db.GetMyReview(r.Context(), h.pool, player.ID)
+	if err == db.ErrNotFound {
+		renderJSON(w, http.StatusOK, map[string]any{"review": nil})
+		return
+	}
 	if err != nil {
-		renderError(w, apierror.NotFound("no review found"))
+		renderError(w, apierror.Internal("failed to fetch review"))
 		return
 	}
 	renderJSON(w, http.StatusOK, review)

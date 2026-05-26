@@ -31,24 +31,29 @@ func TestPlayers_GetPlayerByID_Success(t *testing.T) {
 	p := registerAndLogin(t, srv, "Test Player")
 	enableApiV2(t, p.ID)
 
-	// GET /api/v2/players/{id}
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/"+p.ID, "", nil)
+	// GET /api/v2/players/{id} — player fetching their own profile
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/"+p.ID, p.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
 }
 
 func TestPlayers_GetPlayerByID_NotFound(t *testing.T) {
 	srv := newTestServer(t)
+	admin := registerAndLogin(t, srv, "Admin")
+	makeAdmin(t, admin.ID)
+	enableApiV2(t, admin.ID)
 
-	// GET /api/v2/players/{id} for non-existent player
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/00000000-0000-0000-0000-000000000000", "", nil)
+	// GET /api/v2/players/{id} for non-existent player (admin can access any player)
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/00000000-0000-0000-0000-000000000000", admin.Token, nil)
 	assert.Equal(t, http.StatusNotFound, res.Code)
 }
 
 func TestPlayers_GetPlayerByID_InvalidUUID(t *testing.T) {
 	srv := newTestServer(t)
+	p := registerAndLogin(t, srv, "Test Player")
+	enableApiV2(t, p.ID)
 
 	// GET /api/v2/players/{id} with invalid UUID
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/invalid-uuid", "", nil)
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/invalid-uuid", p.Token, nil)
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
