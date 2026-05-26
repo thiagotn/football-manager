@@ -78,11 +78,13 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 	assert.NotEmpty(t, matchID)
 
 	// Confirm attendance
-	apiCall(t, srv, http.MethodPatch, "/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player1.Token, map[string]any{
-		"status": "confirmed",
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player1.Token, map[string]any{
+		"player_id": player1.ID,
+		"status":    "confirmed",
 	})
-	apiCall(t, srv, http.MethodPatch, "/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player2.Token, map[string]any{
-		"status": "confirmed",
+	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player2.Token, map[string]any{
+		"player_id": player2.ID,
+		"status":    "confirmed",
 	})
 
 	// Draw teams
