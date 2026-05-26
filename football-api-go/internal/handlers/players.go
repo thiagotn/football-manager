@@ -374,7 +374,7 @@ func (h *playerHandler) updatePlayer(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	targetID, err := targetPlayerID(r)
 	if err != nil {
-		renderError(w, apierror.NotFound("player not found"))
+		renderError(w, apierror.Unprocessable("invalid player id"))
 		return
 	}
 

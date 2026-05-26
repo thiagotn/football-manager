@@ -58,7 +58,7 @@ func TestCreatePlayer_PasswordTooShort(t *testing.T) {
 func TestGetPlayer_InvalidUUID(t *testing.T) {
 	r := playersRouter(fakePlayer())
 	w := doRequest(r, http.MethodGet, "/players/not-a-uuid", "")
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 func TestGetPlayer_NonAdminAccessOtherPlayer(t *testing.T) {
@@ -75,7 +75,7 @@ func TestGetPlayer_NonAdminAccessOtherPlayer(t *testing.T) {
 func TestUpdatePlayer_InvalidUUID(t *testing.T) {
 	r := playersRouter(fakePlayer())
 	w := doRequest(r, http.MethodPatch, "/players/not-a-uuid", `{"name":"New"}`)
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 // ── resetPassword ─────────────────────────────────────────────────────────────
