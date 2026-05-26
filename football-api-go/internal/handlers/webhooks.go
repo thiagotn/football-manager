@@ -41,7 +41,7 @@ func (h *webhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 	event, err := h.stripe.VerifyWebhookSignature(payload, sigHeader)
 	if err != nil {
 		log.Printf("webhook invalid signature: %v", err)
-		renderError(w, apierror.Unprocessable("invalid signature"))
+		renderError(w, apierror.BadRequest("invalid signature"))
 		return
 	}
 

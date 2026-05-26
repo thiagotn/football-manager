@@ -10,6 +10,7 @@ type APIError struct {
 
 func (e *APIError) Error() string { return e.Detail }
 
+func BadRequest(msg string) error    { return &APIError{Code: 400, Detail: msg} }
 func NotFound(msg string) error      { return &APIError{Code: 404, Detail: msg} }
 func Unauthorized() error            { return &APIError{Code: 401, Detail: "not authenticated"} }
 func Forbidden(msg string) error     { return &APIError{Code: 403, Detail: msg} }
