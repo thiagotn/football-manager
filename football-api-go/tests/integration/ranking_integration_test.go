@@ -13,7 +13,7 @@ func TestRanking_GetRanking_NoAuth(t *testing.T) {
 	// GET /api/v2/ranking without auth should work (public endpoint)
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking", "", nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestRanking_GetRanking_WithPlayers(t *testing.T) {
@@ -27,32 +27,27 @@ func TestRanking_GetRanking_WithPlayers(t *testing.T) {
 	// GET /api/v2/ranking should return a list
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking", "", nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
-	assert.True(t, len(res.List) >= 0)
+	assert.NotNil(t, res.Body["items"])
+	items, _ := res.Body["items"].([]any)
+	assert.True(t, len(items) >= 0)
 }
 
-func TestRanking_GetRanking_InvalidGroupID(t *testing.T) {
+func TestRanking_GetRanking_InvalidYear(t *testing.T) {
 	srv := newTestServer(t)
 
-	// GET /api/v2/ranking with invalid groupId param
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?groupId=invalid-uuid", "", nil)
+	// GET /api/v2/ranking with invalid year param
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?year=invalid", "", nil)
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
-func TestRanking_GetRanking_ValidGroupID(t *testing.T) {
+func TestRanking_GetRanking_WithValidYear(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
 	enableApiV2(t, admin.ID)
 
-	// Create group
-	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
-	})
-	groupID := groupRes.Body["id"].(string)
-
-	// GET /api/v2/ranking with valid groupId
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?groupId="+groupID, "", nil)
+	// GET /api/v2/ranking with valid year parameter
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?year=2024", "", nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body["items"])
 }

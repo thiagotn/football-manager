@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
+	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 )
 
 // renderJSON writes a JSON response with the given status code.
@@ -20,6 +21,10 @@ func renderError(w http.ResponseWriter, err error) {
 	var apiErr *apierror.APIError
 	if errors.As(err, &apiErr) {
 		renderJSON(w, apiErr.Code, apiErr)
+		return
+	}
+	if err == db.ErrNotFound {
+		renderJSON(w, http.StatusNotFound, apierror.NotFound("not found"))
 		return
 	}
 	renderJSON(w, http.StatusInternalServerError, map[string]string{"detail": "internal server error"})

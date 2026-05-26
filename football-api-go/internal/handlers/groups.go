@@ -302,8 +302,12 @@ func (h *groupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	group, err := db.GetGroupByID(r.Context(), h.pool, groupID)
+	if err == db.ErrNotFound {
+		renderError(w, apierror.NotFound("group not found"))
+		return
+	}
 	if err != nil {
-		renderError(w, err)
+		renderError(w, apierror.Internal("failed to fetch group"))
 		return
 	}
 

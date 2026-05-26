@@ -16,16 +16,18 @@ func TestFinance_GetPeriods_AsMember(t *testing.T) {
 	player := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, player.ID)
 
-	// Create group
+	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Finance Test Group " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code, "failed to create group: %v", groupRes.Body)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok, "group response missing id field")
 
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player.ID,
-		"position": "ZAG",
+		"player_id": player.ID,
+		"role": "member",
 	})
 
 	// GET /api/v2/groups/{id}/finance/periods as member
@@ -45,9 +47,11 @@ func TestFinance_GetPeriods_NonMember(t *testing.T) {
 
 	// Create group (without adding player)
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Finance Test Group NonMember " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok, "group response missing id field")
 
 	// GET /api/v2/groups/{id}/finance/periods as non-member
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/groups/"+groupID+"/finance/periods", player.Token, nil)
@@ -63,16 +67,18 @@ func TestFinance_GetPeriod_Existing(t *testing.T) {
 	player := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, player.ID)
 
-	// Create group
+	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Finance Period Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player.ID,
-		"position": "ZAG",
+		"player_id": player.ID,
+		"role": "member",
 	})
 
 	// GET /api/v2/groups/{id}/finance/periods/{year}/{month}
@@ -90,16 +96,18 @@ func TestFinance_GetPeriod_InvalidMonth(t *testing.T) {
 	player := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, player.ID)
 
-	// Create group
+	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Finance Invalid Month Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player.ID,
-		"position": "ZAG",
+		"player_id": player.ID,
+		"role": "member",
 	})
 
 	// GET with invalid month
@@ -116,16 +124,18 @@ func TestFinance_UpdatePayment_AsAdmin(t *testing.T) {
 	player := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, player.ID)
 
-	// Create group
+	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Finance Payment Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player.ID,
-		"position": "ZAG",
+		"player_id": player.ID,
+		"role": "member",
 	})
 
 	// Try to update a payment (payment ID is typically a UUID)
@@ -145,16 +155,18 @@ func TestFinance_UpdatePayment_NonAdmin(t *testing.T) {
 	player := registerAndLogin(t, srv, "Player")
 	enableApiV2(t, player.ID)
 
-	// Create group
+	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Finance NonAdmin Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
-		"playerID": player.ID,
-		"position": "ZAG",
+		"player_id": player.ID,
+		"role": "member",
 	})
 
 	// Regular member tries to update payment

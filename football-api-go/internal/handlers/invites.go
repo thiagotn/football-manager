@@ -126,8 +126,12 @@ func (h *inviteHandler) createInvite(w http.ResponseWriter, r *http.Request) {
 func (h *inviteHandler) getInvite(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 	inv, err := db.GetInviteByToken(r.Context(), h.pool, token)
+	if err == db.ErrNotFound {
+		renderError(w, apierror.NotFound("invite not found"))
+		return
+	}
 	if err != nil {
-		renderError(w, err)
+		renderError(w, apierror.Internal("failed to fetch invite"))
 		return
 	}
 	if inv.Used {

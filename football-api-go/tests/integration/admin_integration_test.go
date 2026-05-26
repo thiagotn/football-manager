@@ -38,7 +38,8 @@ func TestAdmin_ListPlayers_AsAdmin(t *testing.T) {
 	// GET /api/v2/admin/players
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/admin/players", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestAdmin_ListGroups_AsAdmin(t *testing.T) {
@@ -50,7 +51,8 @@ func TestAdmin_ListGroups_AsAdmin(t *testing.T) {
 	// GET /api/v2/admin/groups
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/admin/groups", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestAdmin_ListMatches_AsAdmin(t *testing.T) {
@@ -62,7 +64,8 @@ func TestAdmin_ListMatches_AsAdmin(t *testing.T) {
 	// GET /api/v2/admin/matches
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/admin/matches", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestAdmin_ListBetaSignups_AsAdmin(t *testing.T) {
@@ -74,7 +77,8 @@ func TestAdmin_ListBetaSignups_AsAdmin(t *testing.T) {
 	// GET /api/v2/admin/beta-signups
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/admin/beta-signups", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestAdmin_ListApiV2Users_AsAdmin(t *testing.T) {
@@ -86,7 +90,8 @@ func TestAdmin_ListApiV2Users_AsAdmin(t *testing.T) {
 	// GET /api/v2/admin/api-v2-users
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/admin/api-v2-users", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestAdmin_ToggleApiV2Access_AsAdmin(t *testing.T) {
@@ -113,7 +118,8 @@ func TestAdmin_GetChatUsers_AsAdmin(t *testing.T) {
 	// GET /api/v2/admin/chat-users
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/admin/chat-users", admin.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body)
+	assert.NotNil(t, res.Body["users"])
 }
 
 func TestAdmin_ToggleChatAccess_AsAdmin(t *testing.T) {

@@ -25,8 +25,10 @@ func TestPush_Subscribe_ValidPayload(t *testing.T) {
 	// POST /api/v2/push/subscribe with valid payload
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
 		"endpoint": "https://example.com/push/abc123",
-		"auth_key": "auth_secret_key",
-		"p256_key": "p256_secret_key",
+		"keys": map[string]string{
+			"p256dh": "p256_secret_key",
+			"auth":   "auth_secret_key",
+		},
 	})
 	// Should succeed or return 201/200
 	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusCreated)
@@ -39,8 +41,10 @@ func TestPush_Subscribe_MissingEndpoint(t *testing.T) {
 
 	// POST without endpoint field
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
-		"auth_key": "auth_secret_key",
-		"p256_key": "p256_secret_key",
+		"keys": map[string]string{
+			"p256dh": "p256_secret_key",
+			"auth":   "auth_secret_key",
+		},
 	})
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
@@ -53,8 +57,10 @@ func TestPush_Subscribe_InvalidPayload(t *testing.T) {
 	// POST with invalid/empty fields
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
 		"endpoint": "",
-		"auth_key": "",
-		"p256_key": "",
+		"keys": map[string]string{
+			"p256dh": "",
+			"auth":   "",
+		},
 	})
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
@@ -67,8 +73,10 @@ func TestPush_Unsubscribe_AfterSubscribe(t *testing.T) {
 	// Subscribe first
 	subRes := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
 		"endpoint": "https://example.com/push/abc123",
-		"auth_key": "auth_secret_key",
-		"p256_key": "p256_secret_key",
+		"keys": map[string]string{
+			"p256dh": "p256_secret_key",
+			"auth":   "auth_secret_key",
+		},
 	})
 	assert.True(t, subRes.Code == http.StatusOK || subRes.Code == http.StatusCreated)
 

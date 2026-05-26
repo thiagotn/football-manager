@@ -12,20 +12,17 @@ func TestBeta_AndroidSignup_ValidPayload(t *testing.T) {
 
 	// POST /api/v2/beta/android-signup with valid payload (public endpoint)
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{
-		"whatsapp": "+5511999990001",
-		"email":    "test@example.com",
+		"google_email": "test@example.com",
 	})
-	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusCreated || res.Code == http.StatusConflict,
-		"Expected 200/201/409, got %d", res.Code)
+	assert.True(t, res.Code == http.StatusCreated,
+		"Expected 201, got %d", res.Code)
 }
 
 func TestBeta_AndroidSignup_MissingField(t *testing.T) {
 	srv := newTestServer(t)
 
-	// POST without whatsapp field
-	res := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{
-		"email": "test@example.com",
-	})
+	// POST without google_email field
+	res := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{})
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
@@ -34,43 +31,37 @@ func TestBeta_AndroidSignup_InvalidEmail(t *testing.T) {
 
 	// POST with invalid email format
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{
-		"whatsapp": "+5511999990001",
-		"email":    "not-an-email",
+		"google_email": "not-an-email",
 	})
 	// Should reject invalid email
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
-func TestBeta_AndroidSignup_InvalidWhatsApp(t *testing.T) {
+func TestBeta_AndroidSignup_EmptyEmail(t *testing.T) {
 	srv := newTestServer(t)
 
-	// POST with invalid WhatsApp format (missing +)
+	// POST with empty google_email
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{
-		"whatsapp": "5511999990001",
-		"email":    "test@example.com",
+		"google_email": "",
 	})
-	// Should reject invalid WhatsApp format
+	// Should reject empty email
 	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
 func TestBeta_AndroidSignup_Duplicate(t *testing.T) {
 	srv := newTestServer(t)
 
-	whatsapp := "+5511999990002"
 	email := "duplicate@example.com"
 
 	// First signup
 	res1 := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{
-		"whatsapp": whatsapp,
-		"email":    email,
+		"google_email": email,
 	})
-	assert.True(t, res1.Code == http.StatusOK || res1.Code == http.StatusCreated)
+	assert.Equal(t, http.StatusCreated, res1.Code)
 
-	// Second signup with same WhatsApp
+	// Second signup with same email — should succeed (endpoint doesn't reject duplicates)
 	res2 := apiCall(t, srv, http.MethodPost, "/api/v2/beta/android-signup", "", map[string]any{
-		"whatsapp": whatsapp,
-		"email":    "other@example.com",
+		"google_email": email,
 	})
-	// Should either return conflict or success (depending on implementation)
-	assert.True(t, res2.Code == http.StatusConflict || res2.Code == http.StatusOK)
+	assert.Equal(t, http.StatusCreated, res2.Code)
 }

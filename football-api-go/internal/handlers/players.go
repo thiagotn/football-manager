@@ -30,6 +30,7 @@ func NewPlayerHandler(pool *pgxpool.Pool, storage *services.StorageService) *pla
 
 func (h *playerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Get("/me", h.getMe)
 	r.Get("/me/matches", h.myMatches)
 	r.Get("/me/stats/full", h.myStatsFull)
 	r.Get("/me/stats", h.myStats)
@@ -326,6 +327,24 @@ func (h *playerHandler) createPlayer(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusCreated, p)
 }
 
+func (h *playerHandler) getMe(w http.ResponseWriter, r *http.Request) {
+	player := middleware.PlayerFromCtx(r.Context())
+	if player == nil {
+		renderError(w, apierror.Unauthorized())
+		return
+	}
+	p, err := db.GetPlayerByID(r.Context(), h.pool, player.ID)
+	if err == db.ErrNotFound {
+		renderError(w, apierror.NotFound("player not found"))
+		return
+	}
+	if err != nil {
+		renderError(w, apierror.Internal("failed to fetch player"))
+		return
+	}
+	renderJSON(w, http.StatusOK, p)
+}
+
 func (h *playerHandler) getPlayer(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	targetID, err := targetPlayerID(r)
@@ -340,8 +359,12 @@ func (h *playerHandler) getPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p, err := db.GetPlayerByID(r.Context(), h.pool, targetID)
+	if err == db.ErrNotFound {
+		renderError(w, apierror.NotFound("player not found"))
+		return
+	}
 	if err != nil {
-		renderError(w, err)
+		renderError(w, apierror.Internal("failed to fetch player"))
 		return
 	}
 	renderJSON(w, http.StatusOK, p)

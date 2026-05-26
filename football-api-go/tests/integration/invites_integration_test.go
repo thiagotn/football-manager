@@ -14,11 +14,13 @@ func TestInvites_CreateInvite_AsAdmin(t *testing.T) {
 	makeAdmin(t, admin.ID)
 	enableApiV2(t, admin.ID)
 
-	// Create group
+	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Invites Test Group " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	// POST /api/v2/invites to create invite
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/invites", admin.Token, map[string]any{
@@ -37,11 +39,13 @@ func TestInvites_CreateInvite_Forbidden(t *testing.T) {
 	makeAdmin(t, admin.ID)
 	enableApiV2(t, admin.ID)
 
-	// Create group as admin
+	// Create group as admin with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Invites Forbidden Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	// Regular player tries to create invite
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/invites", player.Token, map[string]any{
@@ -56,11 +60,13 @@ func TestInvites_GetInviteInfo_ValidToken(t *testing.T) {
 	makeAdmin(t, admin.ID)
 	enableApiV2(t, admin.ID)
 
-	// Create group and invite
+	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Invites Info Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	inviteRes := apiCall(t, srv, http.MethodPost, "/api/v2/invites", admin.Token, map[string]any{
 		"group_id": groupID,
@@ -90,11 +96,13 @@ func TestInvites_CheckInvite_ValidToken(t *testing.T) {
 	newPlayer := registerAndLogin(t, srv, "New Player")
 	enableApiV2(t, newPlayer.ID)
 
-	// Create group and invite
+	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Invites Info Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	inviteRes := apiCall(t, srv, http.MethodPost, "/api/v2/invites", admin.Token, map[string]any{
 		"group_id": groupID,
@@ -103,7 +111,7 @@ func TestInvites_CheckInvite_ValidToken(t *testing.T) {
 	token := inviteRes.Body["token"].(string)
 
 	// GET /api/v2/invites/{token}/check
-	res := apiCall(t, srv, http.MethodGet, "/api/v2/invites/"+token+"/check", newPlayer.Token, nil)
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/invites/"+token+"/check?whatsapp="+newPlayer.WhatsApp, newPlayer.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
 }
 
@@ -116,11 +124,13 @@ func TestInvites_AcceptInvite_Success(t *testing.T) {
 	newPlayer := registerAndLogin(t, srv, "New Player")
 	enableApiV2(t, newPlayer.ID)
 
-	// Create group and invite
+	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Invites Info Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	inviteRes := apiCall(t, srv, http.MethodPost, "/api/v2/invites", admin.Token, map[string]any{
 		"group_id": groupID,
@@ -129,7 +139,10 @@ func TestInvites_AcceptInvite_Success(t *testing.T) {
 	token := inviteRes.Body["token"].(string)
 
 	// POST /api/v2/invites/{token}/accept
-	res := apiCall(t, srv, http.MethodPost, "/api/v2/invites/"+token+"/accept", newPlayer.Token, nil)
+	res := apiCall(t, srv, http.MethodPost, "/api/v2/invites/"+token+"/accept", "", map[string]any{
+		"whatsapp": newPlayer.WhatsApp,
+		"password": newPlayer.Password,
+	})
 	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusCreated)
 }
 
@@ -142,11 +155,13 @@ func TestInvites_AcceptInvite_Twice(t *testing.T) {
 	newPlayer := registerAndLogin(t, srv, "New Player")
 	enableApiV2(t, newPlayer.ID)
 
-	// Create group and invite
+	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "Invites Info Test " + admin.ID,
 	})
-	groupID := groupRes.Body["id"].(string)
+	assert.Equal(t, http.StatusCreated, groupRes.Code)
+	groupID, ok := groupRes.Body["id"].(string)
+	assert.True(t, ok)
 
 	inviteRes := apiCall(t, srv, http.MethodPost, "/api/v2/invites", admin.Token, map[string]any{
 		"group_id": groupID,
@@ -155,11 +170,17 @@ func TestInvites_AcceptInvite_Twice(t *testing.T) {
 	token := inviteRes.Body["token"].(string)
 
 	// Accept first time
-	res1 := apiCall(t, srv, http.MethodPost, "/api/v2/invites/"+token+"/accept", newPlayer.Token, nil)
+	res1 := apiCall(t, srv, http.MethodPost, "/api/v2/invites/"+token+"/accept", "", map[string]any{
+		"whatsapp": newPlayer.WhatsApp,
+		"password": newPlayer.Password,
+	})
 	assert.True(t, res1.Code == http.StatusOK || res1.Code == http.StatusCreated)
 
 	// Try to accept second time
-	res2 := apiCall(t, srv, http.MethodPost, "/api/v2/invites/"+token+"/accept", newPlayer.Token, nil)
+	res2 := apiCall(t, srv, http.MethodPost, "/api/v2/invites/"+token+"/accept", "", map[string]any{
+		"whatsapp": newPlayer.WhatsApp,
+		"password": newPlayer.Password,
+	})
 	// Should return conflict since already accepted
 	assert.True(t, res2.Code == http.StatusConflict || res2.Code == http.StatusBadRequest)
 }

@@ -294,7 +294,7 @@ func (h *matchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
 
 	number, err := db.NextMatchNumber(r.Context(), h.pool, groupID)
 	if err != nil {
-		renderError(w, err)
+		renderError(w, apierror.Internal("failed to get next match number"))
 		return
 	}
 
@@ -314,7 +314,7 @@ func (h *matchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
 		CreatedByID:    player.ID,
 	})
 	if err != nil {
-		renderError(w, err)
+		renderError(w, apierror.Internal("failed to create match"))
 		return
 	}
 

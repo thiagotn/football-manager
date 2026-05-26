@@ -15,7 +15,7 @@ func TestMatches_CreateAndGet(t *testing.T) {
 	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
-		map[string]any{"name": "Match Test Group"})
+		map[string]any{"name": "Match Test Group " + player.ID})
 	require.Equal(t, http.StatusCreated, r.Code)
 	groupID, _ := r.Body["id"].(string)
 	registerGroupCleanup(t, groupID)

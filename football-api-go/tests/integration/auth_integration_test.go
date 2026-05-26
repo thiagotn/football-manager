@@ -11,8 +11,9 @@ import (
 func TestAuth_RegisterLoginMe(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Zico Integration")
+	enableApiV2(t, player.ID)
 
-	// GET /auth/me with token
+	// GET /auth/me with token (requires api_v2_enabled=true)
 	r := apiCall(t, srv, http.MethodGet, "/api/v2/auth/me", player.Token, nil)
 	require.Equal(t, http.StatusOK, r.Code)
 	assert.Equal(t, "Zico Integration", r.Body["name"])
