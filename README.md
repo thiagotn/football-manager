@@ -4,9 +4,11 @@
 
 <p align="center">
   <a href="https://github.com/thiagotn/football-manager/actions/workflows/main.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/main.yml/badge.svg" alt="Build & Deploy Web" /></a>
+  <a href="https://github.com/thiagotn/football-manager/actions/workflows/api-go.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/api-go.yml/badge.svg" alt="Build & Test API Go" /></a>
   <a href="https://github.com/thiagotn/football-manager/actions/workflows/build-twa.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/build-twa.yml/badge.svg" alt="Build & Deploy TWA Android" /></a>
   <a href="https://github.com/thiagotn/football-manager/actions/workflows/deploy-monitoring.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/deploy-monitoring.yml/badge.svg" alt="Deploy Monitoring Stack" /></a>
   <a href="https://codecov.io/gh/thiagotn/football-manager"><img src="https://codecov.io/gh/thiagotn/football-manager/graph/badge.svg" alt="codecov" /></a>
+  <a href="https://codecov.io/gh/thiagotn/football-manager"><img src="https://codecov.io/gh/thiagotn/football-manager/graph/badge.svg?flag=api-go" alt="codecov api-go" /></a>
 </p>
 
 <p align="center">PWA para gerenciamento de grupos de futebol.</p>
