@@ -9,8 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
-        with: { go-version: '1.24' }
+      - name: Set up Go 1.24
+        run: |
+          GO_VERSION=$(curl -fsSL "https://go.dev/dl/?mode=json" | jq -r '[.[] | select(.stable==true) | select(.version | startswith("go1.24"))][0].version')
+          curl -fsSL "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" | sudo tar -C /usr/local -xz
+          echo "/usr/local/go/bin" >> "$GITHUB_PATH"
       - name: Run unit tests
         working-directory: football-api-go
         env:
@@ -44,8 +47,11 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
-        with: { go-version: '1.24' }
+      - name: Set up Go 1.24
+        run: |
+          GO_VERSION=$(curl -fsSL "https://go.dev/dl/?mode=json" | jq -r '[.[] | select(.stable==true) | select(.version | startswith("go1.24"))][0].version')
+          curl -fsSL "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" | sudo tar -C /usr/local -xz
+          echo "/usr/local/go/bin" >> "$GITHUB_PATH"
       - name: Apply migrations
         env:
           PGPASSWORD: postgres
