@@ -3,9 +3,6 @@ name: Build & Test API Go
 on:
   workflow_dispatch: # disparado manualmente via GitHub Actions UI
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   unit-tests:
     name: Unit Tests
