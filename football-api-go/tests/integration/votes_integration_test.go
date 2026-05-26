@@ -118,7 +118,7 @@ func TestVotes_GetPendingVotes(t *testing.T) {
 	// GET /api/v2/votes/pending
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/votes/pending", p.Token, nil)
 	assert.Equal(t, http.StatusOK, res.Code)
-	assert.NotNil(t, res.List)
+	assert.NotNil(t, res.Body["items"])
 }
 
 func TestVotes_GetVoteResults_BeforeClosing(t *testing.T) {
