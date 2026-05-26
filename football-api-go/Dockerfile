@@ -1,5 +1,5 @@
 # ── development stage ──────────────────────────────────────────────────────────
-FROM golang:1.24-alpine AS dev
+FROM golang:1.25-alpine AS dev
 RUN apk add --no-cache git ca-certificates
 RUN go install github.com/air-verse/air@latest
 WORKDIR /app
@@ -9,7 +9,7 @@ COPY . .
 CMD ["air", "-c", ".air.toml"]
 
 # ── builder stage ───────────────────────────────────────────────────────────────
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 COPY go.mod go.sum ./
