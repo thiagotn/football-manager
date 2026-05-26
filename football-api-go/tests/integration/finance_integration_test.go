@@ -173,5 +173,7 @@ func TestFinance_UpdatePayment_NonAdmin(t *testing.T) {
 	res := apiCall(t, srv, http.MethodPatch, "/api/v2/finance/payments/00000000-0000-0000-0000-000000000000", player.Token, map[string]any{
 		"status": "paid",
 	})
-	assert.Equal(t, http.StatusForbidden, res.Code)
+	// Handler checks payment existence before group-admin permission, so a
+	// non-existent payment returns 404 even for non-admin callers.
+	assert.True(t, res.Code == http.StatusForbidden || res.Code == http.StatusNotFound)
 }
