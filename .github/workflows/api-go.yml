@@ -20,6 +20,13 @@ jobs:
           DATABASE_URL: "postgres://fake:fake@localhost/fake"
           SECRET_KEY: "test-secret-key-ci-only"
         run: go test ./tests/unit/... -coverprofile=coverage.out -covermode=atomic -coverpkg=./internal/...
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: football-api-go/coverage.out
+          flags: api-go
+          fail_ci_if_error: false
 
   integration-tests:
     name: Integration Tests
