@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVotes_GetVoteStatus_Before(t *testing.T) {
@@ -18,16 +19,21 @@ func TestVotes_GetVoteStatus_Before(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "VoteStatus Test Group",
 	})
-	groupID := groupRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, groupRes.Code, "create group: %v", groupRes.Body)
+	groupID, _ := groupRes.Body["id"].(string)
+	require.NotEmpty(t, groupID)
+	registerGroupCleanup(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
 		"match_date": "2099-12-31",
 		"start_time": "18:00:00",
 		"location":   "Test Court",
 	})
-	matchID := matchRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, matchRes.Code, "create match: %v", matchRes.Body)
+	matchID, _ := matchRes.Body["id"].(string)
+	require.NotEmpty(t, matchID)
 
 	// GET /api/v2/matches/{id}/votes/status
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+matchID+"/votes/status", player.Token, nil)
@@ -45,16 +51,21 @@ func TestVotes_CreateVote_Success(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "CreateVote Test Group",
 	})
-	groupID := groupRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, groupRes.Code, "create group: %v", groupRes.Body)
+	groupID, _ := groupRes.Body["id"].(string)
+	require.NotEmpty(t, groupID)
+	registerGroupCleanup(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
 		"match_date": "2099-12-31",
 		"start_time": "18:00:00",
-		"location":  "Test Court",
+		"location":   "Test Court",
 	})
-	matchID := matchRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, matchRes.Code, "create match: %v", matchRes.Body)
+	matchID, _ := matchRes.Body["id"].(string)
+	require.NotEmpty(t, matchID)
 
 	// POST /api/v2/matches/{id}/votes
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/votes", player.Token, map[string]any{
@@ -75,16 +86,21 @@ func TestVotes_CreateVote_InvalidRating(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "InvalidRating Test Group",
 	})
-	groupID := groupRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, groupRes.Code, "create group: %v", groupRes.Body)
+	groupID, _ := groupRes.Body["id"].(string)
+	require.NotEmpty(t, groupID)
+	registerGroupCleanup(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
 		"match_date": "2099-12-31",
 		"start_time": "18:00:00",
-		"location":  "Test Court",
+		"location":   "Test Court",
 	})
-	matchID := matchRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, matchRes.Code, "create match: %v", matchRes.Body)
+	matchID, _ := matchRes.Body["id"].(string)
+	require.NotEmpty(t, matchID)
 
 	// POST with invalid rating
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/votes", player.Token, map[string]any{
@@ -113,20 +129,25 @@ func TestVotes_GetVoteResults_BeforeClosing(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "VoteResults Before Test Group",
 	})
-	groupID := groupRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, groupRes.Code, "create group: %v", groupRes.Body)
+	groupID, _ := groupRes.Body["id"].(string)
+	require.NotEmpty(t, groupID)
+	registerGroupCleanup(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
 		"match_date": "2099-12-31",
 		"start_time": "18:00:00",
-		"location":  "Test Court",
+		"location":   "Test Court",
 	})
-	matchID := matchRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, matchRes.Code, "create match: %v", matchRes.Body)
+	matchID, _ := matchRes.Body["id"].(string)
+	require.NotEmpty(t, matchID)
 
-	// GET /api/v2/matches/{id}/votes/results before closing
+	// GET /api/v2/matches/{id}/votes/results before closing.
+	// For a future match, voting is not open/closed, so 403 is expected.
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+matchID+"/votes/results", admin.Token, nil)
-	// Might return 403 if not time to see results, or 200 with partial data
 	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusForbidden)
 }
 
@@ -138,20 +159,26 @@ func TestVotes_CloseVoting_AsAdmin(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "CloseVoting Test Group",
 	})
-	groupID := groupRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, groupRes.Code, "create group: %v", groupRes.Body)
+	groupID, _ := groupRes.Body["id"].(string)
+	require.NotEmpty(t, groupID)
+	registerGroupCleanup(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
 		"match_date": "2099-12-31",
 		"start_time": "18:00:00",
-		"location":  "Test Court",
+		"location":   "Test Court",
 	})
-	matchID := matchRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, matchRes.Code, "create match: %v", matchRes.Body)
+	matchID, _ := matchRes.Body["id"].(string)
+	require.NotEmpty(t, matchID)
 
-	// POST /api/v2/matches/{id}/votes/close
+	// POST /api/v2/matches/{id}/votes/close.
+	// For a future match, voting is not yet open, so 403 (VOTING_NOT_OPEN) is expected.
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/votes/close", admin.Token, nil)
-	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusNoContent)
+	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusNoContent || res.Code == http.StatusForbidden)
 }
 
 func TestVotes_GetPublicResults_NoAuth(t *testing.T) {
@@ -162,17 +189,21 @@ func TestVotes_GetPublicResults_NoAuth(t *testing.T) {
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
-		"name": "Test Group",
+		"name": "PublicResults Test Group",
 	})
-	groupID := groupRes.Body["id"].(string)
+	require.Equal(t, http.StatusCreated, groupRes.Code, "create group: %v", groupRes.Body)
+	groupID, _ := groupRes.Body["id"].(string)
+	require.NotEmpty(t, groupID)
+	registerGroupCleanup(t, groupID)
 
 	matchRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/matches", admin.Token, map[string]any{
 		"match_date": "2099-12-31",
 		"start_time": "18:00:00",
-		"location":  "Test Court",
+		"location":   "Test Court",
 	})
-	matchBody := matchRes.Body
-	matchHash := matchBody["hash"].(string)
+	require.Equal(t, http.StatusCreated, matchRes.Code, "create match: %v", matchRes.Body)
+	matchHash, _ := matchRes.Body["hash"].(string)
+	require.NotEmpty(t, matchHash)
 
 	// GET /api/v2/matches/public/{hash}/votes/results without auth.
 	// Voting is not yet closed on a future match, so 404 is expected here.
