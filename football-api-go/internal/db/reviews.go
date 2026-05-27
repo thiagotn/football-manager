@@ -11,6 +11,7 @@ import (
 type AppReview struct {
 	ID        uuid.UUID `json:"id"`
 	PlayerID  uuid.UUID `json:"player_id"`
+	PlayerName string    `json:"player_name"`
 	Rating    int       `json:"rating"`
 	Comment   *string   `json:"comment"`
 	CreatedAt time.Time `json:"created_at"`
@@ -99,13 +100,13 @@ func ListReviews(ctx context.Context, pool *pgxpool.Pool, ratings []int, orderBy
 	whereClause := ""
 	var args []any
 	if len(ratings) > 0 {
-		whereClause = "WHERE rating = ANY($1)"
+		whereClause = "WHERE ar.rating = ANY($1)"
 		args = append(args, ratings)
 	}
 
 	// Count total
 	var total int
-	err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM app_reviews `+whereClause, args...).Scan(&total)
+	err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM app_reviews ar `+whereClause, args...).Scan(&total)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +126,9 @@ func ListReviews(ctx context.Context, pool *pgxpool.Pool, ratings []int, orderBy
 	}
 
 	rows, err := pool.Query(ctx,
-		`SELECT id, player_id, rating, comment, created_at, updated_at
-		 FROM app_reviews `+whereClause+`
+		`SELECT ar.id, ar.player_id, ar.rating, ar.comment, ar.created_at, ar.updated_at, p.name
+		 FROM app_reviews ar
+		 LEFT JOIN players p ON p.id = ar.player_id `+whereClause+`
 		 ORDER BY `+orderBy+` DESC`+limitPlaceholders,
 		limitArgs...,
 	)
@@ -135,10 +137,10 @@ func ListReviews(ctx context.Context, pool *pgxpool.Pool, ratings []int, orderBy
 	}
 	defer rows.Close()
 
-	var items []AppReview
+	items := []AppReview{}
 	for rows.Next() {
 		var r AppReview
-		if err := rows.Scan(&r.ID, &r.PlayerID, &r.Rating, &r.Comment, &r.CreatedAt, &r.UpdatedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.PlayerID, &r.Rating, &r.Comment, &r.CreatedAt, &r.UpdatedAt, &r.PlayerName); err != nil {
 			return nil, err
 		}
 		items = append(items, r)
