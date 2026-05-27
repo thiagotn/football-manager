@@ -27,6 +27,7 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/config"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/server"
+	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
 func main() {
@@ -43,6 +44,18 @@ func main() {
 	}
 	defer pool.Close()
 	slog.Info("database connected")
+
+	// Background scheduler: hourly status sync + daily recurrence job.
+	// Skipped in test env to avoid jobs firing during integration tests.
+	var scheduler *services.Scheduler
+	if cfg.AppEnv != "test" {
+		scheduler = services.NewScheduler(pool)
+		if err := scheduler.Start(); err != nil {
+			slog.Error("scheduler start failed", "error", err)
+			os.Exit(1)
+		}
+		defer scheduler.Stop()
+	}
 
 	router := server.NewRouter(cfg, pool)
 
