@@ -30,52 +30,65 @@
 <text x="427" y="127" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">Traefik v3</text>
 <text x="410" y="148" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">proxy reverso + TLS automático</text>
 
-<!-- Traefik → Frontend -->
-<path d="M345 166 L345 186 L150 186 L150 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
-<!-- Traefik → API -->
-<path d="M397 166 L397 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
-<!-- Traefik → MCP -->
-<path d="M475 166 L475 186 L648 186 L648 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<!-- Traefik → Frontend (x=55-200, center=127) -->
+<path d="M335 166 L335 186 L127 186 L127 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<!-- Traefik → API v1 (center=292) -->
+<path d="M375 166 L375 186 L292 186 L292 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<!-- Traefik → API v2 (center=458) -->
+<path d="M445 166 L445 186 L458 186 L458 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<!-- Traefik → MCP (center=623) -->
+<path d="M485 166 L485 186 L623 186 L623 208" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-<!-- Frontend (x=55 w=180 center=145) -->
-<rect x="55" y="208" width="180" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<!-- Frontend (x=55 w=145 center=127) -->
+<rect x="55" y="208" width="145" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <rect x="63" y="226" width="20" height="20" rx="4" fill="white" opacity="0.85"/>
 <path d="M74 227.5C76.5 227.5 78.5 229.5 76.5 232L70 239C71.5 239 73 238.5 73.5 237C74.5 239 73 242 70.5 242C68 242 66.5 240 68 237.5L74.5 231C73 231 72 231.5 71.5 233C70.5 230.5 71.5 227.5 74 227.5Z" fill="#FF3E00"/>
-<text x="159" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#26215C">Frontend</text>
-<text x="145" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">SvelteKit 5 + Tailwind</text>
+<text x="141" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#26215C">Frontend</text>
+<text x="127" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">SvelteKit 5 + Tailwind</text>
 
-<!-- API (x=305 w=185 center=397) -->
-<rect x="305" y="208" width="185" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
-<rect x="313" y="226" width="20" height="20" rx="4" fill="white" opacity="0.85"/>
-<polygon points="323,228 317,236 321,236 319,244 327,234 323,234" fill="#009688"/>
-<text x="414" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#042C53">API</text>
-<text x="397" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">FastAPI + SQLAlchemy</text>
+<!-- API v1 (x=220 w=145 center=292) -->
+<rect x="220" y="208" width="145" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<rect x="228" y="226" width="20" height="20" rx="4" fill="white" opacity="0.85"/>
+<polygon points="238,228 232,236 236,236 234,244 242,234 238,234" fill="#009688"/>
+<text x="306" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#042C53">API v1</text>
+<text x="292" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">FastAPI + SQLAlchemy</text>
 
-<!-- MCP Server (x=555 w=185 center=647) -->
-<rect x="555" y="208" width="185" height="56" rx="8" fill="#FFF3E0" stroke="#E65100" stroke-width="0.5"/>
-<rect x="563" y="226" width="20" height="20" rx="4" fill="white" opacity="0.85"/>
-<rect x="566" y="229" width="14" height="13" rx="2.5" fill="none" stroke="#E65100" stroke-width="1.5"/>
-<line x1="570" y1="233" x2="574" y2="233" stroke="#E65100" stroke-width="1.3" stroke-linecap="round"/>
-<line x1="570" y1="236" x2="576" y2="236" stroke="#E65100" stroke-width="1.3" stroke-linecap="round"/>
-<line x1="570" y1="239" x2="574" y2="239" stroke="#E65100" stroke-width="1.3" stroke-linecap="round"/>
-<text x="664" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#4A1F00">MCP Server</text>
-<text x="648" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#E65100">FastMCP · rachao tools</text>
+<!-- API v2 (Go) (x=385 w=145 center=458) -->
+<rect x="385" y="208" width="145" height="56" rx="8" fill="#E0F2F1" stroke="#00838F" stroke-width="0.5"/>
+<rect x="393" y="226" width="20" height="20" rx="4" fill="white" opacity="0.85"/>
+<!-- Go gopher mark: stylized circle with eye -->
+<circle cx="403" cy="236" r="6.5" fill="none" stroke="#00ADD8" stroke-width="1.5"/>
+<circle cx="403" cy="235" r="1.8" fill="#00ADD8"/>
+<text x="472" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#003D40">API v2</text>
+<text x="458" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#00838F">Go + pgx + chi-router</text>
 
-<!-- MCP → API (internal dashed) -->
-<path d="M555 234 L490 234" fill="none" stroke="#888780" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrow)"/>
+<!-- MCP Server (x=550 w=145 center=622) -->
+<rect x="550" y="208" width="145" height="56" rx="8" fill="#FFF3E0" stroke="#E65100" stroke-width="0.5"/>
+<rect x="558" y="226" width="20" height="20" rx="4" fill="white" opacity="0.85"/>
+<rect x="561" y="229" width="14" height="13" rx="2.5" fill="none" stroke="#E65100" stroke-width="1.5"/>
+<line x1="565" y1="233" x2="569" y2="233" stroke="#E65100" stroke-width="1.3" stroke-linecap="round"/>
+<line x1="565" y1="236" x2="571" y2="236" stroke="#E65100" stroke-width="1.3" stroke-linecap="round"/>
+<line x1="565" y1="239" x2="569" y2="239" stroke="#E65100" stroke-width="1.3" stroke-linecap="round"/>
+<text x="639" y="227" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#4A1F00">MCP</text>
+<text x="623" y="247" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#E65100">FastMCP</text>
 
-<!-- API → Supabase -->
-<line x1="397" y1="264" x2="397" y2="334" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<!-- MCP → API v1 (internal dashed) -->
+<path d="M550 234 L530 234" fill="none" stroke="#888780" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrow)"/>
 
-<!-- API → Twilio (dashed, left route) -->
-<path d="M305 232 L260 232 L260 424 L255 424" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<!-- API v1 → Supabase -->
+<path d="M292 264 L292 320 L380 320 L380 334" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<!-- API v2 → Supabase -->
+<path d="M458 264 L458 320 L414 320 L414 334" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-<!-- API → Anthropic (dashed, right of Supabase) -->
-<path d="M490 240 L520 240 L520 424 L512 424" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
-<text x="528" y="338" font-size="11" fill="#6B21A8">chat</text>
+<!-- API v1 → Twilio (dashed, left route) -->
+<path d="M220 232 L195 232 L195 424 L255 424" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
 
-<!-- API → Stripe (dashed, far right route) -->
-<path d="M490 220 L790 220 L790 424 L770 424" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<!-- API v1 → Anthropic (dashed) -->
+<path d="M306 264 L306 290 L410 290 L410 416" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<text x="416" y="380" font-size="11" fill="#6B21A8">chat</text>
+
+<!-- API v1 → Stripe (dashed, far right route) -->
+<path d="M365 222 L770 222 L770 424 L770 416" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
 
 <!-- Supabase (x=305 w=185 center=397) -->
 <rect x="305" y="334" width="185" height="56" rx="8" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
