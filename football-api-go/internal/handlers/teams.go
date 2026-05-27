@@ -161,6 +161,11 @@ func (h *teamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, err := db.GetMatchByID(r.Context(), h.pool, matchID); err != nil {
+		renderError(w, err)
+		return
+	}
+
 	teams, err := db.GetTeamsForMatch(r.Context(), h.pool, matchID)
 	if err != nil {
 		renderError(w, err)

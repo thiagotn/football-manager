@@ -120,16 +120,28 @@ func TestTeams_GetTeams_NoAuth(t *testing.T) {
 	matchID, _ := matchRes.Body["id"].(string)
 	assert.NotEmpty(t, matchID)
 
-	// Get teams without auth (public endpoint)
+	// Get teams without auth (public endpoint) — match was just created, must exist → 200
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+matchID+"/teams", "", nil)
-	// Should work even without auth
-	assert.True(t, res.Code == http.StatusOK || res.Code == http.StatusNotFound)
+	assert.Equal(t, http.StatusOK, res.Code)
 }
 
 func TestTeams_GetTeams_InvalidMatchID(t *testing.T) {
 	srv := newTestServer(t)
 
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/invalid-uuid/teams", "", nil)
-	// Handler may return 422 (invalid UUID) or 404 (route not matched)
-	assert.True(t, res.Code == http.StatusUnprocessableEntity || res.Code == http.StatusNotFound)
+	// matchIDParam returns an error for invalid UUID → handler renders apierror.NotFound → 404
+	assert.Equal(t, http.StatusNotFound, res.Code)
+	assert.Contains(t, res.Body, "match not found")
+}
+
+func TestTeams_GetTeams_NonExistentMatch(t *testing.T) {
+	srv := newTestServer(t)
+
+	// Use a valid UUID that doesn't correspond to any match
+	nonExistentMatchID := "00000000-0000-0000-0000-000000000000"
+
+	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+nonExistentMatchID+"/teams", "", nil)
+	// db.GetMatchByID returns ErrNotFound → renderError maps to 404
+	assert.Equal(t, http.StatusNotFound, res.Code)
+	assert.Contains(t, res.Body, "match not found")
 }
