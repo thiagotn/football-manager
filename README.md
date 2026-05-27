@@ -35,6 +35,8 @@
 
 ### Desenvolvimento local
 
+#### Stack v1 (FastAPI — padrão)
+
 ```
 Navegador
     │ http://localhost:3000
@@ -48,6 +50,23 @@ API (FastAPI)              porta 8000
 PostgreSQL                 porta 5432
 ```
 
+#### Stack v2 (Go — migração progressiva)
+
+```
+Navegador
+    │ http://localhost:3000
+    ▼
+Frontend (SvelteKit)       porta 3000
+    │ http://localhost:8080/api/v2
+    ▼
+API Go                     porta 8080
+    │
+    ▼
+PostgreSQL                 porta 5432
+```
+
+> **Nota:** A API v2 em Go está em desenvolvimento progressivo. Ambas as APIs compartilham o mesmo banco de dados PostgreSQL e podem coexistir durante a migração.
+
 ### Produção (VPS + Traefik + Supabase)
 
 ```
@@ -56,7 +75,7 @@ Navegador
     ▼
 Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
     ├── rachao.app      →  Frontend (SvelteKit)
-    └── api.rachao.app  →  API (FastAPI)
+    └── api.rachao.app  →  API (FastAPI v1 ou Go v2)
                             │
                             ▼
                         Supabase PostgreSQL  (sa-east-1, São Paulo)
@@ -67,20 +86,29 @@ Traefik                    portas 80 / 443  (TLS via Let's Encrypt)
 | Componente | Tecnologia | Descrição |
 |---|---|---|
 | **Frontend** | SvelteKit 5 + Tailwind CSS | SPA com roteamento client-side. Consome a API via fetch. |
-| **API** | FastAPI + SQLAlchemy (async) | REST API com autenticação JWT. Documentação automática em `/docs`. |
-| **Banco (local)** | PostgreSQL 16 (Docker) | Instância local para desenvolvimento. |
+| **API v1** | FastAPI + SQLAlchemy (async) | REST API com autenticação JWT. Documentação automática em `/docs`. |
+| **API v2** | Go + pgx + chi-router | REST API de alta performance (migração em progresso). Sem dependências de framework pesado. |
+| **Banco (local)** | PostgreSQL 16 (Docker) | Instância local para desenvolvimento. Compartilhada entre v1 e v2. |
 | **Banco (prod)** | Supabase PostgreSQL | Banco gerenciado na região sa-east-1 (São Paulo). |
 | **Traefik** | Traefik v3 | Proxy reverso + TLS automático (produção). |
 | **Adminer** | Adminer 4 | Interface web para inspecionar o banco (opcional, via Docker profile). |
 | **E2E** | Playwright + pytest (Python) | Testes end-to-end dos cenários principais. Roda em CI a cada push. |
 | **MCP** | Python + FastMCP | Servidor MCP que expõe a API do rachao.app para agentes de IA (Claude). |
+| **Unit Tests (Go)** | Go Testing + testify | 237+ testes unitários para a API v2. Cobertura: 27.7%. |
 
 ---
 
 ## Pré-requisitos
 
+### Obrigatório
+
 - [Docker](https://docs.docker.com/get-docker/) 24+
 - [Docker Compose](https://docs.docker.com/compose/) v2+
+
+### Opcional
+
+- [Go](https://golang.org/dl) 1.21+ — necessário apenas para rodar a API v2 localmente (sem Docker)
+- [Node.js](https://nodejs.org/) 20+ — necessário apenas para desenvolvimento do frontend
 
 ---
 
@@ -125,6 +153,68 @@ WhatsApp: 11999990000
 Senha:    admin123
 ```
 
+### Executar a API v2 (Go) localmente
+
+A API v2 em Go pode rodar em paralelo com a v1 (FastAPI) no mesmo banco de dados.
+
+#### 1. Pré-requisitos
+
+- **Go 1.21+** instalado ([download](https://golang.org/dl))
+- **Docker** para o PostgreSQL (já rodando via `make up`)
+
+#### 2. Instalar dependências Go
+
+```bash
+cd football-api-go
+go mod download
+go mod tidy
+```
+
+#### 3. Configurar variáveis de ambiente
+
+```bash
+# O arquivo já vem pré-configurado para dev local
+cat .env.docker  # Verifica a configuração
+```
+
+#### 4. Rodar o servidor com hot-reload
+
+```bash
+cd football-api-go
+make run
+# ou: air
+```
+
+O servidor estará disponível em `http://localhost:8080` e recarregará automaticamente a cada mudança de código.
+
+#### 5. Acessar
+
+| Serviço | URL |
+|---------|-----|
+| API v2 (REST) | http://localhost:8080/api/v2 |
+| Swagger (docs) | http://localhost:8080/docs |
+| Health check | http://localhost:8080/health |
+
+#### 6. Rodar testes
+
+```bash
+cd football-api-go
+
+# Testes com cobertura
+make test
+
+# Testes com output verbose
+make test-verbose
+
+# Relatório completo com cobertura
+make test-report
+
+# Abre cobertura em HTML
+make coverage
+```
+
+> **Status:** A API v2 em Go está em **desenvolvimento progressivo**, migrando endpoints de v1 (FastAPI) conforme completados. Ambas as APIs compartilham o mesmo banco PostgreSQL durante a transição.
+
 ### Adminer (opcional)
 
 ```bash
@@ -152,7 +242,7 @@ make down-clean   # Para e apaga o volume do banco (dados zerados)
 make logs         # Logs da API e do frontend em tempo real
 ```
 
-### Dentro de `football-api/` (comandos adicionais)
+### Dentro de `football-api/` (API v1 — FastAPI)
 
 ```bash
 make up-bg        # Sobe em background e exibe logs da API
@@ -162,6 +252,21 @@ make adminer      # Sobe o Adminer (UI do banco)
 make health       # Verifica saúde da API
 make docs         # Abre o Swagger no browser
 make test         # Roda os testes unitários
+```
+
+### Dentro de `football-api-go/` (API v2 — Go)
+
+```bash
+make run          # Executa o servidor com hot-reload (via air)
+make build        # Compila o binário de produção
+make test         # Roda todos os testes unitários
+make test-verbose # Testes com verbose output (mostra cada teste)
+make test-report  # Gera relatório de testes com cobertura
+make test-json    # Testes em formato JSON (test-results.json)
+make coverage     # Abre relatório de cobertura em HTML
+make lint         # Executa o linter (golangci-lint)
+make generate     # Gera código (sqlc, go generate)
+make migrate      # Aplica migrações do banco (requer DATABASE_URL)
 ```
 
 Ou com Docker Compose diretamente (a partir da raiz):
@@ -186,7 +291,7 @@ football-manager/
 │       └── deploy-monitoring.yml   # Deploy da stack de monitoramento (disparo manual)
 ├── scripts/
 │   └── setup-vps.sh                # Prepara o VPS Ubuntu 24.04 para receber o deploy
-├── football-api/                   # Backend
+├── football-api/                   # Backend v1 (FastAPI)
 │   ├── app/
 │   │   ├── main.py                 # Entrypoint FastAPI
 │   │   ├── models/                 # Modelos SQLAlchemy
@@ -201,20 +306,45 @@ football-manager/
 │   ├── .env.prod.example           # Template para produção
 │   ├── Makefile                    # Atalhos para comandos comuns
 │   └── pyproject.toml
-├── football-frontend/              # Frontend
+├── football-api-go/                # Backend v2 (Go) — Migração em progresso
+│   ├── cmd/
+│   │   └── server/
+│   │       └── main.go             # Entrypoint do servidor HTTP
+│   ├── internal/
+│   │   ├── handlers/               # HTTP handlers para cada domínio
+│   │   ├── db/                     # Queries SQL (gerado por sqlc) + tipos
+│   │   ├── services/               # Lógica de negócio (auth, billing, push)
+│   │   ├── middleware/             # Middleware HTTP (auth, CORS, logging)
+│   │   ├── models/                 # Estruturas de dados (enums, tipos)
+│   │   ├── apierror/               # Tratamento centralizado de erros HTTP
+│   │   └── server/                 # Roteador chi com todas as rotas
+│   ├── sql/
+│   │   ├── queries/                # Queries SQL (*.sql) — compiladas por sqlc
+│   │   └── migrations/             # Scripts SQL compartilhados com v1
+│   ├── tests/
+│   │   ├── unit/                   # Testes unitários (237+ testes, 27.7% cobertura)
+│   │   ├── integration/            # Testes de integração com DB real
+│   │   └── e2e/                    # Testes end-to-end (compartilhado com frontend)
+│   ├── Dockerfile                  # Multi-stage: builder e production
+│   ├── docker-compose.yml          # Ambiente local (porta 8080)
+│   ├── Makefile                    # Atalhos: build, test, test-verbose, coverage, etc
+│   ├── go.mod / go.sum             # Dependências Go
+│   ├── sqlc.yaml                   # Configuração do sqlc (código gerado)
+│   └── .air.toml                   # Configuração de hot-reload
+├── football-frontend/              # Frontend (SvelteKit)
 │   ├── src/
 │   │   ├── routes/                 # Páginas (SvelteKit file-based routing)
 │   │   ├── lib/
-│   │   │   ├── api.ts              # Client HTTP para a API
+│   │   │   ├── api.ts              # Client HTTP para a API (v1 ou v2)
 │   │   │   ├── stores/             # Estado global (auth, toast)
 │   │   │   └── components/         # Componentes reutilizáveis
 │   │   └── app.css                 # Estilos globais (Tailwind)
 │   └── Dockerfile                  # Multi-stage: builder e production
-├── football-e2e/                   # Testes end-to-end
+├── football-e2e/                   # Testes end-to-end (Playwright)
 │   ├── conftest.py                 # Fixtures: login, contextos autenticados
 │   ├── pages/                      # Page Object Model
 │   └── tests/                      # Suites por domínio (auth, groups, matches…)
-└── football-mcp/                   # Servidor MCP (Model Context Protocol)
+├── football-mcp/                   # Servidor MCP (Model Context Protocol)
     ├── rachao_mcp/
     │   ├── server.py               # Entrypoint FastMCP — registra tools read/write
     │   ├── auth.py                 # Leitura e validação do RACHAO_TOKEN
@@ -224,6 +354,9 @@ football-manager/
     ├── Dockerfile                  # Imagem para execução em produção
     ├── Makefile                    # install / dev / register / test
     └── pyproject.toml
+└── docs/
+    ├── prd/                        # Product Requirements Documents
+    └── arquitetura_rachao_app.svg  # Diagrama de arquitetura
 ```
 
 ---
