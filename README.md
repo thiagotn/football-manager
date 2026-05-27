@@ -192,8 +192,10 @@ O servidor estará disponível em `http://localhost:8080` e recarregará automat
 | Serviço | URL |
 |---------|-----|
 | API v2 (REST) | http://localhost:8080/api/v2 |
-| Swagger (docs) | http://localhost:8080/docs |
-| Health check | http://localhost:8080/health |
+| Health check | http://localhost:8080/api/v2/health |
+| Documentação (Mintlify) | http://localhost:3001 |
+
+> A documentação Mintlify é servida por um container separado (`docs` no `docker-compose.go-dev.yml`). Para subir apenas a docs: `docker compose -f docker-compose.go-dev.yml up -d --build docs`. O `mintlify/openapi.yaml` é gerado via `make docs` no diretório `football-api-go/` (requer `swag` instalado: `go install github.com/swaggo/swag/cmd/swag@latest`).
 
 #### 6. Rodar testes
 
@@ -267,6 +269,7 @@ make coverage     # Abre relatório de cobertura em HTML
 make lint         # Executa o linter (golangci-lint)
 make generate     # Gera código (sqlc, go generate)
 make migrate      # Aplica migrações do banco (requer DATABASE_URL)
+make docs         # Gera mintlify/openapi.yaml a partir das anotações swag
 ```
 
 Ou com Docker Compose diretamente (a partir da raiz):
