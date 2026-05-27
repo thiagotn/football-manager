@@ -335,7 +335,7 @@ func GetPlayerMatches(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUI
 			m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
 			m.location, m.address, m.court_type::TEXT,
 			m.players_per_team, m.max_players, m.notes,
-			m.status::TEXT, m.created_at, m.updated_at,
+			m.status::TEXT, m.created_at::TEXT, m.updated_at::TEXT,
 			g.name, g.timezone,
 			a.status::TEXT
 		FROM matches m
