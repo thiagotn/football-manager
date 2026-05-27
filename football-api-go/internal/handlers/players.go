@@ -29,7 +29,7 @@ type PlayerStore interface {
 	EnsurePlayerSubscription(ctx context.Context, playerID uuid.UUID) error
 	GetPlayerMatches(ctx context.Context, playerID uuid.UUID) ([]db.PlayerMatch, error)
 	GetPlayerStatsMinutes(ctx context.Context, playerID uuid.UUID) (int, error)
-	GetPlatformMatchStats(ctx context.Context) (closedMatches, uniquePlayers int, err error)
+	GetPlatformMatchStats(ctx context.Context) (closedMatches, uniquePlayers, totalMinutes int, err error)
 	GetPlayerGroupStats(ctx context.Context, playerID uuid.UUID) ([]db.GroupStat, error)
 	GetPlayerGoalsAssists(ctx context.Context, playerID uuid.UUID) (goals, assists int, err error)
 	GetPublicPlayerStats(ctx context.Context, playerID uuid.UUID) (totalConfirmed, totalGoals, totalAssists int, err error)
@@ -73,7 +73,7 @@ func (s *pgPlayerStore) GetPlayerStatsMinutes(ctx context.Context, playerID uuid
 	return db.GetPlayerStatsMinutes(ctx, s.pool, playerID)
 }
 
-func (s *pgPlayerStore) GetPlatformMatchStats(ctx context.Context) (int, int, error) {
+func (s *pgPlayerStore) GetPlatformMatchStats(ctx context.Context) (int, int, int, error) {
 	return db.GetPlatformMatchStats(ctx, s.pool)
 }
 
@@ -240,8 +240,8 @@ func (h *PlayerHandler) myStats(w http.ResponseWriter, r *http.Request) {
 
 	resp := map[string]any{"minutes_played": minutesPlayed}
 	if player.Role == db.PlayerRoleAdmin {
-		platTotal, platMinutes, _ := h.Store.GetPlatformMatchStats(r.Context())
-		resp["platform_minutes_played"] = platMinutes * 90
+		platTotal, _, platMinutes, _ := h.Store.GetPlatformMatchStats(r.Context())
+		resp["platform_minutes_played"] = platMinutes
 		resp["platform_total_matches"] = platTotal
 	}
 	renderJSON(w, http.StatusOK, resp)

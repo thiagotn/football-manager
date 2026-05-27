@@ -41,6 +41,8 @@ type GroupStore interface {
 	UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error
 	GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	EnsureMemberInCurrentPeriod(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
+	GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
 }
 
 type pgGroupStore struct {
@@ -112,6 +114,12 @@ func (s *pgGroupStore) GetOpenMatchesForGroup(ctx context.Context, groupID uuid.
 }
 func (s *pgGroupStore) SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error {
 	return db.SetAttendance(ctx, s.pool, matchID, playerID, status)
+}
+func (s *pgGroupStore) EnsureMemberInCurrentPeriod(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error {
+	return db.EnsureMemberInCurrentPeriod(ctx, s.pool, groupID, playerID, playerName)
+}
+func (s *pgGroupStore) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
+	return db.GetPlayerByID(ctx, s.pool, playerID)
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -633,6 +641,16 @@ func (h *GroupHandler) addMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = h.Store.EnsurePlayerSubscription(r.Context(), req.PlayerID)
+
+	// Ensure member appears in current finance period
+	if playerInfo, err := h.Store.GetPlayerByID(r.Context(), req.PlayerID); err == nil {
+		playerDisplayName := playerInfo.Name
+		if playerInfo.Nickname != nil && *playerInfo.Nickname != "" {
+			playerDisplayName = *playerInfo.Nickname
+		}
+		_ = h.Store.EnsureMemberInCurrentPeriod(r.Context(), groupID, req.PlayerID, playerDisplayName)
+	}
+
 	renderJSON(w, http.StatusCreated, m)
 }
 
@@ -890,6 +908,13 @@ func (h *GroupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 	for _, mid := range matchIDs {
 		_ = h.Store.SetAttendance(r.Context(), mid, target.ID, "pending")
 	}
+
+	// Ensure member appears in current finance period
+	playerDisplayName := target.Name
+	if target.Nickname != nil && *target.Nickname != "" {
+		playerDisplayName = *target.Nickname
+	}
+	_ = h.Store.EnsureMemberInCurrentPeriod(r.Context(), groupID, target.ID, playerDisplayName)
 
 	renderJSON(w, http.StatusCreated, map[string]any{"member": m, "is_new": isNew})
 }

@@ -381,15 +381,18 @@ func GetPlayerStatsMinutes(ctx context.Context, pool *pgxpool.Pool, playerID uui
 	return minutes, err
 }
 
-// GetPlatformMatchStats returns closed matches and unique players for platform stats
-func GetPlatformMatchStats(ctx context.Context, pool *pgxpool.Pool) (closedMatches, uniquePlayers int, err error) {
+// GetPlatformMatchStats returns closed matches, unique players, and total minutes for platform stats
+func GetPlatformMatchStats(ctx context.Context, pool *pgxpool.Pool) (closedMatches, uniquePlayers, totalMinutes int, err error) {
+	var totalMinutesFloat float64
 	err = pool.QueryRow(ctx, `
 		SELECT
 			COALESCE(COUNT(*) FILTER (WHERE m.status='closed'), 0),
-			COALESCE(COUNT(DISTINCT a.player_id) FILTER (WHERE m.status='closed'), 0)
+			COALESCE(COUNT(DISTINCT a.player_id) FILTER (WHERE m.status='closed'), 0),
+			COALESCE(SUM(EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 60.0) FILTER (WHERE m.status='closed'), 0)
 		FROM attendances a
 		JOIN matches m ON m.id = a.match_id
-		WHERE a.status = 'confirmed'`).Scan(&closedMatches, &uniquePlayers)
+		WHERE a.status = 'confirmed'`).Scan(&closedMatches, &uniquePlayers, &totalMinutesFloat)
+	totalMinutes = int(totalMinutesFloat)
 	return
 }
 
