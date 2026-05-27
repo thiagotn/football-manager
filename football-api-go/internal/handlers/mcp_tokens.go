@@ -86,14 +86,14 @@ func (h *MCPTokenHandler) createToken(w http.ResponseWriter, r *http.Request) {
 	if body.ExpiresIn != nil {
 		now := time.Now().UTC()
 		switch *body.ExpiresIn {
-		case "h24":
+		case "24h":
 			t := now.Add(24 * time.Hour)
 			expiresAt = &t
-		case "d7":
+		case "7d":
 			t := now.Add(7 * 24 * time.Hour)
 			expiresAt = &t
 		default:
-			renderError(w, apierror.Unprocessable("expires_in must be 'h24', 'd7', or null"))
+			renderError(w, apierror.Unprocessable("expires_in must be '24h', '7d', or null"))
 			return
 		}
 	}

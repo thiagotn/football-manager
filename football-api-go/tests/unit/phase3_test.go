@@ -213,7 +213,7 @@ func TestMCPToken_Create_Success(t *testing.T) {
 	}
 	r := mcpTokenRouter(player, store)
 
-	w := postJSON(r, "/mcp-tokens", `{"name":"test-token","expires_in":"h24"}`)
+	w := postJSON(r, "/mcp-tokens", `{"name":"test-token","expires_in":"24h"}`)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Contains(t, w.Body.String(), "tok_")
 }
@@ -419,7 +419,17 @@ func TestReviews_Summary_Success_Admin(t *testing.T) {
 	h := &handlers.ReviewHandler{
 		Store: &mockReviewStore{
 			getReviewSummaryFn: func(ctx context.Context) (*db.ReviewSummary, error) {
-				return &db.ReviewSummary{TotalReviews: 10, AverageRating: 4.5}, nil
+				return &db.ReviewSummary{
+					Total:   10,
+					Average: 4.5,
+					Distribution: map[string]db.DistributionEntry{
+						"1": {Count: 0, Percent: 0},
+						"2": {Count: 0, Percent: 0},
+						"3": {Count: 0, Percent: 0},
+						"4": {Count: 5, Percent: 50.0},
+						"5": {Count: 5, Percent: 50.0},
+					},
+				}, nil
 			},
 		},
 	}
