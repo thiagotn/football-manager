@@ -916,7 +916,30 @@ func (h *GroupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 	}
 	_ = h.Store.EnsureMemberInCurrentPeriod(r.Context(), groupID, target.ID, playerDisplayName)
 
-	renderJSON(w, http.StatusCreated, map[string]any{"member": m, "is_new": isNew})
+	// Build response with nested player object so frontend can access
+	// res.member.player.name (matches v1 GroupMemberResponse schema).
+	whatsapp := target.WhatsApp
+	memberWithPlayer := db.GroupMemberWithPlayer{
+		GroupMember: db.GroupMember{
+			ID:         m.ID,
+			GroupID:    groupID,
+			PlayerID:   target.ID,
+			Role:       db.GroupMemberRoleMember,
+			SkillStars: skillStars,
+			Position:   position,
+			Nickname:   req.Nickname,
+			CreatedAt:  m.CreatedAt,
+			UpdatedAt:  m.UpdatedAt,
+		},
+		PlayerName:      target.Name,
+		PlayerNickname:  target.Nickname,
+		PlayerWhatsApp:  whatsapp,
+		PlayerAvatarURL: target.AvatarURL,
+		PlayerRole:      target.Role,
+	}
+	resp := buildMemberResponse(memberWithPlayer, true) // caller is admin (checked above)
+
+	renderJSON(w, http.StatusCreated, map[string]any{"member": resp, "is_new": isNew})
 }
 
 func (h *GroupHandler) groupStats(w http.ResponseWriter, r *http.Request) {
