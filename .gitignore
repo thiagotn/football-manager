@@ -20,3 +20,10 @@ dump-*.sql
 
 # Configurações de infra local (obsoletas)
 proxy/
+
+# Test coverage & build artifacts
+*.out
+coverage.out
+coverage-*.out
+*.test
+/tmp/
