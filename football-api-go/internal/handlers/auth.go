@@ -18,6 +18,14 @@ func NewAuthHandler(svc services.AuthService, loginRL *middleware.LoginRateLimit
 	return &authHandler{svc: svc, loginRL: loginRL}
 }
 
+// loginRLMiddleware returns the rate limit middleware if available, otherwise a pass-through.
+func (h *authHandler) loginRLMiddleware(next http.Handler) http.Handler {
+	if h.loginRL == nil {
+		return next
+	}
+	return h.loginRL.Middleware(next)
+}
+
 // Routes returns a single router with both public and protected auth routes.
 // Protected routes are wrapped with the provided auth and apiV2 middlewares.
 // Use this instead of PublicRoutes/ProtectedRoutes to avoid chi double-mount conflicts.
@@ -25,7 +33,7 @@ func (h *authHandler) Routes(authMw, apiV2Mw func(http.Handler) http.Handler) ht
 	r := chi.NewRouter()
 
 	// Public routes
-	r.With(h.loginRL.Middleware).Post("/login", h.login)
+	r.With(h.loginRLMiddleware).Post("/login", h.login)
 	r.Post("/send-otp", h.sendOTP)
 	r.Post("/verify-otp", h.verifyOTP)
 	r.Post("/register", h.register)
@@ -50,7 +58,7 @@ func (h *authHandler) Routes(authMw, apiV2Mw func(http.Handler) http.Handler) ht
 // PublicRoutes returns only the public auth routes (no auth middleware required).
 func (h *authHandler) PublicRoutes() http.Handler {
 	r := chi.NewRouter()
-	r.With(h.loginRL.Middleware).Post("/login", h.login)
+	r.With(h.loginRLMiddleware).Post("/login", h.login)
 	r.Post("/send-otp", h.sendOTP)
 	r.Post("/verify-otp", h.verifyOTP)
 	r.Post("/register", h.register)

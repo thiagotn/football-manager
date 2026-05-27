@@ -36,8 +36,11 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		storageSvc = services.NewStorageService(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	}
 
-	// Rate limiters
-	loginRL := middleware.NewLoginRateLimiter()
+	// Rate limiters (disabled in development)
+	var loginRL *middleware.LoginRateLimiter
+	if cfg.AppEnv != "development" {
+		loginRL = middleware.NewLoginRateLimiter()
+	}
 
 	// Handlers
 	authH := handlers.NewAuthHandler(authSvc, loginRL)
