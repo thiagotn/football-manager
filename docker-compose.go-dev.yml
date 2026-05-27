@@ -1,0 +1,143 @@
+# Docker Compose Stack for Go API v2 (local development)
+#
+# This file creates an isolated testing environment for the Go API (football-api-go)
+# alongside the SvelteKit frontend, without conflicting with the existing Python API stack.
+#
+# Usage:
+#   docker compose -f docker-compose.go-dev.yml up --build
+#   docker compose -f docker-compose.go-dev.yml down
+#   docker compose -f docker-compose.go-dev.yml down -v          # Remove volumes
+#
+# Access:
+#   Frontend:     http://localhost:3000
+#   Go API:       http://localhost:8080/api/v2
+#   Adminer:      http://localhost:8081      (with --profile tools)
+#   Health check: curl http://localhost:8080/api/v2/health
+#
+# Configuration:
+#   - PostgreSQL runs on port 5433 (does NOT conflict with Python API's 5432)
+#   - Database: football_dev
+#   - Migrations auto-run from football-api/migrations/
+#   - OTP bypass code: 123456 (no Twilio required)
+#
+# Creating admin user:
+#   After stack is up, register normally via frontend (use OTP code 123456),
+#   then promote to admin:
+#   docker exec -it football-go-postgres \
+#     psql -U football -d football_dev \
+#     -c "UPDATE players SET role='admin' WHERE whatsapp='+5511999990000';"
+
+name: football-manager-go-dev
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: football-go-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: football_dev
+      POSTGRES_USER: football
+      POSTGRES_PASSWORD: football
+    ports:
+      - "5433:5432"
+    volumes:
+      - go_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U football -d football_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - go-app-net
+
+  migrate:
+    image: migrate/migrate
+    container_name: football-go-migrate
+    volumes:
+      - ./football-api/migrations:/migrations:ro
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "postgres://football:football@postgres:5432/football_dev?sslmode=disable"
+      - "up"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - go-app-net
+
+  api-go:
+    build:
+      context: ./football-api-go
+      dockerfile: Dockerfile
+      target: dev
+    container_name: football-go-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://football:football@postgres:5432/football_dev?sslmode=disable
+      SECRET_KEY: local-dev-secret-key-change-in-production-32chars
+      APP_ENV: development
+      PORT: "8080"
+      OTP_BYPASS_CODE: "123456"
+      CORS_ORIGINS: "http://localhost:3000"
+      FRONTEND_URL: "http://localhost:3000"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./football-api-go:/app
+      - go_cache:/root/.cache/go-build
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - go-app-net
+
+  frontend:
+    build:
+      context: ./football-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "http://localhost:8080/api/v2"
+        VITE_BILLING_ENABLED: "false"
+        PUBLIC_LEGAL_CONTROLLER_NAME: "Test"
+        PUBLIC_LEGAL_CONTROLLER_DOC: "00000000000000"
+        PUBLIC_LEGAL_FORUM_CITY: "São Paulo"
+        PUBLIC_LEGAL_CONTACT_EMAIL: "contact@test.local"
+    container_name: football-go-frontend
+    restart: unless-stopped
+    environment:
+      ORIGIN: "http://localhost:3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-go
+    networks:
+      - go-app-net
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: football-go-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - go-app-net
+    profiles:
+      - tools
+
+volumes:
+  go_postgres_data:
+  go_cache:
+  go_mod_cache:
+
+networks:
+  go-app-net:
+    driver: bridge
