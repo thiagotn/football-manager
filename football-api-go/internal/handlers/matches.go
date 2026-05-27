@@ -179,11 +179,15 @@ type attendanceResp struct {
 
 type matchDetailResp struct {
 	db.Match
-	Attendances    []attendanceResp `json:"attendances"`
-	ConfirmedCount int              `json:"confirmed_count"`
-	DeclinedCount  int              `json:"declined_count"`
-	PendingCount   int              `json:"pending_count"`
-	GroupName      string           `json:"group_name,omitempty"`
+	Attendances         []attendanceResp `json:"attendances"`
+	ConfirmedCount      int              `json:"confirmed_count"`
+	DeclinedCount       int              `json:"declined_count"`
+	PendingCount        int              `json:"pending_count"`
+	GroupName           string           `json:"group_name"`
+	GroupTimezone       string           `json:"group_timezone"`
+	GroupPerMatchAmount *float64         `json:"group_per_match_amount"`
+	GroupMonthlyAmount  *float64         `json:"group_monthly_amount"`
+	GroupIsPublic       bool             `json:"group_is_public"`
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -221,11 +225,44 @@ func buildAttendanceResp(a db.AttendanceWithPlayer) attendanceResp {
 	}
 }
 
-func buildMatchDetail(match *db.Match, atts []db.AttendanceWithPlayer, groupName string) matchDetailResp {
+// matchGroupFields carries the per-group fields embedded in match detail
+// responses. Pass nil/empty values via groupFieldsFromName when only the
+// group name is known.
+type matchGroupFields struct {
+	Name           string
+	Timezone       string
+	PerMatchAmount *float64
+	MonthlyAmount  *float64
+	IsPublic       bool
+}
+
+func groupFieldsFromName(name string) matchGroupFields {
+	return matchGroupFields{
+		Name:     name,
+		Timezone: "America/Sao_Paulo",
+		IsPublic: true,
+	}
+}
+
+func groupFieldsFromMatch(m *db.MatchWithGroupName) matchGroupFields {
+	return matchGroupFields{
+		Name:           m.GroupName,
+		Timezone:       m.GroupTimezone,
+		PerMatchAmount: m.GroupPerMatchAmount,
+		MonthlyAmount:  m.GroupMonthlyAmount,
+		IsPublic:       m.GroupIsPublic,
+	}
+}
+
+func buildMatchDetail(match *db.Match, atts []db.AttendanceWithPlayer, group matchGroupFields) matchDetailResp {
 	resp := matchDetailResp{
-		Match:       *match,
-		GroupName:   groupName,
-		Attendances: make([]attendanceResp, 0, len(atts)),
+		Match:               *match,
+		GroupName:           group.Name,
+		GroupTimezone:       group.Timezone,
+		GroupPerMatchAmount: group.PerMatchAmount,
+		GroupMonthlyAmount:  group.MonthlyAmount,
+		GroupIsPublic:       group.IsPublic,
+		Attendances:         make([]attendanceResp, 0, len(atts)),
 	}
 	for _, a := range atts {
 		resp.Attendances = append(resp.Attendances, buildAttendanceResp(a))
@@ -290,7 +327,7 @@ func (h *MatchHandler) GetPublicMatch(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err)
 		return
 	}
-	renderJSON(w, http.StatusOK, buildMatchDetail(&matchWithGroup.Match, atts, matchWithGroup.GroupName))
+	renderJSON(w, http.StatusOK, buildMatchDetail(&matchWithGroup.Match, atts, groupFieldsFromMatch(matchWithGroup)))
 }
 
 func (h *MatchHandler) GetPublicMatchStats(w http.ResponseWriter, r *http.Request) {
@@ -478,7 +515,20 @@ func (h *MatchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err)
 		return
 	}
-	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, ""))
+
+	// Fetch group to include its name/timezone/pricing/visibility — the
+	// frontend MatchBannerCard reads match.group_timezone (formatMatchTimeRange)
+	// and other group_* fields directly off the match payload.
+	group := matchGroupFields{Timezone: "America/Sao_Paulo", IsPublic: true}
+	if g, err := h.Store.GetGroupByID(r.Context(), match.GroupID); err == nil && g != nil {
+		group.Name = g.Name
+		group.Timezone = g.Timezone
+		group.PerMatchAmount = g.PerMatchAmount
+		group.MonthlyAmount = g.MonthlyAmount
+		group.IsPublic = g.IsPublic
+	}
+
+	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, group))
 }
 
 func (h *MatchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {

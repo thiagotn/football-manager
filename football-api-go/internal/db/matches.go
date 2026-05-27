@@ -135,17 +135,28 @@ func GetMatchByHash(ctx context.Context, pool *pgxpool.Pool, hash string) (*Matc
 	return scanMatch(row.Scan)
 }
 
-// MatchWithGroupName bundles a Match with the parent group's name, in a single round-trip.
+// MatchWithGroupName bundles a Match with the parent group's basic fields,
+// fetched in a single round-trip.
 type MatchWithGroupName struct {
 	Match
-	GroupName string
+	GroupName           string
+	GroupTimezone       string
+	GroupPerMatchAmount *float64
+	GroupMonthlyAmount  *float64
+	GroupIsPublic       bool
 }
 
-// GetMatchByHashWithGroup fetches a match by hash AND the group name in a single SQL query.
-// Avoids the extra round-trip of calling GetMatchByHash followed by GetGroupByID.
+// GetMatchByHashWithGroup fetches a match by hash AND the group's
+// name/timezone/pricing/visibility in a single SQL query. Avoids the extra
+// round-trip of calling GetMatchByHash followed by GetGroupByID.
 func GetMatchByHashWithGroup(ctx context.Context, pool *pgxpool.Pool, hash string) (*MatchWithGroupName, error) {
 	row := pool.QueryRow(ctx, `
-		SELECT `+matchCols+`, g.name
+		SELECT `+matchCols+`,
+		       g.name,
+		       g.timezone,
+		       g.per_match_amount::FLOAT8,
+		       g.monthly_amount::FLOAT8,
+		       g.is_public
 		FROM matches m
 		JOIN groups g ON g.id = m.group_id
 		WHERE m.hash = $1`, hash)
@@ -158,6 +169,10 @@ func GetMatchByHashWithGroup(ctx context.Context, pool *pgxpool.Pool, hash strin
 		&m.Status, &m.VoteOpenDelayMinutes, &m.VoteDurationHours, &m.VoteNotified,
 		&m.CreatedAt, &m.UpdatedAt,
 		&m.GroupName,
+		&m.GroupTimezone,
+		&m.GroupPerMatchAmount,
+		&m.GroupMonthlyAmount,
+		&m.GroupIsPublic,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
