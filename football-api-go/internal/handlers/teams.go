@@ -162,7 +162,11 @@ func (h *teamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := db.GetMatchByID(r.Context(), h.pool, matchID); err != nil {
-		renderError(w, err)
+		if err == db.ErrNotFound {
+			renderError(w, apierror.NotFound("match not found"))
+		} else {
+			renderError(w, err)
+		}
 		return
 	}
 

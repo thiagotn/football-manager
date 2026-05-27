@@ -454,7 +454,11 @@ func (h *PlayerHandler) updatePlayer(w http.ResponseWriter, r *http.Request) {
 		target.PasswordHash = hash
 	}
 
-	err = h.Store.UpdatePlayerProfile(r.Context(), targetID, target.Name, *target.Nickname, target.PasswordHash)
+	nickname := ""
+	if target.Nickname != nil {
+		nickname = *target.Nickname
+	}
+	err = h.Store.UpdatePlayerProfile(r.Context(), targetID, target.Name, nickname, target.PasswordHash)
 	if err != nil {
 		renderError(w, err)
 		return

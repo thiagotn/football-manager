@@ -262,11 +262,10 @@ func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, playerID *uuid.
 		LEFT JOIN attendances a ON a.match_id = m.id
 		WHERE g.is_public = TRUE
 		  AND m.status = 'open'
-		  AND (m.max_players IS NULL OR COUNT(a.id) FILTER (WHERE a.status = 'confirmed') < m.max_players)
 	`
 
-	args := []interface{}{limit, offset}
-	argNum := 1
+	args := []interface{}{}
+	argNum := 0
 
 	if playerID != nil {
 		query += `
@@ -276,11 +275,15 @@ func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, playerID *uuid.
 		argNum += 2
 	}
 
+	argNum++
+	argNum++
 	query += `
 		GROUP BY m.id, g.name, g.timezone
+		HAVING m.max_players IS NULL OR COUNT(a.id) FILTER (WHERE a.status = 'confirmed') < m.max_players
 		ORDER BY m.match_date ASC, m.start_time ASC
-		LIMIT $1 OFFSET $2
+		LIMIT $` + strconv.Itoa(argNum-1) + ` OFFSET $` + strconv.Itoa(argNum) + `
 	`
+	args = append(args, limit, offset)
 
 	rows, err := pool.Query(ctx, query, args...)
 	if err != nil {

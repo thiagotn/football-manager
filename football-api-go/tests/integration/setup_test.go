@@ -60,7 +60,8 @@ func testConfig() *config.Config {
 		// OTP bypass: skip Twilio calls in tests
 		OTPBypassCode: testOTPBypassCode,
 		// Set high expire times so tokens don't expire mid-test
-		AccessTokenExpireMinutes: 60,
+		AccessTokenExpireMinutes:  60,
+		InviteTokenExpireMinutes:  30,
 		// Fake Stripe config so webhook signature validation is active in tests.
 		// Tests use "whsec_test_secret_12345" when computing valid HMACs.
 		StripeSecretKey:     "sk_test_fake_ci_only",

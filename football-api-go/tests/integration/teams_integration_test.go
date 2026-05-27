@@ -131,7 +131,7 @@ func TestTeams_GetTeams_InvalidMatchID(t *testing.T) {
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/invalid-uuid/teams", "", nil)
 	// matchIDParam returns an error for invalid UUID → handler renders apierror.NotFound → 404
 	assert.Equal(t, http.StatusNotFound, res.Code)
-	assert.Contains(t, res.Body, "match not found")
+	assert.Equal(t, "match not found", res.Body["detail"])
 }
 
 func TestTeams_GetTeams_NonExistentMatch(t *testing.T) {
@@ -143,5 +143,5 @@ func TestTeams_GetTeams_NonExistentMatch(t *testing.T) {
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+nonExistentMatchID+"/teams", "", nil)
 	// db.GetMatchByID returns ErrNotFound → renderError maps to 404
 	assert.Equal(t, http.StatusNotFound, res.Code)
-	assert.Contains(t, res.Body, "match not found")
+	assert.Equal(t, "match not found", res.Body["detail"])
 }

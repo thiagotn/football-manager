@@ -172,14 +172,10 @@ func (h *InviteHandler) createInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check that group exists
+	// Check permissions: only global admins or group admins can create invites
 	if caller.Role != db.PlayerRoleAdmin {
 		m, err := h.Store.GetGroupMember(r.Context(), groupID, caller.ID)
-		if err != nil {
-			renderError(w, apierror.NotFound("group not found"))
-			return
-		}
-		if m.Role != db.GroupMemberRoleAdmin {
+		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can create invites"))
 			return
 		}
