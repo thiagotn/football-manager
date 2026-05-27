@@ -22,27 +22,30 @@
 ## Sumário
 
 **Parte I — A linguagem**
-1. [Por que Go para uma API de backend](#cap-1)
-2. [Fundamentos: tipos, funções e structs](#cap-2)
-3. [Interfaces e a filosofia de composição](#cap-3)
-4. [Tratamento de erros idiomático](#cap-4)
-5. [Concorrência: goroutines e channels](#cap-5)
-6. [Toolchain: módulos, formatação e lint](#cap-6)
+
+- **Cap. 1** — [Por que Go para uma API de backend](#cap-1)
+- **Cap. 2** — [Fundamentos: tipos, funções e structs](#cap-2)
+- **Cap. 3** — [Interfaces e a filosofia de composição](#cap-3)
+- **Cap. 4** — [Tratamento de erros idiomático](#cap-4)
+- **Cap. 5** — [Concorrência: goroutines e channels](#cap-5)
+- **Cap. 6** — [Toolchain: módulos, formatação e lint](#cap-6)
 
 **Parte II — Construindo a API (seguindo as fases do PRD 044)**
-7. [Estrutura de projeto e configuração](#cap-7) *(Fase 1)*
-8. [HTTP com Chi: routers e middlewares](#cap-8) *(Fase 1)*
-9. [Banco de dados com pgx/v5 + sqlc](#cap-9) *(Fase 1–2)*
-10. [Autenticação: JWT e bcrypt](#cap-10) *(Fase 1)*
-11. [Arquitetura: handlers, services e injeção de dependência](#cap-11) *(Fase 2)*
-12. [Testes em Go: unitários e de integração](#cap-12) *(Fases 1–5)*
-13. [Serviços externos: Stripe, Twilio, Supabase, Anthropic](#cap-13) *(Fases 3–4)*
-14. [Middleware avançado: rate limit e feature flags](#cap-14) *(Fase 5)*
-15. [Documentação: swaggo/swag + Mintlify](#cap-15) *(Fase 5)*
-16. [CI/CD com GitHub Actions](#cap-16) *(Fase 5)*
-17. [Jobs em background: cron + sync oportunista](#cap-17) *(Fase 5)*
+
+- **Cap. 7** — [Estrutura de projeto e configuração](#cap-7) *(Fase 1)*
+- **Cap. 8** — [HTTP com Chi: routers e middlewares](#cap-8) *(Fase 1)*
+- **Cap. 9** — [Banco de dados com pgx/v5 + sqlc](#cap-9) *(Fase 1–2)*
+- **Cap. 10** — [Autenticação: JWT e bcrypt](#cap-10) *(Fase 1)*
+- **Cap. 11** — [Arquitetura: handlers, services e injeção de dependência](#cap-11) *(Fase 2)*
+- **Cap. 12** — [Testes em Go: unitários e de integração](#cap-12) *(Fases 1–5)*
+- **Cap. 13** — [Serviços externos: Stripe, Twilio, Supabase, Anthropic](#cap-13) *(Fases 3–4)*
+- **Cap. 14** — [Middleware avançado: rate limit e feature flags](#cap-14) *(Fase 5)*
+- **Cap. 15** — [Documentação: swaggo/swag + Mintlify](#cap-15) *(Fase 5)*
+- **Cap. 16** — [CI/CD com GitHub Actions](#cap-16) *(Fase 5)*
+- **Cap. 17** — [Jobs em background: cron + sync oportunista](#cap-17) *(Fase 5)*
 
 **Parte III — Referência**
+
 - [Apêndice A — Go vs Python/FastAPI: tabela de equivalências](#apendice-a)
 - [Apêndice B — Padrões idiomáticos Go usados no projeto](#apendice-b)
 - [Apêndice C — Glossário](#apendice-c)
