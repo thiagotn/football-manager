@@ -199,7 +199,7 @@
 
   let nonAdminMembers = $derived(
     (group?.members.filter(m => m.player.role !== 'admin') ?? [])
-      .sort((a, b) => playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
+      .sort((a, b) => playerDisplayName(a.player.name, a.nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
   );
   let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string } | null>(null);
   let selfEditNickname = $state('');
@@ -884,7 +884,7 @@
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <p class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                {playerDisplayName(m.player.name, m.group_nickname ?? m.player.nickname)}
+                {playerDisplayName(m.player.name, m.nickname ?? m.player.nickname)}
               </p>
               {#if isGroupAdmin() && m.skill_stars != null}
                 <div class="mt-0.5">
@@ -914,7 +914,7 @@
               </button>
             {:else if m.player.id === $currentPlayer?.id}
               <button
-                onclick={() => { selfEditNickname = m.group_nickname ?? ''; selfEditOpen = true; }}
+                onclick={() => { selfEditNickname = m.nickname ?? ''; selfEditOpen = true; }}
                 class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 flex items-center gap-1 shrink-0">
                 <Pencil size={12} /> {$t('groups.edit_my_nickname')}
               </button>
@@ -1261,7 +1261,7 @@
         <AvatarImage name={selectedMember.player.name} avatarUrl={selectedMember.player.avatar_url} size={52} />
         <div>
           <p class="font-semibold text-gray-900 dark:text-gray-100">
-            {playerDisplayName(selectedMember.player.name, selectedMember.group_nickname ?? selectedMember.player.nickname)}
+            {playerDisplayName(selectedMember.player.name, selectedMember.nickname ?? selectedMember.player.nickname)}
           </p>
           <p class="text-xs text-gray-400">{selectedMember.player.name}</p>
         </div>
@@ -1274,7 +1274,7 @@
         </div>
         <div>
           <p class="text-xs text-gray-400 mb-0.5">{$t('groups.member_group_nickname')}</p>
-          <p class="font-medium">{selectedMember.group_nickname || '—'}</p>
+          <p class="font-medium">{selectedMember.nickname || '—'}</p>
         </div>
         <div>
           <p class="text-xs text-gray-400 mb-0.5">{$t('groups.member_global_nickname')}</p>
@@ -1310,7 +1310,7 @@
       <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
         <button
           onclick={() => {
-            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.group_nickname ?? '' };
+            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.nickname ?? '' };
             showMemberDetail = false;
           }}
           class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
