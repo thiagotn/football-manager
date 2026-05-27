@@ -73,10 +73,10 @@
   <AndroidBetaBanner />
 {/if}
 {#if isAppPage}
-  <footer class="hidden min-[940px]:flex border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-xs text-gray-400 dark:text-gray-500 flex-wrap items-center justify-center gap-4">
-    <a href="/terms" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.terms')}</a>
-    <a href="/privacy" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.privacy')}</a>
-    <a href="/faq" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.faq')}</a>
-    <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">{$t('footer.status')}</a>
+  <footer class="relative z-10 hidden min-[940px]:flex bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-xs text-gray-600 dark:text-gray-300 flex-wrap items-center justify-center gap-4">
+    <a href="/terms" class="hover:text-gray-900 dark:hover:text-white transition-colors">{$t('footer.terms')}</a>
+    <a href="/privacy" class="hover:text-gray-900 dark:hover:text-white transition-colors">{$t('footer.privacy')}</a>
+    <a href="/faq" class="hover:text-gray-900 dark:hover:text-white transition-colors">{$t('footer.faq')}</a>
+    <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-gray-900 dark:hover:text-white transition-colors">{$t('footer.status')}</a>
   </footer>
 {/if}
