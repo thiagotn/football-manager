@@ -63,20 +63,22 @@
 </script>
 
 <Toast />
-{#if isAppPage}
-  <Navbar />
-{/if}
-<div class="{browser && !$page.url.pathname.startsWith('/admin') ? 'pb-44 min-[940px]:pb-0' : ''}">
-  <slot />
+<div class="flex flex-col min-h-screen">
+  {#if isAppPage}
+    <Navbar />
+  {/if}
+  <main class="flex-1 {browser && !$page.url.pathname.startsWith('/admin') ? 'pb-44 min-[940px]:pb-0' : ''}">
+    <slot />
+  </main>
+  {#if browser && !$page.url.pathname.startsWith('/admin')}
+    <AndroidBetaBanner />
+  {/if}
+  {#if isAppPage}
+    <footer class="relative z-10 hidden min-[940px]:flex bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-sm text-gray-700 dark:text-gray-200 flex-wrap items-center justify-center gap-4">
+      <a href="/terms" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.terms')}</a>
+      <a href="/privacy" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.privacy')}</a>
+      <a href="/faq" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.faq')}</a>
+      <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.status')}</a>
+    </footer>
+  {/if}
 </div>
-{#if browser && !$page.url.pathname.startsWith('/admin')}
-  <AndroidBetaBanner />
-{/if}
-{#if isAppPage}
-  <footer class="relative z-10 hidden min-[940px]:flex bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-sm text-gray-700 dark:text-gray-200 flex-wrap items-center justify-center gap-4">
-    <a href="/terms" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.terms')}</a>
-    <a href="/privacy" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.privacy')}</a>
-    <a href="/faq" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.faq')}</a>
-    <a href="https://status.rachao.app" target="_blank" rel="noopener noreferrer" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">{$t('footer.status')}</a>
-  </footer>
-{/if}
