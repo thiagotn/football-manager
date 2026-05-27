@@ -79,7 +79,9 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	})
 
 	authMw := middleware.Auth(cfg.SecretKey, pool)
-	apiV2Mw := middleware.ApiV2Access
+	// In development, bypass the api_v2_enabled gate so all authenticated players
+	// can access /api/v2 without manually flipping the flag in the DB.
+	apiV2Mw := middleware.ApiV2AccessFor(cfg.AppEnv == "development")
 
 	r.Route("/api/v2", func(r chi.Router) {
 		// ── Auth routes (public + protected combined — avoids chi double-mount) ──
