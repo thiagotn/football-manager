@@ -52,11 +52,12 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) runStatusSync() {
 	ctx := context.Background()
-	if err := RunStatusSyncJob(ctx, s.pool); err != nil {
+	closed, err := RunStatusSyncJob(ctx, s.pool)
+	if err != nil {
 		slog.Error("scheduler: status sync failed", "error", err)
 		return
 	}
-	slog.Info("scheduler: status sync completed")
+	slog.Info("scheduler: status sync completed", "closed", closed)
 }
 
 func (s *Scheduler) runRecurrence() {

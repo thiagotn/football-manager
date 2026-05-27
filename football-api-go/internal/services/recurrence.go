@@ -191,16 +191,18 @@ func RunRecurrence(ctx context.Context, pool *pgxpool.Pool) (int, error) {
 	return created, nil
 }
 
-// RunStatusSyncJob closes past matches and transitions today's matches to in_progress.
-func RunStatusSyncJob(ctx context.Context, pool *pgxpool.Pool) error {
+// RunStatusSyncJob closes past matches and transitions today's matches to
+// in_progress. Returns the number of past matches that were closed (used by
+// callers to conditionally trigger recurrence — matches v1 behaviour).
+func RunStatusSyncJob(ctx context.Context, pool *pgxpool.Pool) (int, error) {
 	candidates, err := db.GetInProgressCandidates(ctx, pool)
 	if err != nil {
-		return fmt.Errorf("status sync: get candidates: %w", err)
+		return 0, fmt.Errorf("status sync: get candidates: %w", err)
 	}
 
 	closed, err := db.ClosePastMatches(ctx, pool)
 	if err != nil {
-		return fmt.Errorf("status sync: close past: %w", err)
+		return 0, fmt.Errorf("status sync: close past: %w", err)
 	}
 	if closed > 0 {
 		slog.Info("status_sync: closed past matches", "count", closed)
@@ -218,5 +220,5 @@ func RunStatusSyncJob(ctx context.Context, pool *pgxpool.Pool) error {
 			"A partida de hoje já começou! 🎉",
 		)
 	}
-	return nil
+	return closed, nil
 }

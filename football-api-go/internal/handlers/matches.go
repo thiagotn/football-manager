@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
+	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
 type MatchStore interface {
@@ -98,10 +100,11 @@ func (s *pgMatchStore) UpsertMatchPlayerStat(ctx context.Context, matchID, playe
 
 type MatchHandler struct {
 	Store MatchStore
+	pool  *pgxpool.Pool // retained for fire-and-forget service calls (lazy status sync)
 }
 
 func NewMatchHandler(pool *pgxpool.Pool) *MatchHandler {
-	return &MatchHandler{Store: &pgMatchStore{pool: pool}}
+	return &MatchHandler{Store: &pgMatchStore{pool: pool}, pool: pool}
 }
 
 // GroupMatchRoutes returns routes mounted under /groups/{groupID}.
@@ -392,6 +395,23 @@ func (h *MatchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) 
 		if _, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID); err != nil {
 			renderError(w, apierror.Forbidden("not a member"))
 			return
+		}
+	}
+
+	// Opportunistic status sync: matches the v1 behaviour where every call
+	// to GET /groups/{id}/matches closes past matches, transitions today's
+	// matches to in_progress (with "bola rolando" push), and triggers the
+	// recurrence job when anything closed — so the user always sees a fresh
+	// state without depending on the hourly cron.
+	if h.pool != nil {
+		closed, err := services.RunStatusSyncJob(r.Context(), h.pool)
+		if err != nil {
+			slog.Warn("listGroupMatches: status sync failed", "error", err)
+		}
+		if closed > 0 {
+			if _, err := services.RunRecurrence(r.Context(), h.pool); err != nil {
+				slog.Warn("listGroupMatches: recurrence failed", "error", err)
+			}
 		}
 	}
 
