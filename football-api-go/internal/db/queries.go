@@ -436,6 +436,225 @@ func GetPlayerGoalsAssists(ctx context.Context, pool *pgxpool.Pool, playerID uui
 	return
 }
 
+// ── Full player stats (Rachão Score) ─────────────────────────────────────────
+
+// PlayerFullStatsRow holds the scalar aggregates portion of full stats.
+type PlayerFullStatsRow struct {
+	TotalMatchesConfirmed int
+	TotalMinutesPlayed    int
+	TotalVotePoints       int
+	Top1Count             int
+	Top5Count             int
+	TotalFlopVotes        int
+	TotalGoals            int
+	TotalAssists          int
+	AttendanceRate        int
+}
+
+// PlayerAttendanceHistoryItem represents one closed-match attendance for a player.
+type PlayerAttendanceHistoryItem struct {
+	MatchDate string
+	GroupName string
+	Status    string
+}
+
+// PlayerMonthlyStat is one bucket of monthly aggregated stats.
+type PlayerMonthlyStat struct {
+	Month            string // "YYYY-MM"
+	MatchesConfirmed int
+	MinutesPlayed    int
+}
+
+// PlayerGroupFullStat is a per-group view of a player's history.
+type PlayerGroupFullStat struct {
+	GroupID          string
+	GroupName        string
+	SkillStars       int
+	Position         string
+	Role             string
+	MatchesConfirmed int
+}
+
+// GetPlayerFullStatsScalar runs the CTE that computes all single-value
+// aggregates used by the Rachão Score page in one round-trip.
+func GetPlayerFullStatsScalar(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID) (*PlayerFullStatsRow, error) {
+	var r PlayerFullStatsRow
+	err := pool.QueryRow(ctx, `
+		WITH
+		totals AS (
+			SELECT
+				COUNT(*)::int AS total_matches_confirmed,
+				COALESCE(SUM(
+					CASE WHEN m.end_time IS NOT NULL
+					     THEN GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 60)
+					     ELSE 0 END
+				), 0)::int AS total_minutes_played
+			FROM attendances a
+			JOIN matches m ON m.id = a.match_id
+			WHERE a.player_id = $1
+			  AND a.status = 'confirmed'
+			  AND m.status = 'closed'
+		),
+		vote_pts AS (
+			SELECT
+				COALESCE(SUM(mvt.points), 0)::int                AS total_vote_points,
+				COUNT(*) FILTER (WHERE mvt.position = 1)::int    AS top1_count,
+				COUNT(*)::int                                    AS top5_count
+			FROM match_vote_top5 mvt
+			JOIN match_votes mv ON mv.id = mvt.vote_id
+			WHERE mvt.player_id = $1
+		),
+		flop_cnt AS (
+			SELECT COUNT(*)::int AS total_flop_votes
+			FROM match_vote_flop mvf
+			JOIN match_votes mv ON mv.id = mvf.vote_id
+			WHERE mvf.player_id = $1
+		),
+		goals_ast AS (
+			SELECT
+				COALESCE(SUM(mps.goals),   0)::int AS total_goals,
+				COALESCE(SUM(mps.assists), 0)::int AS total_assists
+			FROM match_player_stats mps
+			WHERE mps.player_id = $1
+		),
+		att_rate AS (
+			SELECT
+				COUNT(*) FILTER (WHERE a.status = 'confirmed')::int AS confirmed_cnt,
+				COUNT(*) FILTER (WHERE a.status = 'declined')::int  AS declined_cnt
+			FROM attendances a
+			JOIN matches m ON m.id = a.match_id
+			WHERE a.player_id = $1
+			  AND m.status = 'closed'
+		)
+		SELECT
+			t.total_matches_confirmed,
+			t.total_minutes_played,
+			v.total_vote_points,
+			v.top1_count,
+			v.top5_count,
+			f.total_flop_votes,
+			g.total_goals,
+			g.total_assists,
+			CASE WHEN (r.confirmed_cnt + r.declined_cnt) = 0 THEN 0
+			     ELSE ROUND(r.confirmed_cnt * 100.0 / (r.confirmed_cnt + r.declined_cnt))
+			END::int AS attendance_rate
+		FROM totals t, vote_pts v, flop_cnt f, goals_ast g, att_rate r
+	`, playerID).Scan(
+		&r.TotalMatchesConfirmed, &r.TotalMinutesPlayed,
+		&r.TotalVotePoints, &r.Top1Count, &r.Top5Count,
+		&r.TotalFlopVotes, &r.TotalGoals, &r.TotalAssists,
+		&r.AttendanceRate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// GetPlayerAttendanceHistory returns closed-match attendances (confirmed or
+// declined), most recent first. Used by callers to derive streaks and recent
+// matches list.
+func GetPlayerAttendanceHistory(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID) ([]PlayerAttendanceHistoryItem, error) {
+	rows, err := pool.Query(ctx, `
+		SELECT
+			m.match_date::text AS match_date,
+			g.name             AS group_name,
+			a.status::text
+		FROM attendances a
+		JOIN matches m ON m.id = a.match_id
+		JOIN groups  g ON g.id = m.group_id
+		WHERE a.player_id = $1
+		  AND m.status = 'closed'
+		  AND a.status IN ('confirmed', 'declined')
+		ORDER BY m.match_date DESC`, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]PlayerAttendanceHistoryItem, 0)
+	for rows.Next() {
+		var h PlayerAttendanceHistoryItem
+		if err := rows.Scan(&h.MatchDate, &h.GroupName, &h.Status); err != nil {
+			return nil, err
+		}
+		out = append(out, h)
+	}
+	return out, rows.Err()
+}
+
+// GetPlayerMonthlyStats returns confirmed-match counts and minutes per month
+// for the last 6 months. Missing months are NOT returned — callers must pad.
+func GetPlayerMonthlyStats(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID) ([]PlayerMonthlyStat, error) {
+	rows, err := pool.Query(ctx, `
+		SELECT
+			TO_CHAR(m.match_date, 'YYYY-MM') AS month,
+			COUNT(*)::int                    AS matches_confirmed,
+			COALESCE(SUM(
+				CASE WHEN m.end_time IS NOT NULL
+				     THEN GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 60)
+				     ELSE 0 END
+			), 0)::int                       AS minutes_played
+		FROM attendances a
+		JOIN matches m ON m.id = a.match_id
+		WHERE a.player_id = $1
+		  AND a.status = 'confirmed'
+		  AND m.status = 'closed'
+		  AND m.match_date >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '5 months'
+		GROUP BY TO_CHAR(m.match_date, 'YYYY-MM')
+		ORDER BY month`, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]PlayerMonthlyStat, 0)
+	for rows.Next() {
+		var s PlayerMonthlyStat
+		if err := rows.Scan(&s.Month, &s.MatchesConfirmed, &s.MinutesPlayed); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// GetPlayerGroupFullStats returns per-group skill/position/role/match-count
+// rows for the Rachão Score "Grupos" section.
+func GetPlayerGroupFullStats(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID) ([]PlayerGroupFullStat, error) {
+	rows, err := pool.Query(ctx, `
+		SELECT
+			gm.group_id::text AS group_id,
+			g.name            AS group_name,
+			COALESCE(gm.skill_stars, 2)::int   AS skill_stars,
+			COALESCE(gm.position, 'mei')        AS position,
+			gm.role::text                       AS role,
+			COUNT(a.match_id) FILTER (
+				WHERE a.status = 'confirmed' AND m.status = 'closed'
+			)::int AS matches_confirmed
+		FROM group_members gm
+		JOIN groups g ON g.id = gm.group_id
+		LEFT JOIN matches m     ON m.group_id = gm.group_id
+		LEFT JOIN attendances a ON a.match_id = m.id AND a.player_id = gm.player_id
+		WHERE gm.player_id = $1
+		GROUP BY gm.group_id, g.name, gm.skill_stars, gm.position, gm.role
+		ORDER BY matches_confirmed DESC`, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]PlayerGroupFullStat, 0)
+	for rows.Next() {
+		var g PlayerGroupFullStat
+		if err := rows.Scan(
+			&g.GroupID, &g.GroupName,
+			&g.SkillStars, &g.Position, &g.Role, &g.MatchesConfirmed,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, g)
+	}
+	return out, rows.Err()
+}
+
 // GetPublicPlayerStats returns match count and goals/assists for a player
 func GetPublicPlayerStats(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID) (totalConfirmed, totalGoals, totalAssists int, err error) {
 	err = pool.QueryRow(ctx, `

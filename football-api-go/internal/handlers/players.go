@@ -4,6 +4,7 @@ import (
 	cryptorand "crypto/rand"
 	"context"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -31,6 +32,10 @@ type PlayerStore interface {
 	GetPlayerStatsMinutes(ctx context.Context, playerID uuid.UUID) (int, error)
 	GetPlatformMatchStats(ctx context.Context) (closedMatches, uniquePlayers, totalMinutes int, err error)
 	GetPlayerGroupStats(ctx context.Context, playerID uuid.UUID) ([]db.GroupStat, error)
+	GetPlayerFullStatsScalar(ctx context.Context, playerID uuid.UUID) (*db.PlayerFullStatsRow, error)
+	GetPlayerAttendanceHistory(ctx context.Context, playerID uuid.UUID) ([]db.PlayerAttendanceHistoryItem, error)
+	GetPlayerMonthlyStats(ctx context.Context, playerID uuid.UUID) ([]db.PlayerMonthlyStat, error)
+	GetPlayerGroupFullStats(ctx context.Context, playerID uuid.UUID) ([]db.PlayerGroupFullStat, error)
 	GetPlayerGoalsAssists(ctx context.Context, playerID uuid.UUID) (goals, assists int, err error)
 	GetPublicPlayerStats(ctx context.Context, playerID uuid.UUID) (totalConfirmed, totalGoals, totalAssists int, err error)
 	UpdatePlayerProfile(ctx context.Context, playerID uuid.UUID, name, nickname, passwordHash string) error
@@ -79,6 +84,22 @@ func (s *pgPlayerStore) GetPlatformMatchStats(ctx context.Context) (int, int, in
 
 func (s *pgPlayerStore) GetPlayerGroupStats(ctx context.Context, playerID uuid.UUID) ([]db.GroupStat, error) {
 	return db.GetPlayerGroupStats(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerFullStatsScalar(ctx context.Context, playerID uuid.UUID) (*db.PlayerFullStatsRow, error) {
+	return db.GetPlayerFullStatsScalar(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerAttendanceHistory(ctx context.Context, playerID uuid.UUID) ([]db.PlayerAttendanceHistoryItem, error) {
+	return db.GetPlayerAttendanceHistory(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerMonthlyStats(ctx context.Context, playerID uuid.UUID) ([]db.PlayerMonthlyStat, error) {
+	return db.GetPlayerMonthlyStats(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerGroupFullStats(ctx context.Context, playerID uuid.UUID) ([]db.PlayerGroupFullStat, error) {
+	return db.GetPlayerGroupFullStats(ctx, s.pool, playerID)
 }
 
 func (s *pgPlayerStore) GetPlayerGoalsAssists(ctx context.Context, playerID uuid.UUID) (int, int, error) {
@@ -247,30 +268,160 @@ func (h *PlayerHandler) myStats(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, resp)
 }
 
+type monthlyStatItem struct {
+	Month            string `json:"month"`
+	MatchesConfirmed int    `json:"matches_confirmed"`
+	MinutesPlayed    int    `json:"minutes_played"`
+}
+
+type recentMatchItem struct {
+	MatchDate string `json:"match_date"`
+	GroupName string `json:"group_name"`
+	Status    string `json:"status"`
+}
+
+type groupStatItem struct {
+	GroupID          string `json:"group_id"`
+	GroupName        string `json:"group_name"`
+	SkillStars       int    `json:"skill_stars"`
+	Position         string `json:"position"`
+	Role             string `json:"role"`
+	MatchesConfirmed int    `json:"matches_confirmed"`
+}
+
+type playerFullStatsResp struct {
+	TotalMatchesConfirmed int               `json:"total_matches_confirmed"`
+	TotalMinutesPlayed    int               `json:"total_minutes_played"`
+	TotalVotePoints       int               `json:"total_vote_points"`
+	TotalFlopVotes        int               `json:"total_flop_votes"`
+	Top1Count             int               `json:"top1_count"`
+	Top5Count             int               `json:"top5_count"`
+	TotalGoals            int               `json:"total_goals"`
+	TotalAssists          int               `json:"total_assists"`
+	CurrentStreak        int               `json:"current_streak"`
+	BestStreak           int               `json:"best_streak"`
+	AttendanceRate       int               `json:"attendance_rate"`
+	MonthlyStats         []monthlyStatItem `json:"monthly_stats"`
+	RecentMatches        []recentMatchItem `json:"recent_matches"`
+	Groups               []groupStatItem   `json:"groups"`
+}
+
 func (h *PlayerHandler) myStatsFull(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
+	ctx := r.Context()
 
-	groupStats, err := h.Store.GetPlayerGroupStats(r.Context(), player.ID)
+	scalar, err := h.Store.GetPlayerFullStatsScalar(ctx, player.ID)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	type groupStat struct {
-		GroupID   uuid.UUID `json:"group_id"`
-		GroupName string    `json:"group_name"`
-		Matches   int       `json:"matches_confirmed"`
+	history, err := h.Store.GetPlayerAttendanceHistory(ctx, player.ID)
+	if err != nil {
+		renderError(w, err)
+		return
 	}
 
-	stats := make([]groupStat, len(groupStats))
-	for i, s := range groupStats {
-		stats[i] = groupStat{
-			GroupID:   s.GroupID,
-			GroupName: s.GroupName,
-			Matches:   s.Matches,
+	// current_streak: consecutive confirmed matches from most recent
+	currentStreak := 0
+	for _, h := range history {
+		if h.Status == "confirmed" {
+			currentStreak++
+		} else {
+			break
 		}
 	}
-	renderJSON(w, http.StatusOK, map[string]any{"groups": stats})
+
+	// best_streak: longest consecutive run of confirmed
+	bestStreak, temp := 0, 0
+	for _, h := range history {
+		if h.Status == "confirmed" {
+			temp++
+			if temp > bestStreak {
+				bestStreak = temp
+			}
+		} else {
+			temp = 0
+		}
+	}
+
+	recent := make([]recentMatchItem, 0, 20)
+	for i, h := range history {
+		if i >= 20 {
+			break
+		}
+		recent = append(recent, recentMatchItem{
+			MatchDate: h.MatchDate,
+			GroupName: h.GroupName,
+			Status:    h.Status,
+		})
+	}
+
+	monthly, err := h.Store.GetPlayerMonthlyStats(ctx, player.ID)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	monthlyByKey := make(map[string]db.PlayerMonthlyStat, len(monthly))
+	for _, m := range monthly {
+		monthlyByKey[m.Month] = m
+	}
+
+	// Pad last 6 months (oldest → newest) with zeros where data is missing.
+	monthlyStats := make([]monthlyStatItem, 0, 6)
+	now := time.Now().UTC()
+	for i := 5; i >= 0; i-- {
+		month := int(now.Month()) - i
+		year := now.Year()
+		for month <= 0 {
+			month += 12
+			year--
+		}
+		key := fmt.Sprintf("%04d-%02d", year, month)
+		if m, ok := monthlyByKey[key]; ok {
+			monthlyStats = append(monthlyStats, monthlyStatItem{
+				Month:            key,
+				MatchesConfirmed: m.MatchesConfirmed,
+				MinutesPlayed:    m.MinutesPlayed,
+			})
+		} else {
+			monthlyStats = append(monthlyStats, monthlyStatItem{Month: key})
+		}
+	}
+
+	groups, err := h.Store.GetPlayerGroupFullStats(ctx, player.ID)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	groupItems := make([]groupStatItem, 0, len(groups))
+	for _, g := range groups {
+		groupItems = append(groupItems, groupStatItem{
+			GroupID:          g.GroupID,
+			GroupName:        g.GroupName,
+			SkillStars:       g.SkillStars,
+			Position:         g.Position,
+			Role:             g.Role,
+			MatchesConfirmed: g.MatchesConfirmed,
+		})
+	}
+
+	renderJSON(w, http.StatusOK, playerFullStatsResp{
+		TotalMatchesConfirmed: scalar.TotalMatchesConfirmed,
+		TotalMinutesPlayed:    scalar.TotalMinutesPlayed,
+		TotalVotePoints:       scalar.TotalVotePoints,
+		TotalFlopVotes:        scalar.TotalFlopVotes,
+		Top1Count:             scalar.Top1Count,
+		Top5Count:             scalar.Top5Count,
+		TotalGoals:            scalar.TotalGoals,
+		TotalAssists:          scalar.TotalAssists,
+		CurrentStreak:         currentStreak,
+		BestStreak:            bestStreak,
+		AttendanceRate:        scalar.AttendanceRate,
+		MonthlyStats:          monthlyStats,
+		RecentMatches:         recent,
+		Groups:                groupItems,
+	})
 }
 
 func (h *PlayerHandler) publicStats(w http.ResponseWriter, r *http.Request) {
