@@ -3,6 +3,7 @@ package unit_test
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -494,5 +495,92 @@ func playerToResponse(p *db.Player) *PlayerResponse {
 		ApiV2Enabled:       p.ApiV2Enabled,
 		CreatedAt:          p.CreatedAt,
 	}
+}
+
+// ────── Recurrence Service Pure Logic ──────
+
+var monthsPT = [...]string{"jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"}
+
+func fmtDatePT(d time.Time) string {
+	return fmt.Sprintf("%d de %s", d.Day(), monthsPT[d.Month()-1])
+}
+
+func generateMatchHash() (string, error) {
+	b := make([]byte, 6)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b)[:10], nil
+}
+
+func TestFmtDatePT(t *testing.T) {
+	t.Run("january", func(t *testing.T) {
+		date := time.Date(2025, time.January, 15, 0, 0, 0, 0, time.UTC)
+		result := fmtDatePT(date)
+		assert.Equal(t, "15 de jan", result)
+	})
+
+	t.Run("december", func(t *testing.T) {
+		date := time.Date(2025, time.December, 25, 0, 0, 0, 0, time.UTC)
+		result := fmtDatePT(date)
+		assert.Equal(t, "25 de dez", result)
+	})
+
+	t.Run("first day", func(t *testing.T) {
+		date := time.Date(2025, time.March, 1, 0, 0, 0, 0, time.UTC)
+		result := fmtDatePT(date)
+		assert.Equal(t, "1 de mar", result)
+	})
+
+	t.Run("last day", func(t *testing.T) {
+		date := time.Date(2025, time.October, 31, 0, 0, 0, 0, time.UTC)
+		result := fmtDatePT(date)
+		assert.Equal(t, "31 de out", result)
+	})
+
+	t.Run("all months", func(t *testing.T) {
+		months := []string{"jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"}
+		for month := 1; month <= 12; month++ {
+			date := time.Date(2025, time.Month(month), 15, 0, 0, 0, 0, time.UTC)
+			result := fmtDatePT(date)
+			assert.Contains(t, result, months[month-1])
+			assert.Contains(t, result, "15")
+		}
+	})
+}
+
+func TestGenerateMatchHash(t *testing.T) {
+	t.Run("generates valid hash", func(t *testing.T) {
+		hash, err := generateMatchHash()
+		require.NoError(t, err)
+		assert.Len(t, hash, 10)
+		// Verify it's valid hex
+		_, err = hex.DecodeString(hash)
+		assert.NoError(t, err)
+	})
+
+	t.Run("generates unique hashes", func(t *testing.T) {
+		hash1, err := generateMatchHash()
+		require.NoError(t, err)
+		hash2, err := generateMatchHash()
+		require.NoError(t, err)
+		hash3, err := generateMatchHash()
+		require.NoError(t, err)
+
+		// All should be different (with very high probability)
+		assert.NotEqual(t, hash1, hash2)
+		assert.NotEqual(t, hash2, hash3)
+		assert.NotEqual(t, hash1, hash3)
+	})
+
+	t.Run("hash is hex encoded", func(t *testing.T) {
+		for i := 0; i < 10; i++ {
+			hash, err := generateMatchHash()
+			require.NoError(t, err)
+			// Should be decodable as hex
+			_, err = hex.DecodeString(hash)
+			assert.NoError(t, err)
+		}
+	})
 }
 
