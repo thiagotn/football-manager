@@ -311,7 +311,26 @@ func (h *MatchHandler) DiscoverMatches(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err)
 		return
 	}
-	renderJSON(w, http.StatusOK, matches)
+
+	// Compute spots_left = max_players - confirmed_count (null when unlimited)
+	// to match v1 DiscoverMatchResponse shape; the frontend reads this directly.
+	type discoverItem struct {
+		db.DiscoverMatch
+		SpotsLeft *int `json:"spots_left"`
+	}
+	out := make([]discoverItem, len(matches))
+	for i, m := range matches {
+		item := discoverItem{DiscoverMatch: m}
+		if m.MaxPlayers != nil {
+			left := *m.MaxPlayers - m.ConfirmedCount
+			if left < 0 {
+				left = 0
+			}
+			item.SpotsLeft = &left
+		}
+		out[i] = item
+	}
+	renderJSON(w, http.StatusOK, out)
 }
 
 func (h *MatchHandler) GetPublicMatch(w http.ResponseWriter, r *http.Request) {

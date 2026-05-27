@@ -88,7 +88,10 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		r.Mount("/auth", authH.Routes(authMw, apiV2Mw))
 
 		// ── Other public routes (no auth required) ────────────────────
-		r.Get("/matches/discover", matchH.DiscoverMatches)
+		// /matches/discover: optional auth — when a token is present, the
+		// handler filters out matches from groups the caller already belongs to.
+		optionalAuth := middleware.OptionalAuth(cfg.SecretKey, pool)
+		r.With(optionalAuth).Get("/matches/discover", matchH.DiscoverMatches)
 		r.Get("/matches/public/{hash}", matchH.GetPublicMatch)
 		r.Get("/matches/public/{hash}/player-stats", matchH.GetPublicMatchStats)
 		r.Get("/matches/public/{hash}/votes/results", voteH.GetPublicVoteResults)
