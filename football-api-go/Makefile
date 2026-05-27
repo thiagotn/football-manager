@@ -5,7 +5,7 @@ MIGRATE_PATH := ../football-api/migrations
 # Coverage packages: exclude internal/db (sqlc-generated, testable only via integration)
 COVPKG := ./internal/apierror/...,./internal/config/...,./internal/handlers/...,./internal/middleware/...,./internal/services/...
 
-.PHONY: run build test test-integration test-race test-all lint generate migrate clean coverage
+.PHONY: run build test test-verbose test-report test-json test-integration test-race test-all lint generate migrate clean coverage
 
 ## Run the server with live-reload (requires air)
 run:
@@ -18,6 +18,27 @@ build:
 ## Run unit tests (no database required)
 test:
 	go test ./tests/unit/... -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=$(COVPKG) -count=1
+
+## Run unit tests with verbose output (shows all test names)
+test-verbose:
+	go test ./tests/unit/... -v -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=$(COVPKG) -count=1
+
+## Run unit tests and generate structured JSON report
+test-json:
+	go test ./tests/unit/... -json > test-results.json -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=$(COVPKG) -count=1
+	@echo "Test results saved to test-results.json"
+	@echo "View with: cat test-results.json | jq '.'"
+
+## Run unit tests with summary by package
+test-report:
+	@echo "=== Running Unit Tests ===" && \
+	go test ./tests/unit/... -v -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=$(COVPKG) -count=1 2>&1 | tee test-report.txt && \
+	echo "" && \
+	echo "=== Test Summary ===" && \
+	grep -E "^(ok|FAIL|RUN|---)" test-report.txt | tail -30 && \
+	echo "" && \
+	echo "=== Coverage ===" && \
+	go tool cover -func=coverage-unit.out | grep total
 
 ## Run tests with race detector
 test-race:
