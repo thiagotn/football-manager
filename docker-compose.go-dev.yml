@@ -83,6 +83,11 @@ services:
       OTP_BYPASS_CODE: "123456"
       CORS_ORIGINS: "http://localhost:3000"
       FRONTEND_URL: "http://localhost:3000"
+      # Brazil time — needed so robfig/cron expressions ("0 7 * * *",
+      # "30 * * * *") evaluate in BRT, matching v1's APScheduler setup.
+      # SQL comparisons already use AT TIME ZONE 'America/Sao_Paulo' so the
+      # DB does not depend on this.
+      TZ: America/Sao_Paulo
     ports:
       - "8080:8080"
     volumes:

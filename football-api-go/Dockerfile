@@ -1,6 +1,6 @@
 # ── development stage ──────────────────────────────────────────────────────────
 FROM golang:1.25-alpine AS dev
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates tzdata
 RUN go install github.com/air-verse/air@latest
 WORKDIR /app
 COPY go.mod go.sum ./

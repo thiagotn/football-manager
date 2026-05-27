@@ -103,10 +103,19 @@ func CreateAttendances(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUI
 	return nil
 }
 
-// ClosePastMatches closes all open/in_progress matches whose match_date is before today (BRT).
-// Returns the number of matches closed.
+// ClosePastMatches closes matches that should no longer be open/in_progress
+// according to Brazil time (UTC-3). Returns total number of rows transitioned.
+//
+// Mirrors v1's MatchRepository.close_past_matches (4 transitions in one call):
+//   1. OPEN/IN_PROGRESS → CLOSED when match_date is before today
+//   2. IN_PROGRESS → CLOSED when match_date is today AND end_time has passed
+//
+// Note: the OPEN → IN_PROGRESS transition for today's matches that already
+// started is handled separately by GetInProgressCandidates +
+// TransitionToInProgress so the scheduler can also send "bola rolando" push.
 func ClosePastMatches(ctx context.Context, pool *pgxpool.Pool) (int, error) {
-	result, err := pool.Exec(ctx, `
+	// #1: date < today (BRT)
+	r1, err := pool.Exec(ctx, `
 		UPDATE matches
 		SET status = 'closed'
 		WHERE match_date < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::DATE
@@ -114,7 +123,20 @@ func ClosePastMatches(ctx context.Context, pool *pgxpool.Pool) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int(result.RowsAffected()), nil
+
+	// #2: date = today AND end_time <= now (BRT) AND in_progress
+	r2, err := pool.Exec(ctx, `
+		UPDATE matches
+		SET status = 'closed'
+		WHERE status = 'in_progress'
+		  AND match_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::DATE
+		  AND end_time IS NOT NULL
+		  AND end_time <= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::TIME`)
+	if err != nil {
+		return int(r1.RowsAffected()), err
+	}
+
+	return int(r1.RowsAffected() + r2.RowsAffected()), nil
 }
 
 // InProgressCandidate holds enough data to transition a match to in_progress and send push.
