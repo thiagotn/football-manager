@@ -52,16 +52,20 @@ services:
       - go-app-net
 
   migrate:
-    image: migrate/migrate
+    image: postgres:16-alpine
     container_name: football-go-migrate
+    environment:
+      PGPASSWORD: football
     volumes:
       - ./football-api/migrations:/migrations:ro
-    command:
-      - "-path"
-      - "/migrations"
-      - "-database"
-      - "postgres://football:football@postgres:5432/football_dev?sslmode=disable"
-      - "up"
+    entrypoint: >
+      sh -c '
+      until pg_isready -h postgres -U football -d football_dev; do echo "waiting for postgres..."; sleep 1; done;
+      for f in $(ls -v /migrations/*.sql); do
+        echo "Running migration: $$f";
+        psql -h postgres -U football -d football_dev -f $$f;
+      done
+      '
     depends_on:
       postgres:
         condition: service_healthy
