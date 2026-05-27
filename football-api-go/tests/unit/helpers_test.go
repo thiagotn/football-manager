@@ -27,6 +27,11 @@ func doRequest(router http.Handler, method, path, body string) *httptest.Respons
 	return w
 }
 
+// postJSON sends a POST request with JSON body.
+func postJSON(router http.Handler, path, body string) *httptest.ResponseRecorder {
+	return doRequest(router, "POST", path, body)
+}
+
 // fakePlayer builds a Player for use in tests.
 func fakePlayer(opts ...func(*db.Player)) *db.Player {
 	p := &db.Player{

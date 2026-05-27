@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -13,15 +14,47 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
-type mcpTokenHandler struct {
+type MCPTokenStore interface {
+	GenerateMCPToken() (raw, hash, prefix string, err error)
+	CreateMCPToken(ctx context.Context, params db.CreateMCPTokenParams) (*db.MCPToken, error)
+	ListMCPTokens(ctx context.Context, playerID uuid.UUID) ([]db.MCPToken, error)
+	GetMCPToken(ctx context.Context, tokenID uuid.UUID) (*db.MCPToken, error)
+	RevokeMCPToken(ctx context.Context, tokenID uuid.UUID) error
+}
+
+type pgMCPTokenStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewMCPTokenHandler(pool *pgxpool.Pool) *mcpTokenHandler {
-	return &mcpTokenHandler{pool: pool}
+func (s *pgMCPTokenStore) GenerateMCPToken() (raw, hash, prefix string, err error) {
+	return db.GenerateMCPToken()
 }
 
-func (h *mcpTokenHandler) Routes() chi.Router {
+func (s *pgMCPTokenStore) CreateMCPToken(ctx context.Context, params db.CreateMCPTokenParams) (*db.MCPToken, error) {
+	return db.CreateMCPToken(ctx, s.pool, params)
+}
+
+func (s *pgMCPTokenStore) ListMCPTokens(ctx context.Context, playerID uuid.UUID) ([]db.MCPToken, error) {
+	return db.ListMCPTokens(ctx, s.pool, playerID)
+}
+
+func (s *pgMCPTokenStore) GetMCPToken(ctx context.Context, tokenID uuid.UUID) (*db.MCPToken, error) {
+	return db.GetMCPToken(ctx, s.pool, tokenID)
+}
+
+func (s *pgMCPTokenStore) RevokeMCPToken(ctx context.Context, tokenID uuid.UUID) error {
+	return db.RevokeMCPToken(ctx, s.pool, tokenID)
+}
+
+type MCPTokenHandler struct {
+	Store MCPTokenStore
+}
+
+func NewMCPTokenHandler(pool *pgxpool.Pool) *MCPTokenHandler {
+	return &MCPTokenHandler{Store: &pgMCPTokenStore{pool: pool}}
+}
+
+func (h *MCPTokenHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", h.createToken)
 	r.Get("/", h.listTokens)
@@ -29,7 +62,7 @@ func (h *mcpTokenHandler) Routes() chi.Router {
 	return r
 }
 
-func (h *mcpTokenHandler) createToken(w http.ResponseWriter, r *http.Request) {
+func (h *MCPTokenHandler) createToken(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -65,13 +98,13 @@ func (h *mcpTokenHandler) createToken(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	raw, hash, prefix, err := db.GenerateMCPToken()
+	raw, hash, prefix, err := h.Store.GenerateMCPToken()
 	if err != nil {
 		renderError(w, apierror.Internal("failed to generate token"))
 		return
 	}
 
-	token, err := db.CreateMCPToken(r.Context(), h.pool, db.CreateMCPTokenParams{
+	token, err := h.Store.CreateMCPToken(r.Context(), db.CreateMCPTokenParams{
 		PlayerID:  player.ID,
 		Name:      body.Name,
 		TokenHash: hash,
@@ -93,14 +126,14 @@ func (h *mcpTokenHandler) createToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *mcpTokenHandler) listTokens(w http.ResponseWriter, r *http.Request) {
+func (h *MCPTokenHandler) listTokens(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
 		return
 	}
 
-	tokens, err := db.ListMCPTokens(r.Context(), h.pool, player.ID)
+	tokens, err := h.Store.ListMCPTokens(r.Context(), player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to list tokens"))
 		return
@@ -132,7 +165,7 @@ func (h *mcpTokenHandler) listTokens(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, resp)
 }
 
-func (h *mcpTokenHandler) revokeToken(w http.ResponseWriter, r *http.Request) {
+func (h *MCPTokenHandler) revokeToken(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -146,7 +179,7 @@ func (h *mcpTokenHandler) revokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := db.GetMCPToken(r.Context(), h.pool, tokenID)
+	token, err := h.Store.GetMCPToken(r.Context(), tokenID)
 	if err != nil {
 		renderError(w, apierror.NotFound("token not found"))
 		return
@@ -156,7 +189,7 @@ func (h *mcpTokenHandler) revokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.RevokeMCPToken(r.Context(), h.pool, tokenID); err != nil {
+	if err := h.Store.RevokeMCPToken(r.Context(), tokenID); err != nil {
 		renderError(w, apierror.Internal("failed to revoke token"))
 		return
 	}

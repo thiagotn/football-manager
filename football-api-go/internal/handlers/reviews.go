@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
@@ -12,15 +14,42 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
-type reviewHandler struct {
+type ReviewStore interface {
+	GetMyReview(ctx context.Context, playerID uuid.UUID) (*db.AppReview, error)
+	UpsertReview(ctx context.Context, playerID uuid.UUID, rating int, comment *string) (*db.AppReview, error)
+	GetReviewSummary(ctx context.Context) (*db.ReviewSummary, error)
+	ListReviews(ctx context.Context, ratings []int, orderBy string, page, pageSize int) (*db.ReviewPage, error)
+}
+
+type pgReviewStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewReviewHandler(pool *pgxpool.Pool) *reviewHandler {
-	return &reviewHandler{pool: pool}
+func (s *pgReviewStore) GetMyReview(ctx context.Context, playerID uuid.UUID) (*db.AppReview, error) {
+	return db.GetMyReview(ctx, s.pool, playerID)
 }
 
-func (h *reviewHandler) GetMyReview(w http.ResponseWriter, r *http.Request) {
+func (s *pgReviewStore) UpsertReview(ctx context.Context, playerID uuid.UUID, rating int, comment *string) (*db.AppReview, error) {
+	return db.UpsertReview(ctx, s.pool, playerID, rating, comment)
+}
+
+func (s *pgReviewStore) GetReviewSummary(ctx context.Context) (*db.ReviewSummary, error) {
+	return db.GetReviewSummary(ctx, s.pool)
+}
+
+func (s *pgReviewStore) ListReviews(ctx context.Context, ratings []int, orderBy string, page, pageSize int) (*db.ReviewPage, error) {
+	return db.ListReviews(ctx, s.pool, ratings, orderBy, page, pageSize)
+}
+
+type ReviewHandler struct {
+	Store ReviewStore
+}
+
+func NewReviewHandler(pool *pgxpool.Pool) *ReviewHandler {
+	return &ReviewHandler{Store: &pgReviewStore{pool: pool}}
+}
+
+func (h *ReviewHandler) GetMyReview(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -31,7 +60,7 @@ func (h *reviewHandler) GetMyReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	review, err := db.GetMyReview(r.Context(), h.pool, player.ID)
+	review, err := h.Store.GetMyReview(r.Context(), player.ID)
 	if err == db.ErrNotFound {
 		renderJSON(w, http.StatusOK, map[string]any{"review": nil})
 		return
@@ -43,7 +72,7 @@ func (h *reviewHandler) GetMyReview(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, review)
 }
 
-func (h *reviewHandler) UpsertMyReview(w http.ResponseWriter, r *http.Request) {
+func (h *ReviewHandler) UpsertMyReview(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -71,7 +100,7 @@ func (h *reviewHandler) UpsertMyReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	review, err := db.UpsertReview(r.Context(), h.pool, player.ID, body.Rating, body.Comment)
+	review, err := h.Store.UpsertReview(r.Context(), player.ID, body.Rating, body.Comment)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to save review"))
 		return
@@ -79,14 +108,14 @@ func (h *reviewHandler) UpsertMyReview(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, review)
 }
 
-func (h *reviewHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
+func (h *ReviewHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil || player.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin only"))
 		return
 	}
 
-	summary, err := db.GetReviewSummary(r.Context(), h.pool)
+	summary, err := h.Store.GetReviewSummary(r.Context())
 	if err != nil {
 		renderError(w, apierror.Internal("failed to fetch summary"))
 		return
@@ -94,7 +123,7 @@ func (h *reviewHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, summary)
 }
 
-func (h *reviewHandler) ListReviews(w http.ResponseWriter, r *http.Request) {
+func (h *ReviewHandler) ListReviews(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil || player.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin only"))
@@ -131,7 +160,7 @@ func (h *reviewHandler) ListReviews(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	result, err := db.ListReviews(r.Context(), h.pool, ratings, orderBy, page, pageSize)
+	result, err := h.Store.ListReviews(r.Context(), ratings, orderBy, page, pageSize)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to list reviews"))
 		return

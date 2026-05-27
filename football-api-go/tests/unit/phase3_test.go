@@ -1,10 +1,12 @@
 package unit_test
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
@@ -14,28 +16,86 @@ import (
 
 // ── beta ──────────────────────────────────────────────────────────────────────
 
-func TestBeta_AndroidSignup_InvalidEmail(t *testing.T) {
+type mockBetaStore struct {
+	insertAndroidBetaSignupFn func(ctx context.Context, email string, playerID *uuid.UUID) error
+}
+
+func (m *mockBetaStore) InsertAndroidBetaSignup(ctx context.Context, email string, playerID *uuid.UUID) error {
+	if m.insertAndroidBetaSignupFn != nil {
+		return m.insertAndroidBetaSignupFn(ctx, email, playerID)
+	}
+	return nil
+}
+
+func betaRouter() http.Handler {
 	r := chi.NewRouter()
-	r.Post("/beta/android-signup", handlers.NewBetaHandler(nil).AndroidSignup)
+	h := &handlers.BetaHandler{Store: &mockBetaStore{}}
+	r.Post("/beta/android-signup", h.AndroidSignup)
+	return r
+}
+
+func TestBeta_AndroidSignup_InvalidEmail(t *testing.T) {
+	r := betaRouter()
 	w := postJSON(r, "/beta/android-signup", `{"google_email":"not-an-email"}`)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 func TestBeta_AndroidSignup_MissingEmail(t *testing.T) {
-	r := chi.NewRouter()
-	r.Post("/beta/android-signup", handlers.NewBetaHandler(nil).AndroidSignup)
+	r := betaRouter()
 	w := postJSON(r, "/beta/android-signup", `{}`)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 func TestBeta_AndroidSignup_MalformedJSON(t *testing.T) {
-	r := chi.NewRouter()
-	r.Post("/beta/android-signup", handlers.NewBetaHandler(nil).AndroidSignup)
+	r := betaRouter()
 	w := postJSON(r, "/beta/android-signup", `{bad}`)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 // ── mcp_tokens ────────────────────────────────────────────────────────────────
+
+type mockMCPTokenStore struct {
+	generateMCPTokenFn func() (raw, hash, prefix string, err error)
+	createMCPTokenFn   func(ctx context.Context, params db.CreateMCPTokenParams) (*db.MCPToken, error)
+	listMCPTokensFn    func(ctx context.Context, playerID uuid.UUID) ([]db.MCPToken, error)
+	getMCPTokenFn      func(ctx context.Context, tokenID uuid.UUID) (*db.MCPToken, error)
+	revokeMCPTokenFn   func(ctx context.Context, tokenID uuid.UUID) error
+}
+
+func (m *mockMCPTokenStore) GenerateMCPToken() (raw, hash, prefix string, err error) {
+	if m.generateMCPTokenFn != nil {
+		return m.generateMCPTokenFn()
+	}
+	return "raw", "hash", "prefix", nil
+}
+
+func (m *mockMCPTokenStore) CreateMCPToken(ctx context.Context, params db.CreateMCPTokenParams) (*db.MCPToken, error) {
+	if m.createMCPTokenFn != nil {
+		return m.createMCPTokenFn(ctx, params)
+	}
+	return nil, nil
+}
+
+func (m *mockMCPTokenStore) ListMCPTokens(ctx context.Context, playerID uuid.UUID) ([]db.MCPToken, error) {
+	if m.listMCPTokensFn != nil {
+		return m.listMCPTokensFn(ctx, playerID)
+	}
+	return []db.MCPToken{}, nil
+}
+
+func (m *mockMCPTokenStore) GetMCPToken(ctx context.Context, tokenID uuid.UUID) (*db.MCPToken, error) {
+	if m.getMCPTokenFn != nil {
+		return m.getMCPTokenFn(ctx, tokenID)
+	}
+	return nil, nil
+}
+
+func (m *mockMCPTokenStore) RevokeMCPToken(ctx context.Context, tokenID uuid.UUID) error {
+	if m.revokeMCPTokenFn != nil {
+		return m.revokeMCPTokenFn(ctx, tokenID)
+	}
+	return nil
+}
 
 func mcpTokenRouter(player *db.Player) http.Handler {
 	r := chi.NewRouter()
@@ -45,7 +105,8 @@ func mcpTokenRouter(player *db.Player) http.Handler {
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	r.Mount("/mcp-tokens", handlers.NewMCPTokenHandler(nil).Routes())
+	h := &handlers.MCPTokenHandler{Store: &mockMCPTokenStore{}}
+	r.Mount("/mcp-tokens", h.Routes())
 	return r
 }
 
@@ -69,6 +130,41 @@ func TestMCPToken_Revoke_InvalidUUID(t *testing.T) {
 
 // ── reviews ───────────────────────────────────────────────────────────────────
 
+type mockReviewStore struct {
+	getMyReviewFn      func(ctx context.Context, playerID uuid.UUID) (*db.AppReview, error)
+	upsertReviewFn     func(ctx context.Context, playerID uuid.UUID, rating int, comment *string) (*db.AppReview, error)
+	getReviewSummaryFn func(ctx context.Context) (*db.ReviewSummary, error)
+	listReviewsFn      func(ctx context.Context, ratings []int, orderBy string, page, pageSize int) (*db.ReviewPage, error)
+}
+
+func (m *mockReviewStore) GetMyReview(ctx context.Context, playerID uuid.UUID) (*db.AppReview, error) {
+	if m.getMyReviewFn != nil {
+		return m.getMyReviewFn(ctx, playerID)
+	}
+	return nil, nil
+}
+
+func (m *mockReviewStore) UpsertReview(ctx context.Context, playerID uuid.UUID, rating int, comment *string) (*db.AppReview, error) {
+	if m.upsertReviewFn != nil {
+		return m.upsertReviewFn(ctx, playerID, rating, comment)
+	}
+	return nil, nil
+}
+
+func (m *mockReviewStore) GetReviewSummary(ctx context.Context) (*db.ReviewSummary, error) {
+	if m.getReviewSummaryFn != nil {
+		return m.getReviewSummaryFn(ctx)
+	}
+	return nil, nil
+}
+
+func (m *mockReviewStore) ListReviews(ctx context.Context, ratings []int, orderBy string, page, pageSize int) (*db.ReviewPage, error) {
+	if m.listReviewsFn != nil {
+		return m.listReviewsFn(ctx, ratings, orderBy, page, pageSize)
+	}
+	return nil, nil
+}
+
 func reviewRouter(player *db.Player) http.Handler {
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -77,7 +173,7 @@ func reviewRouter(player *db.Player) http.Handler {
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	h := handlers.NewReviewHandler(nil)
+	h := &handlers.ReviewHandler{Store: &mockReviewStore{}}
 	r.Get("/reviews/me", h.GetMyReview)
 	r.Put("/reviews/me", h.UpsertMyReview)
 	r.Get("/reviews/summary", h.GetSummary)

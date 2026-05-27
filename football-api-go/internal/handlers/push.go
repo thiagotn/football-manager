@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
@@ -10,20 +12,37 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
-type pushHandler struct {
-	pool           *pgxpool.Pool
-	vapidPublicKey string
+type PushStore interface {
+	UpsertPushSubscription(ctx context.Context, playerID uuid.UUID, endpoint, p256dh, auth string, userAgent *string) error
+	DeletePushSubscriptions(ctx context.Context, playerID uuid.UUID) error
 }
 
-func NewPushHandler(pool *pgxpool.Pool, vapidPublicKey string) *pushHandler {
-	return &pushHandler{pool: pool, vapidPublicKey: vapidPublicKey}
+type pgPushStore struct {
+	pool *pgxpool.Pool
 }
 
-func (h *pushHandler) GetVapidKey(w http.ResponseWriter, r *http.Request) {
-	renderJSON(w, http.StatusOK, map[string]string{"public_key": h.vapidPublicKey})
+func (s *pgPushStore) UpsertPushSubscription(ctx context.Context, playerID uuid.UUID, endpoint, p256dh, auth string, userAgent *string) error {
+	return db.UpsertPushSubscription(ctx, s.pool, playerID, endpoint, p256dh, auth, userAgent)
 }
 
-func (h *pushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
+func (s *pgPushStore) DeletePushSubscriptions(ctx context.Context, playerID uuid.UUID) error {
+	return db.DeletePushSubscriptions(ctx, s.pool, playerID)
+}
+
+type PushHandler struct {
+	Store          PushStore
+	VapidPublicKey string
+}
+
+func NewPushHandler(pool *pgxpool.Pool, vapidPublicKey string) *PushHandler {
+	return &PushHandler{Store: &pgPushStore{pool: pool}, VapidPublicKey: vapidPublicKey}
+}
+
+func (h *PushHandler) GetVapidKey(w http.ResponseWriter, r *http.Request) {
+	renderJSON(w, http.StatusOK, map[string]string{"public_key": h.VapidPublicKey})
+}
+
+func (h *PushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -47,7 +66,7 @@ func (h *pushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.UpsertPushSubscription(r.Context(), h.pool, player.ID, body.Endpoint, body.Keys.P256dh, body.Keys.Auth, body.UserAgent); err != nil {
+	if err := h.Store.UpsertPushSubscription(r.Context(), player.ID, body.Endpoint, body.Keys.P256dh, body.Keys.Auth, body.UserAgent); err != nil {
 		renderError(w, apierror.Internal("failed to subscribe"))
 		return
 	}
@@ -55,14 +74,14 @@ func (h *pushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, map[string]string{"status": "subscribed"})
 }
 
-func (h *pushHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
+func (h *PushHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
 		return
 	}
 
-	if err := db.DeletePushSubscriptions(r.Context(), h.pool, player.ID); err != nil {
+	if err := h.Store.DeletePushSubscriptions(r.Context(), player.ID); err != nil {
 		renderError(w, apierror.Internal("failed to unsubscribe"))
 		return
 	}

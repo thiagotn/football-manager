@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"regexp"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
@@ -13,15 +15,27 @@ import (
 
 var emailRegex = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 
-type betaHandler struct {
+type BetaStore interface {
+	InsertAndroidBetaSignup(ctx context.Context, email string, playerID *uuid.UUID) error
+}
+
+type pgBetaStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewBetaHandler(pool *pgxpool.Pool) *betaHandler {
-	return &betaHandler{pool: pool}
+func (s *pgBetaStore) InsertAndroidBetaSignup(ctx context.Context, email string, playerID *uuid.UUID) error {
+	return db.InsertAndroidBetaSignup(ctx, s.pool, email, playerID)
 }
 
-func (h *betaHandler) AndroidSignup(w http.ResponseWriter, r *http.Request) {
+type BetaHandler struct {
+	Store BetaStore
+}
+
+func NewBetaHandler(pool *pgxpool.Pool) *BetaHandler {
+	return &BetaHandler{Store: &pgBetaStore{pool: pool}}
+}
+
+func (h *BetaHandler) AndroidSignup(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		GoogleEmail string `json:"google_email"`
 	}
@@ -36,14 +50,12 @@ func (h *betaHandler) AndroidSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	player := middleware.PlayerFromCtx(r.Context())
-	var err error
+	var playerID *uuid.UUID
 	if player != nil {
-		id := player.ID
-		err = db.InsertAndroidBetaSignup(r.Context(), h.pool, body.GoogleEmail, &id)
-	} else {
-		err = db.InsertAndroidBetaSignup(r.Context(), h.pool, body.GoogleEmail, nil)
+		playerID = &player.ID
 	}
-	if err != nil {
+
+	if err := h.Store.InsertAndroidBetaSignup(r.Context(), body.GoogleEmail, playerID); err != nil {
 		renderError(w, apierror.Internal("failed to register signup"))
 		return
 	}

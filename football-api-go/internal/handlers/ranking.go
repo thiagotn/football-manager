@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -10,15 +11,32 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 )
 
-type rankingHandler struct {
+type RankingStore interface {
+	GetTopRanking(ctx context.Context, year *int, month *int) ([]db.RankingTopItem, error)
+	GetFlopRanking(ctx context.Context, year *int, month *int) ([]db.RankingFlopItem, error)
+}
+
+type pgRankingStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewRankingHandler(pool *pgxpool.Pool) *rankingHandler {
-	return &rankingHandler{pool: pool}
+func (s *pgRankingStore) GetTopRanking(ctx context.Context, year *int, month *int) ([]db.RankingTopItem, error) {
+	return db.GetTopRanking(ctx, s.pool, year, month)
 }
 
-func (h *rankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
+func (s *pgRankingStore) GetFlopRanking(ctx context.Context, year *int, month *int) ([]db.RankingFlopItem, error) {
+	return db.GetFlopRanking(ctx, s.pool, year, month)
+}
+
+type RankingHandler struct {
+	Store RankingStore
+}
+
+func NewRankingHandler(pool *pgxpool.Pool) *RankingHandler {
+	return &RankingHandler{Store: &pgRankingStore{pool: pool}}
+}
+
+func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 	rankType := r.URL.Query().Get("type")
 	if rankType == "" {
 		rankType = "top"
@@ -54,7 +72,7 @@ func (h *rankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rankType == "top" {
-		items, err := db.GetTopRanking(r.Context(), h.pool, year, month)
+		items, err := h.Store.GetTopRanking(r.Context(), year, month)
 		if err != nil {
 			renderError(w, apierror.Internal("failed to fetch ranking"))
 			return
@@ -71,7 +89,7 @@ func (h *rankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := db.GetFlopRanking(r.Context(), h.pool, year, month)
+	items, err := h.Store.GetFlopRanking(r.Context(), year, month)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to fetch ranking"))
 		return

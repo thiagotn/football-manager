@@ -1,7 +1,6 @@
 package unit_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -26,14 +25,6 @@ func loginRouter(svc services.AuthService) http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/auth", h.PublicRoutes())
 	return r
-}
-
-func postJSON(router http.Handler, path, body string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body)) //nolint:noctx
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	return w
 }
 
 // ── Login ────────────────────────────────────────────────────────────────────
