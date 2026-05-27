@@ -2,7 +2,10 @@ BIN     := ./tmp/server
 MODULE  := github.com/thiagotn/football-manager/football-api-go
 MIGRATE_PATH := ../football-api/migrations
 
-.PHONY: run build test test-integration test-race lint generate migrate clean
+# Coverage packages: exclude internal/db (sqlc-generated, testable only via integration)
+COVPKG := ./internal/apierror/...,./internal/config/...,./internal/handlers/...,./internal/middleware/...,./internal/services/...
+
+.PHONY: run build test test-integration test-race test-all lint generate migrate clean coverage
 
 ## Run the server with live-reload (requires air)
 run:
@@ -14,7 +17,7 @@ build:
 
 ## Run unit tests (no database required)
 test:
-	go test ./internal/... ./tests/unit/... -coverprofile=coverage.out -covermode=atomic -count=1
+	go test ./tests/unit/... -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=$(COVPKG) -count=1
 
 ## Run tests with race detector
 test-race:
@@ -22,10 +25,13 @@ test-race:
 
 ## Run integration tests (requires DATABASE_URL pointing to a test database)
 test-integration:
-	go test ./tests/integration/... -v -timeout 120s -count=1
+	go test ./tests/integration/... -coverprofile=coverage-integration.out -covermode=atomic -coverpkg=$(COVPKG) -v -timeout 120s -count=1
 
-## Run all tests
+## Run all tests and merge coverage profiles
 test-all: test test-integration
+	@head -1 coverage-unit.out > coverage.out
+	@tail -n +2 coverage-unit.out >> coverage.out
+	@tail -n +2 coverage-integration.out >> coverage.out
 
 ## Run linter
 lint:
@@ -55,6 +61,10 @@ deps:
 clean:
 	rm -rf ./tmp ./coverage.out
 
-## Show coverage in browser
+## Show coverage in browser (unit tests only)
 coverage: test
+	go tool cover -html=coverage-unit.out
+
+## Show combined coverage in browser (unit + integration)
+coverage-all: test-all
 	go tool cover -html=coverage.out

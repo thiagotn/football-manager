@@ -344,3 +344,4 @@ func matchVotingClosed(m *db.Match) bool {
 	votingCloses := votingOpens.Add(time.Duration(m.VoteDurationHours) * time.Hour)
 	return time.Now().UTC().After(votingCloses)
 }
+

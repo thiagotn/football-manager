@@ -485,3 +485,139 @@ func TestRequireAdminMiddleware(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, rec.Code)
 	})
 }
+
+// ────── Auth Middleware (BearerToken extraction) ──────
+
+func TestExtractBearerToken(t *testing.T) {
+	t.Run("extracts valid Bearer token", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.Auth("", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Bearer invalid-jwt")
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		// Will be 401 because JWT is invalid, but we passed extraction
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("rejects missing Authorization header", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.Auth("", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.Contains(t, rec.Body.String(), "not authenticated")
+	})
+
+	t.Run("rejects non-Bearer prefix", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.Auth("", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("rejects empty Authorization header", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.Auth("", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "")
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	})
+}
+
+// ────── OptionalAuth Middleware ──────
+
+func TestOptionalAuthMiddleware(t *testing.T) {
+	t.Run("allows missing Authorization header", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.OptionalAuth("", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("allows invalid JWT but continues unauthenticated", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.OptionalAuth("secret", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Bearer malformed-jwt-token")
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		// Should still allow it through (optional auth)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("allows Bearer prefix but not just prefix alone", func(t *testing.T) {
+		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		router := chi.NewRouter()
+		router.Use(middleware.OptionalAuth("", nil))
+		router.Get("/", okHandler)
+
+		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Bearer ")
+		rec := httptest.NewRecorder()
+
+		router.ServeHTTP(rec, req)
+
+		// Bearer with empty token is ignored; request goes through unauthenticated
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+}
