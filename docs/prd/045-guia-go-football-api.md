@@ -2,11 +2,12 @@
 
 | Campo | Valor |
 |---|---|
-| **Versão** | 1.0 |
+| **Versão** | 1.1 |
 | **Status** | 📖 Documento de referência |
 | **Autor** | thiagotn |
-| **Data** | 2026-05-20 |
+| **Data** | 2026-05-20 (rev. 2026-05-27) |
 | **Referência** | [PRD 044 — football-api-go](044-football-api-go.md) |
+| **Mudanças v1.1** | Cap. 9 (sqlc é estado-alvo, queries atuais são hand-crafted); Cap. 11 (padrão Store interface real do código, commit `aef4d18`); Cap. 14 (`ApiV2AccessFor` + dev bypass); Cap. 15 (`docs.json`, `mintlify` no docker-compose); **novo Cap. 17** (scheduler + sync oportunista) |
 
 ---
 
@@ -39,6 +40,7 @@
 14. [Middleware avançado: rate limit e feature flags](#cap-14) *(Fase 5)*
 15. [Documentação: swaggo/swag + Mintlify](#cap-15) *(Fase 5)*
 16. [CI/CD com GitHub Actions](#cap-16) *(Fase 5)*
+17. [Jobs em background: cron + sync oportunista](#cap-17) *(Fase 5)*
 
 **Parte III — Referência**
 - [Apêndice A — Go vs Python/FastAPI: tabela de equivalências](#apendice-a)
@@ -1007,12 +1009,19 @@ func NewPool(databaseURL string) (*pgxpool.Pool, error) {
 }
 ```
 
-### 9.3 sqlc: SQL primeiro, código depois
+### 9.3 sqlc: SQL primeiro, código depois (modo futuro)
+
+> **Estado atual do projeto:** a maior parte das queries é **hand-crafted** em `internal/db/*.go`
+> (`queries.go`, `matches.go`, `groups.go`, `recurrence.go`, `reviews.go`, etc.), seguindo o padrão
+> `func GetX(ctx, pool, args) (*X, error)`. O `sqlc.yaml` existe e gera código em
+> `internal/db/generated/` (gitignored — veja `.gitignore`), mas o pipeline está sendo migrado
+> gradualmente. O conteúdo abaixo descreve o destino do refactor — leia como a forma idiomática
+> de adicionar novas queries quando o sqlc estiver totalmente adotado.
 
 O fluxo sqlc é:
 1. Escreva SQL normal em `sql/queries/*.sql`
 2. Adicione comentários com nome e tipo da query
-3. `sqlc generate` cria funções Go tipadas em `internal/db/queries/`
+3. `sqlc generate` cria funções Go tipadas em `internal/db/generated/`
 
 ```sql
 -- football-api-go: sql/queries/players.sql
@@ -1220,46 +1229,92 @@ func (s *authService) ValidateToken(tokenString string) (*Claims, error) {
 <a name="cap-11"></a>
 ## Capítulo 11 — Arquitetura: handlers, services e injeção de dependência *(Fase 2)*
 
-### 11.1 As três camadas
+### 11.1 As camadas reais
+
+O projeto adotou um **padrão Store híbrido** (commit `aef4d18` — "Phase 1-4 hybrid Store interface refactoring") em vez do clássico handler → service → repo. A motivação foi simplicidade + testabilidade sem multiplicar camadas:
 
 ```
 Request HTTP
     ↓
-Handler         — decodifica request, chama service, serializa response
+Handler         — decodifica request, chama métodos do Store, serializa response
     ↓
-Service         — regras de negócio, orquestração entre repositories
+Store interface — define os métodos que o handler precisa (declarado dentro do próprio handler)
     ↓
-sqlc Queries    — acesso ao banco (gerado, não tem lógica de negócio)
+pgStore impl    — wrapper fino sobre funções package-level do `internal/db`
+    ↓
+internal/db/*   — queries hand-crafted (`pool.QueryRow`, `pool.Exec`)
     ↓
 PostgreSQL
 ```
 
-**Por que essa separação importa:** no teste unitário, substituímos o service por um mock. A handler continua funcionando sem banco real.
+**Quando um service ainda existe:** lógica que orquestra múltiplas chamadas ou serviços externos vive em `internal/services/` (`auth_service.go`, `team_builder.go`, `billing_stripe.go`, `recurrence.go`, `scheduler.go`). Handlers simples não precisam de service intermediário.
 
-### 11.2 Injeção de dependência manual (sem framework)
-
-Go não tem container de DI como Spring ou FastAPI `Depends`. A injeção é feita manualmente no `NewRouter`:
+### 11.2 O padrão Store: interface dentro do handler
 
 ```go
-// Construção do grafo de dependências no main/router:
+// football-api-go: internal/handlers/groups.go
 
-// Nível 3: banco
-pool := db.NewPool(cfg.DatabaseURL)
-q    := db.New(pool)
+// 1) A interface fica NO handler — só os métodos que este handler usa.
+type GroupStore interface {
+    GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error)
+    GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+    GetGroupMembers(ctx context.Context, groupID uuid.UUID) ([]db.GroupMemberWithPlayer, error)
+    CreateGroup(ctx context.Context, params db.CreateGroupParams) (*db.Group, error)
+    // ... só o que o handler chama
+}
 
-// Nível 2: services (recebem pool + queries)
-authSvc   := services.NewAuthService(pool, q, cfg)
-groupSvc  := services.NewGroupService(pool, q)
-matchSvc  := services.NewMatchService(pool, q)
+// 2) Implementação pgStore — wrapper fino sobre `internal/db`.
+type pgGroupStore struct {
+    pool *pgxpool.Pool
+}
 
-// Nível 1: handlers (recebem services via interface)
-authH  := handlers.NewAuthHandler(authSvc)
-groupH := handlers.NewGroupHandler(groupSvc)
-matchH := handlers.NewMatchHandler(matchSvc)
+func (s *pgGroupStore) GetGroupByID(ctx context.Context, id uuid.UUID) (*db.Group, error) {
+    return db.GetGroupByID(ctx, s.pool, id)
+}
+// ... uma linha por método
 
-// Nível 0: router (recebe handlers)
-r.Mount("/groups", groupH.AuthRoutes())
+// 3) Handler depende da interface.
+type GroupHandler struct {
+    Store GroupStore
+}
+
+func NewGroupHandler(pool *pgxpool.Pool) *GroupHandler {
+    return &GroupHandler{Store: &pgGroupStore{pool: pool}}
+}
 ```
+
+**Por que cada handler tem sua própria interface (em vez de uma única `Store` global)?**
+- Interface segregation: o teste só precisa mockar os métodos que o handler real chama
+- Acoplamento mínimo: adicionar uma query nova em outro domínio não força recompilar mocks deste handler
+- Permite testes unitários ficarem em `tests/unit/` com mocks declarados inline no arquivo de teste
+
+### 11.3 Injeção de dependência manual (sem framework)
+
+Go não tem container de DI como Spring ou FastAPI `Depends`. A injeção é feita manualmente no `NewRouter` — handlers recebem o pool, internamente constroem o `pgStore`:
+
+```go
+// football-api-go: internal/server/router.go
+
+// Pool único compartilhado
+pool, _ := db.NewPool(cfg.DatabaseURL)
+
+// Services (apenas os que orquestram múltiplas operações ou usam SDKs externos)
+authSvc   := services.NewAuthService(pool, cfg)
+stripeSvc := services.NewStripeService(cfg.StripeSecretKey, ...)
+pushSvc   := services.NewPushService(pool)
+
+// Handlers — recebem pool (e services quando precisarem)
+authH      := handlers.NewAuthHandler(authSvc, loginRateLimiter)
+groupH     := handlers.NewGroupHandler(pool)
+matchH     := handlers.NewMatchHandler(pool)
+voteH      := handlers.NewVoteHandler(pool, pushSvc)
+webhookH   := handlers.NewWebhookHandler(pool, stripeSvc)
+
+// Router
+r.Mount("/groups", groupH.Routes())
+```
+
+**Quando o handler precisa do pool diretamente (além do Store):** alguns handlers retêm `pool` na struct para chamadas fire-and-forget a services package-level (ex: `MatchHandler.listGroupMatches` chama `services.RunStatusSyncJob(ctx, h.pool)` para o sync oportunista — ver Cap. 17).
 
 ### 11.3 Algoritmo snake-draft (port de Python para Go)
 
@@ -1742,43 +1797,66 @@ func (l *loginRateLimiter) allow(ip string) bool {
 ```go
 // football-api-go: internal/middleware/api_v2_access.go
 
-func ApiV2Access(q *db.Queries) func(http.Handler) http.Handler {
+// Versão default (mantida para compatibilidade): equivalente a ApiV2AccessFor(false).
+func ApiV2Access(next http.Handler) http.Handler {
+    return apiV2AccessImpl(next, false)
+}
+
+// ApiV2AccessFor permite opt-in de um bypass quando devBypass=true.
+// O router decide com base em cfg.AppEnv.
+func ApiV2AccessFor(devBypass bool) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            player := PlayerFromCtx(r.Context())
-            if player == nil {
-                // Não autenticado — deixa passar (endpoint público)
-                // O middleware Auth já bloqueou antes se o endpoint exige auth
-                next.ServeHTTP(w, r)
-                return
-            }
-
-            // Super admin sempre tem acesso
-            if player.Role == db.PlayerRoleAdmin {
-                next.ServeHTTP(w, r)
-                return
-            }
-
-            // Usuário comum: verificar flag
-            if !player.ApiV2Enabled {
-                renderJSON(w, http.StatusForbidden, map[string]string{
-                    "detail": "API_V2_NOT_ENABLED",
-                })
-                return
-            }
-
-            next.ServeHTTP(w, r)
-        })
+        return apiV2AccessImpl(next, devBypass)
     }
+}
+
+func apiV2AccessImpl(next http.Handler, devBypass bool) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        player := PlayerFromCtx(r.Context())
+        if player == nil {
+            // Não autenticado — deixa passar (endpoint público).
+            // O middleware Auth já bloqueou antes se o endpoint exige auth.
+            next.ServeHTTP(w, r)
+            return
+        }
+
+        // Super admin sempre tem acesso.
+        if player.Role == db.PlayerRoleAdmin {
+            next.ServeHTTP(w, r)
+            return
+        }
+
+        // Dev bypass: em APP_ENV=development o gate é desligado para qualquer
+        // jogador autenticado. Em produção/staging o flag api_v2_enabled é
+        // obrigatório (rollout gradual).
+        if devBypass {
+            next.ServeHTTP(w, r)
+            return
+        }
+
+        if !player.ApiV2Enabled {
+            writeJSON(w, http.StatusForbidden, apierror.APIV2NotEnabled())
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
 }
 ```
 
-**Sequência de middlewares no router:**
-```
-request → Auth (valida JWT, popula ctx) → ApiV2Access (verifica flag) → handler
+```go
+// internal/server/router.go — escolha do gate baseado no env.
+apiV2Mw := middleware.ApiV2AccessFor(cfg.AppEnv == "development")
 ```
 
-O `ApiV2Access` depende do player estar no context, por isso vem **depois** do `Auth`.
+**Por que dev bypass:** local com `docker-compose.go-dev.yml` registra contas via signup normal, e a coluna `api_v2_enabled` default `FALSE` (migration 044) força um `UPDATE` manual após cada novo usuário. Em dev isso é só fricção; em prod é controle de rollout — daí a separação.
+
+**Sequência de middlewares no router:**
+```
+request → Auth (valida JWT, popula ctx) → ApiV2Access[For] (verifica flag) → handler
+```
+
+O `ApiV2Access` depende do player estar no context, por isso vem **depois** do `Auth`. Os testes de integração usam `AppEnv="test"` → gate continua ativo (cada `registerAndLogin` chama `enableApiV2` explicitamente, garantindo cobertura real do middleware).
 
 ---
 
@@ -1826,44 +1904,42 @@ swag init -g cmd/server/main.go \
           --parseInternal
 ```
 
-### 15.3 Configuração Mintlify (`mint.json`)
+### 15.3 Configuração Mintlify (`docs.json`)
+
+> O Mintlify CLI faz auto-upgrade de `mint.json` (formato antigo) para `docs.json` (novo)
+> no primeiro `mintlify dev`. O projeto usa `docs.json`.
 
 ```json
-// football-api-go: mintlify/mint.json
+// football-api-go: mintlify/docs.json
 {
-  "name": "rachao.app API",
-  "logo": {
-    "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "rachao.app API v2",
+  "colors": {
+    "primary": "#6366f1",
+    "light": "#818cf8",
+    "dark": "#4f46e5"
   },
   "favicon": "/favicon.ico",
-  "colors": {
-    "primary": "#22c55e",
-    "light": "#4ade80",
-    "dark": "#15803d"
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          { "group": "Getting Started",  "pages": ["quickstart", "authentication"] },
+          { "group": "Architecture",      "pages": ["architecture"] }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          { "group": "API Reference", "pages": ["api-reference/overview"] }
+        ]
+      }
+    ]
   },
-  "topbarLinks": [
-    { "name": "GitHub", "url": "https://github.com/thiagotn/football-manager" }
-  ],
-  "anchors": [
-    { "name": "API Reference", "icon": "code", "url": "api-reference" }
-  ],
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": ["quickstart", "authentication"]
-    },
-    {
-      "group": "Architecture",
-      "pages": ["architecture"]
-    },
-    {
-      "group": "API Reference",
-      "pages": ["api-reference/overview"]
-    }
-  ],
-  "openapi": "openapi.yaml",
-  "baseUrl": "https://api.rachao.app"
+  "logo": { "light": "/logo/light.png", "dark": "/logo/dark.png" },
+  "api":  { "openapi": "openapi.yaml" }
 }
 ```
 
@@ -1872,10 +1948,44 @@ swag init -g cmd/server/main.go \
 ```makefile
 # football-api-go: Makefile
 
+## Gera mintlify/openapi.yaml a partir das anotações swag
 docs:
     swag init -g cmd/server/main.go --output mintlify/ --outputTypes yaml --parseInternal
-    mintlify dev mintlify/  # preview local em http://localhost:3000
+    @mv -f mintlify/swagger.yaml mintlify/openapi.yaml
+    @echo "openapi.yaml generated in mintlify/"
 ```
+
+> O `swag` v1 emite `swagger.yaml` (Swagger 2.0). O rename pra `openapi.yaml` é por convenção —
+> o Mintlify aceita ambos os nomes, mas `openapi.yaml` é o canônico nos templates atuais.
+
+### 15.5 Subindo o Mintlify localmente via docker-compose
+
+`docker-compose.go-dev.yml` inclui um serviço `docs` que sobe o CLI Mintlify na porta **3001**:
+
+```yaml
+docs:
+  build:
+    context: ./football-api-go/mintlify
+    dockerfile: Dockerfile
+  container_name: football-go-docs
+  ports:
+    - "3001:3001"
+  volumes:
+    - ./football-api-go/mintlify:/docs  # hot-reload: editar .mdx atualiza a página
+  networks:
+    - go-app-net
+```
+
+```dockerfile
+# football-api-go/mintlify/Dockerfile
+FROM node:24-alpine
+WORKDIR /docs
+RUN npm install -g mintlify@latest
+EXPOSE 3001
+CMD ["mintlify", "dev", "--port", "3001"]
+```
+
+Subir apenas a doc: `docker compose -f docker-compose.go-dev.yml up -d --build docs`. Acessar em http://localhost:3001.
 
 ---
 
@@ -1960,6 +2070,183 @@ ENTRYPOINT ["/server"]
 ```
 
 **`CGO_ENABLED=0`:** desabilita o Cgo (bindings C). Permite compilar um binário estático que roda na imagem `scratch` (sem nenhuma dependência de SO). Resultado: imagem Docker de ~20–25MB.
+
+---
+
+<a name="cap-17"></a>
+## Capítulo 17 — Jobs em background: cron + sync oportunista *(Fase 5)*
+
+Em v1 (Python) o APScheduler roda dois jobs:
+- Diariamente às 07:00 BRT — cria o próximo rachão pra grupos com `recurrence_enabled=true`
+- A cada hora no `:30` — fecha partidas passadas, transiciona pra `in_progress`, dispara push "bola rolando"
+
+Além disso, o handler `GET /api/v1/groups/{id}/matches` faz a **mesma sincronização de forma oportunista** em todo request, garantindo que o usuário sempre veja estado fresco sem depender do cron.
+
+Em v2 reproduzimos os dois mecanismos.
+
+### 17.1 Lib: `github.com/robfig/cron/v3`
+
+```bash
+go get github.com/robfig/cron/v3@v3.0.1
+```
+
+Cron usa as mesmas expressões 5-campo do crontab (`min hour dom mon dow`). O TZ usado é o do processo Go — daí a importância de setar `TZ=America/Sao_Paulo` no container (`docker-compose.go-dev.yml`), assim os jobs disparam em BRT igual ao APScheduler v1.
+
+### 17.2 Scheduler service
+
+```go
+// football-api-go: internal/services/scheduler.go
+
+type Scheduler struct {
+    cron *cron.Cron
+    pool *pgxpool.Pool
+}
+
+func NewScheduler(pool *pgxpool.Pool) *Scheduler {
+    return &Scheduler{cron: cron.New(), pool: pool}
+}
+
+func (s *Scheduler) Start() error {
+    if _, err := s.cron.AddFunc("30 * * * *", s.runStatusSync); err != nil {
+        return err
+    }
+    if _, err := s.cron.AddFunc("0 7 * * *", s.runRecurrence); err != nil {
+        return err
+    }
+    s.cron.Start()
+    slog.Info("scheduler started", "jobs", []string{"status_sync@:30", "recurrence@07:00"})
+    return nil
+}
+
+// Stop pede pra cron parar e aguarda jobs em vôo terminarem.
+func (s *Scheduler) Stop() {
+    ctx := s.cron.Stop()
+    <-ctx.Done()
+    slog.Info("scheduler stopped")
+}
+
+func (s *Scheduler) runStatusSync() {
+    closed, err := RunStatusSyncJob(context.Background(), s.pool)
+    if err != nil {
+        slog.Error("scheduler: status sync failed", "error", err)
+        return
+    }
+    slog.Info("scheduler: status sync completed", "closed", closed)
+}
+
+func (s *Scheduler) runRecurrence() {
+    created, err := RunRecurrence(context.Background(), s.pool)
+    if err != nil {
+        slog.Error("scheduler: recurrence failed", "error", err)
+        return
+    }
+    slog.Info("scheduler: recurrence completed", "matches_created", created)
+}
+```
+
+### 17.3 Wire-up em `main.go` com graceful shutdown
+
+```go
+// football-api-go: cmd/server/main.go
+
+pool, err := db.NewPool(cfg.DatabaseURL)
+// ...
+defer pool.Close()
+
+// Scheduler é skip em test pra não disparar jobs durante integration tests.
+var scheduler *services.Scheduler
+if cfg.AppEnv != "test" {
+    scheduler = services.NewScheduler(pool)
+    if err := scheduler.Start(); err != nil {
+        slog.Error("scheduler start failed", "error", err)
+        os.Exit(1)
+    }
+    defer scheduler.Stop()  // executado antes do pool.Close por LIFO de defer
+}
+```
+
+A ordem dos `defer` (`scheduler.Stop()` depois de `pool.Close()`) garante que jobs em execução terminem antes do pool ser fechado — evita logs "context canceled" no shutdown.
+
+### 17.4 SQL: 4 transições em uma função
+
+O `RunStatusSyncJob` chama `db.ClosePastMatches` que faz duas UPDATEs (espelhando v1 que faz quatro):
+
+```go
+// football-api-go: internal/db/recurrence.go
+
+func ClosePastMatches(ctx context.Context, pool *pgxpool.Pool) (int, error) {
+    // 1. OPEN/IN_PROGRESS → CLOSED para datas anteriores a hoje (BRT)
+    r1, err := pool.Exec(ctx, `
+        UPDATE matches
+        SET status = 'closed'
+        WHERE match_date < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::DATE
+          AND status IN ('open', 'in_progress')`)
+    if err != nil { return 0, err }
+
+    // 2. IN_PROGRESS de hoje cuja end_time já passou → CLOSED
+    r2, err := pool.Exec(ctx, `
+        UPDATE matches
+        SET status = 'closed'
+        WHERE status = 'in_progress'
+          AND match_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::DATE
+          AND end_time IS NOT NULL
+          AND end_time <= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::TIME`)
+    if err != nil { return int(r1.RowsAffected()), err }
+
+    return int(r1.RowsAffected() + r2.RowsAffected()), nil
+}
+```
+
+A transição OPEN → IN_PROGRESS de partidas que acabaram de começar acontece separadamente em `GetInProgressCandidates` + `TransitionToInProgress`, porque o scheduler precisa enviar push "⚽ Bola rolando!" pra cada uma, e separar a query do update permite saber **quais** transicionaram.
+
+**Por que `AT TIME ZONE 'America/Sao_Paulo'` em todas as queries:** o SQL não depende do TZ do container — sempre converte explicitamente. O TZ do container importa só pro cron (item 17.1).
+
+### 17.5 Sync oportunista no handler de listagem
+
+Replicando o comportamento de v1, `GET /groups/{id}/matches` faz o mesmo sync antes de retornar a lista:
+
+```go
+// football-api-go: internal/handlers/matches.go
+
+type MatchHandler struct {
+    Store MatchStore
+    pool  *pgxpool.Pool // retido pra calls fire-and-forget a services
+}
+
+func (h *MatchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) {
+    // ... permission check ...
+
+    // Sync oportunista — match v1 behavior. Erros viram log warning,
+    // nunca falham a request.
+    if h.pool != nil {
+        closed, err := services.RunStatusSyncJob(r.Context(), h.pool)
+        if err != nil {
+            slog.Warn("listGroupMatches: status sync failed", "error", err)
+        }
+        if closed > 0 {
+            if _, err := services.RunRecurrence(r.Context(), h.pool); err != nil {
+                slog.Warn("listGroupMatches: recurrence failed", "error", err)
+            }
+        }
+    }
+
+    matches, err := h.Store.GetMatchesByGroup(r.Context(), groupID)
+    // ...
+}
+```
+
+**Trade-off:** roda em todo request, mas as queries são bounded (UPDATEs com índices em `match_date`/`status`) e tipicamente fecham 0 linhas — custo negligenciável. Combinado com o polling de 60s no frontend (`groups/[id]/+page.svelte`), garante que o usuário sempre veja status correto sem precisar esperar a próxima hora do cron.
+
+### 17.6 Por que dois mecanismos (cron + lazy)
+
+| | Cron (`:30` horário) | Lazy (em `/groups/{id}/matches`) |
+|---|---|---|
+| Dispara em | servidor (independente de tráfego) | request do usuário |
+| Latência máxima | 60 min | tempo entre requests (~60s com polling) |
+| Push "bola rolando" | sim | sim (compartilha `RunStatusSyncJob`) |
+| Garantia | sempre roda mesmo sem usuários online | só roda enquanto alguém navega |
+
+O cron é a rede de segurança; o lazy é a fonte de "tempo-real" percebido pelo usuário. Os dois compartilham `RunStatusSyncJob` — uma fonte de verdade pra lógica de transição.
 
 ---
 

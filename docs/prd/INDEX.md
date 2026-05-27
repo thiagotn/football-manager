@@ -109,7 +109,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 042 | [chat-rachao-app.md](042-chat-rachao-app.md) | ✅ | Assistente IA via Claude + MCP — chat em linguagem natural sobre rachões |
 | 043 | [security-audit-hardening.md](043-security-audit-hardening.md) | ✅ | Auditoria de segurança do repositório — 7 achados classificados com plano de remediação |
 | 044 | [football-api-go.md](044-football-api-go.md) | 🚧 | Port da API rachao.app em Go (Chi + sqlc + pgx/v5) — `/api/v2`, mesmo DB, paridade total de endpoints — Fase 5 completa (swaggo/Mintlify Cloud pendentes) |
-| 045 | [guia-go-football-api.md](045-guia-go-football-api.md) | 📖 | Guia de estudo Go estruturado como livro — 16 capítulos guiados pela implementação da football-api-go |
+| 045 | [guia-go-football-api.md](045-guia-go-football-api.md) | 📖 | Guia de estudo Go estruturado como livro — 17 capítulos guiados pela implementação da football-api-go (rev. 2026-05-27 com Store interface, scheduler robfig/cron, dev bypass) |
 | 047 | [refactor-handlers-hybrid-strategy.md](047-refactor-handlers-hybrid-strategy.md) | 🚧 | Refactor handlers Go v2 para padrão hybrid Store interface — Phase 1 ✅ (beta, push, ranking, reviews, mcp_tokens) · Phases 2-4 pendentes |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
