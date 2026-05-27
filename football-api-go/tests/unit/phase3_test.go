@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -606,4 +607,161 @@ func TestSubscription_CreateCheckout_InvalidBillingCycle(t *testing.T) {
 	r := subscriptionRouterAs(fakePlayer())
 	w := postJSON(r, "/subscriptions", `{"plan":"basic","billing_cycle":"quarterly"}`)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+}
+
+// ── Groups Business Logic Tests ───────────────────────────────────────────────
+
+// Test member limit enforcement for different plans (validation test)
+func TestGroups_AddMember_FreePlanMemberLimit(t *testing.T) {
+	// Scenario: Free plan allows 30 members, we're at limit
+	// Expected: 403 PLAN_LIMIT_EXCEEDED
+	// This test focuses on the plan limit validation gate
+	groupID := uuid.New()
+	newMemberID := uuid.New()
+	body := fmt.Sprintf(`{"player_id":"%s"}`, newMemberID.String())
+
+	mockStore := &mockGroupStoreForBusiness{
+		getGroupMemberFn: func(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+			return &db.GroupMember{Role: db.GroupMemberRoleAdmin}, nil // Caller is admin
+		},
+		getPlayerPlanFn: func(ctx context.Context, playerID uuid.UUID) (string, error) {
+			return "free", nil
+		},
+		countGroupMembersFn: func(ctx context.Context, groupID uuid.UUID) (int, error) {
+			return 30, nil // Already at free plan limit
+		},
+	}
+
+	r := chi.NewRouter()
+	h := &handlers.GroupHandler{Store: mockStore}
+	r.Mount("/groups", h.Routes())
+
+	admin := fakePlayer(asAdmin())
+	w := sendRequestWithContext(r, "POST", fmt.Sprintf("/groups/%s/members", groupID.String()), body, middleware.InjectPlayerForTest(context.Background(), admin))
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Contains(t, w.Body.String(), "PLAN_LIMIT_EXCEEDED")
+}
+
+// Mock store for business logic tests
+type mockGroupStoreForBusiness struct {
+	getGroupMemberFn                func(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	getPlayerPlanFn                 func(ctx context.Context, playerID uuid.UUID) (string, error)
+	countGroupMembersFn             func(ctx context.Context, groupID uuid.UUID) (int, error)
+	addGroupMemberFn                func(ctx context.Context, groupID, playerID uuid.UUID, role db.GroupMemberRole) (*db.GroupMember, error)
+	getOpenMatchesForGroupFn        func(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	ensurePlayerSubscriptionFn      func(ctx context.Context, playerID uuid.UUID) error
+	ensureMemberInCurrentPeriodFn   func(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
+	getPlayerByIDFn                 func(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	setAttendanceFn                 func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+}
+
+func (m *mockGroupStoreForBusiness) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+	if m.getGroupMemberFn != nil {
+		return m.getGroupMemberFn(ctx, groupID, playerID)
+	}
+	return nil, db.ErrNotFound
+}
+
+func (m *mockGroupStoreForBusiness) GetPlayerPlan(ctx context.Context, playerID uuid.UUID) (string, error) {
+	if m.getPlayerPlanFn != nil {
+		return m.getPlayerPlanFn(ctx, playerID)
+	}
+	return "free", nil
+}
+
+func (m *mockGroupStoreForBusiness) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error) {
+	if m.countGroupMembersFn != nil {
+		return m.countGroupMembersFn(ctx, groupID)
+	}
+	return 0, nil
+}
+
+func (m *mockGroupStoreForBusiness) AddGroupMember(ctx context.Context, groupID, playerID uuid.UUID, role db.GroupMemberRole) (*db.GroupMember, error) {
+	if m.addGroupMemberFn != nil {
+		return m.addGroupMemberFn(ctx, groupID, playerID, role)
+	}
+	return nil, nil
+}
+
+func (m *mockGroupStoreForBusiness) GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	if m.getOpenMatchesForGroupFn != nil {
+		return m.getOpenMatchesForGroupFn(ctx, groupID)
+	}
+	return []uuid.UUID{}, nil
+}
+
+func (m *mockGroupStoreForBusiness) EnsurePlayerSubscription(ctx context.Context, playerID uuid.UUID) error {
+	if m.ensurePlayerSubscriptionFn != nil {
+		return m.ensurePlayerSubscriptionFn(ctx, playerID)
+	}
+	return nil
+}
+
+func (m *mockGroupStoreForBusiness) EnsureMemberInCurrentPeriod(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error {
+	if m.ensureMemberInCurrentPeriodFn != nil {
+		return m.ensureMemberInCurrentPeriodFn(ctx, groupID, playerID, playerName)
+	}
+	return nil
+}
+
+func (m *mockGroupStoreForBusiness) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
+	if m.getPlayerByIDFn != nil {
+		return m.getPlayerByIDFn(ctx, playerID)
+	}
+	return nil, db.ErrNotFound
+}
+
+func (m *mockGroupStoreForBusiness) SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error {
+	if m.setAttendanceFn != nil {
+		return m.setAttendanceFn(ctx, matchID, playerID, status)
+	}
+	return nil
+}
+
+// Stub out remaining methods (not used in these tests)
+func (m *mockGroupStoreForBusiness) GetGroupsByPlayer(ctx context.Context, playerID uuid.UUID, isAdmin bool) ([]db.Group, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) CreateGroup(ctx context.Context, p db.CreateGroupParams) (*db.Group, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) UpdateGroupFull(ctx context.Context, groupID uuid.UUID, g *db.Group) (*db.Group, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
+	return nil
+}
+func (m *mockGroupStoreForBusiness) SlugExists(ctx context.Context, slug string) (bool, error) {
+	return false, nil
+}
+func (m *mockGroupStoreForBusiness) CountGroupAdminCount(ctx context.Context, playerID uuid.UUID) (int, error) {
+	return 0, nil
+}
+func (m *mockGroupStoreForBusiness) GetGroupMembers(ctx context.Context, groupID uuid.UUID) ([]db.GroupMemberWithPlayer, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) UpdateGroupMember(ctx context.Context, groupID, playerID uuid.UUID, p db.UpdateGroupMemberParams) (*db.GroupMember, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) RemoveGroupMember(ctx context.Context, groupID, playerID uuid.UUID) error {
+	return nil
+}
+func (m *mockGroupStoreForBusiness) GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) GetPlayerByWhatsApp(ctx context.Context, whatsapp string) (*db.Player, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) CreatePlayer(ctx context.Context, args db.CreatePlayerParams) (*db.Player, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error {
+	return nil
 }
