@@ -1,3 +1,17 @@
+// @title          rachao.app API v2
+// @version        2.0
+// @description    Go rewrite of the rachao.app backend. All endpoints live under `/api/v2`.
+// @description    Authentication uses JWT in the `Authorization: Bearer <token>` header.
+// @contact.name   rachao.app
+// @contact.url    https://rachao.app
+// @license.name   Proprietary
+// @host           localhost:8080
+// @BasePath       /api/v2
+// @schemes        http https
+// @securityDefinitions.apikey BearerAuth
+// @in             header
+// @name           Authorization
+// @description    JWT access token. Use the value returned by `POST /auth/login`.
 package main
 
 import (

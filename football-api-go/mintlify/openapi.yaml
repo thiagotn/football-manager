@@ -1,0 +1,216 @@
+basePath: /api/v2
+definitions:
+  apierror.APIError:
+    properties:
+      detail:
+        type: string
+    type: object
+  services.LoginRequest:
+    properties:
+      password:
+        type: string
+      whatsapp:
+        type: string
+    type: object
+  services.PlayerResponse:
+    properties:
+      active:
+        type: boolean
+      api_v2_enabled:
+        type: boolean
+      avatar_url:
+        type: string
+      chat_enabled:
+        type: boolean
+      created_at:
+        type: string
+      id:
+        type: string
+      must_change_password:
+        type: boolean
+      name:
+        type: string
+      nickname:
+        type: string
+      role:
+        type: string
+      whatsapp:
+        type: string
+    type: object
+  services.RegisterRequest:
+    properties:
+      name:
+        type: string
+      nickname:
+        type: string
+      otp_token:
+        type: string
+      password:
+        type: string
+      whatsapp:
+        type: string
+    type: object
+  services.SendOTPRequest:
+    properties:
+      whatsapp:
+        type: string
+    type: object
+  services.SendOTPResponse:
+    properties:
+      expires_in_seconds:
+        type: integer
+      status:
+        type: string
+    type: object
+  services.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      api_v2_enabled:
+        type: boolean
+      avatar_url:
+        type: string
+      chat_enabled:
+        type: boolean
+      must_change_password:
+        type: boolean
+      name:
+        type: string
+      nickname:
+        type: string
+      player_id:
+        type: string
+      refresh_token:
+        type: string
+      role:
+        type: string
+      token_type:
+        type: string
+    type: object
+  services.VerifyOTPRequest:
+    properties:
+      otp_code:
+        type: string
+      whatsapp:
+        type: string
+    type: object
+  services.VerifyOTPResponse:
+    properties:
+      otp_token:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: rachao.app
+    url: https://rachao.app
+  description: |-
+    Go rewrite of the rachao.app backend. All endpoints live under `/api/v2`.
+    Authentication uses JWT in the `Authorization: Bearer <token>` header.
+  license:
+    name: Proprietary
+  title: rachao.app API v2
+  version: "2.0"
+paths:
+  /auth/login:
+    post:
+      parameters:
+      - description: Credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services.LoginRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.TokenResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Login
+      tags:
+      - auth
+  /auth/me:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.PlayerResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current player
+      tags:
+      - auth
+  /auth/register:
+    post:
+      parameters:
+      - description: Registration data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services.RegisterRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/services.TokenResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Register
+      tags:
+      - auth
+  /auth/send-otp:
+    post:
+      parameters:
+      - description: WhatsApp number
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services.SendOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.SendOTPResponse'
+      summary: Send OTP (registration)
+      tags:
+      - auth
+  /auth/verify-otp:
+    post:
+      parameters:
+      - description: WhatsApp + OTP code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services.VerifyOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.VerifyOTPResponse'
+      summary: Verify OTP (registration)
+      tags:
+      - auth
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: JWT access token. Use the value returned by `POST /auth/login`.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

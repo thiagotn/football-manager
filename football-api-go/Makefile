@@ -68,9 +68,10 @@ migrate:
 	@if [ -z "$(DATABASE_URL)" ]; then echo "DATABASE_URL not set"; exit 1; fi
 	migrate -path $(MIGRATE_PATH) -database "$(DATABASE_URL)" up
 
-## Generate OpenAPI spec for Mintlify
+## Generate OpenAPI spec for Mintlify (requires swag — install via `go install github.com/swaggo/swag/cmd/swag@latest`)
 docs:
 	swag init -g cmd/server/main.go --output mintlify/ --outputTypes yaml --parseInternal
+	@mv -f mintlify/swagger.yaml mintlify/openapi.yaml
 	@echo "openapi.yaml generated in mintlify/"
 
 ## Download dependencies
