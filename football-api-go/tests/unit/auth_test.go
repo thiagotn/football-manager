@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
+	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/handlers"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 	"github.com/thiagotn/football-manager/football-api-go/internal/services"
@@ -250,6 +251,210 @@ func TestVerifyOTP_InvalidCode(t *testing.T) {
 		`{"whatsapp":"+5511999990000","otp_code":"000000"}`)
 
 	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+// ── ForgotPasswordSendOTP ─────────────────────────────────────────────────
+
+func TestForgotPasswordSendOTP_Success(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordSendOTPFn: func(_ context.Context, _ services.SendOTPRequest) (*services.SendOTPResponse, error) {
+			return &services.SendOTPResponse{Status: "pending", ExpiresInSeconds: 600}, nil
+		},
+	}
+
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/send-otp",
+		`{"whatsapp":"+5511999990000"}`)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp services.SendOTPResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	assert.Equal(t, "pending", resp.Status)
+}
+
+func TestForgotPasswordSendOTP_MissingWhatsApp(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordSendOTPFn: func(_ context.Context, _ services.SendOTPRequest) (*services.SendOTPResponse, error) {
+			return nil, apierror.Unprocessable("missing whatsapp")
+		},
+	}
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/send-otp", `{}`)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+}
+
+// ── ForgotPasswordVerifyOTP ───────────────────────────────────────────────
+
+func TestForgotPasswordVerifyOTP_Success(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordVerifyFn: func(_ context.Context, _ services.VerifyOTPRequest) (*services.VerifyOTPResponse, error) {
+			return &services.VerifyOTPResponse{OTPToken: "forgot-pwd-jwt"}, nil
+		},
+	}
+
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/verify-otp",
+		`{"whatsapp":"+5511999990000","otp_code":"123456"}`)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp services.VerifyOTPResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	assert.NotEmpty(t, resp.OTPToken)
+}
+
+func TestForgotPasswordVerifyOTP_InvalidCode(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordVerifyFn: func(_ context.Context, _ services.VerifyOTPRequest) (*services.VerifyOTPResponse, error) {
+			return nil, apierror.Forbidden("invalid OTP code")
+		},
+	}
+
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/verify-otp",
+		`{"whatsapp":"+5511999990000","otp_code":"000000"}`)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+// ── ForgotPasswordReset ───────────────────────────────────────────────────
+
+func TestForgotPasswordReset_Success(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordResetFn: func(_ context.Context, _ services.ForgotPasswordResetRequest) error {
+			return nil
+		},
+	}
+
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/reset",
+		`{"otp_token":"valid-token","new_password":"newpass123"}`)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestForgotPasswordReset_InvalidToken(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordResetFn: func(_ context.Context, _ services.ForgotPasswordResetRequest) error {
+			return apierror.Forbidden("invalid OTP token")
+		},
+	}
+
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/reset",
+		`{"otp_token":"invalid","new_password":"newpass123"}`)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestForgotPasswordReset_WeakPassword(t *testing.T) {
+	svc := &mockAuthService{
+		forgotPasswordResetFn: func(_ context.Context, _ services.ForgotPasswordResetRequest) error {
+			return apierror.Unprocessable("password too short")
+		},
+	}
+
+	w := postJSON(loginRouter(svc), "/auth/forgot-password/reset",
+		`{"otp_token":"token","new_password":"123"}`)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+}
+
+// ── Protected routes (with middleware injection) ────────────────────────────
+
+func protectedAuthRouter(svc services.AuthService, player *db.Player) http.Handler {
+	loginRL := middleware.NewLoginRateLimiter()
+	h := handlers.NewAuthHandler(svc, loginRL)
+	r := chi.NewRouter()
+
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			ctx := middleware.InjectPlayerForTest(req.Context(), player)
+			next.ServeHTTP(w, req.WithContext(ctx))
+		})
+	})
+	r.Mount("/auth", h.ProtectedRoutes())
+	return r
+}
+
+func TestSendOTPMe_Success(t *testing.T) {
+	player := fakePlayer()
+	svc := &mockAuthService{
+		sendOTPMeFn: func(_ context.Context, playerID uuid.UUID) (*services.SendOTPResponse, error) {
+			return &services.SendOTPResponse{Status: "pending", ExpiresInSeconds: 600}, nil
+		},
+	}
+
+	w := doRequest(protectedAuthRouter(svc, player), http.MethodPost, "/auth/send-otp/me", "")
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp services.SendOTPResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	assert.Equal(t, "pending", resp.Status)
+}
+
+func TestVerifyOTPMe_Success(t *testing.T) {
+	player := fakePlayer()
+	svc := &mockAuthService{
+		verifyOTPMeFn: func(_ context.Context, playerID uuid.UUID, req services.VerifyOTPMeRequest) (*services.VerifyOTPResponse, error) {
+			return &services.VerifyOTPResponse{OTPToken: "token"}, nil
+		},
+	}
+
+	w := doRequest(protectedAuthRouter(svc, player), http.MethodPost, "/auth/verify-otp/me",
+		`{"otp_code":"123456"}`)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp services.VerifyOTPResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+}
+
+func TestVerifyOTPMe_InvalidCode(t *testing.T) {
+	player := fakePlayer()
+	svc := &mockAuthService{
+		verifyOTPMeFn: func(_ context.Context, playerID uuid.UUID, req services.VerifyOTPMeRequest) (*services.VerifyOTPResponse, error) {
+			return nil, apierror.Forbidden("invalid OTP code")
+		},
+	}
+
+	w := doRequest(protectedAuthRouter(svc, player), http.MethodPost, "/auth/verify-otp/me",
+		`{"otp_code":"000000"}`)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestChangePassword_Success(t *testing.T) {
+	player := fakePlayer()
+	svc := &mockAuthService{
+		changePasswordFn: func(_ context.Context, playerID uuid.UUID, req services.ChangePasswordRequest) error {
+			return nil
+		},
+	}
+
+	w := doRequest(protectedAuthRouter(svc, player), http.MethodPost, "/auth/change-password",
+		`{"current_password":"old123","new_password":"new456"}`)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestChangePassword_WrongPassword(t *testing.T) {
+	player := fakePlayer()
+	svc := &mockAuthService{
+		changePasswordFn: func(_ context.Context, playerID uuid.UUID, req services.ChangePasswordRequest) error {
+			return apierror.Forbidden("current password is incorrect")
+		},
+	}
+
+	w := doRequest(protectedAuthRouter(svc, player), http.MethodPost, "/auth/change-password",
+		`{"current_password":"wrong","new_password":"new456"}`)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestChangePassword_MissingFields(t *testing.T) {
+	player := fakePlayer()
+	svc := &mockAuthService{
+		changePasswordFn: func(_ context.Context, playerID uuid.UUID, req services.ChangePasswordRequest) error {
+			return apierror.Unprocessable("missing fields")
+		},
+	}
+
+	w := doRequest(protectedAuthRouter(svc, player), http.MethodPost, "/auth/change-password", `{}`)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 

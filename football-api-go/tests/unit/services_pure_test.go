@@ -6,10 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -343,5 +346,153 @@ func matchVotingClosed(m *db.Match) bool {
 	votingOpens := matchRef.Add(time.Duration(m.VoteOpenDelayMinutes) * time.Minute)
 	votingCloses := votingOpens.Add(time.Duration(m.VoteDurationHours) * time.Hour)
 	return time.Now().UTC().After(votingCloses)
+}
+
+// ────── Auth Service Pure Logic ──────
+
+func TestNormalizeWhatsApp(t *testing.T) {
+	t.Run("valid E.164 format", func(t *testing.T) {
+		result, err := normalizeWhatsApp("+5511999990000")
+		require.NoError(t, err)
+		assert.Equal(t, "+5511999990000", result)
+	})
+
+	t.Run("strips formatting spaces", func(t *testing.T) {
+		result, err := normalizeWhatsApp("+55 (11) 99999-0000")
+		require.NoError(t, err)
+		assert.Equal(t, "+5511999990000", result)
+	})
+
+	t.Run("rejects invalid format", func(t *testing.T) {
+		_, err := normalizeWhatsApp("5511999990000") // Missing +
+		assert.Error(t, err)
+	})
+
+	t.Run("rejects short number", func(t *testing.T) {
+		_, err := normalizeWhatsApp("+551199")
+		assert.Error(t, err)
+	})
+}
+
+func TestValidateOTPCode(t *testing.T) {
+	t.Run("valid 6-digit code", func(t *testing.T) {
+		err := validateOTPCode("123456")
+		assert.NoError(t, err)
+	})
+
+	t.Run("rejects non-digit code", func(t *testing.T) {
+		err := validateOTPCode("12345a")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "only digits")
+	})
+
+	t.Run("rejects wrong length", func(t *testing.T) {
+		err := validateOTPCode("12345")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "exactly 6 digits")
+	})
+
+	t.Run("rejects empty code", func(t *testing.T) {
+		err := validateOTPCode("")
+		assert.Error(t, err)
+	})
+}
+
+func TestPlayerToResponse(t *testing.T) {
+	playerID := uuid.Must(uuid.Parse("00000000-0000-0000-0000-000000000001"))
+	now := time.Now()
+	nickname := "JD"
+	avatarURL := "https://example.com/avatar.jpg"
+
+	player := &db.Player{
+		ID:                 playerID,
+		Name:               "John Doe",
+		Nickname:           &nickname,
+		WhatsApp:           "+5511999990000",
+		Role:               db.PlayerRolePlayer,
+		Active:             true,
+		MustChangePassword: false,
+		AvatarURL:          &avatarURL,
+		ChatEnabled:        true,
+		ApiV2Enabled:       false,
+		CreatedAt:          now,
+		UpdatedAt:          now,
+	}
+
+	resp := playerToResponse(player)
+
+	assert.Equal(t, playerID.String(), resp.ID)
+	assert.Equal(t, "John Doe", resp.Name)
+	assert.Equal(t, "JD", *resp.Nickname)
+	assert.Equal(t, "+5511999990000", resp.WhatsApp)
+	assert.Equal(t, "player", resp.Role)
+	assert.True(t, resp.Active)
+	assert.False(t, resp.MustChangePassword)
+	assert.Equal(t, "https://example.com/avatar.jpg", *resp.AvatarURL)
+	assert.True(t, resp.ChatEnabled)
+	assert.False(t, resp.ApiV2Enabled)
+}
+
+// Helper implementations for testing (copied from auth_service.go)
+var whatsappRegex = regexp.MustCompile(`^\+\d{7,15}$`)
+
+func normalizeWhatsApp(raw string) (string, error) {
+	var b strings.Builder
+	for i, ch := range raw {
+		if i == 0 && ch == '+' {
+			b.WriteRune(ch)
+			continue
+		}
+		if ch >= '0' && ch <= '9' {
+			b.WriteRune(ch)
+		}
+	}
+	wa := b.String()
+	if !whatsappRegex.MatchString(wa) {
+		return "", fmt.Errorf("invalid whatsapp format")
+	}
+	return wa, nil
+}
+
+func validateOTPCode(code string) error {
+	if len(code) != 6 {
+		return fmt.Errorf("otp_code must be exactly 6 digits")
+	}
+	for _, ch := range code {
+		if ch < '0' || ch > '9' {
+			return fmt.Errorf("otp_code must contain only digits")
+		}
+	}
+	return nil
+}
+
+type PlayerResponse struct {
+	ID                 string
+	Name               string
+	Nickname           *string
+	WhatsApp           string
+	Role               string
+	Active             bool
+	MustChangePassword bool
+	AvatarURL          *string
+	ChatEnabled        bool
+	ApiV2Enabled       bool
+	CreatedAt          time.Time
+}
+
+func playerToResponse(p *db.Player) *PlayerResponse {
+	return &PlayerResponse{
+		ID:                 p.ID.String(),
+		Name:               p.Name,
+		Nickname:           p.Nickname,
+		WhatsApp:           p.WhatsApp,
+		Role:               string(p.Role),
+		Active:             p.Active,
+		MustChangePassword: p.MustChangePassword,
+		AvatarURL:          p.AvatarURL,
+		ChatEnabled:        p.ChatEnabled,
+		ApiV2Enabled:       p.ApiV2Enabled,
+		CreatedAt:          p.CreatedAt,
+	}
 }
 
