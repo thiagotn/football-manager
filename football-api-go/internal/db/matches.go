@@ -135,6 +135,39 @@ func GetMatchByHash(ctx context.Context, pool *pgxpool.Pool, hash string) (*Matc
 	return scanMatch(row.Scan)
 }
 
+// MatchWithGroupName bundles a Match with the parent group's name, in a single round-trip.
+type MatchWithGroupName struct {
+	Match
+	GroupName string
+}
+
+// GetMatchByHashWithGroup fetches a match by hash AND the group name in a single SQL query.
+// Avoids the extra round-trip of calling GetMatchByHash followed by GetGroupByID.
+func GetMatchByHashWithGroup(ctx context.Context, pool *pgxpool.Pool, hash string) (*MatchWithGroupName, error) {
+	row := pool.QueryRow(ctx, `
+		SELECT `+matchCols+`, g.name
+		FROM matches m
+		JOIN groups g ON g.id = m.group_id
+		WHERE m.hash = $1`, hash)
+	var m MatchWithGroupName
+	err := row.Scan(
+		&m.ID, &m.GroupID, &m.Number, &m.Hash,
+		&m.MatchDate, &m.StartTime, &m.EndTime,
+		&m.Location, &m.Address, &m.CourtType,
+		&m.PlayersPerTeam, &m.MaxPlayers, &m.Notes,
+		&m.Status, &m.VoteOpenDelayMinutes, &m.VoteDurationHours, &m.VoteNotified,
+		&m.CreatedAt, &m.UpdatedAt,
+		&m.GroupName,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &m, nil
+}
+
 type CreateMatchParams struct {
 	GroupID              uuid.UUID
 	Hash                 string
@@ -321,7 +354,7 @@ func GetAttendancesForMatch(ctx context.Context, pool *pgxpool.Pool, matchID uui
 		JOIN matches m ON m.id = a.match_id
 		LEFT JOIN group_members gm ON gm.player_id = a.player_id AND gm.group_id = m.group_id
 		WHERE a.match_id = $1
-		  AND p.role = 'player'
+		  AND p.role != 'admin'
 		ORDER BY p.name`, matchID)
 	if err != nil {
 		return nil, err

@@ -218,6 +218,9 @@ func GetGroupMember(ctx context.Context, pool *pgxpool.Pool, groupID, playerID u
 }
 
 func GetGroupMembers(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID) ([]GroupMemberWithPlayer, error) {
+	// Super admins (role='admin') are excluded from group member listings.
+	// See: feedback_super_admin_exclusion.md — admins must not appear in any business metric
+	// or interaction surface (e.g. "confirmable absent members" in match details).
 	rows, err := pool.Query(ctx, `
 		SELECT
 			gm.id, gm.group_id, gm.player_id, gm.role::TEXT,
@@ -227,6 +230,7 @@ func GetGroupMembers(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID)
 		FROM group_members gm
 		JOIN players p ON p.id = gm.player_id
 		WHERE gm.group_id = $1
+		  AND p.role != 'admin'
 		ORDER BY p.name`, groupID)
 	if err != nil {
 		return nil, err

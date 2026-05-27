@@ -19,6 +19,7 @@ import (
 type MatchStore interface {
 	GetDiscoverMatches(ctx context.Context, playerID *uuid.UUID, limit, offset int) ([]db.DiscoverMatch, error)
 	GetMatchByHash(ctx context.Context, hash string) (*db.Match, error)
+	GetMatchByHashWithGroup(ctx context.Context, hash string) (*db.MatchWithGroupName, error)
 	GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
 	GetMatchesByGroup(ctx context.Context, groupID uuid.UUID) ([]db.Match, error)
 	GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error)
@@ -45,6 +46,9 @@ func (s *pgMatchStore) GetDiscoverMatches(ctx context.Context, playerID *uuid.UU
 }
 func (s *pgMatchStore) GetMatchByHash(ctx context.Context, hash string) (*db.Match, error) {
 	return db.GetMatchByHash(ctx, s.pool, hash)
+}
+func (s *pgMatchStore) GetMatchByHashWithGroup(ctx context.Context, hash string) (*db.MatchWithGroupName, error) {
+	return db.GetMatchByHashWithGroup(ctx, s.pool, hash)
 }
 func (s *pgMatchStore) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
 	return db.GetMatchByID(ctx, s.pool, matchID)
@@ -275,24 +279,18 @@ func (h *MatchHandler) DiscoverMatches(w http.ResponseWriter, r *http.Request) {
 
 func (h *MatchHandler) GetPublicMatch(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
-	match, err := h.Store.GetMatchByHash(r.Context(), hash)
+	matchWithGroup, err := h.Store.GetMatchByHashWithGroup(r.Context(), hash)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	group, _ := h.Store.GetGroupByID(r.Context(), match.GroupID)
-	groupName := ""
-	if group != nil {
-		groupName = group.Name
-	}
-
-	atts, err := h.Store.GetAttendancesForMatch(r.Context(), match.ID)
+	atts, err := h.Store.GetAttendancesForMatch(r.Context(), matchWithGroup.ID)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, groupName))
+	renderJSON(w, http.StatusOK, buildMatchDetail(&matchWithGroup.Match, atts, matchWithGroup.GroupName))
 }
 
 func (h *MatchHandler) GetPublicMatchStats(w http.ResponseWriter, r *http.Request) {
