@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
@@ -22,23 +24,45 @@ var planLimits = map[string]struct {
 
 var paidPlans = map[string]bool{"basic": true, "pro": true}
 
-type subscriptionHandler struct {
-	pool   *pgxpool.Pool
-	stripe *services.StripeService
+type SubscriptionStore interface {
+	GetOrCreateSubscription(ctx context.Context, playerID uuid.UUID) (*db.PlayerSubscription, error)
+	UpdateSubscription(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error)
+	CountAdminGroups(ctx context.Context, playerID uuid.UUID) (int, error)
 }
 
-func NewSubscriptionHandler(pool *pgxpool.Pool, stripe *services.StripeService) *subscriptionHandler {
-	return &subscriptionHandler{pool: pool, stripe: stripe}
+type pgSubscriptionStore struct {
+	pool *pgxpool.Pool
 }
 
-func (h *subscriptionHandler) GetMySubscription(w http.ResponseWriter, r *http.Request) {
+func (s *pgSubscriptionStore) GetOrCreateSubscription(ctx context.Context, playerID uuid.UUID) (*db.PlayerSubscription, error) {
+	return db.GetOrCreateSubscription(ctx, s.pool, playerID)
+}
+
+func (s *pgSubscriptionStore) UpdateSubscription(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error) {
+	return db.UpdateSubscription(ctx, s.pool, playerID, params)
+}
+
+func (s *pgSubscriptionStore) CountAdminGroups(ctx context.Context, playerID uuid.UUID) (int, error) {
+	return db.CountAdminGroups(ctx, s.pool, playerID)
+}
+
+type SubscriptionHandler struct {
+	Store  SubscriptionStore
+	Stripe *services.StripeService
+}
+
+func NewSubscriptionHandler(pool *pgxpool.Pool, stripe *services.StripeService) *SubscriptionHandler {
+	return &SubscriptionHandler{Store: &pgSubscriptionStore{pool: pool}, Stripe: stripe}
+}
+
+func (h *SubscriptionHandler) GetMySubscription(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
 		return
 	}
 
-	sub, err := db.GetOrCreateSubscription(r.Context(), h.pool, player.ID)
+	sub, err := h.Store.GetOrCreateSubscription(r.Context(), player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get subscription"))
 		return
@@ -60,7 +84,7 @@ func (h *subscriptionHandler) GetMySubscription(w http.ResponseWriter, r *http.R
 		limits = planLimits["free"]
 	}
 
-	groupsUsed, err := db.CountAdminGroups(r.Context(), h.pool, player.ID)
+	groupsUsed, err := h.Store.CountAdminGroups(r.Context(), player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to count groups"))
 		return
@@ -79,7 +103,7 @@ func (h *subscriptionHandler) GetMySubscription(w http.ResponseWriter, r *http.R
 	})
 }
 
-func (h *subscriptionHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
+func (h *SubscriptionHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -104,12 +128,17 @@ func (h *subscriptionHandler) CreateCheckoutSession(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if h.stripe == nil {
+	if h.Stripe == nil {
 		renderError(w, apierror.Internal("payment service not configured"))
 		return
 	}
 
-	sub, err := db.GetOrCreateSubscription(r.Context(), h.pool, player.ID)
+	if err := h.Stripe.ValidatePriceID(body.Plan, body.BillingCycle); err != nil {
+		renderError(w, apierror.Internal(err.Error()))
+		return
+	}
+
+	sub, err := h.Store.GetOrCreateSubscription(r.Context(), player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get subscription"))
 		return
@@ -121,19 +150,19 @@ func (h *subscriptionHandler) CreateCheckoutSession(w http.ResponseWriter, r *ht
 	}
 
 	if customerID == "" {
-		customerID, err = h.stripe.GetOrCreateCustomer(player.ID.String(), player.Name, player.WhatsApp)
+		customerID, err = h.Stripe.GetOrCreateCustomer(player.ID.String(), player.Name, player.WhatsApp)
 		if err != nil {
 			renderError(w, apierror.Internal("failed to create customer"))
 			return
 		}
-		_, _ = db.UpdateSubscription(r.Context(), h.pool, player.ID, db.UpdateSubscriptionParams{
+		_, _ = h.Store.UpdateSubscription(r.Context(), player.ID, db.UpdateSubscriptionParams{
 			Plan:              sub.Plan,
 			Status:            sub.Status,
 			GatewayCustomerID: &customerID,
 		})
 	}
 
-	checkoutURL, err := h.stripe.CreateCheckoutSession(customerID, player.ID.String(), body.Plan, body.BillingCycle)
+	checkoutURL, err := h.Stripe.CreateCheckoutSession(customerID, player.ID.String(), body.Plan, body.BillingCycle)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to create checkout session"))
 		return

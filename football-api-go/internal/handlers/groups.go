@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/go-chi/chi/v5"
@@ -15,17 +17,114 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
-// ── Types ────────────────────────────────────────────────────────────────────
 
-type groupHandler struct {
+type GroupStore interface {
+	GetGroupsByPlayer(ctx context.Context, playerID uuid.UUID, isAdmin bool) ([]db.Group, error)
+	GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error)
+	CreateGroup(ctx context.Context, p db.CreateGroupParams) (*db.Group, error)
+	UpdateGroupFull(ctx context.Context, groupID uuid.UUID, g *db.Group) (*db.Group, error)
+	DeleteGroup(ctx context.Context, groupID uuid.UUID) error
+	SlugExists(ctx context.Context, slug string) (bool, error)
+	CountGroupAdminCount(ctx context.Context, playerID uuid.UUID) (int, error)
+	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	GetGroupMembers(ctx context.Context, groupID uuid.UUID) ([]db.GroupMemberWithPlayer, error)
+	AddGroupMember(ctx context.Context, groupID, playerID uuid.UUID, role db.GroupMemberRole) (*db.GroupMember, error)
+	UpdateGroupMember(ctx context.Context, groupID, playerID uuid.UUID, p db.UpdateGroupMemberParams) (*db.GroupMember, error)
+	RemoveGroupMember(ctx context.Context, groupID, playerID uuid.UUID) error
+	CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error)
+	GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	GetPlayerPlan(ctx context.Context, playerID uuid.UUID) (string, error)
+	EnsurePlayerSubscription(ctx context.Context, playerID uuid.UUID) error
+	GetPlayerByWhatsApp(ctx context.Context, whatsapp string) (*db.Player, error)
+	CreatePlayer(ctx context.Context, args db.CreatePlayerArgs) (*db.Player, error)
+	UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error
+	GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+}
+
+type pgGroupStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewGroupHandler(pool *pgxpool.Pool) *groupHandler {
-	return &groupHandler{pool: pool}
+func (s *pgGroupStore) GetGroupsByPlayer(ctx context.Context, playerID uuid.UUID, isAdmin bool) ([]db.Group, error) {
+	return db.GetGroupsByPlayer(ctx, s.pool, playerID, isAdmin)
+}
+func (s *pgGroupStore) GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error) {
+	return db.GetGroupByID(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) CreateGroup(ctx context.Context, p db.CreateGroupParams) (*db.Group, error) {
+	return db.CreateGroup(ctx, s.pool, p)
+}
+func (s *pgGroupStore) UpdateGroupFull(ctx context.Context, groupID uuid.UUID, g *db.Group) (*db.Group, error) {
+	return db.UpdateGroupFull(ctx, s.pool, groupID, g)
+}
+func (s *pgGroupStore) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
+	return db.DeleteGroup(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) SlugExists(ctx context.Context, slug string) (bool, error) {
+	return db.SlugExists(ctx, s.pool, slug)
+}
+func (s *pgGroupStore) CountGroupAdminCount(ctx context.Context, playerID uuid.UUID) (int, error) {
+	return db.CountGroupAdminCount(ctx, s.pool, playerID)
+}
+func (s *pgGroupStore) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+	return db.GetGroupMember(ctx, s.pool, groupID, playerID)
+}
+func (s *pgGroupStore) GetGroupMembers(ctx context.Context, groupID uuid.UUID) ([]db.GroupMemberWithPlayer, error) {
+	return db.GetGroupMembers(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) AddGroupMember(ctx context.Context, groupID, playerID uuid.UUID, role db.GroupMemberRole) (*db.GroupMember, error) {
+	return db.AddGroupMember(ctx, s.pool, groupID, playerID, role)
+}
+func (s *pgGroupStore) UpdateGroupMember(ctx context.Context, groupID, playerID uuid.UUID, p db.UpdateGroupMemberParams) (*db.GroupMember, error) {
+	return db.UpdateGroupMember(ctx, s.pool, groupID, playerID, p)
+}
+func (s *pgGroupStore) RemoveGroupMember(ctx context.Context, groupID, playerID uuid.UUID) error {
+	return db.RemoveGroupMember(ctx, s.pool, groupID, playerID)
+}
+func (s *pgGroupStore) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error) {
+	return db.CountGroupMembers(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return db.GetGroupMemberPlayerIDs(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return db.GetNonAdminMemberPlayerIDs(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) GetPlayerPlan(ctx context.Context, playerID uuid.UUID) (string, error) {
+	return db.GetPlayerPlan(ctx, s.pool, playerID)
+}
+func (s *pgGroupStore) EnsurePlayerSubscription(ctx context.Context, playerID uuid.UUID) error {
+	return db.EnsurePlayerSubscription(ctx, s.pool, playerID)
+}
+func (s *pgGroupStore) GetPlayerByWhatsApp(ctx context.Context, whatsapp string) (*db.Player, error) {
+	return db.GetPlayerByWhatsApp(ctx, s.pool, whatsapp)
+}
+func (s *pgGroupStore) CreatePlayer(ctx context.Context, args db.CreatePlayerArgs) (*db.Player, error) {
+	return db.CreatePlayer(ctx, s.pool, args)
+}
+func (s *pgGroupStore) UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error {
+	return db.UpdatePlayerMustChangePassword(ctx, s.pool, id, val)
+}
+func (s *pgGroupStore) GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return db.GetOpenMatchesForGroup(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error {
+	return db.SetAttendance(ctx, s.pool, matchID, playerID, status)
 }
 
-func (h *groupHandler) Routes() chi.Router {
+// ── Types ────────────────────────────────────────────────────────────────────
+
+type GroupHandler struct {
+	Store GroupStore
+}
+
+func NewGroupHandler(pool *pgxpool.Pool) *GroupHandler {
+	return &GroupHandler{Store: &pgGroupStore{pool: pool}}
+}
+
+func (h *GroupHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.listGroups)
 	r.Post("/", h.createGroup)
@@ -191,9 +290,9 @@ func playerIDParam(r *http.Request) (uuid.UUID, error) {
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
-func (h *groupHandler) listGroups(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) listGroups(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
-	groups, err := db.GetGroupsByPlayer(r.Context(), h.pool, player.ID, player.Role == db.PlayerRoleAdmin)
+	groups, err := h.Store.GetGroupsByPlayer(r.Context(), player.ID, player.Role == db.PlayerRoleAdmin)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -201,23 +300,24 @@ func (h *groupHandler) listGroups(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, groups)
 }
 
-func (h *groupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	var req createGroupReq
 	if err := decodeJSON(r, &req); err != nil {
 		renderError(w, err)
 		return
 	}
-	if strings.TrimSpace(req.Name) == "" || len(req.Name) < 2 {
-		renderError(w, apierror.Unprocessable("name must be at least 2 characters"))
+	name := strings.TrimSpace(req.Name)
+	if name == "" || len(name) < 2 || len(name) > 100 {
+		renderError(w, apierror.Unprocessable("name must be 2-100 characters"))
 		return
 	}
 
 	// Plan limit check (admins are exempt)
 	if player.Role != db.PlayerRoleAdmin {
-		plan, _ := db.GetPlayerPlan(r.Context(), h.pool, player.ID)
+		plan, _ := h.Store.GetPlayerPlan(r.Context(), player.ID)
 		limit := db.PlanGroupLimit(plan)
-		count, _ := db.CountGroupAdminCount(r.Context(), h.pool, player.ID)
+		count, _ := h.Store.CountGroupAdminCount(r.Context(), player.ID)
 		if count >= limit {
 			renderError(w, apierror.PlanLimitExceeded())
 			return
@@ -231,7 +331,7 @@ func (h *groupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	slug = slugify(slug)
 
 	// Ensure unique slug
-	exists, err := db.SlugExists(r.Context(), h.pool, slug)
+	exists, err := h.Store.SlugExists(r.Context(), slug)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -240,7 +340,7 @@ func (h *groupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 		// Try append suffix
 		for i := 2; i <= 9; i++ {
 			candidate := slug + "-" + string(rune('0'+i))
-			exists2, _ := db.SlugExists(r.Context(), h.pool, candidate)
+			exists2, _ := h.Store.SlugExists(r.Context(), candidate)
 			if !exists2 {
 				slug = candidate
 				exists = false
@@ -259,19 +359,31 @@ func (h *groupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	voteDelay := 20
 	if req.VoteOpenDelayMinutes != nil {
+		if *req.VoteOpenDelayMinutes < 0 || *req.VoteOpenDelayMinutes > 120 {
+			renderError(w, apierror.Unprocessable("vote_open_delay_minutes must be 0-120"))
+			return
+		}
 		voteDelay = *req.VoteOpenDelayMinutes
 	}
 	voteDur := 24
 	if req.VoteDurationHours != nil {
+		if *req.VoteDurationHours < 2 || *req.VoteDurationHours > 72 {
+			renderError(w, apierror.Unprocessable("vote_duration_hours must be 2-72"))
+			return
+		}
 		voteDur = *req.VoteDurationHours
 	}
 	tz := "America/Sao_Paulo"
 	if req.Timezone != nil && *req.Timezone != "" {
+		if _, err := time.LoadLocation(*req.Timezone); err != nil {
+			renderError(w, apierror.Unprocessable("invalid timezone"))
+			return
+		}
 		tz = *req.Timezone
 	}
 
-	group, err := db.CreateGroup(r.Context(), h.pool, db.CreateGroupParams{
-		Name:                 strings.TrimSpace(req.Name),
+	group, err := h.Store.CreateGroup(r.Context(), db.CreateGroupParams{
+		Name:                 name,
 		Description:          req.Description,
 		Slug:                 slug,
 		PerMatchAmount:       req.PerMatchAmount,
@@ -287,14 +399,14 @@ func (h *groupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Creator becomes group admin
-	_, _ = db.AddGroupMember(r.Context(), h.pool, group.ID, player.ID, db.GroupMemberRoleAdmin)
+	_, _ = h.Store.AddGroupMember(r.Context(), group.ID, player.ID, db.GroupMemberRoleAdmin)
 	// Ensure player has subscription
-	_ = db.EnsurePlayerSubscription(r.Context(), h.pool, player.ID)
+	_ = h.Store.EnsurePlayerSubscription(r.Context(), player.ID)
 
 	renderJSON(w, http.StatusCreated, group)
 }
 
-func (h *groupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -302,7 +414,7 @@ func (h *groupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := db.GetGroupByID(r.Context(), h.pool, groupID)
+	group, err := h.Store.GetGroupByID(r.Context(), groupID)
 	if err == db.ErrNotFound {
 		renderError(w, apierror.NotFound("group not found"))
 		return
@@ -315,7 +427,7 @@ func (h *groupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
 	// Check membership (admin sees all)
 	var callerMembership *db.GroupMember
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil {
 			renderError(w, apierror.Forbidden("not a member of this group"))
 			return
@@ -323,7 +435,7 @@ func (h *groupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
 		callerMembership = m
 	}
 
-	members, err := db.GetGroupMembers(r.Context(), h.pool, groupID)
+	members, err := h.Store.GetGroupMembers(r.Context(), groupID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -344,7 +456,7 @@ func (h *groupHandler) getGroup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *groupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -358,7 +470,7 @@ func (h *groupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := db.GetGroupByID(r.Context(), h.pool, groupID)
+	group, err := h.Store.GetGroupByID(r.Context(), groupID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -366,7 +478,7 @@ func (h *groupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 
 	// Auth check
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can update"))
 			return
@@ -405,7 +517,7 @@ func (h *groupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 		group.TeamSlots = req.TeamSlots
 	}
 
-	updated, err := db.UpdateGroupFull(r.Context(), h.pool, groupID, group)
+	updated, err := h.Store.UpdateGroupFull(r.Context(), groupID, group)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -413,7 +525,7 @@ func (h *groupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, updated)
 }
 
-func (h *groupHandler) deleteGroup(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) deleteGroup(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin access required"))
@@ -424,14 +536,14 @@ func (h *groupHandler) deleteGroup(w http.ResponseWriter, r *http.Request) {
 		renderError(w, apierror.NotFound("group not found"))
 		return
 	}
-	if err := db.DeleteGroup(r.Context(), h.pool, groupID); err != nil {
+	if err := h.Store.DeleteGroup(r.Context(), groupID); err != nil {
 		renderError(w, err)
 		return
 	}
 	noContent(w)
 }
 
-func (h *groupHandler) listMembers(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) listMembers(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -441,7 +553,7 @@ func (h *groupHandler) listMembers(w http.ResponseWriter, r *http.Request) {
 
 	var callerMembership *db.GroupMember
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil {
 			renderError(w, apierror.Forbidden("not a member of this group"))
 			return
@@ -449,7 +561,7 @@ func (h *groupHandler) listMembers(w http.ResponseWriter, r *http.Request) {
 		callerMembership = m
 	}
 
-	members, err := db.GetGroupMembers(r.Context(), h.pool, groupID)
+	members, err := h.Store.GetGroupMembers(r.Context(), groupID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -465,7 +577,7 @@ func (h *groupHandler) listMembers(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, resp)
 }
 
-func (h *groupHandler) addMember(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) addMember(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -484,7 +596,7 @@ func (h *groupHandler) addMember(w http.ResponseWriter, r *http.Request) {
 
 	// Auth check
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can add members"))
 			return
@@ -492,10 +604,10 @@ func (h *groupHandler) addMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Plan members limit
-	plan, _ := db.GetPlayerPlan(r.Context(), h.pool, player.ID)
+	plan, _ := h.Store.GetPlayerPlan(r.Context(), player.ID)
 	limit := db.PlanMembersLimit(plan)
 	if limit > 0 {
-		count, _ := db.CountGroupMembers(r.Context(), h.pool, groupID)
+		count, _ := h.Store.CountGroupMembers(r.Context(), groupID)
 		if count >= limit {
 			renderError(w, apierror.PlanLimitExceeded())
 			return
@@ -503,28 +615,28 @@ func (h *groupHandler) addMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check already member
-	if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, req.PlayerID); err == nil {
+	if _, err := h.Store.GetGroupMember(r.Context(), groupID, req.PlayerID); err == nil {
 		renderError(w, apierror.Conflict("player already in group"))
 		return
 	}
 
-	m, err := db.AddGroupMember(r.Context(), h.pool, groupID, req.PlayerID, req.Role)
+	m, err := h.Store.AddGroupMember(r.Context(), groupID, req.PlayerID, req.Role)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
 	// Add PENDING attendance for open matches
-	matchIDs, _ := db.GetOpenMatchesForGroup(r.Context(), h.pool, groupID)
+	matchIDs, _ := h.Store.GetOpenMatchesForGroup(r.Context(), groupID)
 	for _, mid := range matchIDs {
-		_ = db.SetAttendance(r.Context(), h.pool, mid, req.PlayerID, "pending")
+		_ = h.Store.SetAttendance(r.Context(), mid, req.PlayerID, "pending")
 	}
 
-	_ = db.EnsurePlayerSubscription(r.Context(), h.pool, req.PlayerID)
+	_ = h.Store.EnsurePlayerSubscription(r.Context(), req.PlayerID)
 	renderJSON(w, http.StatusCreated, m)
 }
 
-func (h *groupHandler) updateMyPosition(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) updateMyPosition(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -542,7 +654,7 @@ func (h *groupHandler) updateMyPosition(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	m, err := db.UpdateGroupMember(r.Context(), h.pool, groupID, player.ID, db.UpdateGroupMemberParams{
+	m, err := h.Store.UpdateGroupMember(r.Context(), groupID, player.ID, db.UpdateGroupMemberParams{
 		Position: &req.Position,
 	})
 	if err != nil {
@@ -552,7 +664,7 @@ func (h *groupHandler) updateMyPosition(w http.ResponseWriter, r *http.Request) 
 	renderJSON(w, http.StatusOK, m)
 }
 
-func (h *groupHandler) updateMember(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) updateMember(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -575,7 +687,7 @@ func (h *groupHandler) updateMember(w http.ResponseWriter, r *http.Request) {
 	isAdmin := player.Role == db.PlayerRoleAdmin
 	var callerRole db.GroupMemberRole
 	if !isAdmin {
-		cm, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		cm, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil {
 			renderError(w, apierror.Forbidden("not a member"))
 			return
@@ -601,7 +713,7 @@ func (h *groupHandler) updateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := db.UpdateGroupMember(r.Context(), h.pool, groupID, targetID, db.UpdateGroupMemberParams{
+	m, err := h.Store.UpdateGroupMember(r.Context(), groupID, targetID, db.UpdateGroupMemberParams{
 		Role:       req.Role,
 		SkillStars: req.SkillStars,
 		Position:   req.Position,
@@ -614,7 +726,7 @@ func (h *groupHandler) updateMember(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, m)
 }
 
-func (h *groupHandler) removeMember(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) removeMember(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -628,21 +740,21 @@ func (h *groupHandler) removeMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can remove members"))
 			return
 		}
 	}
 
-	if err := db.RemoveGroupMember(r.Context(), h.pool, groupID, targetID); err != nil {
+	if err := h.Store.RemoveGroupMember(r.Context(), groupID, targetID); err != nil {
 		renderError(w, err)
 		return
 	}
 	noContent(w)
 }
 
-func (h *groupHandler) lookupMember(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) lookupMember(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -650,7 +762,7 @@ func (h *groupHandler) lookupMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("admin access required"))
 			return
@@ -663,14 +775,14 @@ func (h *groupHandler) lookupMember(w http.ResponseWriter, r *http.Request) {
 	}
 	whatsapp = normalizePhone(whatsapp)
 
-	found, err := db.GetPlayerByWhatsApp(r.Context(), h.pool, whatsapp)
+	found, err := h.Store.GetPlayerByWhatsApp(r.Context(), whatsapp)
 	if err != nil {
 		renderJSON(w, http.StatusOK, map[string]any{"status": "not_found", "player": nil})
 		return
 	}
 
 	// Check if already member
-	if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, found.ID); err == nil {
+	if _, err := h.Store.GetGroupMember(r.Context(), groupID, found.ID); err == nil {
 		renderJSON(w, http.StatusOK, map[string]any{
 			"status": "already_member",
 			"player": map[string]any{
@@ -690,7 +802,7 @@ func (h *groupHandler) lookupMember(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -698,7 +810,7 @@ func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("admin access required"))
 			return
@@ -713,10 +825,10 @@ func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 	req.WhatsApp = normalizePhone(req.WhatsApp)
 
 	// Plan limit
-	plan, _ := db.GetPlayerPlan(r.Context(), h.pool, player.ID)
+	plan, _ := h.Store.GetPlayerPlan(r.Context(), player.ID)
 	limit := db.PlanMembersLimit(plan)
 	if limit > 0 {
-		count, _ := db.CountGroupMembers(r.Context(), h.pool, groupID)
+		count, _ := h.Store.CountGroupMembers(r.Context(), groupID)
 		if count >= limit {
 			renderError(w, apierror.PlanLimitExceeded())
 			return
@@ -724,7 +836,7 @@ func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 	}
 
 	isNew := false
-	target, err := db.GetPlayerByWhatsApp(r.Context(), h.pool, req.WhatsApp)
+	target, err := h.Store.GetPlayerByWhatsApp(r.Context(), req.WhatsApp)
 	if err != nil {
 		// Create new player
 		if req.Name == nil || len(strings.TrimSpace(*req.Name)) < 2 {
@@ -732,7 +844,7 @@ func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		hash, _ := hashPassword("temp-" + req.WhatsApp)
-		target, err = db.CreatePlayer(r.Context(), h.pool, db.CreatePlayerParams{
+		target, err = h.Store.CreatePlayer(r.Context(), db.CreatePlayerParams{
 			Name:         strings.TrimSpace(*req.Name),
 			WhatsApp:     req.WhatsApp,
 			PasswordHash: hash,
@@ -741,13 +853,13 @@ func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 			renderError(w, err)
 			return
 		}
-		_ = db.EnsurePlayerSubscription(r.Context(), h.pool, target.ID)
-		_ = db.UpdatePlayerMustChangePassword(r.Context(), h.pool, target.ID, true)
+		_ = h.Store.EnsurePlayerSubscription(r.Context(), target.ID)
+		_ = h.Store.UpdatePlayerMustChangePassword(r.Context(), target.ID, true)
 		isNew = true
 	}
 
 	// Check already member
-	if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, target.ID); err == nil {
+	if _, err := h.Store.GetGroupMember(r.Context(), groupID, target.ID); err == nil {
 		renderError(w, apierror.Conflict("player already in group"))
 		return
 	}
@@ -761,28 +873,28 @@ func (h *groupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 		position = *req.Position
 	}
 
-	m, err := db.AddGroupMember(r.Context(), h.pool, groupID, target.ID, db.GroupMemberRoleMember)
+	m, err := h.Store.AddGroupMember(r.Context(), groupID, target.ID, db.GroupMemberRoleMember)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 	// Set skill/position
-	_, _ = db.UpdateGroupMember(r.Context(), h.pool, groupID, target.ID, db.UpdateGroupMemberParams{
+	_, _ = h.Store.UpdateGroupMember(r.Context(), groupID, target.ID, db.UpdateGroupMemberParams{
 		SkillStars: &skillStars,
 		Position:   &position,
 		Nickname:   req.Nickname,
 	})
 
 	// Add to open matches
-	matchIDs, _ := db.GetOpenMatchesForGroup(r.Context(), h.pool, groupID)
+	matchIDs, _ := h.Store.GetOpenMatchesForGroup(r.Context(), groupID)
 	for _, mid := range matchIDs {
-		_ = db.SetAttendance(r.Context(), h.pool, mid, target.ID, "pending")
+		_ = h.Store.SetAttendance(r.Context(), mid, target.ID, "pending")
 	}
 
 	renderJSON(w, http.StatusCreated, map[string]any{"member": m, "is_new": isNew})
 }
 
-func (h *groupHandler) groupStats(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) groupStats(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -790,13 +902,13 @@ func (h *groupHandler) groupStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if player.Role != db.PlayerRoleAdmin {
-		if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID); err != nil {
+		if _, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID); err != nil {
 			renderError(w, apierror.Forbidden("not a member"))
 			return
 		}
 	}
 	// Simplified stats: return member count for now
-	count, _ := db.CountGroupMembers(r.Context(), h.pool, groupID)
+	count, _ := h.Store.CountGroupMembers(r.Context(), groupID)
 	renderJSON(w, http.StatusOK, map[string]any{
 		"total_members": count,
 		"players":       []any{},
@@ -804,7 +916,7 @@ func (h *groupHandler) groupStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *groupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -822,7 +934,7 @@ func (h *groupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := db.GetGroupByID(r.Context(), h.pool, groupID)
+	group, err := h.Store.GetGroupByID(r.Context(), groupID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -833,7 +945,7 @@ func (h *groupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check already member
-	if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID); err == nil {
+	if _, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID); err == nil {
 		renderError(w, apierror.Conflict("already a member"))
 		return
 	}
@@ -844,7 +956,7 @@ func (h *groupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *groupHandler) listWaitlist(w http.ResponseWriter, r *http.Request) {
+func (h *GroupHandler) listWaitlist(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -855,7 +967,7 @@ func (h *groupHandler) listWaitlist(w http.ResponseWriter, r *http.Request) {
 	// Check if caller is admin
 	isAdmin := player.Role == db.PlayerRoleAdmin
 	if !isAdmin {
-		member, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		member, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || member.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can list waitlist"))
 			return
@@ -863,7 +975,7 @@ func (h *groupHandler) listWaitlist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get open matches for the group
-	matchIDs, err := db.GetOpenMatchesForGroup(r.Context(), h.pool, groupID)
+	matchIDs, err := h.Store.GetOpenMatchesForGroup(r.Context(), groupID)
 	if err != nil || len(matchIDs) == 0 {
 		renderJSON(w, http.StatusOK, []any{})
 		return

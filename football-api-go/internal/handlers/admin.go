@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,17 +23,113 @@ var mrrCents = map[[2]string]int{
 	{"pro", "yearly"}:    399_00 / 12,
 }
 
-type adminHandler struct {
-	pool    *pgxpool.Pool
+type AdminStore interface {
+	GetAdminStats(ctx context.Context) (*db.AdminStats, error)
+	CountMatches(ctx context.Context, status *string) (int, error)
+	ListMatches(ctx context.Context, status *string, limit, offset int) ([]db.AdminMatch, error)
+	ListGroups(ctx context.Context, limit, offset int) (int, []db.AdminGroup, error)
+	GetSubscriptionSummary(ctx context.Context) (int, []db.SubscriptionSummaryStat, error)
+	CountSubscriptions(ctx context.Context, params db.ListSubscriptionsParams) (int, error)
+	ListSubscriptions(ctx context.Context, params db.ListSubscriptionsParams) ([]db.AdminSubscription, error)
+	GetSubscriptionByPlayer(ctx context.Context, playerID uuid.UUID) (*db.PlayerSubscription, error)
+	UpdateSubscription(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error)
+	CountPlayers(ctx context.Context, search *string) (int, error)
+	ListPlayers(ctx context.Context, search *string, limit, offset int) ([]db.AdminPlayer, error)
+	GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	DeletePlayerAvatarURL(ctx context.Context, playerID uuid.UUID) error
+	CountBetaSignups(ctx context.Context) (int, error)
+	ListBetaSignups(ctx context.Context, limit, offset int) ([]db.AndroidBetaSignup, error)
+	ListApiV2Users(ctx context.Context, limit, offset int) ([]db.ApiV2User, error)
+	UpdatePlayerApiV2Enabled(ctx context.Context, playerID uuid.UUID, enabled bool) error
+}
+
+type pgAdminStore struct {
+	pool *pgxpool.Pool
+}
+
+func (s *pgAdminStore) GetAdminStats(ctx context.Context) (*db.AdminStats, error) {
+	return db.GetAdminStats(ctx, s.pool)
+}
+
+func (s *pgAdminStore) CountMatches(ctx context.Context, status *string) (int, error) {
+	return db.CountMatches(ctx, s.pool, status)
+}
+
+func (s *pgAdminStore) ListMatches(ctx context.Context, status *string, limit, offset int) ([]db.AdminMatch, error) {
+	return db.ListMatches(ctx, s.pool, status, limit, offset)
+}
+
+func (s *pgAdminStore) ListGroups(ctx context.Context, limit, offset int) (int, []db.AdminGroup, error) {
+	return db.ListGroups(ctx, s.pool, limit, offset)
+}
+
+func (s *pgAdminStore) GetSubscriptionSummary(ctx context.Context) (int, []db.SubscriptionSummaryStat, error) {
+	return db.GetSubscriptionSummary(ctx, s.pool)
+}
+
+func (s *pgAdminStore) CountSubscriptions(ctx context.Context, params db.ListSubscriptionsParams) (int, error) {
+	return db.CountSubscriptions(ctx, s.pool, params)
+}
+
+func (s *pgAdminStore) ListSubscriptions(ctx context.Context, params db.ListSubscriptionsParams) ([]db.AdminSubscription, error) {
+	return db.ListSubscriptions(ctx, s.pool, params)
+}
+
+func (s *pgAdminStore) GetSubscriptionByPlayer(ctx context.Context, playerID uuid.UUID) (*db.PlayerSubscription, error) {
+	return db.GetSubscriptionByPlayer(ctx, s.pool, playerID)
+}
+
+func (s *pgAdminStore) UpdateSubscription(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error) {
+	return db.UpdateSubscription(ctx, s.pool, playerID, params)
+}
+
+func (s *pgAdminStore) CountPlayers(ctx context.Context, search *string) (int, error) {
+	return db.CountPlayers(ctx, s.pool, search)
+}
+
+func (s *pgAdminStore) ListPlayers(ctx context.Context, search *string, limit, offset int) ([]db.AdminPlayer, error) {
+	return db.ListPlayers(ctx, s.pool, search, limit, offset)
+}
+
+func (s *pgAdminStore) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
+	return db.GetPlayerByID(ctx, s.pool, playerID)
+}
+
+func (s *pgAdminStore) DeletePlayerAvatarURL(ctx context.Context, playerID uuid.UUID) error {
+	return db.DeletePlayerAvatarURL(ctx, s.pool, playerID)
+}
+
+func (s *pgAdminStore) CountBetaSignups(ctx context.Context) (int, error) {
+	return db.CountBetaSignups(ctx, s.pool)
+}
+
+func (s *pgAdminStore) ListBetaSignups(ctx context.Context, limit, offset int) ([]db.AndroidBetaSignup, error) {
+	return db.ListBetaSignups(ctx, s.pool, limit, offset)
+}
+
+func (s *pgAdminStore) ListApiV2Users(ctx context.Context, limit, offset int) ([]db.ApiV2User, error) {
+	return db.ListApiV2Users(ctx, s.pool, limit, offset)
+}
+
+func (s *pgAdminStore) UpdatePlayerApiV2Enabled(ctx context.Context, playerID uuid.UUID, enabled bool) error {
+	return db.UpdatePlayerApiV2Enabled(ctx, s.pool, playerID, enabled)
+}
+
+type AdminHandler struct {
+	Store   AdminStore
 	stripe  *services.StripeService
 	storage *services.StorageService
 }
 
-func NewAdminHandler(pool *pgxpool.Pool, stripe *services.StripeService, storage *services.StorageService) *adminHandler {
-	return &adminHandler{pool: pool, stripe: stripe, storage: storage}
+func NewAdminHandler(pool *pgxpool.Pool, stripe *services.StripeService, storage *services.StorageService) *AdminHandler {
+	return &AdminHandler{
+		Store:   &pgAdminStore{pool: pool},
+		stripe:  stripe,
+		storage: storage,
+	}
 }
 
-func (h *adminHandler) Routes() chi.Router {
+func (h *AdminHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/stats", h.getStats)
 	r.Get("/matches", h.listMatches)
@@ -88,56 +185,34 @@ func adminTargetPlayerID(r *http.Request) (uuid.UUID, error) {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-func (h *adminHandler) getStats(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var (
-		totalMatches, totalGroups, totalPlayers int
-		platformMinutes                         int
-		signupsTotal, signups7d, signups30d     int
-		totalReviews                            int
-	)
-
-	row := h.pool.QueryRow(ctx, `
-		SELECT
-			(SELECT COUNT(*)::INT FROM matches)  AS total_matches,
-			(SELECT COUNT(*)::INT FROM groups)   AS total_groups,
-			(SELECT COUNT(*)::INT FROM players WHERE role != 'admin') AS total_players,
-			(SELECT COALESCE(SUM(GREATEST(0,
-				EXTRACT(EPOCH FROM (end_time::INTERVAL - start_time::INTERVAL)) / 60
-			)),0)::INT
-			 FROM matches WHERE status = 'closed' AND end_time IS NOT NULL) AS platform_minutes,
-			(SELECT COUNT(*)::INT FROM players WHERE role != 'admin') AS signups_total,
-			(SELECT COUNT(*)::INT FROM players WHERE role != 'admin'
-			   AND created_at >= NOW() - INTERVAL '7 days')  AS signups_7d,
-			(SELECT COUNT(*)::INT FROM players WHERE role != 'admin'
-			   AND created_at >= NOW() - INTERVAL '30 days') AS signups_30d,
-			(SELECT COUNT(*)::INT FROM app_reviews) AS total_reviews`)
-	if err := row.Scan(
-		&totalMatches, &totalGroups, &totalPlayers,
-		&platformMinutes,
-		&signupsTotal, &signups7d, &signups30d,
-		&totalReviews,
-	); err != nil {
+	stats, err := h.Store.GetAdminStats(ctx)
+	if err != nil {
 		renderError(w, err)
 		return
 	}
 
 	renderJSON(w, http.StatusOK, map[string]any{
-		"total_matches":           totalMatches,
-		"total_groups":            totalGroups,
-		"total_players":           totalPlayers,
-		"platform_minutes_played": platformMinutes,
-		"signups_total":           signupsTotal,
-		"signups_last_7_days":     signups7d,
-		"signups_last_30_days":    signups30d,
-		"total_reviews":           totalReviews,
+		"total_matches":           stats.TotalMatches,
+		"total_groups":            stats.TotalGroups,
+		"total_players":           stats.TotalPlayers,
+		"platform_minutes_played": stats.PlatformMinutes,
+		"signups_total":           stats.SignupsTotal,
+		"signups_last_7_days":     stats.Signups7D,
+		"signups_last_30_days":    stats.Signups30D,
+		"total_reviews":           stats.TotalReviews,
 	})
 }
 
-func (h *adminHandler) listMatches(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) listMatches(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	status := r.URL.Query().Get("status")
+	statusParam := r.URL.Query().Get("status")
+	var status *string
+	if statusParam != "" {
+		status = &statusParam
+	}
 	limit := 50
 	offset := 0
 	if v := r.URL.Query().Get("limit"); v != "" {
@@ -151,193 +226,82 @@ func (h *adminHandler) listMatches(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var total int
-	var countErr error
-	if status != "" {
-		countErr = h.pool.QueryRow(ctx,
-			`SELECT COUNT(*)::INT FROM matches WHERE status=$1`, status).Scan(&total)
-	} else {
-		countErr = h.pool.QueryRow(ctx, `SELECT COUNT(*)::INT FROM matches`).Scan(&total)
-	}
-	if countErr != nil {
-		renderError(w, countErr)
-		return
-	}
-
-	var rows interface{ Close() }
-	var queryErr error
-	if status != "" {
-		rows2, err := h.pool.Query(ctx, `
-			SELECT m.id, m.hash, m.number, m.group_id, g.name AS group_name,
-			       m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
-			       m.location, m.status::TEXT
-			FROM matches m JOIN groups g ON g.id = m.group_id
-			WHERE m.status = $1
-			ORDER BY m.match_date DESC, m.start_time DESC
-			LIMIT $2 OFFSET $3`, status, limit, offset)
-		rows, queryErr = rows2, err
-		if queryErr == nil {
-			defer rows2.Close()
-			items := make([]map[string]any, 0)
-			for rows2.Next() {
-				var id, groupID uuid.UUID
-				var hash, groupName, matchDate, startTime, location, st string
-				var number int
-				var endTime *string
-				if err := rows2.Scan(&id, &hash, &number, &groupID, &groupName,
-					&matchDate, &startTime, &endTime, &location, &st); err != nil {
-					renderError(w, err)
-					return
-				}
-				items = append(items, map[string]any{
-					"id": id, "hash": hash, "number": number,
-					"group_id": groupID, "group_name": groupName,
-					"match_date": matchDate, "start_time": startTime, "end_time": endTime,
-					"location": location, "status": st,
-				})
-			}
-			renderJSON(w, http.StatusOK, map[string]any{"total": total, "items": items})
-			return
-		}
-	} else {
-		rows2, err := h.pool.Query(ctx, `
-			SELECT m.id, m.hash, m.number, m.group_id, g.name AS group_name,
-			       m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
-			       m.location, m.status::TEXT
-			FROM matches m JOIN groups g ON g.id = m.group_id
-			ORDER BY m.match_date DESC, m.start_time DESC
-			LIMIT $1 OFFSET $2`, limit, offset)
-		rows, queryErr = rows2, err
-		if queryErr == nil {
-			defer rows2.Close()
-			items := make([]map[string]any, 0)
-			for rows2.Next() {
-				var id, groupID uuid.UUID
-				var hash, groupName, matchDate, startTime, location, st string
-				var number int
-				var endTime *string
-				if err := rows2.Scan(&id, &hash, &number, &groupID, &groupName,
-					&matchDate, &startTime, &endTime, &location, &st); err != nil {
-					renderError(w, err)
-					return
-				}
-				items = append(items, map[string]any{
-					"id": id, "hash": hash, "number": number,
-					"group_id": groupID, "group_name": groupName,
-					"match_date": matchDate, "start_time": startTime, "end_time": endTime,
-					"location": location, "status": st,
-				})
-			}
-			renderJSON(w, http.StatusOK, map[string]any{"total": total, "items": items})
-			return
-		}
-	}
-	if queryErr != nil {
-		renderError(w, queryErr)
-	}
-	_ = rows
-}
-
-func (h *adminHandler) listGroups(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	_, _, limit, offset := pageParams(r, 50)
-
-	var total int
-	if err := h.pool.QueryRow(ctx, `SELECT COUNT(*)::INT FROM groups`).Scan(&total); err != nil {
-		renderError(w, err)
-		return
-	}
-
-	rows, err := h.pool.Query(ctx, `
-		SELECT g.id, g.name, g.description, g.slug, g.created_at,
-		       COUNT(DISTINCT gm.player_id)::INT AS total_members,
-		       COUNT(DISTINCT m.id)::INT          AS total_matches
-		FROM groups g
-		LEFT JOIN group_members gm ON gm.group_id = g.id
-		LEFT JOIN matches m        ON m.group_id  = g.id
-		GROUP BY g.id
-		ORDER BY g.created_at DESC
-		LIMIT $1 OFFSET $2`, limit, offset)
+	total, err := h.Store.CountMatches(ctx, status)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
 
-	items := make([]map[string]any, 0)
-	for rows.Next() {
-		var id uuid.UUID
-		var name, slug string
-		var description *string
-		var createdAt interface{}
-		var members, matches int
-		if err := rows.Scan(&id, &name, &description, &slug, &createdAt, &members, &matches); err != nil {
-			renderError(w, err)
-			return
+	matches, err := h.Store.ListMatches(ctx, status, limit, offset)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+
+	items := make([]map[string]any, len(matches))
+	for i, m := range matches {
+		items[i] = map[string]any{
+			"id": m.ID, "hash": m.Hash, "number": m.Number,
+			"group_id": m.GroupID, "group_name": m.GroupName,
+			"match_date": m.MatchDate, "start_time": m.StartTime, "end_time": m.EndTime,
+			"location": m.Location, "status": m.Status,
 		}
-		items = append(items, map[string]any{
-			"id": id, "name": name, "description": description, "slug": slug,
-			"created_at": createdAt, "total_members": members, "total_matches": matches,
-		})
 	}
 	renderJSON(w, http.StatusOK, map[string]any{"total": total, "items": items})
 }
 
-func (h *adminHandler) subscriptionSummary(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) listGroups(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	_, _, limit, offset := pageParams(r, 50)
 
-	var totalPlayers int
-	if err := h.pool.QueryRow(ctx,
-		`SELECT COUNT(*)::INT FROM players WHERE role != 'admin'`).Scan(&totalPlayers); err != nil {
-		renderError(w, err)
-		return
-	}
-
-	rows, err := h.pool.Query(ctx, `
-		SELECT
-			COALESCE(ps.status, 'active')        AS status,
-			COALESCE(ps.plan, 'free')            AS plan,
-			COALESCE(ps.billing_cycle, 'monthly') AS billing_cycle,
-			COUNT(*)::INT AS cnt
-		FROM players p
-		LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
-		WHERE p.role != 'admin'
-		GROUP BY ps.status, ps.plan, ps.billing_cycle`)
+	total, groups, err := h.Store.ListGroups(ctx, limit, offset)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
+
+	items := make([]map[string]any, len(groups))
+	for i, g := range groups {
+		items[i] = map[string]any{
+			"id": g.ID, "name": g.Name, "description": g.Description, "slug": g.Slug,
+			"created_at": g.CreatedAt, "total_members": g.TotalMembers, "total_matches": g.TotalMatches,
+		}
+	}
+	renderJSON(w, http.StatusOK, map[string]any{"total": total, "items": items})
+}
+
+func (h *AdminHandler) subscriptionSummary(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	totalPlayers, stats, err := h.Store.GetSubscriptionSummary(ctx)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
 
 	active, free, pastDue, canceled, mrrCentsTotal := 0, 0, 0, 0, 0
 	type breakdownKey struct{ plan, cycle string }
 	breakdownMap := map[breakdownKey]int{}
 
-	for rows.Next() {
-		var status, plan, cycle string
-		var cnt int
-		if err := rows.Scan(&status, &plan, &cycle, &cnt); err != nil {
-			renderError(w, err)
-			return
-		}
+	for _, s := range stats {
 		switch {
-		case plan == "free":
-			free += cnt
-		case status == "canceled":
-			canceled += cnt
-		case status == "past_due":
-			pastDue += cnt
-		case status == "active":
-			active += cnt
-			if price, ok := mrrCents[[2]string{plan, cycle}]; ok {
-				mrrCentsTotal += price * cnt
+		case s.Plan == "free":
+			free += s.Count
+		case s.Status == "canceled":
+			canceled += s.Count
+		case s.Status == "past_due":
+			pastDue += s.Count
+		case s.Status == "active":
+			active += s.Count
+			if price, ok := mrrCents[[2]string{s.Plan, s.BillingCycle}]; ok {
+				mrrCentsTotal += price * s.Count
 			}
 		default:
-			free += cnt
+			free += s.Count
 		}
-		if plan != "free" && status != "canceled" {
-			k := breakdownKey{plan, cycle}
-			breakdownMap[k] += cnt
+		if s.Plan != "free" && s.Status != "canceled" {
+			k := breakdownKey{s.Plan, s.BillingCycle}
+			breakdownMap[k] += s.Count
 		}
 	}
 
@@ -359,106 +323,47 @@ func (h *adminHandler) subscriptionSummary(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (h *adminHandler) listSubscriptions(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) listSubscriptions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page, pageSize, limit, offset := pageParams(r, 20)
 	filterStatus := r.URL.Query().Get("status")
 	filterPlan := r.URL.Query().Get("plan")
 
-	var total int
-	var err error
-	if filterStatus != "" && filterPlan != "" {
-		err = h.pool.QueryRow(ctx, `
-			SELECT COUNT(*)::INT
-			FROM player_subscriptions ps JOIN players p ON p.id = ps.player_id
-			WHERE p.role != 'admin' AND ps.status=$1 AND ps.plan=$2`, filterStatus, filterPlan).Scan(&total)
-	} else if filterStatus != "" {
-		err = h.pool.QueryRow(ctx, `
-			SELECT COUNT(*)::INT
-			FROM player_subscriptions ps JOIN players p ON p.id = ps.player_id
-			WHERE p.role != 'admin' AND ps.status=$1`, filterStatus).Scan(&total)
-	} else if filterPlan != "" {
-		err = h.pool.QueryRow(ctx, `
-			SELECT COUNT(*)::INT
-			FROM player_subscriptions ps JOIN players p ON p.id = ps.player_id
-			WHERE p.role != 'admin' AND ps.plan=$1`, filterPlan).Scan(&total)
-	} else {
-		err = h.pool.QueryRow(ctx, `
-			SELECT COUNT(*)::INT
-			FROM player_subscriptions ps JOIN players p ON p.id = ps.player_id
-			WHERE p.role != 'admin'`).Scan(&total)
+	params := db.ListSubscriptionsParams{
+		Status: filterStatus,
+		Plan:   filterPlan,
+		Limit:  limit,
+		Offset: offset,
 	}
+
+	total, err := h.Store.CountSubscriptions(ctx, params)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	baseSelect := `
-		SELECT p.id AS player_id, p.name AS player_name,
-		       ps.plan, ps.billing_cycle, ps.status,
-		       ps.current_period_end, ps.grace_period_end,
-		       ps.gateway_customer_id, ps.gateway_sub_id, ps.created_at
-		FROM player_subscriptions ps
-		JOIN players p ON p.id = ps.player_id
-		WHERE p.role != 'admin'`
-
-	var queryRows interface {
-		Close()
-		Next() bool
-		Scan(...any) error
-	}
-
-	switch {
-	case filterStatus != "" && filterPlan != "":
-		queryRows, err = h.pool.Query(ctx, baseSelect+
-			` AND ps.status=$1 AND ps.plan=$2 ORDER BY ps.current_period_end ASC NULLS LAST LIMIT $3 OFFSET $4`,
-			filterStatus, filterPlan, limit, offset)
-	case filterStatus != "":
-		queryRows, err = h.pool.Query(ctx, baseSelect+
-			` AND ps.status=$1 ORDER BY ps.current_period_end ASC NULLS LAST LIMIT $2 OFFSET $3`,
-			filterStatus, limit, offset)
-	case filterPlan != "":
-		queryRows, err = h.pool.Query(ctx, baseSelect+
-			` AND ps.plan=$1 ORDER BY ps.current_period_end ASC NULLS LAST LIMIT $2 OFFSET $3`,
-			filterPlan, limit, offset)
-	default:
-		queryRows, err = h.pool.Query(ctx, baseSelect+
-			` ORDER BY ps.current_period_end ASC NULLS LAST LIMIT $1 OFFSET $2`,
-			limit, offset)
-	}
+	subs, err := h.Store.ListSubscriptions(ctx, params)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer queryRows.Close()
 
-	items := make([]map[string]any, 0)
-	for queryRows.Next() {
-		var playerID uuid.UUID
-		var playerName, plan string
-		var billingCycle, status, gatewayCustomerID, gatewaySubID *string
-		var currentPeriodEnd, gracePeriodEnd, createdAt interface{}
-		if err := queryRows.Scan(
-			&playerID, &playerName, &plan, &billingCycle, &status,
-			&currentPeriodEnd, &gracePeriodEnd, &gatewayCustomerID, &gatewaySubID, &createdAt,
-		); err != nil {
-			renderError(w, err)
-			return
+	items := make([]map[string]any, len(subs))
+	for i, s := range subs {
+		items[i] = map[string]any{
+			"player_id": s.PlayerID, "player_name": s.PlayerName,
+			"plan": s.Plan, "billing_cycle": s.BillingCycle, "status": s.Status,
+			"current_period_end": s.CurrentPeriodEnd, "grace_period_end": s.GracePeriodEnd,
+			"gateway_customer_id": s.GatewayCustomerID, "gateway_sub_id": s.GatewaySubID,
+			"created_at": s.CreatedAt,
 		}
-		items = append(items, map[string]any{
-			"player_id": playerID, "player_name": playerName,
-			"plan": plan, "billing_cycle": billingCycle, "status": status,
-			"current_period_end": currentPeriodEnd, "grace_period_end": gracePeriodEnd,
-			"gateway_customer_id": gatewayCustomerID, "gateway_sub_id": gatewaySubID,
-			"created_at": createdAt,
-		})
 	}
 	renderJSON(w, http.StatusOK, map[string]any{
 		"total": total, "page": page, "page_size": pageSize, "items": items,
 	})
 }
 
-func (h *adminHandler) updateSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) updateSubscription(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	playerID, err := adminTargetPlayerID(r)
 	if err != nil {
@@ -476,7 +381,7 @@ func (h *adminHandler) updateSubscription(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	sub, err := db.GetSubscriptionByPlayer(ctx, h.pool, playerID)
+	sub, err := h.Store.GetSubscriptionByPlayer(ctx, playerID)
 	if err != nil {
 		renderError(w, apierror.NotFound("subscription not found for this player"))
 		return
@@ -487,7 +392,7 @@ func (h *adminHandler) updateSubscription(w http.ResponseWriter, r *http.Request
 		Status:       req.Status,
 		BillingCycle: req.BillingCycle,
 	}
-	if _, err := db.UpdateSubscription(ctx, h.pool, sub.PlayerID, params); err != nil {
+	if _, err := h.Store.UpdateSubscription(ctx, sub.PlayerID, params); err != nil {
 		renderError(w, err)
 		return
 	}
@@ -496,7 +401,7 @@ func (h *adminHandler) updateSubscription(w http.ResponseWriter, r *http.Request
 	renderJSON(w, http.StatusOK, map[string]string{"status": "ok", "plan": req.Plan})
 }
 
-func (h *adminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	playerID, err := adminTargetPlayerID(r)
 	if err != nil {
@@ -504,7 +409,7 @@ func (h *adminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	sub, err := db.GetSubscriptionByPlayer(ctx, h.pool, playerID)
+	sub, err := h.Store.GetSubscriptionByPlayer(ctx, playerID)
 	if err != nil {
 		renderError(w, apierror.NotFound("subscription not found for this player"))
 		return
@@ -521,7 +426,7 @@ func (h *adminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if _, err := db.UpdateSubscription(ctx, h.pool, playerID, db.UpdateSubscriptionParams{
+	if _, err := h.Store.UpdateSubscription(ctx, playerID, db.UpdateSubscriptionParams{
 		Plan:   "free",
 		Status: "canceled",
 	}); err != nil {
@@ -533,83 +438,42 @@ func (h *adminHandler) cancelSubscription(w http.ResponseWriter, r *http.Request
 	renderJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (h *adminHandler) listPlayers(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) listPlayers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page, pageSize, limit, offset := pageParams(r, 20)
 	search := r.URL.Query().Get("search")
 
-	var total int
-	var err error
+	var searchPtr *string
 	if search != "" {
-		pat := "%" + search + "%"
-		err = h.pool.QueryRow(ctx, `
-			SELECT COUNT(*)::INT FROM players p
-			WHERE p.role != 'admin'
-			  AND (p.name ILIKE $1 OR p.nickname ILIKE $1 OR p.whatsapp LIKE $1)`, pat).Scan(&total)
-	} else {
-		err = h.pool.QueryRow(ctx,
-			`SELECT COUNT(*)::INT FROM players p WHERE p.role != 'admin'`).Scan(&total)
+		searchPtr = &search
 	}
+
+	total, err := h.Store.CountPlayers(ctx, searchPtr)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	baseSelect := `
-		SELECT p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url,
-		       COALESCE(ps.plan, 'free') AS plan,
-		       COUNT(DISTINCT gm.group_id)::INT AS total_groups
-		FROM players p
-		LEFT JOIN player_subscriptions ps ON ps.player_id = p.id
-		LEFT JOIN group_members gm ON gm.player_id = p.id
-		WHERE p.role != 'admin'`
-
-	var rows interface {
-		Close()
-		Next() bool
-		Scan(...any) error
-	}
-	if search != "" {
-		pat := "%" + search + "%"
-		rows, err = h.pool.Query(ctx, baseSelect+
-			` AND (p.name ILIKE $1 OR p.nickname ILIKE $1 OR p.whatsapp LIKE $1)
-			  GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
-			  ORDER BY p.created_at DESC LIMIT $2 OFFSET $3`, pat, limit, offset)
-	} else {
-		rows, err = h.pool.Query(ctx, baseSelect+
-			` GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
-			  ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
-	}
+	players, err := h.Store.ListPlayers(ctx, searchPtr, limit, offset)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
 
-	items := make([]map[string]any, 0)
-	for rows.Next() {
-		var id uuid.UUID
-		var name, whatsapp, role, plan string
-		var nickname, avatarURL *string
-		var active bool
-		var createdAt interface{}
-		var totalGroups int
-		if err := rows.Scan(&id, &name, &nickname, &whatsapp, &role, &active, &createdAt, &avatarURL, &plan, &totalGroups); err != nil {
-			renderError(w, err)
-			return
+	items := make([]map[string]any, len(players))
+	for i, p := range players {
+		items[i] = map[string]any{
+			"id": p.ID, "name": p.Name, "nickname": p.Nickname, "whatsapp": p.WhatsApp,
+			"role": p.Role, "active": p.Active, "created_at": p.CreatedAt,
+			"avatar_url": p.AvatarURL, "plan": p.Plan, "total_groups": p.TotalGroups,
 		}
-		items = append(items, map[string]any{
-			"id": id, "name": name, "nickname": nickname, "whatsapp": whatsapp,
-			"role": role, "active": active, "created_at": createdAt,
-			"avatar_url": avatarURL, "plan": plan, "total_groups": totalGroups,
-		})
 	}
 	renderJSON(w, http.StatusOK, map[string]any{
 		"total": total, "page": page, "page_size": pageSize, "items": items,
 	})
 }
 
-func (h *adminHandler) deletePlayerAvatar(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) deletePlayerAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	playerID, err := adminTargetPlayerID(r)
 	if err != nil {
@@ -617,7 +481,7 @@ func (h *adminHandler) deletePlayerAvatar(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	player, err := db.GetPlayerByID(ctx, h.pool, playerID)
+	player, err := h.Store.GetPlayerByID(ctx, playerID)
 	if err != nil {
 		renderError(w, apierror.NotFound("player not found"))
 		return
@@ -627,8 +491,7 @@ func (h *adminHandler) deletePlayerAvatar(w http.ResponseWriter, r *http.Request
 		_ = h.storage.DeleteAvatarByURL(ctx, *player.AvatarURL)
 	}
 
-	if _, err := h.pool.Exec(ctx,
-		`UPDATE players SET avatar_url=NULL WHERE id=$1`, playerID); err != nil {
+	if err := h.Store.DeletePlayerAvatarURL(ctx, playerID); err != nil {
 		renderError(w, err)
 		return
 	}
@@ -636,83 +499,54 @@ func (h *adminHandler) deletePlayerAvatar(w http.ResponseWriter, r *http.Request
 	noContent(w)
 }
 
-func (h *adminHandler) listBetaSignups(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) listBetaSignups(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page, pageSize, limit, offset := pageParams(r, 20)
 
-	var total int
-	if err := h.pool.QueryRow(ctx,
-		`SELECT COUNT(*)::INT FROM android_beta_signups`).Scan(&total); err != nil {
-		renderError(w, err)
-		return
-	}
-
-	rows, err := h.pool.Query(ctx, `
-		SELECT s.id, s.google_email, s.player_id, p.name AS player_name, s.created_at
-		FROM android_beta_signups s
-		LEFT JOIN players p ON p.id = s.player_id
-		ORDER BY s.created_at DESC
-		LIMIT $1 OFFSET $2`, limit, offset)
+	total, err := h.Store.CountBetaSignups(ctx)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
 
-	items := make([]map[string]any, 0)
-	for rows.Next() {
-		var id uuid.UUID
-		var email string
-		var playerID *uuid.UUID
-		var playerName *string
-		var createdAt interface{}
-		if err := rows.Scan(&id, &email, &playerID, &playerName, &createdAt); err != nil {
-			renderError(w, err)
-			return
+	signups, err := h.Store.ListBetaSignups(ctx, limit, offset)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+
+	items := make([]map[string]any, len(signups))
+	for i, s := range signups {
+		items[i] = map[string]any{
+			"id": s.ID, "google_email": s.Email, "player_id": s.PlayerID,
+			"player_name": s.PlayerName, "created_at": s.CreatedAt,
 		}
-		items = append(items, map[string]any{
-			"id": id, "google_email": email, "player_id": playerID,
-			"player_name": playerName, "created_at": createdAt,
-		})
 	}
 	renderJSON(w, http.StatusOK, map[string]any{
 		"total": total, "page": page, "page_size": pageSize, "items": items,
 	})
 }
 
-func (h *adminHandler) listApiV2Users(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) listApiV2Users(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, _, limit, offset := pageParams(r, 50)
 
-	rows, err := h.pool.Query(ctx, `
-		SELECT id, name, whatsapp, api_v2_enabled
-		FROM players
-		WHERE role != 'admin' AND active = true
-		ORDER BY name ASC
-		LIMIT $1 OFFSET $2`, limit, offset)
+	users, err := h.Store.ListApiV2Users(ctx, limit, offset)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
 
-	items := make([]map[string]any, 0)
-	for rows.Next() {
-		var id uuid.UUID
-		var name, whatsapp string
-		var apiV2Enabled bool
-		if err := rows.Scan(&id, &name, &whatsapp, &apiV2Enabled); err != nil {
-			renderError(w, err)
-			return
+	items := make([]map[string]any, len(users))
+	for i, u := range users {
+		items[i] = map[string]any{
+			"id": u.ID, "name": u.Name, "whatsapp": u.WhatsApp, "api_v2_enabled": u.ApiV2Enabled,
 		}
-		items = append(items, map[string]any{
-			"id": id, "name": name, "whatsapp": whatsapp, "api_v2_enabled": apiV2Enabled,
-		})
 	}
 	renderJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
-func (h *adminHandler) toggleApiV2User(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) toggleApiV2User(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	playerID, err := adminTargetPlayerID(r)
 	if err != nil {
@@ -726,7 +560,7 @@ func (h *adminHandler) toggleApiV2User(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.UpdatePlayerApiV2Enabled(ctx, h.pool, playerID, req.ApiV2Enabled); err != nil {
+	if err := h.Store.UpdatePlayerApiV2Enabled(ctx, playerID, req.ApiV2Enabled); err != nil {
 		renderError(w, err)
 		return
 	}

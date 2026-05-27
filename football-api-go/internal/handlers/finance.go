@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -14,12 +17,69 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
-type financeHandler struct {
+type FinanceStore interface {
+	ListFinancePeriods(ctx context.Context, groupID uuid.UUID) ([]db.FinancePeriod, error)
+	GetFinancePeriod(ctx context.Context, groupID uuid.UUID, year, month int) (*db.FinancePeriod, error)
+	GetOrCreateFinancePeriod(ctx context.Context, groupID uuid.UUID, year, month int) (*db.FinancePeriod, error)
+	GetPaymentsForPeriod(ctx context.Context, periodID uuid.UUID) ([]db.FinancePayment, error)
+	GetFinancePayment(ctx context.Context, paymentID uuid.UUID) (*db.FinancePayment, error)
+	GetPeriodGroupID(ctx context.Context, periodID uuid.UUID) (uuid.UUID, error)
+	GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error)
+	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	MarkPaymentPaid(ctx context.Context, paymentID uuid.UUID, paymentType string, amountCents int) (*db.FinancePayment, error)
+	MarkPaymentPending(ctx context.Context, paymentID uuid.UUID) (*db.FinancePayment, error)
+}
+
+type pgFinanceStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewFinanceHandler(pool *pgxpool.Pool) *financeHandler {
-	return &financeHandler{pool: pool}
+func (s *pgFinanceStore) ListFinancePeriods(ctx context.Context, groupID uuid.UUID) ([]db.FinancePeriod, error) {
+	return db.ListFinancePeriods(ctx, s.pool, groupID)
+}
+
+func (s *pgFinanceStore) GetFinancePeriod(ctx context.Context, groupID uuid.UUID, year, month int) (*db.FinancePeriod, error) {
+	return db.GetFinancePeriod(ctx, s.pool, groupID, year, month)
+}
+
+func (s *pgFinanceStore) GetOrCreateFinancePeriod(ctx context.Context, groupID uuid.UUID, year, month int) (*db.FinancePeriod, error) {
+	return db.GetOrCreateFinancePeriod(ctx, s.pool, groupID, year, month)
+}
+
+func (s *pgFinanceStore) GetPaymentsForPeriod(ctx context.Context, periodID uuid.UUID) ([]db.FinancePayment, error) {
+	return db.GetPaymentsForPeriod(ctx, s.pool, periodID)
+}
+
+func (s *pgFinanceStore) GetFinancePayment(ctx context.Context, paymentID uuid.UUID) (*db.FinancePayment, error) {
+	return db.GetFinancePayment(ctx, s.pool, paymentID)
+}
+
+func (s *pgFinanceStore) GetPeriodGroupID(ctx context.Context, periodID uuid.UUID) (uuid.UUID, error) {
+	return db.GetPeriodGroupID(ctx, s.pool, periodID)
+}
+
+func (s *pgFinanceStore) GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error) {
+	return db.GetGroupByID(ctx, s.pool, groupID)
+}
+
+func (s *pgFinanceStore) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+	return db.GetGroupMember(ctx, s.pool, groupID, playerID)
+}
+
+func (s *pgFinanceStore) MarkPaymentPaid(ctx context.Context, paymentID uuid.UUID, paymentType string, amountCents int) (*db.FinancePayment, error) {
+	return db.MarkPaymentPaid(ctx, s.pool, paymentID, paymentType, amountCents)
+}
+
+func (s *pgFinanceStore) MarkPaymentPending(ctx context.Context, paymentID uuid.UUID) (*db.FinancePayment, error) {
+	return db.MarkPaymentPending(ctx, s.pool, paymentID)
+}
+
+type FinanceHandler struct {
+	Store FinanceStore
+}
+
+func NewFinanceHandler(pool *pgxpool.Pool) *FinanceHandler {
+	return &FinanceHandler{Store: &pgFinanceStore{pool: pool}}
 }
 
 type financeSummary struct {
@@ -62,7 +122,25 @@ func buildFinanceSummary(payments []db.FinancePayment) financeSummary {
 	}
 }
 
-func (h *financeHandler) ListPeriods(w http.ResponseWriter, r *http.Request) {
+func sortPayments(payments []db.FinancePayment) {
+	sort.Slice(payments, func(i, j int) bool {
+		pi, pj := payments[i], payments[j]
+		statusI := 0
+		if pi.Status != "pending" {
+			statusI = 1
+		}
+		statusJ := 0
+		if pj.Status != "pending" {
+			statusJ = 1
+		}
+		if statusI != statusJ {
+			return statusI < statusJ
+		}
+		return strings.ToLower(pi.PlayerName) < strings.ToLower(pj.PlayerName)
+	})
+}
+
+func (h *FinanceHandler) ListPeriods(w http.ResponseWriter, r *http.Request) {
 	groupIDStr := chi.URLParam(r, "groupID")
 	groupID, err := uuid.Parse(groupIDStr)
 	if err != nil {
@@ -81,7 +159,7 @@ func (h *financeHandler) ListPeriods(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	periods, err := db.ListFinancePeriods(r.Context(), h.pool, groupID)
+	periods, err := h.Store.ListFinancePeriods(r.Context(), groupID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to list periods"))
 		return
@@ -99,7 +177,7 @@ func (h *financeHandler) ListPeriods(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, items)
 }
 
-func (h *financeHandler) GetPeriod(w http.ResponseWriter, r *http.Request) {
+func (h *FinanceHandler) GetPeriod(w http.ResponseWriter, r *http.Request) {
 	groupIDStr := chi.URLParam(r, "groupID")
 	groupID, err := uuid.Parse(groupIDStr)
 	if err != nil {
@@ -129,24 +207,25 @@ func (h *financeHandler) GetPeriod(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	if year == now.Year() && month == int(now.Month()) {
-		if _, err := db.GetOrCreateFinancePeriod(r.Context(), h.pool, groupID, year, month); err != nil {
+		if _, err := h.Store.GetOrCreateFinancePeriod(r.Context(), groupID, year, month); err != nil {
 			renderError(w, apierror.Internal("failed to get or create period"))
 			return
 		}
 	}
 
-	period, err := db.GetFinancePeriod(r.Context(), h.pool, groupID, year, month)
+	period, err := h.Store.GetFinancePeriod(r.Context(), groupID, year, month)
 	if err != nil {
 		renderError(w, apierror.NotFound("period not found"))
 		return
 	}
 
-	payments, err := db.GetPaymentsForPeriod(r.Context(), h.pool, period.ID)
+	payments, err := h.Store.GetPaymentsForPeriod(r.Context(), period.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get payments"))
 		return
 	}
 
+	sortPayments(payments)
 	summary := buildFinanceSummary(payments)
 	renderJSON(w, http.StatusOK, map[string]any{
 		"period_id": period.ID,
@@ -157,7 +236,7 @@ func (h *financeHandler) GetPeriod(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *financeHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
+func (h *FinanceHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 	paymentIDStr := chi.URLParam(r, "paymentID")
 	paymentID, err := uuid.Parse(paymentIDStr)
 	if err != nil {
@@ -180,13 +259,13 @@ func (h *financeHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payment, err := db.GetFinancePayment(r.Context(), h.pool, paymentID)
+	payment, err := h.Store.GetFinancePayment(r.Context(), paymentID)
 	if err != nil {
 		renderError(w, apierror.NotFound("payment not found"))
 		return
 	}
 
-	groupID, err := db.GetPeriodGroupID(r.Context(), h.pool, payment.PeriodID)
+	groupID, err := h.Store.GetPeriodGroupID(r.Context(), payment.PeriodID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get group"))
 		return
@@ -207,7 +286,7 @@ func (h *financeHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		group, err := db.GetGroupByID(r.Context(), h.pool, groupID)
+		group, err := h.Store.GetGroupByID(r.Context(), groupID)
 		if err != nil {
 			renderError(w, apierror.Internal("failed to get group"))
 			return
@@ -220,7 +299,7 @@ func (h *financeHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 			amountCents = int(*group.PerMatchAmount * 100)
 		}
 
-		updated, err := db.MarkPaymentPaid(r.Context(), h.pool, paymentID, *body.PaymentType, amountCents)
+		updated, err := h.Store.MarkPaymentPaid(r.Context(), paymentID, *body.PaymentType, amountCents)
 		if err != nil {
 			renderError(w, apierror.Internal("failed to mark payment"))
 			return
@@ -229,7 +308,7 @@ func (h *financeHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := db.MarkPaymentPending(r.Context(), h.pool, paymentID)
+	updated, err := h.Store.MarkPaymentPending(r.Context(), paymentID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to mark payment"))
 		return
@@ -237,19 +316,19 @@ func (h *financeHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, updated)
 }
 
-func (h *financeHandler) isMemberOrAdmin(r *http.Request, groupID uuid.UUID, player *db.Player) bool {
+func (h *FinanceHandler) isMemberOrAdmin(r *http.Request, groupID uuid.UUID, player *db.Player) bool {
 	if player.Role == db.PlayerRoleAdmin {
 		return true
 	}
-	member, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+	member, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 	return err == nil && member != nil
 }
 
-func (h *financeHandler) isGroupAdminOrSuperAdmin(r *http.Request, groupID uuid.UUID, player *db.Player) bool {
+func (h *FinanceHandler) isGroupAdminOrSuperAdmin(r *http.Request, groupID uuid.UUID, player *db.Player) bool {
 	if player.Role == db.PlayerRoleAdmin {
 		return true
 	}
-	member, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+	member, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 	if err != nil || member == nil {
 		return false
 	}

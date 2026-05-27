@@ -12,6 +12,8 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
+	"github.com/thiagotn/football-manager/football-api-go/internal/services"
+	"context"
 )
 
 var brtLoc *time.Location
@@ -24,12 +26,73 @@ func init() {
 	}
 }
 
-type voteHandler struct {
+type VoteStore interface {
+	GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
+	GetMatchByHash(ctx context.Context, hash string) (*db.Match, error)
+	GetAttendancesForMatch(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error)
+	HasVoted(ctx context.Context, matchID, playerID uuid.UUID) (bool, error)
+	VoterCount(ctx context.Context, matchID uuid.UUID) (int, error)
+	VoterIDs(ctx context.Context, matchID uuid.UUID) ([]uuid.UUID, error)
+	MarkVoteNotified(ctx context.Context, matchID uuid.UUID) error
+	SubmitVote(ctx context.Context, matchID, playerID uuid.UUID, top5 []db.VoteTop5Item, flopPlayerID *uuid.UUID) error
+	GetPendingVotes(ctx context.Context, playerID uuid.UUID) ([]db.PendingVoteItem, error)
+	GetVoteResults(ctx context.Context, matchID uuid.UUID) (*db.VoteResults, error)
+	GetVoteBallots(ctx context.Context, matchID uuid.UUID) ([]db.Ballot, error)
+	CloseVotingEarly(ctx context.Context, matchID uuid.UUID) error
+	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+}
+
+type pgVoteStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewVoteHandler(pool *pgxpool.Pool) *voteHandler {
-	return &voteHandler{pool: pool}
+func (s *pgVoteStore) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
+	return db.GetMatchByID(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) GetMatchByHash(ctx context.Context, hash string) (*db.Match, error) {
+	return db.GetMatchByHash(ctx, s.pool, hash)
+}
+func (s *pgVoteStore) GetAttendancesForMatch(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error) {
+	return db.GetAttendancesForMatch(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) HasVoted(ctx context.Context, matchID, playerID uuid.UUID) (bool, error) {
+	return db.HasVoted(ctx, s.pool, matchID, playerID)
+}
+func (s *pgVoteStore) VoterCount(ctx context.Context, matchID uuid.UUID) (int, error) {
+	return db.VoterCount(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) VoterIDs(ctx context.Context, matchID uuid.UUID) ([]uuid.UUID, error) {
+	return db.VoterIDs(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) MarkVoteNotified(ctx context.Context, matchID uuid.UUID) error {
+	return db.MarkVoteNotified(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) SubmitVote(ctx context.Context, matchID, playerID uuid.UUID, top5 []db.VoteTop5Item, flopPlayerID *uuid.UUID) error {
+	return db.SubmitVote(ctx, s.pool, matchID, playerID, top5, flopPlayerID)
+}
+func (s *pgVoteStore) GetPendingVotes(ctx context.Context, playerID uuid.UUID) ([]db.PendingVoteItem, error) {
+	return db.GetPendingVotes(ctx, s.pool, playerID)
+}
+func (s *pgVoteStore) GetVoteResults(ctx context.Context, matchID uuid.UUID) (*db.VoteResults, error) {
+	return db.GetVoteResults(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) GetVoteBallots(ctx context.Context, matchID uuid.UUID) ([]db.Ballot, error) {
+	return db.GetVoteBallots(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) CloseVotingEarly(ctx context.Context, matchID uuid.UUID) error {
+	return db.CloseVotingEarly(ctx, s.pool, matchID)
+}
+func (s *pgVoteStore) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+	return db.GetGroupMember(ctx, s.pool, groupID, playerID)
+}
+
+type VoteHandler struct {
+	Store       VoteStore
+	PushService services.PushService
+}
+
+func NewVoteHandler(pool *pgxpool.Pool, pushService services.PushService) *VoteHandler {
+	return &VoteHandler{Store: &pgVoteStore{pool: pool}, PushService: pushService}
 }
 
 func votingWindow(m *db.Match) (time.Time, time.Time) {
@@ -87,7 +150,7 @@ func confirmedPlayerIDs(attendances []db.AttendanceWithPlayer) []uuid.UUID {
 	return ids
 }
 
-func (h *voteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 	matchIDStr := chi.URLParam(r, "matchID")
 	matchID, err := uuid.Parse(matchIDStr)
 	if err != nil {
@@ -101,13 +164,13 @@ func (h *voteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := db.GetMatchByID(r.Context(), h.pool, matchID)
+	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
 		return
 	}
 
-	attendances, err := db.GetAttendancesForMatch(r.Context(), h.pool, matchID)
+	attendances, err := h.Store.GetAttendancesForMatch(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get attendances"))
 		return
@@ -117,13 +180,13 @@ func (h *voteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 	opensAt, closesAt := votingWindow(match)
 	confirmedIDs := confirmedPlayerIDs(attendances)
 
-	voterCount, err := db.VoterCount(r.Context(), h.pool, matchID)
+	voterCount, err := h.Store.VoterCount(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get voter count"))
 		return
 	}
 
-	hasVoted, err := db.HasVoted(r.Context(), h.pool, matchID, player.ID)
+	hasVoted, err := h.Store.HasVoted(r.Context(), matchID, player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to check vote"))
 		return
@@ -131,7 +194,7 @@ func (h *voteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 
 	var votedIDs []uuid.UUID
 	if status == "open" || status == "closed" {
-		if votedIDs, err = db.VoterIDs(r.Context(), h.pool, matchID); err != nil {
+		if votedIDs, err = h.Store.VoterIDs(r.Context(), matchID); err != nil {
 			renderError(w, apierror.Internal("failed to get voter ids"))
 			return
 		}
@@ -141,7 +204,14 @@ func (h *voteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if status == "open" && !match.VoteNotified {
-		_ = db.MarkVoteNotified(r.Context(), h.pool, matchID)
+		_ = h.Store.MarkVoteNotified(r.Context(), matchID)
+		if h.PushService != nil {
+			_ = h.PushService.SendToPlayers(r.Context(), confirmedIDs, services.PushNotification{
+				Title: "🏆 Votação aberta!",
+				Body:  "Escolha os melhores da pelada de hoje.",
+				URL:   "https://rachao.app/match/" + match.Hash,
+			})
+		}
 	}
 
 	var timeLabel string
@@ -167,7 +237,7 @@ func (h *voteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *voteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 	matchIDStr := chi.URLParam(r, "matchID")
 	matchID, err := uuid.Parse(matchIDStr)
 	if err != nil {
@@ -193,7 +263,7 @@ func (h *voteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := db.GetMatchByID(r.Context(), h.pool, matchID)
+	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
 		return
@@ -208,7 +278,7 @@ func (h *voteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attendances, err := db.GetAttendancesForMatch(r.Context(), h.pool, matchID)
+	attendances, err := h.Store.GetAttendancesForMatch(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to check attendance"))
 		return
@@ -226,7 +296,7 @@ func (h *voteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasVoted, err := db.HasVoted(r.Context(), h.pool, matchID, player.ID)
+	hasVoted, err := h.Store.HasVoted(r.Context(), matchID, player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to check vote"))
 		return
@@ -256,7 +326,7 @@ func (h *voteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 		top5[i] = db.VoteTop5Item{PlayerID: item.PlayerID, Position: item.Position}
 	}
 
-	if err := db.SubmitVote(r.Context(), h.pool, matchID, player.ID, top5, body.FlopPlayerID); err != nil {
+	if err := h.Store.SubmitVote(r.Context(), matchID, player.ID, top5, body.FlopPlayerID); err != nil {
 		renderError(w, apierror.Internal("failed to submit vote"))
 		return
 	}
@@ -264,7 +334,7 @@ func (h *voteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusCreated, map[string]string{"message": "Voto registrado com sucesso."})
 }
 
-func (h *voteHandler) GetPendingVotes(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) GetPendingVotes(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
@@ -276,7 +346,7 @@ func (h *voteHandler) GetPendingVotes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := db.GetPendingVotes(r.Context(), h.pool, player.ID)
+	items, err := h.Store.GetPendingVotes(r.Context(), player.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get pending votes"))
 		return
@@ -306,9 +376,9 @@ func (h *voteHandler) GetPendingVotes(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, map[string]any{"items": resp})
 }
 
-func (h *voteHandler) GetPublicVoteResults(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) GetPublicVoteResults(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
-	match, err := db.GetMatchByHash(r.Context(), h.pool, hash)
+	match, err := h.Store.GetMatchByHash(r.Context(), hash)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
 		return
@@ -318,10 +388,10 @@ func (h *voteHandler) GetPublicVoteResults(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	attendances, _ := db.GetAttendancesForMatch(r.Context(), h.pool, match.ID)
+	attendances, _ := h.Store.GetAttendancesForMatch(r.Context(), match.ID)
 	confirmedIDs := confirmedPlayerIDs(attendances)
 
-	results, err := db.GetVoteResults(r.Context(), h.pool, match.ID)
+	results, err := h.Store.GetVoteResults(r.Context(), match.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get results"))
 		return
@@ -334,9 +404,9 @@ func (h *voteHandler) GetPublicVoteResults(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (h *voteHandler) GetPublicVoteBallots(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) GetPublicVoteBallots(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
-	match, err := db.GetMatchByHash(r.Context(), h.pool, hash)
+	match, err := h.Store.GetMatchByHash(r.Context(), hash)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
 		return
@@ -346,19 +416,19 @@ func (h *voteHandler) GetPublicVoteBallots(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ballots, err := db.GetVoteBallots(r.Context(), h.pool, match.ID)
+	ballots, err := h.Store.GetVoteBallots(r.Context(), match.ID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get ballots"))
 		return
 	}
-	totalVoters, _ := db.VoterCount(r.Context(), h.pool, match.ID)
+	totalVoters, _ := h.Store.VoterCount(r.Context(), match.ID)
 	renderJSON(w, http.StatusOK, map[string]any{
 		"ballots":      ballots,
 		"total_voters": totalVoters,
 	})
 }
 
-func (h *voteHandler) GetVoteResults(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) GetVoteResults(w http.ResponseWriter, r *http.Request) {
 	matchIDStr := chi.URLParam(r, "matchID")
 	matchID, err := uuid.Parse(matchIDStr)
 	if err != nil {
@@ -372,7 +442,7 @@ func (h *voteHandler) GetVoteResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := db.GetMatchByID(r.Context(), h.pool, matchID)
+	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
 		return
@@ -382,10 +452,10 @@ func (h *voteHandler) GetVoteResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attendances, _ := db.GetAttendancesForMatch(r.Context(), h.pool, match.ID)
+	attendances, _ := h.Store.GetAttendancesForMatch(r.Context(), match.ID)
 	confirmedIDs := confirmedPlayerIDs(attendances)
 
-	results, err := db.GetVoteResults(r.Context(), h.pool, matchID)
+	results, err := h.Store.GetVoteResults(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get results"))
 		return
@@ -398,7 +468,7 @@ func (h *voteHandler) GetVoteResults(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *voteHandler) CloseVoting(w http.ResponseWriter, r *http.Request) {
+func (h *VoteHandler) CloseVoting(w http.ResponseWriter, r *http.Request) {
 	matchIDStr := chi.URLParam(r, "matchID")
 	matchID, err := uuid.Parse(matchIDStr)
 	if err != nil {
@@ -412,14 +482,14 @@ func (h *voteHandler) CloseVoting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := db.GetMatchByID(r.Context(), h.pool, matchID)
+	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
 		return
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		member, err := db.GetGroupMember(r.Context(), h.pool, match.GroupID, player.ID)
+		member, err := h.Store.GetGroupMember(r.Context(), match.GroupID, player.ID)
 		if err != nil || member == nil || member.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("NOT_GROUP_ADMIN"))
 			return
@@ -431,7 +501,7 @@ func (h *voteHandler) CloseVoting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.CloseVotingEarly(r.Context(), h.pool, matchID); err != nil {
+	if err := h.Store.CloseVotingEarly(r.Context(), matchID); err != nil {
 		renderError(w, apierror.Internal("failed to close voting"))
 		return
 	}

@@ -54,6 +54,17 @@ func (s *StripeService) priceID(plan, billingCycle string) (string, error) {
 	return "", fmt.Errorf("unknown plan/billing_cycle: %s/%s", plan, billingCycle)
 }
 
+func (s *StripeService) ValidatePriceID(plan, billingCycle string) error {
+	priceID, err := s.priceID(plan, billingCycle)
+	if err != nil {
+		return err
+	}
+	if priceID == "" {
+		return fmt.Errorf("price ID for plan '%s' and billing_cycle '%s' is not configured", plan, billingCycle)
+	}
+	return nil
+}
+
 // GetOrCreateCustomer returns an existing Stripe customer ID or creates one.
 func (s *StripeService) GetOrCreateCustomer(playerID, name, phone string) (string, error) {
 	params := url.Values{}

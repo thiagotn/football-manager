@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -135,32 +136,37 @@ func GetMatchByHash(ctx context.Context, pool *pgxpool.Pool, hash string) (*Matc
 }
 
 type CreateMatchParams struct {
-	GroupID        uuid.UUID
-	Hash           string
-	Number         int
-	MatchDate      string
-	StartTime      string
-	EndTime        *string
-	Location       string
-	Address        *string
-	CourtType      *string
-	PlayersPerTeam *int
-	MaxPlayers     *int
-	Notes          *string
-	CreatedByID    uuid.UUID
+	GroupID              uuid.UUID
+	Hash                 string
+	Number               int
+	MatchDate            string
+	StartTime            string
+	EndTime              *string
+	Location             string
+	Address              *string
+	CourtType            *string
+	PlayersPerTeam       *int
+	MaxPlayers           *int
+	Notes                *string
+	CreatedByID          uuid.UUID
+	VoteOpenDelayMinutes int
+	VoteDurationHours    int
 }
 
 func CreateMatch(ctx context.Context, pool *pgxpool.Pool, p CreateMatchParams) (*Match, error) {
 	row := pool.QueryRow(ctx, `
 		INSERT INTO matches
 			(group_id, hash, number, match_date, start_time, end_time,
-			 location, address, court_type, players_per_team, max_players, notes, created_by_id)
+			 location, address, court_type, players_per_team, max_players, notes, created_by_id,
+			 vote_open_delay_minutes, vote_duration_hours)
 		VALUES
 			($1,$2,$3,$4::DATE,$5::TIME,$6::TIME,
-			 $7,$8,$9::court_type,$10,$11,$12,$13)
+			 $7,$8,$9::court_type,$10,$11,$12,$13,
+			 $14,$15)
 		RETURNING `+matchReturnCols,
 		p.GroupID, p.Hash, p.Number, p.MatchDate, p.StartTime, p.EndTime,
 		p.Location, p.Address, p.CourtType, p.PlayersPerTeam, p.MaxPlayers, p.Notes, p.CreatedByID,
+		p.VoteOpenDelayMinutes, p.VoteDurationHours,
 	)
 	return scanMatch(row.Scan)
 }
@@ -240,8 +246,8 @@ func NextMatchNumber(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID)
 	return n, err
 }
 
-func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, limit, offset int) ([]DiscoverMatch, error) {
-	rows, err := pool.Query(ctx, `
+func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, playerID *uuid.UUID, limit, offset int) ([]DiscoverMatch, error) {
+	query := `
 		SELECT
 			m.id, m.group_id, m.number, m.hash,
 			m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
@@ -255,10 +261,28 @@ func GetDiscoverMatches(ctx context.Context, pool *pgxpool.Pool, limit, offset i
 		JOIN groups g ON g.id = m.group_id
 		LEFT JOIN attendances a ON a.match_id = m.id
 		WHERE g.is_public = TRUE
-		  AND m.status IN ('open', 'in_progress')
+		  AND m.status = 'open'
+		  AND (m.max_players IS NULL OR COUNT(a.id) FILTER (WHERE a.status = 'confirmed') < m.max_players)
+	`
+
+	args := []interface{}{limit, offset}
+	argNum := 1
+
+	if playerID != nil {
+		query += `
+		  AND m.group_id NOT IN (SELECT group_id FROM group_members WHERE player_id = $` + strconv.Itoa(argNum+1) + `)
+		  AND m.id NOT IN (SELECT match_id FROM match_waitlist WHERE player_id = $` + strconv.Itoa(argNum+2) + `)`
+		args = append(args, *playerID, *playerID)
+		argNum += 2
+	}
+
+	query += `
 		GROUP BY m.id, g.name, g.timezone
 		ORDER BY m.match_date ASC, m.start_time ASC
-		LIMIT $1 OFFSET $2`, limit, offset)
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -348,6 +372,26 @@ func BulkSetAttendancePending(ctx context.Context, pool *pgxpool.Pool, matchID u
 func GetGroupMemberPlayerIDs(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := pool.Query(ctx,
 		`SELECT player_id FROM group_members WHERE group_id = $1`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+func GetNonAdminMemberPlayerIDs(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := pool.Query(ctx,
+		`SELECT gm.player_id FROM group_members gm
+		 JOIN players p ON p.id = gm.player_id
+		 WHERE gm.group_id = $1 AND p.role != 'admin'`, groupID)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -16,17 +17,41 @@ import (
 
 const gracePeriodDays = 7
 
-type webhookHandler struct {
-	pool   *pgxpool.Pool
-	stripe *services.StripeService
+type WebhookStore interface {
+	IsWebhookEventProcessed(ctx context.Context, eventID string) (bool, error)
+	MarkWebhookEventProcessed(ctx context.Context, eventID, eventType string) error
+	GetSubscriptionByGatewayCustomer(ctx context.Context, customerID string) (*db.PlayerSubscription, error)
+	UpdateSubscription(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error)
 }
 
-func NewWebhookHandler(pool *pgxpool.Pool, stripe *services.StripeService) *webhookHandler {
-	return &webhookHandler{pool: pool, stripe: stripe}
+type pgWebhookStore struct {
+	pool *pgxpool.Pool
 }
 
-func (h *webhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Request) {
-	if h.stripe == nil {
+func (s *pgWebhookStore) IsWebhookEventProcessed(ctx context.Context, eventID string) (bool, error) {
+	return db.IsWebhookEventProcessed(ctx, s.pool, eventID)
+}
+func (s *pgWebhookStore) MarkWebhookEventProcessed(ctx context.Context, eventID, eventType string) error {
+	return db.MarkWebhookEventProcessed(ctx, s.pool, eventID, eventType)
+}
+func (s *pgWebhookStore) GetSubscriptionByGatewayCustomer(ctx context.Context, customerID string) (*db.PlayerSubscription, error) {
+	return db.GetSubscriptionByGatewayCustomer(ctx, s.pool, customerID)
+}
+func (s *pgWebhookStore) UpdateSubscription(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error) {
+	return db.UpdateSubscription(ctx, s.pool, playerID, params)
+}
+
+type WebhookHandler struct {
+	Store  WebhookStore
+	Stripe *services.StripeService
+}
+
+func NewWebhookHandler(pool *pgxpool.Pool, stripe *services.StripeService) *WebhookHandler {
+	return &WebhookHandler{Store: &pgWebhookStore{pool: pool}, Stripe: stripe}
+}
+
+func (h *WebhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Request) {
+	if h.Stripe == nil {
 		renderJSON(w, http.StatusOK, map[string]string{"status": "not_configured"})
 		return
 	}
@@ -38,7 +63,7 @@ func (h *webhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 	}
 
 	sigHeader := r.Header.Get("Stripe-Signature")
-	event, err := h.stripe.VerifyWebhookSignature(payload, sigHeader)
+	event, err := h.Stripe.VerifyWebhookSignature(payload, sigHeader)
 	if err != nil {
 		log.Printf("webhook invalid signature: %v", err)
 		renderError(w, apierror.BadRequest("invalid signature"))
@@ -50,7 +75,7 @@ func (h *webhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 	dataMap, _ := event["data"].(map[string]any)
 	obj, _ := dataMap["object"].(map[string]any)
 
-	isDup, err := db.IsWebhookEventProcessed(r.Context(), h.pool, eventID)
+	isDup, err := h.Store.IsWebhookEventProcessed(r.Context(), eventID)
 	if err != nil {
 		log.Printf("webhook idempotency check error: %v", err)
 		renderJSON(w, http.StatusOK, map[string]string{"status": "error_logged"})
@@ -67,11 +92,11 @@ func (h *webhookHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_ = db.MarkWebhookEventProcessed(r.Context(), h.pool, eventID, eventType)
+	_ = h.Store.MarkWebhookEventProcessed(r.Context(), eventID, eventType)
 	renderJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (h *webhookHandler) dispatch(r *http.Request, eventType string, obj map[string]any) error {
+func (h *WebhookHandler) dispatch(r *http.Request, eventType string, obj map[string]any) error {
 	switch eventType {
 	case "checkout.session.completed":
 		return h.handleCheckoutCompleted(r, obj)
@@ -87,7 +112,7 @@ func (h *webhookHandler) dispatch(r *http.Request, eventType string, obj map[str
 	return nil
 }
 
-func (h *webhookHandler) handleCheckoutCompleted(r *http.Request, session map[string]any) error {
+func (h *WebhookHandler) handleCheckoutCompleted(r *http.Request, session map[string]any) error {
 	meta, _ := session["metadata"].(map[string]any)
 	playerIDStr, _ := meta["player_id"].(string)
 	plan, _ := meta["plan"].(string)
@@ -115,7 +140,7 @@ func (h *webhookHandler) handleCheckoutCompleted(r *http.Request, session map[st
 	}
 	periodEnd := time.Now().UTC().Add(time.Duration(days) * 24 * time.Hour)
 
-	_, err = db.UpdateSubscription(r.Context(), h.pool, playerID, db.UpdateSubscriptionParams{
+	_, err = h.Store.UpdateSubscription(r.Context(), playerID, db.UpdateSubscriptionParams{
 		Plan:              plan,
 		Status:            "active",
 		GatewayCustomerID: nullableStr(customerID),
@@ -126,13 +151,13 @@ func (h *webhookHandler) handleCheckoutCompleted(r *http.Request, session map[st
 	return err
 }
 
-func (h *webhookHandler) handleInvoicePaid(r *http.Request, invoice map[string]any) error {
+func (h *WebhookHandler) handleInvoicePaid(r *http.Request, invoice map[string]any) error {
 	customerID, _ := invoice["customer"].(string)
 	if customerID == "" {
 		return nil
 	}
 
-	sub, err := db.GetSubscriptionByGatewayCustomer(r.Context(), h.pool, customerID)
+	sub, err := h.Store.GetSubscriptionByGatewayCustomer(r.Context(), customerID)
 	if err != nil {
 		log.Printf("invoice.paid: customer not found %s", customerID)
 		return nil
@@ -152,7 +177,7 @@ func (h *webhookHandler) handleInvoicePaid(r *http.Request, invoice map[string]a
 		}
 	}
 
-	_, err = db.UpdateSubscription(r.Context(), h.pool, sub.PlayerID, db.UpdateSubscriptionParams{
+	_, err = h.Store.UpdateSubscription(r.Context(), sub.PlayerID, db.UpdateSubscriptionParams{
 		Plan:             sub.Plan,
 		Status:           "active",
 		CurrentPeriodEnd: periodEnd,
@@ -160,20 +185,20 @@ func (h *webhookHandler) handleInvoicePaid(r *http.Request, invoice map[string]a
 	return err
 }
 
-func (h *webhookHandler) handlePaymentFailed(r *http.Request, invoice map[string]any) error {
+func (h *WebhookHandler) handlePaymentFailed(r *http.Request, invoice map[string]any) error {
 	customerID, _ := invoice["customer"].(string)
 	if customerID == "" {
 		return nil
 	}
 
-	sub, err := db.GetSubscriptionByGatewayCustomer(r.Context(), h.pool, customerID)
+	sub, err := h.Store.GetSubscriptionByGatewayCustomer(r.Context(), customerID)
 	if err != nil {
 		log.Printf("invoice.payment_failed: customer not found %s", customerID)
 		return nil
 	}
 
 	grace := time.Now().UTC().Add(gracePeriodDays * 24 * time.Hour)
-	_, err = db.UpdateSubscription(r.Context(), h.pool, sub.PlayerID, db.UpdateSubscriptionParams{
+	_, err = h.Store.UpdateSubscription(r.Context(), sub.PlayerID, db.UpdateSubscriptionParams{
 		Plan:           sub.Plan,
 		Status:         "past_due",
 		GracePeriodEnd: &grace,
@@ -181,26 +206,26 @@ func (h *webhookHandler) handlePaymentFailed(r *http.Request, invoice map[string
 	return err
 }
 
-func (h *webhookHandler) handleSubscriptionDeleted(r *http.Request, subscription map[string]any) error {
+func (h *WebhookHandler) handleSubscriptionDeleted(r *http.Request, subscription map[string]any) error {
 	customerID, _ := subscription["customer"].(string)
 	if customerID == "" {
 		return nil
 	}
 
-	sub, err := db.GetSubscriptionByGatewayCustomer(r.Context(), h.pool, customerID)
+	sub, err := h.Store.GetSubscriptionByGatewayCustomer(r.Context(), customerID)
 	if err != nil {
 		log.Printf("subscription.deleted: customer not found %s", customerID)
 		return nil
 	}
 
-	_, err = db.UpdateSubscription(r.Context(), h.pool, sub.PlayerID, db.UpdateSubscriptionParams{
+	_, err = h.Store.UpdateSubscription(r.Context(), sub.PlayerID, db.UpdateSubscriptionParams{
 		Plan:   "free",
 		Status: "canceled",
 	})
 	return err
 }
 
-func (h *webhookHandler) handleSubscriptionUpdated(r *http.Request, subscription map[string]any) error {
+func (h *WebhookHandler) handleSubscriptionUpdated(r *http.Request, subscription map[string]any) error {
 	customerID, _ := subscription["customer"].(string)
 	meta, _ := subscription["metadata"].(map[string]any)
 	plan, _ := meta["plan"].(string)
@@ -209,13 +234,13 @@ func (h *webhookHandler) handleSubscriptionUpdated(r *http.Request, subscription
 		return nil
 	}
 
-	sub, err := db.GetSubscriptionByGatewayCustomer(r.Context(), h.pool, customerID)
+	sub, err := h.Store.GetSubscriptionByGatewayCustomer(r.Context(), customerID)
 	if err != nil {
 		log.Printf("subscription.updated: customer not found %s", customerID)
 		return nil
 	}
 
-	_, err = db.UpdateSubscription(r.Context(), h.pool, sub.PlayerID, db.UpdateSubscriptionParams{
+	_, err = h.Store.UpdateSubscription(r.Context(), sub.PlayerID, db.UpdateSubscriptionParams{
 		Plan:   plan,
 		Status: "active",
 	})

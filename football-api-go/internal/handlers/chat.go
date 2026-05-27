@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,16 +34,43 @@ Seu papel é ajudar usuários com dúvidas sobre funcionalidades, fluxos, pagame
 - Nunca invente funcionalidades que não existem no app.
 - NUNCA peça ao usuário identificadores técnicos (IDs, hashes, UUIDs). Sempre use as ferramentas para descobri-los.`
 
-type chatHandler struct {
-	pool          *pgxpool.Pool
+type ChatStore interface {
+	CheckAndIncrementChatRateLimit(ctx context.Context, playerID uuid.UUID, limit int) (bool, error)
+	GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	UpdatePlayerChatEnabled(ctx context.Context, playerID uuid.UUID, enabled bool) error
+	ListChatUsers(ctx context.Context) ([]db.ChatUser, error)
+}
+
+type pgChatStore struct {
+	pool *pgxpool.Pool
+}
+
+func (s *pgChatStore) CheckAndIncrementChatRateLimit(ctx context.Context, playerID uuid.UUID, limit int) (bool, error) {
+	return db.CheckAndIncrementChatRateLimit(ctx, s.pool, playerID, limit)
+}
+
+func (s *pgChatStore) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
+	return db.GetPlayerByID(ctx, s.pool, playerID)
+}
+
+func (s *pgChatStore) UpdatePlayerChatEnabled(ctx context.Context, playerID uuid.UUID, enabled bool) error {
+	return db.UpdatePlayerChatEnabled(ctx, s.pool, playerID, enabled)
+}
+
+func (s *pgChatStore) ListChatUsers(ctx context.Context) ([]db.ChatUser, error) {
+	return db.ListChatUsers(ctx, s.pool)
+}
+
+type ChatHandler struct {
+	Store         ChatStore
 	anthropicKey  string
 	llmModel      string
 	chatRateLimit int
 }
 
-func NewChatHandler(pool *pgxpool.Pool, anthropicKey, llmModel string, chatRateLimit int) *chatHandler {
-	return &chatHandler{
-		pool:          pool,
+func NewChatHandler(pool *pgxpool.Pool, anthropicKey, llmModel string, chatRateLimit int) *ChatHandler {
+	return &ChatHandler{
+		Store:         &pgChatStore{pool: pool},
 		anthropicKey:  anthropicKey,
 		llmModel:      llmModel,
 		chatRateLimit: chatRateLimit,
@@ -66,17 +94,17 @@ type chatAccessUpdate struct {
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 
-func (h *chatHandler) ListChatUsers(w http.ResponseWriter, r *http.Request) {
+func (h *ChatHandler) ListChatUsers(w http.ResponseWriter, r *http.Request) {
 	h.listChatUsers(w, r)
 }
 
-func (h *chatHandler) UpdateChatAccess(w http.ResponseWriter, r *http.Request) {
+func (h *ChatHandler) UpdateChatAccess(w http.ResponseWriter, r *http.Request) {
 	h.updateChatAccess(w, r)
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-func (h *chatHandler) Chat(w http.ResponseWriter, r *http.Request) {
+func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 
 	if !player.ChatEnabled {
@@ -84,7 +112,7 @@ func (h *chatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowed, err := db.CheckAndIncrementChatRateLimit(r.Context(), h.pool, player.ID, h.chatRateLimit)
+	allowed, err := h.Store.CheckAndIncrementChatRateLimit(r.Context(), player.ID, h.chatRateLimit)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -233,41 +261,35 @@ func (h *chatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	emit("[DONE]")
 }
 
-func (h *chatHandler) listChatUsers(w http.ResponseWriter, r *http.Request) {
-	rows, err := h.pool.Query(r.Context(), `
-		SELECT id, name, nickname, avatar_url, chat_enabled, api_v2_enabled, created_at
-		FROM players
-		WHERE role = 'player'
-		ORDER BY created_at DESC`)
+func (h *ChatHandler) listChatUsers(w http.ResponseWriter, r *http.Request) {
+	chatUsers, err := h.Store.ListChatUsers(r.Context())
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
 
 	type chatUserItem struct {
-		ID           uuid.UUID   `json:"id"`
-		Name         string      `json:"name"`
-		Nickname     *string     `json:"nickname"`
-		AvatarURL    *string     `json:"avatar_url"`
-		ChatEnabled  bool        `json:"chat_enabled"`
-		ApiV2Enabled bool        `json:"api_v2_enabled"`
-		CreatedAt    interface{} `json:"created_at"`
+		ID           uuid.UUID `json:"id"`
+		Name         string    `json:"name"`
+		Nickname     *string   `json:"nickname"`
+		AvatarURL    *string   `json:"avatar_url"`
+		ChatEnabled  bool      `json:"chat_enabled"`
+		ApiV2Enabled bool      `json:"api_v2_enabled"`
+		CreatedAt    time.Time `json:"created_at"`
 	}
 
-	users := make([]chatUserItem, 0)
-	for rows.Next() {
-		var u chatUserItem
-		if err := rows.Scan(&u.ID, &u.Name, &u.Nickname, &u.AvatarURL,
-			&u.ChatEnabled, &u.ApiV2Enabled, &u.CreatedAt); err != nil {
-			renderError(w, err)
-			return
-		}
-		users = append(users, u)
-	}
-
+	users := make([]chatUserItem, len(chatUsers))
 	totalEnabled := 0
-	for _, u := range users {
+	for i, u := range chatUsers {
+		users[i] = chatUserItem{
+			ID:           u.ID,
+			Name:         u.Name,
+			Nickname:     u.Nickname,
+			AvatarURL:    u.AvatarURL,
+			ChatEnabled:  u.ChatEnabled,
+			ApiV2Enabled: u.ApiV2Enabled,
+			CreatedAt:    u.CreatedAt,
+		}
 		if u.ChatEnabled {
 			totalEnabled++
 		}
@@ -279,7 +301,7 @@ func (h *chatHandler) listChatUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *chatHandler) updateChatAccess(w http.ResponseWriter, r *http.Request) {
+func (h *ChatHandler) updateChatAccess(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, err := uuid.Parse(chi.URLParam(r, "userID"))
 	if err != nil {
@@ -293,13 +315,13 @@ func (h *chatHandler) updateChatAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := db.GetPlayerByID(ctx, h.pool, userID)
+	player, err := h.Store.GetPlayerByID(ctx, userID)
 	if err != nil {
 		renderError(w, apierror.NotFound("user not found"))
 		return
 	}
 
-	if err := db.UpdatePlayerChatEnabled(ctx, h.pool, userID, req.ChatEnabled); err != nil {
+	if err := h.Store.UpdatePlayerChatEnabled(ctx, userID, req.ChatEnabled); err != nil {
 		renderError(w, err)
 		return
 	}

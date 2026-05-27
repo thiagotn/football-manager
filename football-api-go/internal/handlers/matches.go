@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
@@ -15,16 +16,92 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
-type matchHandler struct {
+type MatchStore interface {
+	GetDiscoverMatches(ctx context.Context, playerID *uuid.UUID, limit, offset int) ([]db.DiscoverMatch, error)
+	GetMatchByHash(ctx context.Context, hash string) (*db.Match, error)
+	GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
+	GetMatchesByGroup(ctx context.Context, groupID uuid.UUID) ([]db.Match, error)
+	GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error)
+	GetAttendancesForMatch(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error)
+	GetMatchPlayerStats(ctx context.Context, matchID uuid.UUID) ([]db.MatchPlayerStat, error)
+	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	NextMatchNumber(ctx context.Context, groupID uuid.UUID) (int, error)
+	CreateMatch(ctx context.Context, params db.CreateMatchParams) (*db.Match, error)
+	UpdateMatch(ctx context.Context, matchID uuid.UUID, params db.UpdateMatchParams) (*db.Match, error)
+	DeleteMatch(ctx context.Context, matchID uuid.UUID) error
+	GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error)
+	UpsertMatchPlayerStat(ctx context.Context, matchID, playerID, recordedBy uuid.UUID, goals, assists int) error
+}
+
+type pgMatchStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewMatchHandler(pool *pgxpool.Pool) *matchHandler {
-	return &matchHandler{pool: pool}
+func (s *pgMatchStore) GetDiscoverMatches(ctx context.Context, playerID *uuid.UUID, limit, offset int) ([]db.DiscoverMatch, error) {
+	return db.GetDiscoverMatches(ctx, s.pool, playerID, limit, offset)
+}
+func (s *pgMatchStore) GetMatchByHash(ctx context.Context, hash string) (*db.Match, error) {
+	return db.GetMatchByHash(ctx, s.pool, hash)
+}
+func (s *pgMatchStore) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
+	return db.GetMatchByID(ctx, s.pool, matchID)
+}
+func (s *pgMatchStore) GetMatchesByGroup(ctx context.Context, groupID uuid.UUID) ([]db.Match, error) {
+	return db.GetMatchesByGroup(ctx, s.pool, groupID)
+}
+func (s *pgMatchStore) GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error) {
+	return db.GetGroupByID(ctx, s.pool, groupID)
+}
+func (s *pgMatchStore) GetAttendancesForMatch(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error) {
+	return db.GetAttendancesForMatch(ctx, s.pool, matchID)
+}
+func (s *pgMatchStore) GetMatchPlayerStats(ctx context.Context, matchID uuid.UUID) ([]db.MatchPlayerStat, error) {
+	return db.GetMatchPlayerStats(ctx, s.pool, matchID)
+}
+func (s *pgMatchStore) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+	return db.GetGroupMember(ctx, s.pool, groupID, playerID)
+}
+func (s *pgMatchStore) NextMatchNumber(ctx context.Context, groupID uuid.UUID) (int, error) {
+	return db.NextMatchNumber(ctx, s.pool, groupID)
+}
+func (s *pgMatchStore) CreateMatch(ctx context.Context, params db.CreateMatchParams) (*db.Match, error) {
+	return db.CreateMatch(ctx, s.pool, params)
+}
+func (s *pgMatchStore) UpdateMatch(ctx context.Context, matchID uuid.UUID, params db.UpdateMatchParams) (*db.Match, error) {
+	return db.UpdateMatch(ctx, s.pool, matchID, params)
+}
+func (s *pgMatchStore) DeleteMatch(ctx context.Context, matchID uuid.UUID) error {
+	return db.DeleteMatch(ctx, s.pool, matchID)
+}
+func (s *pgMatchStore) GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return db.GetGroupMemberPlayerIDs(ctx, s.pool, groupID)
+}
+func (s *pgMatchStore) GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return db.GetNonAdminMemberPlayerIDs(ctx, s.pool, groupID)
+}
+func (s *pgMatchStore) SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error {
+	return db.SetAttendance(ctx, s.pool, matchID, playerID, status)
+}
+func (s *pgMatchStore) CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error) {
+	return db.CountAttendances(ctx, s.pool, matchID, status)
+}
+func (s *pgMatchStore) UpsertMatchPlayerStat(ctx context.Context, matchID, playerID, recordedBy uuid.UUID, goals, assists int) error {
+	return db.UpsertMatchPlayerStat(ctx, s.pool, matchID, playerID, recordedBy, goals, assists)
+}
+
+type MatchHandler struct {
+	Store MatchStore
+}
+
+func NewMatchHandler(pool *pgxpool.Pool) *MatchHandler {
+	return &MatchHandler{Store: &pgMatchStore{pool: pool}}
 }
 
 // GroupMatchRoutes returns routes mounted under /groups/{groupID}.
-func (h *matchHandler) GroupMatchRoutes() chi.Router {
+func (h *MatchHandler) GroupMatchRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", h.listGroupMatches)
 	r.Post("/", h.createMatch)
@@ -162,7 +239,19 @@ func buildMatchDetail(match *db.Match, atts []db.AttendanceWithPlayer, groupName
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
-func (h *matchHandler) DiscoverMatches(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) DiscoverMatches(w http.ResponseWriter, r *http.Request) {
+	// Optional auth — only extract player if available
+	var playerID *uuid.UUID
+	player := middleware.PlayerFromCtx(r.Context())
+	if player != nil {
+		// Admins don't see discover matches
+		if player.Role == db.PlayerRoleAdmin {
+			renderJSON(w, http.StatusOK, []db.DiscoverMatch{})
+			return
+		}
+		playerID = &player.ID
+	}
+
 	limit := 20
 	offset := 0
 	if v := r.URL.Query().Get("limit"); v != "" {
@@ -176,7 +265,7 @@ func (h *matchHandler) DiscoverMatches(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	matches, err := db.GetDiscoverMatches(r.Context(), h.pool, limit, offset)
+	matches, err := h.Store.GetDiscoverMatches(r.Context(), playerID, limit, offset)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -184,21 +273,21 @@ func (h *matchHandler) DiscoverMatches(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, matches)
 }
 
-func (h *matchHandler) GetPublicMatch(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) GetPublicMatch(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
-	match, err := db.GetMatchByHash(r.Context(), h.pool, hash)
+	match, err := h.Store.GetMatchByHash(r.Context(), hash)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	group, _ := db.GetGroupByID(r.Context(), h.pool, match.GroupID)
+	group, _ := h.Store.GetGroupByID(r.Context(), match.GroupID)
 	groupName := ""
 	if group != nil {
 		groupName = group.Name
 	}
 
-	atts, err := db.GetAttendancesForMatch(r.Context(), h.pool, match.ID)
+	atts, err := h.Store.GetAttendancesForMatch(r.Context(), match.ID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -206,15 +295,15 @@ func (h *matchHandler) GetPublicMatch(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, groupName))
 }
 
-func (h *matchHandler) GetPublicMatchStats(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) GetPublicMatchStats(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
-	match, err := db.GetMatchByHash(r.Context(), h.pool, hash)
+	match, err := h.Store.GetMatchByHash(r.Context(), hash)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	stats, err := db.GetMatchPlayerStats(r.Context(), h.pool, match.ID)
+	stats, err := h.Store.GetMatchPlayerStats(r.Context(), match.ID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -237,7 +326,7 @@ func (h *matchHandler) GetPublicMatchStats(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (h *matchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -246,13 +335,13 @@ func (h *matchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID); err != nil {
+		if _, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID); err != nil {
 			renderError(w, apierror.Forbidden("not a member"))
 			return
 		}
 	}
 
-	matches, err := db.GetMatchesByGroup(r.Context(), h.pool, groupID)
+	matches, err := h.Store.GetMatchesByGroup(r.Context(), groupID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -260,7 +349,7 @@ func (h *matchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) 
 	renderJSON(w, http.StatusOK, matches)
 }
 
-func (h *matchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -268,22 +357,49 @@ func (h *matchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
-		if err != nil || m.Role != db.GroupMemberRoleAdmin {
-			renderError(w, apierror.Forbidden("only group admins can create matches"))
-			return
-		}
-	}
-
 	var req createMatchReq
 	if err := decodeJSON(r, &req); err != nil {
 		renderError(w, err)
 		return
 	}
+
+	// Validate all required fields first
 	if req.MatchDate == "" || req.StartTime == "" || req.Location == "" {
 		renderError(w, apierror.Unprocessable("match_date, start_time, and location are required"))
 		return
+	}
+
+	// Validate location length
+	if len(req.Location) < 2 || len(req.Location) > 200 {
+		renderError(w, apierror.Unprocessable("location must be 2-200 characters"))
+		return
+	}
+
+	// Validate players_per_team range
+	if req.PlayersPerTeam != nil && (*req.PlayersPerTeam < 2 || *req.PlayersPerTeam > 15) {
+		renderError(w, apierror.Unprocessable("players_per_team must be 2-15"))
+		return
+	}
+
+	// Validate max_players range
+	if req.MaxPlayers != nil && *req.MaxPlayers < 2 {
+		renderError(w, apierror.Unprocessable("max_players must be at least 2"))
+		return
+	}
+
+	// Now check authorization and group exists
+	group, err := h.Store.GetGroupByID(r.Context(), groupID)
+	if err != nil || group == nil {
+		renderError(w, apierror.NotFound("group not found"))
+		return
+	}
+
+	if player.Role != db.PlayerRoleAdmin {
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
+		if err != nil || m.Role != db.GroupMemberRoleAdmin {
+			renderError(w, apierror.Forbidden("only group admins can create matches"))
+			return
+		}
 	}
 
 	hash, err := generateHash()
@@ -292,42 +408,44 @@ func (h *matchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	number, err := db.NextMatchNumber(r.Context(), h.pool, groupID)
+	number, err := h.Store.NextMatchNumber(r.Context(), groupID)
 	if err != nil {
 		renderError(w, apierror.Internal("failed to get next match number"))
 		return
 	}
 
-	match, err := db.CreateMatch(r.Context(), h.pool, db.CreateMatchParams{
-		GroupID:        groupID,
-		Hash:           hash,
-		Number:         number,
-		MatchDate:      req.MatchDate,
-		StartTime:      req.StartTime,
-		EndTime:        req.EndTime,
-		Location:       req.Location,
-		Address:        req.Address,
-		CourtType:      req.CourtType,
-		PlayersPerTeam: req.PlayersPerTeam,
-		MaxPlayers:     req.MaxPlayers,
-		Notes:          req.Notes,
-		CreatedByID:    player.ID,
+	match, err := h.Store.CreateMatch(r.Context(), db.CreateMatchParams{
+		GroupID:              groupID,
+		Hash:                 hash,
+		Number:               number,
+		MatchDate:            req.MatchDate,
+		StartTime:            req.StartTime,
+		EndTime:              req.EndTime,
+		Location:             req.Location,
+		Address:              req.Address,
+		CourtType:            req.CourtType,
+		PlayersPerTeam:       req.PlayersPerTeam,
+		MaxPlayers:           req.MaxPlayers,
+		Notes:                req.Notes,
+		CreatedByID:          player.ID,
+		VoteOpenDelayMinutes: group.VoteOpenDelayMinutes,
+		VoteDurationHours:    group.VoteDurationHours,
 	})
 	if err != nil {
 		renderError(w, apierror.Internal("failed to create match"))
 		return
 	}
 
-	// Add PENDING attendance for all group members
-	memberIDs, _ := db.GetGroupMemberPlayerIDs(r.Context(), h.pool, groupID)
+	// Add PENDING attendance for non-admin group members
+	memberIDs, _ := h.Store.GetNonAdminMemberPlayerIDs(r.Context(), groupID)
 	for _, pid := range memberIDs {
-		_ = db.SetAttendance(r.Context(), h.pool, match.ID, pid, "pending")
+		_ = h.Store.SetAttendance(r.Context(), match.ID, pid, "pending")
 	}
 
 	renderJSON(w, http.StatusCreated, match)
 }
 
-func (h *matchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -341,13 +459,13 @@ func (h *matchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		if _, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID); err != nil {
+		if _, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID); err != nil {
 			renderError(w, apierror.Forbidden("not a member"))
 			return
 		}
 	}
 
-	match, err := db.GetMatchByID(r.Context(), h.pool, matchID)
+	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -357,7 +475,7 @@ func (h *matchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	atts, err := db.GetAttendancesForMatch(r.Context(), h.pool, matchID)
+	atts, err := h.Store.GetAttendancesForMatch(r.Context(), matchID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -365,7 +483,7 @@ func (h *matchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, ""))
 }
 
-func (h *matchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -379,7 +497,7 @@ func (h *matchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can update matches"))
 			return
@@ -392,7 +510,7 @@ func (h *matchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := db.UpdateMatch(r.Context(), h.pool, matchID, db.UpdateMatchParams{
+	match, err := h.Store.UpdateMatch(r.Context(), matchID, db.UpdateMatchParams{
 		MatchDate:      req.MatchDate,
 		StartTime:      req.StartTime,
 		EndTime:        req.EndTime,
@@ -411,7 +529,7 @@ func (h *matchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, match)
 }
 
-func (h *matchHandler) deleteMatch(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) deleteMatch(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	groupID, err := groupIDParam(r)
 	if err != nil {
@@ -425,21 +543,21 @@ func (h *matchHandler) deleteMatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can delete matches"))
 			return
 		}
 	}
 
-	if err := db.DeleteMatch(r.Context(), h.pool, matchID); err != nil {
+	if err := h.Store.DeleteMatch(r.Context(), matchID); err != nil {
 		renderError(w, err)
 		return
 	}
 	noContent(w)
 }
 
-func (h *matchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player.Role == db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admins cannot set attendance"))
@@ -468,7 +586,7 @@ func (h *matchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Auth check
-	callerMem, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+	callerMem, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
 	if err != nil {
 		renderError(w, apierror.Forbidden("not a member"))
 		return
@@ -480,7 +598,7 @@ func (h *matchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := db.GetMatchByID(r.Context(), h.pool, matchID)
+	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -496,20 +614,20 @@ func (h *matchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 
 	// Max players check for confirming
 	if req.Status == "confirmed" && match.MaxPlayers != nil {
-		confirmed, _ := db.CountAttendances(r.Context(), h.pool, matchID, "confirmed")
+		confirmed, _ := h.Store.CountAttendances(r.Context(), matchID, "confirmed")
 		if confirmed >= *match.MaxPlayers {
 			renderError(w, apierror.Forbidden("match is full"))
 			return
 		}
 	}
 
-	if err := db.SetAttendance(r.Context(), h.pool, matchID, req.PlayerID, req.Status); err != nil {
+	if err := h.Store.SetAttendance(r.Context(), matchID, req.PlayerID, req.Status); err != nil {
 		renderError(w, err)
 		return
 	}
 
 	// Build response
-	atts, _ := db.GetAttendancesForMatch(r.Context(), h.pool, matchID)
+	atts, _ := h.Store.GetAttendancesForMatch(r.Context(), matchID)
 	for _, a := range atts {
 		if a.PlayerID == req.PlayerID {
 			renderJSON(w, http.StatusOK, buildAttendanceResp(a))
@@ -519,18 +637,18 @@ func (h *matchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, map[string]string{"status": req.Status})
 }
 
-func (h *matchHandler) UpsertPlayerStats(w http.ResponseWriter, r *http.Request) {
+func (h *MatchHandler) UpsertPlayerStats(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	hash := chi.URLParam(r, "hash")
 
-	match, err := db.GetMatchByHash(r.Context(), h.pool, hash)
+	match, err := h.Store.GetMatchByHash(r.Context(), hash)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
 	if player.Role != db.PlayerRoleAdmin {
-		m, err := db.GetGroupMember(r.Context(), h.pool, match.GroupID, player.ID)
+		m, err := h.Store.GetGroupMember(r.Context(), match.GroupID, player.ID)
 		if err != nil || m.Role != db.GroupMemberRoleAdmin {
 			renderError(w, apierror.Forbidden("only group admins can record stats"))
 			return
@@ -544,13 +662,13 @@ func (h *matchHandler) UpsertPlayerStats(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, s := range req.Stats {
-		if err := db.UpsertMatchPlayerStat(r.Context(), h.pool, match.ID, s.PlayerID, player.ID, s.Goals, s.Assists); err != nil {
+		if err := h.Store.UpsertMatchPlayerStat(r.Context(), match.ID, s.PlayerID, player.ID, s.Goals, s.Assists); err != nil {
 			renderError(w, err)
 			return
 		}
 	}
 
-	stats, err := db.GetMatchPlayerStats(r.Context(), h.pool, match.ID)
+	stats, err := h.Store.GetMatchPlayerStats(r.Context(), match.ID)
 	if err != nil {
 		renderError(w, err)
 		return

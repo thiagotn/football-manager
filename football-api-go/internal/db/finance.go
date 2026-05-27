@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
 
 type FinancePeriod struct {
@@ -178,4 +179,40 @@ func MarkPaymentPending(ctx context.Context, pool *pgxpool.Pool, paymentID uuid.
 		return nil, err
 	}
 	return &p, nil
+}
+
+func EnsureMemberInCurrentPeriod(ctx context.Context, pool *pgxpool.Pool, groupID, playerID uuid.UUID, playerName string) error {
+	now := time.Now()
+	year, month := now.Year(), int(now.Month())
+
+	var periodID uuid.UUID
+	err := pool.QueryRow(ctx,
+		`SELECT id FROM finance_periods WHERE group_id=$1 AND year=$2 AND month=$3`,
+		groupID, year, month,
+	).Scan(&periodID)
+	if err == pgx.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	var existing uuid.UUID
+	err = pool.QueryRow(ctx,
+		`SELECT id FROM finance_payments WHERE period_id=$1 AND player_id=$2`,
+		periodID, playerID,
+	).Scan(&existing)
+	if err == nil {
+		return nil
+	}
+	if err != pgx.ErrNoRows {
+		return err
+	}
+
+	_, err = pool.Exec(ctx,
+		`INSERT INTO finance_payments (id, period_id, player_id, player_name, status, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, 'pending', NOW(), NOW())`,
+		uuid.New(), periodID, playerID, playerName,
+	)
+	return err
 }

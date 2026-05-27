@@ -2,11 +2,13 @@ package handlers
 
 import (
 	cryptorand "crypto/rand"
+	"context"
 	"encoding/hex"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -19,16 +21,111 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
-type playerHandler struct {
-	pool    *pgxpool.Pool
+type PlayerStore interface {
+	GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	CreatePlayer(ctx context.Context, args db.CreatePlayerParams) (*db.Player, error)
+	UpdatePlayerPassword(ctx context.Context, playerID uuid.UUID, hash string) error
+	UpdatePlayerMustChangePassword(ctx context.Context, playerID uuid.UUID, val bool) error
+	EnsurePlayerSubscription(ctx context.Context, playerID uuid.UUID) error
+	GetPlayerMatches(ctx context.Context, playerID uuid.UUID) ([]db.PlayerMatch, error)
+	GetPlayerStatsMinutes(ctx context.Context, playerID uuid.UUID) (int, error)
+	GetPlatformMatchStats(ctx context.Context) (closedMatches, uniquePlayers int, err error)
+	GetPlayerGroupStats(ctx context.Context, playerID uuid.UUID) ([]db.GroupStat, error)
+	GetPlayerGoalsAssists(ctx context.Context, playerID uuid.UUID) (goals, assists int, err error)
+	GetPublicPlayerStats(ctx context.Context, playerID uuid.UUID) (totalConfirmed, totalGoals, totalAssists int, err error)
+	UpdatePlayerProfile(ctx context.Context, playerID uuid.UUID, name, nickname, passwordHash string) error
+	ListPlayersActive(ctx context.Context, limit, offset int, activeOnly bool) ([]*db.Player, error)
+	GetSignupStats(ctx context.Context) (total, last7, last30 int, err error)
+	GetRecentSignups(ctx context.Context, limit int) ([]db.RecentSignup, error)
+	UpdatePlayerAvatarURL(ctx context.Context, playerID uuid.UUID, avatarURL string) error
+	DeletePlayerAvatarURL(ctx context.Context, playerID uuid.UUID) error
+}
+
+type pgPlayerStore struct {
+	pool *pgxpool.Pool
+}
+
+func (s *pgPlayerStore) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
+	return db.GetPlayerByID(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) CreatePlayer(ctx context.Context, args db.CreatePlayerParams) (*db.Player, error) {
+	return db.CreatePlayer(ctx, s.pool, args)
+}
+
+func (s *pgPlayerStore) UpdatePlayerPassword(ctx context.Context, playerID uuid.UUID, hash string) error {
+	return db.UpdatePlayerPassword(ctx, s.pool, playerID, hash)
+}
+
+func (s *pgPlayerStore) UpdatePlayerMustChangePassword(ctx context.Context, playerID uuid.UUID, val bool) error {
+	return db.UpdatePlayerMustChangePassword(ctx, s.pool, playerID, val)
+}
+
+func (s *pgPlayerStore) EnsurePlayerSubscription(ctx context.Context, playerID uuid.UUID) error {
+	return db.EnsurePlayerSubscription(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerMatches(ctx context.Context, playerID uuid.UUID) ([]db.PlayerMatch, error) {
+	return db.GetPlayerMatches(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerStatsMinutes(ctx context.Context, playerID uuid.UUID) (int, error) {
+	return db.GetPlayerStatsMinutes(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlatformMatchStats(ctx context.Context) (int, int, error) {
+	return db.GetPlatformMatchStats(ctx, s.pool)
+}
+
+func (s *pgPlayerStore) GetPlayerGroupStats(ctx context.Context, playerID uuid.UUID) ([]db.GroupStat, error) {
+	return db.GetPlayerGroupStats(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPlayerGoalsAssists(ctx context.Context, playerID uuid.UUID) (int, int, error) {
+	return db.GetPlayerGoalsAssists(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) GetPublicPlayerStats(ctx context.Context, playerID uuid.UUID) (int, int, int, error) {
+	return db.GetPublicPlayerStats(ctx, s.pool, playerID)
+}
+
+func (s *pgPlayerStore) UpdatePlayerProfile(ctx context.Context, playerID uuid.UUID, name, nickname, passwordHash string) error {
+	return db.UpdatePlayerProfile(ctx, s.pool, playerID, name, nickname, passwordHash)
+}
+
+func (s *pgPlayerStore) ListPlayersActive(ctx context.Context, limit, offset int, activeOnly bool) ([]*db.Player, error) {
+	return db.ListPlayersActive(ctx, s.pool, limit, offset, activeOnly)
+}
+
+func (s *pgPlayerStore) GetSignupStats(ctx context.Context) (int, int, int, error) {
+	return db.GetSignupStats(ctx, s.pool)
+}
+
+func (s *pgPlayerStore) GetRecentSignups(ctx context.Context, limit int) ([]db.RecentSignup, error) {
+	return db.GetRecentSignups(ctx, s.pool, limit)
+}
+
+func (s *pgPlayerStore) UpdatePlayerAvatarURL(ctx context.Context, playerID uuid.UUID, avatarURL string) error {
+	return db.UpdatePlayerAvatarURL(ctx, s.pool, playerID, avatarURL)
+}
+
+func (s *pgPlayerStore) DeletePlayerAvatarURL(ctx context.Context, playerID uuid.UUID) error {
+	return db.DeletePlayerAvatarURL(ctx, s.pool, playerID)
+}
+
+type PlayerHandler struct {
+	Store   PlayerStore
 	storage *services.StorageService
 }
 
-func NewPlayerHandler(pool *pgxpool.Pool, storage *services.StorageService) *playerHandler {
-	return &playerHandler{pool: pool, storage: storage}
+func NewPlayerHandler(pool *pgxpool.Pool, storage *services.StorageService) *PlayerHandler {
+	return &PlayerHandler{
+		Store:   &pgPlayerStore{pool: pool},
+		storage: storage,
+	}
 }
 
-func (h *playerHandler) Routes() chi.Router {
+func (h *PlayerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/me", h.getMe)
 	r.Get("/me/matches", h.myMatches)
@@ -78,93 +175,86 @@ func targetPlayerID(r *http.Request) (uuid.UUID, error) {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-func (h *playerHandler) myMatches(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) myMatches(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 
-	rows, err := h.pool.Query(r.Context(), `
-		SELECT
-			m.id, m.group_id, m.number, m.hash,
-			m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
-			m.location, m.address, m.court_type::TEXT,
-			m.players_per_team, m.max_players, m.notes,
-			m.status::TEXT, m.created_at, m.updated_at,
-			g.name AS group_name,
-			g.timezone AS group_timezone,
-			a.status::TEXT AS my_attendance
-		FROM matches m
-		JOIN groups g ON g.id = m.group_id
-		JOIN attendances a ON a.match_id = m.id AND a.player_id = $1
-		ORDER BY m.match_date DESC, m.start_time DESC`, player.ID)
+	matches, err := h.Store.GetPlayerMatches(r.Context(), player.ID)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
 
 	type matchItem struct {
-		db.Match
-		GroupName     string `json:"group_name"`
-		GroupTimezone string `json:"group_timezone"`
-		MyAttendance  string `json:"my_attendance"`
+		ID            uuid.UUID `json:"id"`
+		GroupID       uuid.UUID `json:"group_id"`
+		Number        int       `json:"number"`
+		Hash          string    `json:"hash"`
+		MatchDate     string    `json:"match_date"`
+		StartTime     string    `json:"start_time"`
+		EndTime       *string   `json:"end_time"`
+		Location      string    `json:"location"`
+		Address       *string   `json:"address"`
+		CourtType     *string   `json:"court_type"`
+		PlayersPerTeam *int      `json:"players_per_team"`
+		MaxPlayers    *int      `json:"max_players"`
+		Notes         *string   `json:"notes"`
+		Status        string    `json:"status"`
+		CreatedAt     string    `json:"created_at"`
+		UpdatedAt     string    `json:"updated_at"`
+		GroupName     string    `json:"group_name"`
+		GroupTimezone string    `json:"group_timezone"`
+		MyAttendance  string    `json:"my_attendance"`
 	}
 
-	result := make([]matchItem, 0)
-	for rows.Next() {
-		var item matchItem
-		if err := rows.Scan(
-			&item.ID, &item.GroupID, &item.Number, &item.Hash,
-			&item.MatchDate, &item.StartTime, &item.EndTime,
-			&item.Location, &item.Address, &item.CourtType,
-			&item.PlayersPerTeam, &item.MaxPlayers, &item.Notes,
-			&item.Status, &item.CreatedAt, &item.UpdatedAt,
-			&item.GroupName, &item.GroupTimezone, &item.MyAttendance,
-		); err != nil {
-			renderError(w, err)
-			return
+	result := make([]matchItem, len(matches))
+	for i, m := range matches {
+		result[i] = matchItem{
+			ID:             m.ID,
+			GroupID:        m.GroupID,
+			Number:         m.Number,
+			Hash:           m.Hash,
+			MatchDate:      m.MatchDate,
+			StartTime:      m.StartTime,
+			EndTime:        m.EndTime,
+			Location:       m.Location,
+			Address:        m.Address,
+			CourtType:      m.CourtType,
+			PlayersPerTeam: m.PlayersPerTeam,
+			MaxPlayers:     m.MaxPlayers,
+			Notes:          m.Notes,
+			Status:         m.Status,
+			CreatedAt:      m.CreatedAt,
+			UpdatedAt:      m.UpdatedAt,
+			GroupName:      m.GroupName,
+			GroupTimezone:  m.GroupTimezone,
+			MyAttendance:   m.MyAttendance,
 		}
-		result = append(result, item)
 	}
 	renderJSON(w, http.StatusOK, result)
 }
 
-func (h *playerHandler) myStats(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) myStats(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 
-	var minutesPlayed int
-	_ = h.pool.QueryRow(r.Context(), `
-		SELECT COALESCE(SUM(
-			EXTRACT(EPOCH FROM (
-				CASE
-					WHEN m.end_time IS NOT NULL
-					THEN m.end_time::INTERVAL - m.start_time::INTERVAL
-					ELSE INTERVAL '90 minutes'
-				END
-			)) / 60
-		), 0)::INT
-		FROM attendances a
-		JOIN matches m ON m.id = a.match_id
-		WHERE a.player_id = $1
-		  AND a.status = 'confirmed'
-		  AND m.status = 'closed'`, player.ID).Scan(&minutesPlayed)
+	minutesPlayed, _ := h.Store.GetPlayerStatsMinutes(r.Context(), player.ID)
 
 	resp := map[string]any{"minutes_played": minutesPlayed}
 	if player.Role == db.PlayerRoleAdmin {
-		var platMinutes, platTotal int
-		_ = h.pool.QueryRow(r.Context(), `
-			SELECT
-				COALESCE(COUNT(*) FILTER (WHERE m.status='closed'), 0),
-				COALESCE(COUNT(DISTINCT a.player_id) FILTER (WHERE m.status='closed'), 0)
-			FROM attendances a
-			JOIN matches m ON m.id = a.match_id
-			WHERE a.status = 'confirmed'`).Scan(&platTotal, &platMinutes)
+		platTotal, platMinutes, _ := h.Store.GetPlatformMatchStats(r.Context())
 		resp["platform_minutes_played"] = platMinutes * 90
 		resp["platform_total_matches"] = platTotal
 	}
 	renderJSON(w, http.StatusOK, resp)
 }
 
-func (h *playerHandler) myStatsFull(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) myStatsFull(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
+
+	groupStats, err := h.Store.GetPlayerGroupStats(r.Context(), player.ID)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
 
 	type groupStat struct {
 		GroupID   uuid.UUID `json:"group_id"`
@@ -172,57 +262,31 @@ func (h *playerHandler) myStatsFull(w http.ResponseWriter, r *http.Request) {
 		Matches   int       `json:"matches_confirmed"`
 	}
 
-	rows, err := h.pool.Query(r.Context(), `
-		SELECT g.id, g.name, COUNT(a.id)
-		FROM attendances a
-		JOIN matches m ON m.id = a.match_id
-		JOIN groups g ON g.id = m.group_id
-		WHERE a.player_id = $1 AND a.status = 'confirmed'
-		GROUP BY g.id, g.name
-		ORDER BY g.name`, player.ID)
-	if err != nil {
-		renderError(w, err)
-		return
-	}
-	defer rows.Close()
-
-	stats := make([]groupStat, 0)
-	for rows.Next() {
-		var s groupStat
-		if err := rows.Scan(&s.GroupID, &s.GroupName, &s.Matches); err != nil {
-			renderError(w, err)
-			return
+	stats := make([]groupStat, len(groupStats))
+	for i, s := range groupStats {
+		stats[i] = groupStat{
+			GroupID:   s.GroupID,
+			GroupName: s.GroupName,
+			Matches:   s.Matches,
 		}
-		stats = append(stats, s)
 	}
 	renderJSON(w, http.StatusOK, map[string]any{"groups": stats})
 }
 
-func (h *playerHandler) publicStats(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) publicStats(w http.ResponseWriter, r *http.Request) {
 	playerID, err := targetPlayerID(r)
 	if err != nil {
 		renderError(w, apierror.NotFound("player not found"))
 		return
 	}
 
-	target, err := db.GetPlayerByID(r.Context(), h.pool, playerID)
+	target, err := h.Store.GetPlayerByID(r.Context(), playerID)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	var totalConfirmed int
-	_ = h.pool.QueryRow(r.Context(), `
-		SELECT COUNT(*) FROM attendances a
-		JOIN matches m ON m.id = a.match_id
-		WHERE a.player_id = $1 AND a.status = 'confirmed' AND m.status = 'closed'`, playerID).
-		Scan(&totalConfirmed)
-
-	var totalGoals, totalAssists int
-	_ = h.pool.QueryRow(r.Context(), `
-		SELECT COALESCE(SUM(goals),0), COALESCE(SUM(assists),0)
-		FROM match_player_stats WHERE player_id = $1`, playerID).
-		Scan(&totalGoals, &totalAssists)
+	totalConfirmed, totalGoals, totalAssists, _ := h.Store.GetPublicPlayerStats(r.Context(), playerID)
 
 	renderJSON(w, http.StatusOK, map[string]any{
 		"player_id":               target.ID,
@@ -235,7 +299,7 @@ func (h *playerHandler) publicStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *playerHandler) listPlayers(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) listPlayers(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin access required"))
@@ -259,35 +323,15 @@ func (h *playerHandler) listPlayers(w http.ResponseWriter, r *http.Request) {
 		activeOnly = false
 	}
 
-	query := `
-		SELECT ` + db.PlayerSelectCols + `
-		FROM players
-		WHERE role = 'player'`
-	if activeOnly {
-		query += ` AND active = TRUE`
-	}
-	query += ` ORDER BY name LIMIT $1 OFFSET $2`
-
-	rows, err := h.pool.Query(r.Context(), query, limit, offset)
+	players, err := h.Store.ListPlayersActive(r.Context(), limit, offset, activeOnly)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
-	defer rows.Close()
-
-	players := make([]*db.Player, 0)
-	for rows.Next() {
-		p, err := db.ScanPlayer(rows.Scan)
-		if err != nil {
-			renderError(w, err)
-			return
-		}
-		players = append(players, p)
-	}
 	renderJSON(w, http.StatusOK, players)
 }
 
-func (h *playerHandler) createPlayer(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) createPlayer(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	if caller.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin access required"))
@@ -314,7 +358,7 @@ func (h *playerHandler) createPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := db.CreatePlayer(r.Context(), h.pool, db.CreatePlayerParams{
+	p, err := h.Store.CreatePlayer(r.Context(), db.CreatePlayerParams{
 		Name:         strings.TrimSpace(req.Name),
 		WhatsApp:     normalizePhone(req.WhatsApp),
 		PasswordHash: hash,
@@ -323,17 +367,17 @@ func (h *playerHandler) createPlayer(w http.ResponseWriter, r *http.Request) {
 		renderError(w, apierror.Conflict("whatsapp already registered"))
 		return
 	}
-	_ = db.EnsurePlayerSubscription(r.Context(), h.pool, p.ID)
+	_ = h.Store.EnsurePlayerSubscription(r.Context(), p.ID)
 	renderJSON(w, http.StatusCreated, p)
 }
 
-func (h *playerHandler) getMe(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) getMe(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 	if player == nil {
 		renderError(w, apierror.Unauthorized())
 		return
 	}
-	p, err := db.GetPlayerByID(r.Context(), h.pool, player.ID)
+	p, err := h.Store.GetPlayerByID(r.Context(), player.ID)
 	if err == db.ErrNotFound {
 		renderError(w, apierror.NotFound("player not found"))
 		return
@@ -345,7 +389,7 @@ func (h *playerHandler) getMe(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, p)
 }
 
-func (h *playerHandler) getPlayer(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) getPlayer(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	targetID, err := targetPlayerID(r)
 	if err != nil {
@@ -358,7 +402,7 @@ func (h *playerHandler) getPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := db.GetPlayerByID(r.Context(), h.pool, targetID)
+	p, err := h.Store.GetPlayerByID(r.Context(), targetID)
 	if err == db.ErrNotFound {
 		renderError(w, apierror.NotFound("player not found"))
 		return
@@ -370,7 +414,7 @@ func (h *playerHandler) getPlayer(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, p)
 }
 
-func (h *playerHandler) updatePlayer(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) updatePlayer(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	targetID, err := targetPlayerID(r)
 	if err != nil {
@@ -389,7 +433,7 @@ func (h *playerHandler) updatePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target, err := db.GetPlayerByID(r.Context(), h.pool, targetID)
+	target, err := h.Store.GetPlayerByID(r.Context(), targetID)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -410,19 +454,17 @@ func (h *playerHandler) updatePlayer(w http.ResponseWriter, r *http.Request) {
 		target.PasswordHash = hash
 	}
 
-	_, err = h.pool.Exec(r.Context(), `
-		UPDATE players SET name=$1, nickname=$2, password_hash=$3 WHERE id=$4`,
-		target.Name, target.Nickname, target.PasswordHash, targetID)
+	err = h.Store.UpdatePlayerProfile(r.Context(), targetID, target.Name, *target.Nickname, target.PasswordHash)
 	if err != nil {
 		renderError(w, err)
 		return
 	}
 
-	updated, _ := db.GetPlayerByID(r.Context(), h.pool, targetID)
+	updated, _ := h.Store.GetPlayerByID(r.Context(), targetID)
 	renderJSON(w, http.StatusOK, updated)
 }
 
-func (h *playerHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	if caller.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin access required"))
@@ -448,16 +490,16 @@ func (h *playerHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.UpdatePlayerPassword(r.Context(), h.pool, targetID, hash); err != nil {
+	if err := h.Store.UpdatePlayerPassword(r.Context(), targetID, hash); err != nil {
 		renderError(w, err)
 		return
 	}
-	_ = db.UpdatePlayerMustChangePassword(r.Context(), h.pool, targetID, true)
+	_ = h.Store.UpdatePlayerMustChangePassword(r.Context(), targetID, true)
 
 	renderJSON(w, http.StatusOK, map[string]string{"temp_password": temp})
 }
 
-func (h *playerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
 	caller := middleware.PlayerFromCtx(r.Context())
 	if caller.Role != db.PlayerRoleAdmin {
 		renderError(w, apierror.Forbidden("admin access required"))
@@ -471,33 +513,27 @@ func (h *playerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var total, last7, last30 int
-	_ = h.pool.QueryRow(r.Context(), `
-		SELECT
-			COUNT(*) FILTER (WHERE role='player'),
-			COUNT(*) FILTER (WHERE role='player' AND created_at >= NOW() - INTERVAL '7 days'),
-			COUNT(*) FILTER (WHERE role='player' AND created_at >= NOW() - INTERVAL '30 days')
-		FROM players WHERE active=TRUE`).Scan(&total, &last7, &last30)
-
-	rows, _ := h.pool.Query(r.Context(), `
-		SELECT id, name, nickname, whatsapp, active, created_at
-		FROM players WHERE role='player' AND active=TRUE
-		ORDER BY created_at DESC LIMIT $1`, limit)
-	defer rows.Close()
+	total, last7, last30, _ := h.Store.GetSignupStats(r.Context())
+	signups, _ := h.Store.GetRecentSignups(r.Context(), limit)
 
 	type recentSignup struct {
-		ID        uuid.UUID   `json:"id"`
-		Name      string      `json:"name"`
-		Nickname  *string     `json:"nickname"`
-		WhatsApp  string      `json:"whatsapp"`
-		Active    bool        `json:"active"`
-		CreatedAt interface{} `json:"created_at"`
+		ID        uuid.UUID `json:"id"`
+		Name      string    `json:"name"`
+		Nickname  *string   `json:"nickname"`
+		WhatsApp  string    `json:"whatsapp"`
+		Active    bool      `json:"active"`
+		CreatedAt time.Time `json:"created_at"`
 	}
-	recent := make([]recentSignup, 0)
-	for rows.Next() {
-		var s recentSignup
-		_ = rows.Scan(&s.ID, &s.Name, &s.Nickname, &s.WhatsApp, &s.Active, &s.CreatedAt)
-		recent = append(recent, s)
+	recent := make([]recentSignup, len(signups))
+	for i, s := range signups {
+		recent[i] = recentSignup{
+			ID:        s.ID,
+			Name:      s.Name,
+			Nickname:  s.Nickname,
+			WhatsApp:  s.WhatsApp,
+			Active:    s.Active,
+			CreatedAt: s.CreatedAt,
+		}
 	}
 
 	renderJSON(w, http.StatusOK, map[string]any{
@@ -505,7 +541,7 @@ func (h *playerHandler) signupStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *playerHandler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 	if h.storage == nil || !h.storage.IsConfigured() {
 		renderError(w, apierror.Internal("storage not configured"))
 		return
@@ -544,8 +580,7 @@ func (h *playerHandler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.pool.Exec(r.Context(),
-		`UPDATE players SET avatar_url=$2 WHERE id=$1`, player.ID, publicURL); err != nil {
+	if err := h.Store.UpdatePlayerAvatarURL(r.Context(), player.ID, publicURL); err != nil {
 		renderError(w, err)
 		return
 	}
@@ -553,15 +588,14 @@ func (h *playerHandler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, map[string]string{"avatar_url": publicURL})
 }
 
-func (h *playerHandler) deleteAvatar(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) deleteAvatar(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
 
 	if player.AvatarURL != nil && h.storage != nil {
 		_ = h.storage.DeleteAvatarByURL(r.Context(), *player.AvatarURL)
 	}
 
-	if _, err := h.pool.Exec(r.Context(),
-		`UPDATE players SET avatar_url=NULL WHERE id=$1`, player.ID); err != nil {
+	if err := h.Store.DeletePlayerAvatarURL(r.Context(), player.ID); err != nil {
 		renderError(w, err)
 		return
 	}

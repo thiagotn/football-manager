@@ -128,6 +128,7 @@ type AuthService interface {
 	VerifyOTPMe(ctx context.Context, playerID uuid.UUID, req VerifyOTPMeRequest) (*VerifyOTPResponse, error)
 	ChangePassword(ctx context.Context, playerID uuid.UUID, req ChangePasswordRequest) error
 	RefreshToken(ctx context.Context, req RefreshRequest) (*RefreshResponse, error)
+	IssueTokenPairForPlayer(ctx context.Context, player *db.Player) (*TokenResponse, error)
 }
 
 // ── Implementation ───────────────────────────────────────────────────────────
@@ -477,6 +478,12 @@ func (s *authService) issueTokenPair(ctx context.Context, player *db.Player) (*T
 		ChatEnabled:        player.ChatEnabled,
 		ApiV2Enabled:       player.ApiV2Enabled,
 	}, nil
+}
+
+// IssueTokenPairForPlayer issues a token pair for an existing player.
+// Used when a player joins a group via invite and needs to be authenticated.
+func (s *authService) IssueTokenPairForPlayer(ctx context.Context, player *db.Player) (*TokenResponse, error) {
+	return s.issueTokenPair(ctx, player)
 }
 
 func (s *authService) createAccessToken(subject string) (string, error) {

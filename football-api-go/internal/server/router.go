@@ -36,6 +36,8 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		storageSvc = services.NewStorageService(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	}
 
+	pushSvc := services.NewPushService(pool)
+
 	// Rate limiters (disabled in development)
 	var loginRL *middleware.LoginRateLimiter
 	if cfg.AppEnv != "development" {
@@ -47,9 +49,9 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	groupH := handlers.NewGroupHandler(pool)
 	matchH := handlers.NewMatchHandler(pool)
 	playerH := handlers.NewPlayerHandler(pool, storageSvc)
-	inviteH := handlers.NewInviteHandler(pool)
+	inviteH := handlers.NewInviteHandler(pool, authSvc, cfg)
 	teamH := handlers.NewTeamHandler(pool)
-	voteH := handlers.NewVoteHandler(pool)
+	voteH := handlers.NewVoteHandler(pool, pushSvc)
 	financeH := handlers.NewFinanceHandler(pool)
 	subscriptionH := handlers.NewSubscriptionHandler(pool, stripeSvc)
 	webhookH := handlers.NewWebhookHandler(pool, stripeSvc)
