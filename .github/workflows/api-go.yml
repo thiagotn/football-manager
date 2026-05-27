@@ -3,12 +3,18 @@ name: Build & Test API Go
 on:
   workflow_dispatch: # disparado manualmente via GitHub Actions UI
 
+env:
+  # Force JS actions to run on Node.js 24 (Node 20 is deprecated as of 2025-09-19).
+  # Required because some pinned-SHA actions used internally by codecov/codecov-action@v5
+  # still declare Node 20 runtimes. Safe to remove after June 2nd, 2026.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Go
         run: |
           GOVERSION=$(curl -fsSL "https://go.dev/VERSION?m=text" | head -1)
@@ -21,7 +27,7 @@ jobs:
           SECRET_KEY: "test-secret-key-ci-only"
         run: go test ./tests/unit/... -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=./internal/apierror/...,./internal/config/...,./internal/handlers/...,./internal/middleware/...,./internal/services/...
       - name: Upload unit coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-unit
           path: football-api-go/coverage-unit.out
@@ -45,7 +51,7 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Go
         run: |
           GOVERSION=$(curl -fsSL "https://go.dev/VERSION?m=text" | head -1)
@@ -65,7 +71,7 @@ jobs:
           SECRET_KEY: "test-secret-key-ci-only"
         run: go test ./tests/integration/... -coverprofile=coverage-integration.out -covermode=atomic -coverpkg=./internal/apierror/...,./internal/config/...,./internal/handlers/...,./internal/middleware/...,./internal/services/... -v -timeout 120s
       - name: Download unit coverage artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: coverage-unit
           path: football-api-go/
@@ -91,7 +97,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build & push Docker image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
