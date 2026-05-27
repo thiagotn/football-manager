@@ -765,3 +765,89 @@ func (m *mockGroupStoreForBusiness) CreatePlayer(ctx context.Context, args db.Cr
 func (m *mockGroupStoreForBusiness) UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error {
 	return nil
 }
+
+// ── Matches Business Logic Tests ──────────────────────────────────────────────
+// Foundation for testing: Attendance validation, match status transitions
+// To be expanded with team draw eligibility, voting window calculations
+
+// Mock store for Matches business logic tests
+type mockMatchStoreForBusiness struct {
+	getMatchByIDFn              func(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
+	getMatchByHashFn            func(ctx context.Context, hash string) (*db.Match, error)
+	setAttendanceFn             func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	getAttendancesForMatchFn    func(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error)
+	countAttendancesFn          func(ctx context.Context, matchID uuid.UUID, status string) (int, error)
+}
+
+func (m *mockMatchStoreForBusiness) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
+	if m.getMatchByIDFn != nil {
+		return m.getMatchByIDFn(ctx, matchID)
+	}
+	return nil, db.ErrNotFound
+}
+
+func (m *mockMatchStoreForBusiness) GetMatchByHash(ctx context.Context, hash string) (*db.Match, error) {
+	if m.getMatchByHashFn != nil {
+		return m.getMatchByHashFn(ctx, hash)
+	}
+	return nil, db.ErrNotFound
+}
+
+func (m *mockMatchStoreForBusiness) SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error {
+	if m.setAttendanceFn != nil {
+		return m.setAttendanceFn(ctx, matchID, playerID, status)
+	}
+	return nil
+}
+
+func (m *mockMatchStoreForBusiness) GetAttendancesForMatch(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error) {
+	if m.getAttendancesForMatchFn != nil {
+		return m.getAttendancesForMatchFn(ctx, matchID)
+	}
+	return []db.AttendanceWithPlayer{}, nil
+}
+
+func (m *mockMatchStoreForBusiness) CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error) {
+	if m.countAttendancesFn != nil {
+		return m.countAttendancesFn(ctx, matchID, status)
+	}
+	return 0, nil
+}
+
+// Stub remaining methods
+func (m *mockMatchStoreForBusiness) GetDiscoverMatches(ctx context.Context, playerID *uuid.UUID, limit, offset int) ([]db.DiscoverMatch, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) GetMatchesByGroup(ctx context.Context, groupID uuid.UUID) ([]db.Match, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) GetMatchPlayerStats(ctx context.Context, matchID uuid.UUID) ([]db.MatchPlayerStat, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) NextMatchNumber(ctx context.Context, groupID uuid.UUID) (int, error) {
+	return 0, nil
+}
+func (m *mockMatchStoreForBusiness) CreateMatch(ctx context.Context, params db.CreateMatchParams) (*db.Match, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) UpdateMatch(ctx context.Context, matchID uuid.UUID, params db.UpdateMatchParams) (*db.Match, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) DeleteMatch(ctx context.Context, matchID uuid.UUID) error {
+	return nil
+}
+func (m *mockMatchStoreForBusiness) GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
+func (m *mockMatchStoreForBusiness) UpsertMatchPlayerStat(ctx context.Context, matchID, playerID, recordedBy uuid.UUID, goals, assists int) error {
+	return nil
+}
