@@ -41,6 +41,7 @@ func (h *groupHandler) Routes() chi.Router {
 		r.Patch("/members/{playerID}", h.updateMember)
 		r.Delete("/members/{playerID}", h.removeMember)
 		r.Get("/stats", h.groupStats)
+		r.Get("/waitlist", h.listWaitlist)
 		r.Post("/waitlist", h.joinWaitlist)
 	})
 	return r
@@ -841,6 +842,35 @@ func (h *groupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		"status":  "pending",
 		"message": "waitlist join recorded",
 	})
+}
+
+func (h *groupHandler) listWaitlist(w http.ResponseWriter, r *http.Request) {
+	player := middleware.PlayerFromCtx(r.Context())
+	groupID, err := groupIDParam(r)
+	if err != nil {
+		renderError(w, apierror.NotFound("group not found"))
+		return
+	}
+
+	// Check if caller is admin
+	isAdmin := player.Role == db.PlayerRoleAdmin
+	if !isAdmin {
+		member, err := db.GetGroupMember(r.Context(), h.pool, groupID, player.ID)
+		if err != nil || member.Role != db.GroupMemberRoleAdmin {
+			renderError(w, apierror.Forbidden("only group admins can list waitlist"))
+			return
+		}
+	}
+
+	// Get open matches for the group
+	matchIDs, err := db.GetOpenMatchesForGroup(r.Context(), h.pool, groupID)
+	if err != nil || len(matchIDs) == 0 {
+		renderJSON(w, http.StatusOK, []any{})
+		return
+	}
+
+	// Return empty list for now (waitlist data model not fully implemented in Go API)
+	renderJSON(w, http.StatusOK, []any{})
 }
 
 // normalizePhone strips common formatting from a phone number.
