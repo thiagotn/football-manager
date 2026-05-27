@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,10 +20,15 @@ type AppReview struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type DistributionEntry struct {
+	Count   int     `json:"count"`
+	Percent float64 `json:"percent"`
+}
+
 type ReviewSummary struct {
-	TotalReviews  int         `json:"total_reviews"`
-	AverageRating float64     `json:"average_rating"`
-	Distribution  map[int]int `json:"distribution"` // rating -> count
+	Average      float64                   `json:"average"`
+	Total        int                       `json:"total"`
+	Distribution map[string]DistributionEntry `json:"distribution"` // "1"-"5" -> {count, percent}
 }
 
 type ReviewPage struct {
@@ -90,7 +97,27 @@ func GetReviewSummary(ctx context.Context, pool *pgxpool.Pool) (*ReviewSummary, 
 	if total > 0 {
 		avg = float64(sum) / float64(total)
 	}
-	return &ReviewSummary{TotalReviews: total, AverageRating: avg, Distribution: dist}, nil
+
+	// Build distribution with percentages
+	distribution := make(map[string]DistributionEntry)
+	for i := 1; i <= 5; i++ {
+		count := dist[i]
+		percent := 0.0
+		if total > 0 {
+			percent = float64(count) / float64(total) * 100
+			percent = math.Round(percent*10) / 10 // Round to 1 decimal place
+		}
+		distribution[fmt.Sprintf("%d", i)] = DistributionEntry{
+			Count:   count,
+			Percent: percent,
+		}
+	}
+
+	return &ReviewSummary{
+		Average:      math.Round(avg*10) / 10, // Round to 1 decimal place
+		Total:        total,
+		Distribution: distribution,
+	}, nil
 }
 
 func ListReviews(ctx context.Context, pool *pgxpool.Pool, ratings []int, orderBy string, page, pageSize int) (*ReviewPage, error) {
