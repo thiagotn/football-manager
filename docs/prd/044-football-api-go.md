@@ -944,3 +944,36 @@ psql "$HML_URL" -f schema.sql && psql "$HML_URL" -f data.sql
 **Sincronização futura (schema drift):** o banco-cópia é point-in-time. Para acompanhar produção, re-rodar o dump/restore periodicamente, **ou** aplicar manualmente no banco-cópia apenas as migrations novas surgidas em `football-api/migrations/` desde a última cópia (ver D-06).
 
 **Storage (avatares) — nota:** as imagens ficam no Supabase Storage do projeto de produção. Se o `api-go` mantiver `SUPABASE_URL` apontando para produção, avatares aparecem mas uploads no beta gravariam no bucket de prod. Para isolamento total, criar bucket no projeto novo e apontar `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` do `api-go` para ele (avatares antigos ficariam quebrados até copiar os objetos). Cosmético — ver D-07.
+
+---
+
+## 16. Impacto na infra do VPS (consumo de recursos)
+
+Ponto de vista sobre o que a subida do beta + v2 representa para o VPS.
+
+### 16.1 O que roda hoje no VPS
+
+`docker-compose.prod.yml` sobe **traefik**, **api** (Python/FastAPI), **frontend** (SvelteKit adapter-node), **api-go** (Go) e **mcp** — atualmente **sem limites de recursos** (`mem_limit`/`cpus` não definidos em nenhum serviço). O **PostgreSQL não roda no VPS** — é Supabase externo. Há ainda a stack de monitoramento (compose separado): Prometheus, Grafana, cAdvisor, node-exporter e Uptime Kuma.
+
+### 16.2 O que efetivamente é novo
+
+- **`api-go` (v2) já está em produção desde a Fase 5.** A Fase 6 **não adiciona um container de API novo** — apenas troca o `DATABASE_URL` do `api-go` para o banco-cópia (externo) e ajusta env (`APP_ENV`, `CORS_ORIGINS`, etc.). Impacto de runtime ≈ nulo.
+- **`frontend-beta` é o único container novo no VPS:** um segundo servidor Node SSR (SvelteKit adapter-node), equivalente ao frontend de produção.
+
+### 16.3 Impacto por recurso
+
+| Recurso | Impacto previsto |
+|---|---|
+| **RAM** | Item principal. Um processo Node SSR (adapter-node) costuma usar **~80–150 MB** em idle. Como é homologação (tráfego baixo, poucos testers), tende ao piso da faixa. O `api-go` (Go) é leve (~15–40 MB) e **já contabilizado**. Estimativa de acréscimo: **~100–150 MB** (só o `frontend-beta`). |
+| **CPU** | Negligível em idle; SSR só consome CPU sob request, e o tráfego de homologação é esporádico. Traefik com +1 router/serviço e +1 cert TLS (`beta.rachao.app`): overhead irrelevante. |
+| **Disco** | +1 imagem no VPS (`frontend-beta`). Compartilha as camadas-base com a imagem do frontend de produção (mesmo Dockerfile/base alpine) → o incremento real é só a camada da aplicação. O `docker image prune -f` já roda no deploy. Storage da imagem no GHCR é fora do VPS. |
+| **Banco de dados** | **Zero carga no VPS** — o banco-cópia vive no Supabase (externo). Sem novo Postgres local, sem disco/IO de banco. O custo recai sobre o plano Supabase do novo projeto. |
+| **Rede/egress** | Tráfego de homologação baixo. O `api-go` ↔ Supabase-cópia adiciona conexões de saída, mas em volume pequeno. |
+| **CI/CD** | +1 build de imagem (`frontend-beta`) por deploy do frontend → mais minutos de CI e storage no GHCR — **não** no VPS. |
+
+### 16.4 Conclusão e recomendações
+
+- Impacto previsto no VPS é **pequeno e localizado**: essencialmente **+1 processo Node (~100–150 MB RAM)**. Sem novo banco, sem nova API, CPU/disco marginais.
+- Como **nenhum container tem `mem_limit`/`cpus` hoje**, vale definir um teto para o `frontend-beta` (ex.: `mem_limit: 256m`) para que um pico em homologação não pressione a RAM de produção — idealmente, aplicar limites a todos os serviços.
+- **Gargalo mais provável é RAM**, não CPU/disco. Antes da subida, verificar o headroom de memória do host: a stack de monitoramento + Python API + 2 frontends Node + 2 APIs já somam um consumo relevante. Em VPS pequeno (ex.: 2 GB), considerar limites por container ou avaliar upgrade.
+- Já existe observabilidade (cAdvisor + node-exporter + Grafana): **acompanhar RAM/CPU do host e do `frontend-beta` após o deploy** para validar a estimativa acima.
