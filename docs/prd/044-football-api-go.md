@@ -37,8 +37,7 @@ Construir `football-api-go/` com paridade total de endpoints em relação à `fo
 - Todos os ~97 endpoints dos 16 domínios atuais (paridade total de contrato HTTP)
 - **Banco PostgreSQL dedicado** — cópia point-in-time da produção (criado pelo usuário no Supabase), conectado via novo secret `DATABASE_URL_HML`. Schema idêntico ao de produção
 - **Frontend de homologação** publicado em `beta.rachao.app` (imagem Docker própria, build apontando para `/api/v2`)
-- **Modo aberto de staging** (`APP_ENV=staging`): gate `api_v2_enabled` desligado, OTP por bypass code (sem SMS real), billing off no frontend, sem processamento de webhook Stripe
-- Painel admin `/admin/api-v2` para controle de acesso por usuário (opcional no modo aberto)
+- **Modo aberto de staging** (`APP_ENV=staging`): OTP por bypass code (sem SMS real), billing off no frontend, sem processamento de webhook Stripe; sem controle de acesso por usuário (isolamento é por ambiente)
 - Documentação interativa via Mintlify em `docs.rachao.app` com OpenAPI playground e `/llms.txt`
 - Testes unitários de handlers + testes de integração com banco real
 - Dockerfile multi-stage (dev + production)
@@ -125,22 +124,11 @@ Mesmas variáveis de ambiente da API Python (DATABASE_URL, SECRET_KEY, etc.) —
 - Integração com banco real via service container no CI (`postgres:16-alpine`)
 - Cobertura reportada para Codecov com `flags: api-go`
 
-### 3.8 Controle de acesso por usuário — `api_v2_enabled`
+### 3.8 Controle de acesso — por ambiente (sem flag por usuário)
 
-**Decisão: gate mantido no código, porém neutralizado no ambiente de homologação aberto**
+**Decisão: nenhum gate por usuário; o isolamento é a nível de ambiente**
 
-O gate `api_v2_enabled` foi desenhado para rollout por amostragem **no modelo de banco compartilhado** — o que deixa de se aplicar: o isolamento agora vem do subdomínio dedicado (`beta.rachao.app`) + banco-cópia. No modo aberto (`APP_ENV=staging`) o gate é **bypassed**, e qualquer conta existente na base-cópia navega livremente. O código do gate permanece para o caso de, no futuro, a v2 voltar a apontar para o banco de produção com rollout seletivo.
-
-A Go API implementa um middleware `api_v2_access.go` que, após a autenticação JWT, verifica se o player autenticado possui `api_v2_enabled = true`. Se não, retorna `403 {"detail":"API_V2_NOT_ENABLED"}`. **O bypass passa a valer para qualquer `APP_ENV != "production"`** (ver RF-13) — em homologação roda como `staging`, então o gate não bloqueia.
-
-| Componente | Detalhe |
-|---|---|
-| **DB column** | `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` na tabela `players` |
-| **Migration** | `044_api_v2_enabled.sql` (já presente no schema, portanto no banco-cópia) |
-| **Middleware** | `internal/middleware/api_v2_access.go` — aplicado em todo o router `/api/v2`, exceto sub-routers públicos; bypassed quando `APP_ENV != "production"` |
-| **Isenções** | `GET /api/v2/health`, todos os endpoints sem auth (`OptionalPlayer` e públicos), e o super admin (`role = 'admin'`) |
-| **Admin endpoints** | `GET /admin/api-v2-users` (lista jogadores + status) e `PATCH /admin/api-v2-users/{player_id}` (toggle) — disponíveis, porém opcionais no modo aberto |
-| **Frontend** | Página `/admin/api-v2` no SvelteKit — espelho exato de `/admin/chat` |
+Como cada ambiente vive isoladamente (produção em `rachao.app`/`/api/v1`/banco de produção; homologação em `beta.rachao.app`/`/api/v2`/banco-cópia), **não há controle de acesso por usuário na v2**. Quem alcança `beta.rachao.app` está, por definição, no ambiente de homologação — o isolamento vem do subdomínio dedicado + banco-cópia, não de uma flag por jogador. O código legado do antigo gate (`api_v2_enabled`: middleware, endpoints admin, coluna, página de gerenciamento) é **removido por limpeza na Fase 7** (§9).
 
 ### 3.9 Documentação — Mintlify
 
@@ -187,7 +175,7 @@ O frontend (`football-frontend`) usa `adapter-node` e lê `VITE_API_URL` via `im
 
 | Lever | Efeito |
 |---|---|
-| `APP_ENV=staging` (≠ `production`) | Bypassa o gate `api_v2_enabled` (RF-13) e habilita o OTP bypass |
+| `APP_ENV=staging` (≠ `production`) | Marca o ambiente como não-produtivo → habilita o OTP bypass |
 | `OTP_BYPASS_CODE` setado | Registro/login no beta sem SMS real (Twilio não dispara) — `services/twilio.go` só bypassa quando `APP_ENV != "production"` |
 | `VITE_BILLING_ENABLED=false` no frontend | Sem fluxo de checkout Stripe na UI |
 | `STRIPE_WEBHOOK_SECRET` **ausente** no `api-go` | A rota `/api/v2/webhooks/payment` não é registrada → não processa eventos. Além disso, o Stripe só envia webhooks às URLs configuradas no painel (produção `/api/v1`), então `/api/v2` não receberia eventos de qualquer forma — manter unset é cinto + suspensório |
@@ -212,7 +200,6 @@ football-api-go/
 │   │   └── queries/                 # código gerado pelo sqlc (não editar)
 │   ├── middleware/
 │   │   ├── auth.go                  # JWT parsing + MCP tokens → ctx player
-│   │   ├── api_v2_access.go         # gate: 403 se player não tem api_v2_enabled=true
 │   │   ├── cors.go
 │   │   ├── ratelimit.go             # rate limit por IP (login)
 │   │   └── recovery.go
@@ -275,7 +262,7 @@ football-api-go/
 │   ├── mint.json                    # config: nav, colors, logo, baseUrl=docs.rachao.app
 │   ├── openapi.yaml                 # gerado por `make docs` (swaggo/swag) — não editar manualmente
 │   ├── quickstart.mdx               # pré-requisitos, .env, docker-compose, make run
-│   ├── authentication.mdx           # JWT, MCP tokens, api_v2_enabled
+│   ├── authentication.mdx           # JWT, MCP tokens
 │   ├── architecture.mdx             # decisões de stack + diagrama de componentes
 │   └── llms.txt                     # gerado automaticamente pelo Mintlify
 ├── Dockerfile                       # stage dev (air) + stage production (scratch)
@@ -456,7 +443,7 @@ Todos os paths abaixo são espelhados da `football-api/` com prefixo `/api/v2` e
 |---|---|---|
 | POST | `/webhooks/payment` | HMAC Stripe |
 
-### Admin (12 endpoints)
+### Admin (10 endpoints)
 | Método | Path | Auth |
 |---|---|---|
 | GET | `/admin/stats` | super-admin |
@@ -469,17 +456,15 @@ Todos os paths abaixo são espelhados da `football-api/` com prefixo `/api/v2` e
 | GET | `/admin/players` | super-admin |
 | DELETE | `/admin/players/{player_id}/avatar` | super-admin |
 | GET | `/admin/beta-signups` | super-admin |
-| GET | `/admin/api-v2-users` | super-admin |
-| PATCH | `/admin/api-v2-users/{player_id}` | super-admin |
 
-**Total: ~99 endpoints** (+ `GET /api/v2/health`)
+**Total: ~97 endpoints** (+ `GET /api/v2/health`)
 
 ---
 
 ## 7. Requisitos Funcionais
 
 ### RF-01 — Paridade de endpoints (Must)
-Todos os ~99 endpoints acima devem estar implementados com o mesmo contrato HTTP: método, path, request body, response schema e HTTP status codes idênticos à versão Python.
+Todos os ~97 endpoints acima devem estar implementados com o mesmo contrato HTTP: método, path, request body, response schema e HTTP status codes idênticos à versão Python.
 
 ### RF-02 — Prefixo `/api/v2` (Must)
 Todos os routes montados sob `/api/v2/`. A constante `API_PREFIX = "/api/v2"` definida em `config.go`.
@@ -493,7 +478,7 @@ A Go API usa o mesmo algoritmo (HS256) e `SECRET_KEY` da Python API, de modo que
 ### RF-05 — Documentação Mintlify (Must)
 Documentação pública em `docs.rachao.app` com:
 - `quickstart.mdx`: pré-requisitos (Go 1.24, Docker, sqlc, golangci-lint), `.env.example`, `make run`, `make test`, `make generate`
-- `authentication.mdx`: JWT cross-API, MCP tokens, `api_v2_enabled`
+- `authentication.mdx`: JWT, MCP tokens
 - `architecture.mdx`: decisões de stack, diagrama de componentes, comparativo com Python API
 - `openapi.yaml` (gerado via `swaggo/swag`) integrado ao Mintlify com playground interativo para todos os endpoints
 - `/llms.txt` gerado automaticamente pelo Mintlify (para compatibilidade com agentes IA)
@@ -520,15 +505,6 @@ Regras em `traefik-dynamic.yml` e serviços em `docker-compose.prod.yml` para: (
 
 ### RF-12 — Makefile (Should)
 Comandos: `make run`, `make test`, `make test-integration`, `make lint`, `make generate`, `make migrate`, `make build`, `make docs`.
-
-### RF-13 — Controle de acesso por usuário para API v2 (Must)
-A Go API mantém o gate de acesso por usuário, com bypass por ambiente:
-- Middleware `api_v2_access.go` aplicado em todo o router `/api/v2`, verificando `api_v2_enabled = true` no player autenticado
-- Retorna `403 {"detail":"API_V2_NOT_ENABLED"}` para players autenticados sem o flag ativo **quando `APP_ENV == "production"`**
-- **Bypass por ambiente:** alterar a condição de bypass de `cfg.AppEnv == "development"` para **`cfg.AppEnv != "production"`** (mudança de 1 linha na montagem do middleware), de modo que `APP_ENV=staging` (homologação) já libere o acesso sem depender literalmente de `"development"`
-- **Isenções:** endpoints sem autenticação (públicos e `OptionalPlayer`), `GET /api/v2/health`, e super admin (`role = 'admin'` sempre tem acesso)
-- Super admin pode habilitar/desabilitar por usuário via `PATCH /admin/api-v2-users/{player_id}`
-- Página `/admin/api-v2` no SvelteKit para gerenciamento visual (mesmo padrão de `/admin/chat`)
 
 ---
 
@@ -560,7 +536,6 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Conexão pgx pool + `GET /api/v2/health`
 - [x] Middleware: CORS, recovery, rate-limiter por IP
 - [x] Middleware de auth: JWT HS256 + MCP tokens `rachao_*`
-- [x] Middleware `api_v2_access.go` — gate `403 API_V2_NOT_ENABLED` (antecipado da Fase 5)
 - [x] Handler `auth.go` — todos os 12 endpoints
 - [x] `internal/db/queries.go` — camada de queries hand-crafted (substitui sqlc output para Fase 1)
 - [x] `sql/queries/players.sql` + `sql/queries/auth.sql` — anotadas para futura geração sqlc
@@ -568,7 +543,6 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Dockerfile (dev + production/scratch)
 - [x] `docker-compose.yml` local (postgres + api-go)
 - [x] `.air.toml`, `sqlc.yaml`, `.golangci.yml`, `.env.example`, `.gitignore`
-- [x] Migration `044_api_v2_enabled.sql` — adicionar `api_v2_enabled BOOLEAN DEFAULT FALSE NOT NULL` à tabela `players` (Python API migrations; faz parte do schema, portanto presente também no banco-cópia)
 - [x] `mintlify/quickstart.mdx` — setup local completo
 
 ### Fase 2 — Core domain ✅
@@ -594,7 +568,7 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Testes unitários para cada handler
 
 ### Fase 4 — Admin e Chat
-- [x] Handler `admin.go` (12 endpoints — stats, matches, groups, subscriptions CRUD, players, avatar, beta-signups, api-v2-users)
+- [x] Handler `admin.go` (10 endpoints — stats, matches, groups, subscriptions CRUD, players, avatar, beta-signups)
 - [x] Handler `chat.go` (SSE + Anthropic direct HTTP com MCP beta)
 - [x] `services/twilio.go` (OTP via Twilio Verify)
 - [x] `services/storage.go` (Supabase avatar upload/delete)
@@ -607,9 +581,6 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [x] Adicionar router `/api/v2` em `football-api/traefik-dynamic.yml`
 - [x] Push image para GHCR: `ghcr.io/thiagotn/football-manager-api-go` (via api-go.yml)
 - [x] Atualizar deploy job em `main.yml` para incluir `api-go` (unit-tests-go job + build step + ANTHROPIC_API_KEY/LLM_MODEL)
-- [x] Implementar middleware `api_v2_access.go` + testes unitários do gate (antecipado — implementado na Fase 1)
-- [x] `GET /admin/api-v2-users` e `PATCH /admin/api-v2-users/{player_id}` em `handlers/admin.go` (implementado na Fase 4)
-- [x] Criar página `/admin/api-v2` no SvelteKit frontend (espelho de `/admin/chat`) + card no painel admin
 - [ ] Anotar handlers Go com `swaggo/swag` (`// @Summary`, `// @Param`, `// @Success`, `// @Router`)
 - [x] Configurar `mintlify/mint.json` com branding rachao.app (cores, logo, nav)
 - [x] Criar `mintlify/authentication.mdx` e `mintlify/architecture.mdx`
@@ -620,12 +591,35 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [ ] Usuário cria o banco-cópia no Supabase (snapshot da produção) e fornece `DATABASE_URL_HML` (ver Apêndice §15)
 - [ ] Usuário cria registro DNS `beta.rachao.app` → IP do VPS (Traefik emite cert letsencrypt)
 - [ ] Adicionar secrets no GitHub Actions: `DATABASE_URL_HML` e `OTP_BYPASS_CODE`
-- [ ] Go: ajustar bypass do gate para `cfg.AppEnv != "production"` (1 linha) — ver RF-13
 - [ ] `docker-compose.prod.yml`: alterar serviço `api-go` para usar `DATABASE_URL_HML`, `APP_ENV=staging`, `OTP_BYPASS_CODE`, `CORS_ORIGINS=https://beta.rachao.app`, `FRONTEND_URL=https://beta.rachao.app`; remover `STRIPE_WEBHOOK_SECRET` do `api-go`
 - [ ] `docker-compose.prod.yml`: adicionar serviço `frontend-beta`
 - [ ] `traefik-dynamic.yml`: adicionar router/serviço `Host('beta.rachao.app')` → `frontend-beta:3000`
 - [ ] `main.yml`: injetar `DATABASE_URL_HML` e `OTP_BYPASS_CODE` no `.env.prod`; adicionar build+push da imagem `football-manager-frontend-beta` com os build args da v2 (`VITE_API_URL=https://api.rachao.app/api/v2`, `VITE_BILLING_ENABLED=false`)
 - [ ] Validar navegação ponta-a-ponta em `beta.rachao.app` sem afetar produção
+
+### Fase 7 — Remoção do gate `api_v2_enabled` (limpeza de código morto)
+Com o controle de acesso agora por ambiente (§3.8), o gate por usuário virou código morto. **Ordem segura:** remover o código primeiro (deploy sem ler a coluna) e só então dropar a coluna do banco.
+
+**`football-api-go` (Go):**
+- [ ] Deletar `internal/middleware/api_v2_access.go` e o teste `tests/unit/middleware_test.go`
+- [ ] `internal/server/router.go` — remover `apiV2Mw := middleware.ApiV2AccessFor(...)` e sua aplicação ao grupo `/api/v2` (e comentários relacionados)
+- [ ] `internal/handlers/admin.go` — remover `GET /admin/api-v2-users` e `PATCH /admin/api-v2-users/{playerID}` (`listApiV2Users`, `toggleApiV2User`, `toggleApiV2Req`) + métodos de store `ListApiV2Users` / `UpdatePlayerApiV2Enabled`
+- [ ] `internal/services/auth_service.go` — remover o campo `ApiV2Enabled` dos structs de player/claims
+- [ ] `internal/handlers/chat.go` — remover `ApiV2Enabled` do response de `/admin/chat-users`
+- [ ] `internal/db/queries.go` — remover campo `ApiV2Enabled`, funções `UpdatePlayerApiV2Enabled` / `ListPlayersForApiV2` / `ListApiV2Users`, tipos `PlayerApiV2Row` / `ApiV2User`, e a coluna `api_v2_enabled` de todos os SELECT/INSERT/scan
+- [ ] `sql/queries/players.sql` e `sql/queries/auth.sql` — remover `api_v2_enabled` das queries
+- [ ] Limpar referências nos testes: `tests/unit/{phase4,services_pure,helpers}_test.go` e `tests/integration/{setup,auth_integration,admin_integration}_test.go`
+- [ ] Docs Go: `README.md`, `mintlify/{architecture,authentication}.mdx`, `mintlify/openapi.yaml`
+
+**`football-frontend`:**
+- [ ] Deletar a página `src/routes/admin/api-v2/+page.svelte`
+- [ ] `src/routes/admin/+page.svelte` — remover o card/link para `/admin/api-v2`
+- [ ] `src/lib/api.ts` — remover `apiV2Admin` e os tipos `ApiV2UserItem` / `ApiV2UsersResponse`
+- [ ] Remover chaves i18n relacionadas, se houver (`messages/{pt-BR,en,es}.json`)
+- [ ] `football-frontend/CLAUDE.md` — remover menção à rota `/admin/api-v2`
+
+**`football-api` (Python) — banco:**
+- [ ] Criar nova migration `NNN_drop_api_v2_enabled.sql` com `ALTER TABLE players DROP COLUMN IF EXISTS api_v2_enabled;` (consultar `football-api/CLAUDE.md` para o próximo número). A `044_api_v2_enabled.sql` permanece como histórico — migrations aplicadas não se editam. **Atenção:** é DDL destrutiva que roda em produção e na cópia; a coluna é não-usada após a Fase 7, então o drop é seguro. Aplicar **depois** do deploy do código acima.
 
 ---
 
@@ -771,7 +765,7 @@ http:
 api-go:
   image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-api-go:latest
   environment:
-    APP_ENV: staging                          # bypassa gate + habilita OTP bypass
+    APP_ENV: staging                          # ambiente não-produtivo → habilita OTP bypass
     DATABASE_URL: ${DATABASE_URL_HML}         # banco-CÓPIA, não o de produção
     SECRET_KEY: ${SECRET_KEY}
     CORS_ORIGINS: https://beta.rachao.app
@@ -823,9 +817,7 @@ frontend-beta:
 - [ ] Imagem Docker production ≤ 30MB
 - [ ] GitHub Actions workflow verde (lint + unit + integration + build)
 - [ ] Response JSON de `GET /api/v2/groups` é estruturalmente equivalente a `GET /api/v1/groups` para os mesmos dados (logo após a cópia)
-- [ ] Em `APP_ENV=production`, request autenticado de player com `api_v2_enabled = false` retorna `403 {"detail":"API_V2_NOT_ENABLED"}`; em `APP_ENV=staging` (homologação) o gate é bypassed e o request passa
-- [ ] Endpoints públicos (ex: `GET /api/v2/ranking`, `POST /api/v2/auth/login`) NÃO são bloqueados pelo gate
-- [ ] Super admin (`role = 'admin'`) passa pelo gate sem bloqueio independente do flag
+- [ ] Qualquer conta existente na base-cópia navega na v2 sem bloqueio por usuário (sem gate)
 - [ ] `docs.rachao.app` está acessível com playground Mintlify funcional para ao menos `POST /api/v2/auth/login`, `GET /api/v2/groups` e `GET /api/v2/health`
 
 ---
@@ -849,7 +841,7 @@ frontend-beta:
 Variáveis do `api-go` **no ambiente de homologação** (as marcadas com ★ diferem da Python API):
 
 ```env
-APP_ENV=staging                                          # ★ bypassa gate + habilita OTP bypass
+APP_ENV=staging                                          # ★ ambiente não-produtivo → habilita OTP bypass
 DATABASE_URL=${DATABASE_URL_HML}                          # ★ banco-CÓPIA (não o de produção)
 SECRET_KEY=<jwt-signing-key>                              #   igual ao de produção
 CORS_ORIGINS=https://beta.rachao.app                      # ★
@@ -940,9 +932,7 @@ Procedimento executado **pelo usuário** para criar o banco-cópia que alimenta 
    # conferir também que a tabela de controle de migrations reflete as 43 já aplicadas
    ```
 
-6. **(Opcional — modo aberto)** Como o gate é bypassed via `APP_ENV=staging`, não é necessário; se quiser deixar explícito: `UPDATE players SET api_v2_enabled = true;` no banco-cópia.
-
-7. **Registrar o secret**: usar a `HML_URL` (session pooler, porta 5432) como GitHub secret **`DATABASE_URL_HML`**. Evitar a porta 6543 (transaction pooler) com pgx por causa de prepared statements; se precisar usá-la, anexar `?default_query_exec_mode=simple_protocol`.
+6. **Registrar o secret**: usar a `HML_URL` (session pooler, porta 5432) como GitHub secret **`DATABASE_URL_HML`**. Evitar a porta 6543 (transaction pooler) com pgx por causa de prepared statements; se precisar usá-la, anexar `?default_query_exec_mode=simple_protocol`.
 
 **Alternativa (Supabase CLI):**
 ```bash
