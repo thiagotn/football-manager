@@ -12,7 +12,6 @@ func TestInvites_CreateInvite_AsAdmin(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -33,11 +32,9 @@ func TestInvites_CreateInvite_AsAdmin(t *testing.T) {
 func TestInvites_CreateInvite_Forbidden(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group as admin with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -58,7 +55,6 @@ func TestInvites_GetInviteInfo_ValidToken(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -91,10 +87,8 @@ func TestInvites_CheckInvite_ValidToken(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	newPlayer := registerAndLogin(t, srv, "New Player")
-	enableApiV2(t, newPlayer.ID)
 
 	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -119,10 +113,8 @@ func TestInvites_AcceptInvite_Success(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	newPlayer := registerAndLogin(t, srv, "New Player")
-	enableApiV2(t, newPlayer.ID)
 
 	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -150,10 +142,8 @@ func TestInvites_AcceptInvite_Twice(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	newPlayer := registerAndLogin(t, srv, "New Player")
-	enableApiV2(t, newPlayer.ID)
 
 	// Create group and invite with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{

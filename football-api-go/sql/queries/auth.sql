@@ -20,7 +20,7 @@ SET revoked = true
 WHERE player_id = $1 AND revoked = false;
 
 -- name: GetPlayerByMCPToken :one
-SELECT p.id, p.name, p.whatsapp, p.password_hash, p.role, p.active, p.api_v2_enabled,
+SELECT p.id, p.name, p.whatsapp, p.password_hash, p.role, p.active,
        p.must_change_password, p.avatar_url, p.plan, p.plan_expires_at,
        p.stripe_customer_id, p.stripe_subscription_id, p.created_at, p.updated_at
 FROM players p

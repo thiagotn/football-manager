@@ -20,7 +20,6 @@ func TestPush_GetVapidPublicKey_NoAuth(t *testing.T) {
 func TestPush_Subscribe_ValidPayload(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST /api/v2/push/subscribe with valid payload
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
@@ -37,7 +36,6 @@ func TestPush_Subscribe_ValidPayload(t *testing.T) {
 func TestPush_Subscribe_MissingEndpoint(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST without endpoint field
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
@@ -52,7 +50,6 @@ func TestPush_Subscribe_MissingEndpoint(t *testing.T) {
 func TestPush_Subscribe_InvalidPayload(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST with invalid/empty fields
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
@@ -68,7 +65,6 @@ func TestPush_Subscribe_InvalidPayload(t *testing.T) {
 func TestPush_Unsubscribe_AfterSubscribe(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Subscribe first
 	subRes := apiCall(t, srv, http.MethodPost, "/api/v2/push/subscribe", p.Token, map[string]any{
@@ -88,7 +84,6 @@ func TestPush_Unsubscribe_AfterSubscribe(t *testing.T) {
 func TestPush_Unsubscribe_WithoutSubscription(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// DELETE without prior subscription
 	res := apiCall(t, srv, http.MethodDelete, "/api/v2/push/subscribe", p.Token, nil)

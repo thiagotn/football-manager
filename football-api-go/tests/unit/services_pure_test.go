@@ -415,7 +415,6 @@ func TestPlayerToResponse(t *testing.T) {
 		MustChangePassword: false,
 		AvatarURL:          &avatarURL,
 		ChatEnabled:        true,
-		ApiV2Enabled:       false,
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
@@ -431,7 +430,6 @@ func TestPlayerToResponse(t *testing.T) {
 	assert.False(t, resp.MustChangePassword)
 	assert.Equal(t, "https://example.com/avatar.jpg", *resp.AvatarURL)
 	assert.True(t, resp.ChatEnabled)
-	assert.False(t, resp.ApiV2Enabled)
 }
 
 // Helper implementations for testing (copied from auth_service.go)
@@ -477,7 +475,6 @@ type PlayerResponse struct {
 	MustChangePassword bool
 	AvatarURL          *string
 	ChatEnabled        bool
-	ApiV2Enabled       bool
 	CreatedAt          time.Time
 }
 
@@ -492,7 +489,6 @@ func playerToResponse(p *db.Player) *PlayerResponse {
 		MustChangePassword: p.MustChangePassword,
 		AvatarURL:          p.AvatarURL,
 		ChatEnabled:        p.ChatEnabled,
-		ApiV2Enabled:       p.ApiV2Enabled,
 		CreatedAt:          p.CreatedAt,
 	}
 }

@@ -121,10 +121,9 @@ football-api-go/
 │   │   ├── mcp_tokens.go       # Tokens MCP pessoais
 │   │   ├── beta.go             # Beta Android signup
 │   │   ├── chat.go             # Assistente IA — SSE + Anthropic direct HTTP
-│   │   └── admin.go            # Painel admin (stats, subscriptions, players, api-v2)
+│   │   └── admin.go            # Painel admin (stats, subscriptions, players)
 │   ├── middleware/
 │   │   ├── auth.go             # Validação JWT + lookup no banco
-│   │   ├── api_v2_access.go    # Gate: api_v2_enabled por usuário
 │   │   ├── admin.go            # RequireAdmin — restringe a super admins
 │   │   ├── cors.go             # CORS configurável
 │   │   ├── rate_limit.go       # Rate limiting de login
@@ -174,7 +173,7 @@ A API expõe ~99 endpoints sob `/api/v2`, estruturalmente equivalentes à `footb
 | `GET`  | `/api/v2/ranking` | Ranking da plataforma |
 | `GET`  | `/api/v2/matches/discover` | Partidas abertas |
 
-### Autenticados (JWT + `api_v2_enabled`)
+### Autenticados (JWT)
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
@@ -194,24 +193,7 @@ A API expõe ~99 endpoints sob `/api/v2`, estruturalmente equivalentes à `footb
 | `GET`  | `/api/v2/admin/stats` | Big numbers da plataforma |
 | `GET`  | `/api/v2/admin/subscriptions` | Lista de assinantes |
 | `PATCH`| `/api/v2/admin/subscriptions/{id}` | Atualiza plano/status |
-| `GET`  | `/api/v2/admin/api-v2-users` | Controle de acesso à API v2 |
-| `PATCH`| `/api/v2/admin/api-v2-users/{id}` | Habilita/desabilita acesso |
 | `GET`  | `/api/v2/admin/chat-users` | Controle de acesso ao Assistente IA |
-
----
-
-## Controle de acesso (`api_v2_enabled`)
-
-Todos os endpoints autenticados exigem `api_v2_enabled = true` na tabela `players`. Super admins (`role = 'admin'`) são sempre isentos. Endpoints públicos nunca são bloqueados.
-
-Requisição de player sem acesso retorna:
-
-```json
-HTTP 403
-{ "detail": "API_V2_NOT_ENABLED" }
-```
-
-O acesso é habilitado via painel admin em `/admin/api-v2` ou diretamente via `PATCH /api/v2/admin/api-v2-users/{id}`.
 
 ---
 

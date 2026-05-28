@@ -72,7 +72,6 @@ func fakePlayer(opts ...func(*db.Player)) *db.Player {
 		PasswordHash: "$2b$12$fake-hash",
 		Role:         db.PlayerRolePlayer,
 		Active:       true,
-		ApiV2Enabled: true,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}

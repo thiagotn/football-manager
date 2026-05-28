@@ -74,7 +74,6 @@ type TokenResponse struct {
 	MustChangePassword bool    `json:"must_change_password"`
 	AvatarURL          *string `json:"avatar_url,omitempty"`
 	ChatEnabled        bool    `json:"chat_enabled"`
-	ApiV2Enabled       bool    `json:"api_v2_enabled"`
 }
 
 type PlayerResponse struct {
@@ -87,7 +86,6 @@ type PlayerResponse struct {
 	MustChangePassword bool      `json:"must_change_password"`
 	AvatarURL          *string   `json:"avatar_url,omitempty"`
 	ChatEnabled        bool      `json:"chat_enabled"`
-	ApiV2Enabled       bool      `json:"api_v2_enabled"`
 	CreatedAt          time.Time `json:"created_at"`
 }
 
@@ -476,7 +474,6 @@ func (s *authService) issueTokenPair(ctx context.Context, player *db.Player) (*T
 		MustChangePassword: player.MustChangePassword,
 		AvatarURL:          player.AvatarURL,
 		ChatEnabled:        player.ChatEnabled,
-		ApiV2Enabled:       player.ApiV2Enabled,
 	}, nil
 }
 
@@ -615,7 +612,6 @@ func playerToResponse(p *db.Player) *PlayerResponse {
 		MustChangePassword: p.MustChangePassword,
 		AvatarURL:          p.AvatarURL,
 		ChatEnabled:        p.ChatEnabled,
-		ApiV2Enabled:       p.ApiV2Enabled,
 		CreatedAt:          p.CreatedAt,
 	}
 }

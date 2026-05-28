@@ -12,10 +12,8 @@ func TestVotes_GetVoteStatus_Before(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -44,10 +42,8 @@ func TestVotes_CreateVote_Success(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -81,10 +77,8 @@ func TestVotes_CreateVote_InvalidRating(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -115,7 +109,6 @@ func TestVotes_CreateVote_InvalidRating(t *testing.T) {
 func TestVotes_GetPendingVotes(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/votes/pending
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/votes/pending", p.Token, nil)
@@ -127,7 +120,6 @@ func TestVotes_GetVoteResults_BeforeClosing(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -157,7 +149,6 @@ func TestVotes_CloseVoting_AsAdmin(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -187,7 +178,6 @@ func TestVotes_GetPublicResults_NoAuth(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{

@@ -269,26 +269,24 @@ func (h *ChatHandler) listChatUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type chatUserItem struct {
-		ID           uuid.UUID `json:"id"`
-		Name         string    `json:"name"`
-		Nickname     *string   `json:"nickname"`
-		AvatarURL    *string   `json:"avatar_url"`
-		ChatEnabled  bool      `json:"chat_enabled"`
-		ApiV2Enabled bool      `json:"api_v2_enabled"`
-		CreatedAt    time.Time `json:"created_at"`
+		ID          uuid.UUID `json:"id"`
+		Name        string    `json:"name"`
+		Nickname    *string   `json:"nickname"`
+		AvatarURL   *string   `json:"avatar_url"`
+		ChatEnabled bool      `json:"chat_enabled"`
+		CreatedAt   time.Time `json:"created_at"`
 	}
 
 	users := make([]chatUserItem, len(chatUsers))
 	totalEnabled := 0
 	for i, u := range chatUsers {
 		users[i] = chatUserItem{
-			ID:           u.ID,
-			Name:         u.Name,
-			Nickname:     u.Nickname,
-			AvatarURL:    u.AvatarURL,
-			ChatEnabled:  u.ChatEnabled,
-			ApiV2Enabled: u.ApiV2Enabled,
-			CreatedAt:    u.CreatedAt,
+			ID:          u.ID,
+			Name:        u.Name,
+			Nickname:    u.Nickname,
+			AvatarURL:   u.AvatarURL,
+			ChatEnabled: u.ChatEnabled,
+			CreatedAt:   u.CreatedAt,
 		}
 		if u.ChatEnabled {
 			totalEnabled++

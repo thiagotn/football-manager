@@ -12,7 +12,6 @@ import (
 func TestMatches_CreateAndGet(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Match Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Match Test Group " + player.ID})
@@ -40,7 +39,6 @@ func TestMatches_CreateAndGet(t *testing.T) {
 func TestMatches_PublicMatchByHash(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Hash Match Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Public Match Group"})
@@ -64,7 +62,6 @@ func TestMatches_PublicMatchByHash(t *testing.T) {
 func TestMatches_SetAttendance_Confirmed(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Attendance Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Attendance Group"})
@@ -91,7 +88,6 @@ func TestMatches_SetAttendance_Confirmed(t *testing.T) {
 func TestMatches_ListGroupMatches(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "List Matches Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "List Matches Group"})
@@ -121,7 +117,6 @@ func TestMatches_Discover_Public(t *testing.T) {
 func TestMatches_PublicStats_EmptyWhenNoStats(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Stats Player 2")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Stats Group 2"})

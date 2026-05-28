@@ -11,10 +11,8 @@ func TestFinance_GetPeriods_AsMember(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -40,10 +38,8 @@ func TestFinance_GetPeriods_NonMember(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group (without adding player)
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -62,10 +58,8 @@ func TestFinance_GetPeriod_Existing(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -91,10 +85,8 @@ func TestFinance_GetPeriod_InvalidMonth(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -119,10 +111,8 @@ func TestFinance_UpdatePayment_AsAdmin(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -150,10 +140,8 @@ func TestFinance_UpdatePayment_NonAdmin(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, player.ID)
 
 	// Create group with unique name
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{

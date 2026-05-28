@@ -11,7 +11,6 @@ func TestTeams_DrawTeams_NoConfirmedPlayers(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, p.ID)
-	enableApiV2(t, p.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", p.Token, map[string]any{
@@ -42,7 +41,6 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 	// Create admin
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{
@@ -54,13 +52,9 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 
 	// Add 4 non-admin members (need nTeams=ceil(4/2)=2 with players_per_team=1)
 	player1 := registerAndLogin(t, srv, "Player 1")
-	enableApiV2(t, player1.ID)
 	player2 := registerAndLogin(t, srv, "Player 2")
-	enableApiV2(t, player2.ID)
 	player3 := registerAndLogin(t, srv, "Player 3")
-	enableApiV2(t, player3.ID)
 	player4 := registerAndLogin(t, srv, "Player 4")
-	enableApiV2(t, player4.ID)
 
 	for _, p := range []string{player1.ID, player2.ID, player3.ID, player4.ID} {
 		apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
@@ -101,7 +95,6 @@ func TestTeams_GetTeams_NoAuth(t *testing.T) {
 
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Create group and match
 	groupRes := apiCall(t, srv, http.MethodPost, "/api/v2/groups", admin.Token, map[string]any{

@@ -39,8 +39,6 @@ type AdminStore interface {
 	DeletePlayerAvatarURL(ctx context.Context, playerID uuid.UUID) error
 	CountBetaSignups(ctx context.Context) (int, error)
 	ListBetaSignups(ctx context.Context, limit, offset int) ([]db.AndroidBetaSignup, error)
-	ListApiV2Users(ctx context.Context, limit, offset int) ([]db.ApiV2User, error)
-	UpdatePlayerApiV2Enabled(ctx context.Context, playerID uuid.UUID, enabled bool) error
 }
 
 type pgAdminStore struct {
@@ -107,14 +105,6 @@ func (s *pgAdminStore) ListBetaSignups(ctx context.Context, limit, offset int) (
 	return db.ListBetaSignups(ctx, s.pool, limit, offset)
 }
 
-func (s *pgAdminStore) ListApiV2Users(ctx context.Context, limit, offset int) ([]db.ApiV2User, error) {
-	return db.ListApiV2Users(ctx, s.pool, limit, offset)
-}
-
-func (s *pgAdminStore) UpdatePlayerApiV2Enabled(ctx context.Context, playerID uuid.UUID, enabled bool) error {
-	return db.UpdatePlayerApiV2Enabled(ctx, s.pool, playerID, enabled)
-}
-
 type AdminHandler struct {
 	Store   AdminStore
 	stripe  *services.StripeService
@@ -141,8 +131,6 @@ func (h *AdminHandler) Routes() chi.Router {
 	r.Get("/players", h.listPlayers)
 	r.Delete("/players/{playerID}/avatar", h.deletePlayerAvatar)
 	r.Get("/beta-signups", h.listBetaSignups)
-	r.Get("/api-v2-users", h.listApiV2Users)
-	r.Patch("/api-v2-users/{playerID}", h.toggleApiV2User)
 	return r
 }
 
@@ -153,10 +141,6 @@ type updateSubscriptionReq struct {
 	Status       string  `json:"status"`
 	BillingCycle *string `json:"billing_cycle"`
 	Reason       *string `json:"reason"`
-}
-
-type toggleApiV2Req struct {
-	ApiV2Enabled bool `json:"api_v2_enabled"`
 }
 
 // ── Pagination helpers ────────────────────────────────────────────────────────
@@ -525,44 +509,4 @@ func (h *AdminHandler) listBetaSignups(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, http.StatusOK, map[string]any{
 		"total": total, "page": page, "page_size": pageSize, "items": items,
 	})
-}
-
-func (h *AdminHandler) listApiV2Users(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	_, _, limit, offset := pageParams(r, 50)
-
-	users, err := h.Store.ListApiV2Users(ctx, limit, offset)
-	if err != nil {
-		renderError(w, err)
-		return
-	}
-
-	items := make([]map[string]any, len(users))
-	for i, u := range users {
-		items[i] = map[string]any{
-			"id": u.ID, "name": u.Name, "whatsapp": u.WhatsApp, "api_v2_enabled": u.ApiV2Enabled,
-		}
-	}
-	renderJSON(w, http.StatusOK, map[string]any{"items": items})
-}
-
-func (h *AdminHandler) toggleApiV2User(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	playerID, err := adminTargetPlayerID(r)
-	if err != nil {
-		renderError(w, apierror.NotFound("player not found"))
-		return
-	}
-
-	var req toggleApiV2Req
-	if err := decodeJSON(r, &req); err != nil {
-		renderError(w, err)
-		return
-	}
-
-	if err := h.Store.UpdatePlayerApiV2Enabled(ctx, playerID, req.ApiV2Enabled); err != nil {
-		renderError(w, err)
-		return
-	}
-	renderJSON(w, http.StatusOK, map[string]any{"api_v2_enabled": req.ApiV2Enabled})
 }

@@ -39,12 +39,6 @@ func TestAdmin_DeletePlayerAvatar_InvalidPlayerID(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-func TestAdmin_ToggleApiV2_InvalidPlayerID(t *testing.T) {
-	r := adminRouter()
-	w := doRequest(r, http.MethodPatch, "/admin/api-v2-users/not-a-uuid", `{"api_v2_enabled":true}`)
-	assert.Equal(t, http.StatusNotFound, w.Code)
-}
-
 func TestAdmin_UpdateSubscription_MissingFields(t *testing.T) {
 	r := adminRouter()
 	// Invalid UUID returns 404 before validating body

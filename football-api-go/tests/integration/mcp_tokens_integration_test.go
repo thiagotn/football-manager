@@ -11,7 +11,6 @@ import (
 func TestMCPTokens_CreateToken_ValidPayload(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST /api/v2/mcp-tokens to create token
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
@@ -24,7 +23,6 @@ func TestMCPTokens_CreateToken_ValidPayload(t *testing.T) {
 func TestMCPTokens_CreateToken_EmptyName(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST with empty name
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
@@ -36,7 +34,6 @@ func TestMCPTokens_CreateToken_EmptyName(t *testing.T) {
 func TestMCPTokens_CreateToken_MissingName(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST without name field
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{})
@@ -46,7 +43,6 @@ func TestMCPTokens_CreateToken_MissingName(t *testing.T) {
 func TestMCPTokens_ListTokens_Empty(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/mcp-tokens before creating any
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/mcp-tokens", p.Token, nil)
@@ -57,7 +53,6 @@ func TestMCPTokens_ListTokens_Empty(t *testing.T) {
 func TestMCPTokens_ListTokens_AfterCreate(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Create a token
 	createRes := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
@@ -75,7 +70,6 @@ func TestMCPTokens_ListTokens_AfterCreate(t *testing.T) {
 func TestMCPTokens_RevokeToken_Existing(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Create a token
 	createRes := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p.Token, map[string]any{
@@ -103,7 +97,6 @@ func TestMCPTokens_RevokeToken_Existing(t *testing.T) {
 func TestMCPTokens_RevokeToken_Nonexistent(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// DELETE a non-existent token
 	res := apiCall(t, srv, http.MethodDelete, "/api/v2/mcp-tokens/00000000-0000-0000-0000-000000000000", p.Token, nil)
@@ -113,9 +106,7 @@ func TestMCPTokens_RevokeToken_Nonexistent(t *testing.T) {
 func TestMCPTokens_RevokeToken_OtherPlayerToken(t *testing.T) {
 	srv := newTestServer(t)
 	p1 := registerAndLogin(t, srv, "Player 1")
-	enableApiV2(t, p1.ID)
 	p2 := registerAndLogin(t, srv, "Player 2")
-	enableApiV2(t, p2.ID)
 
 	// Player 1 creates a token
 	createRes := apiCall(t, srv, http.MethodPost, "/api/v2/mcp-tokens", p1.Token, map[string]any{

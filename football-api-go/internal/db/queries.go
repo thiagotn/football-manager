@@ -37,7 +37,6 @@ type Player struct {
 	ChatEnabled        bool       `json:"chat_enabled"`
 	ChatReqCount       int32      `json:"-"`
 	ChatReqWindow      *time.Time `json:"-"`
-	ApiV2Enabled       bool       `json:"-"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
@@ -72,7 +71,7 @@ const PlayerSelectCols = `
 	id, name, nickname, whatsapp, password_hash,
 	role, active, must_change_password, avatar_url,
 	chat_enabled, chat_req_count, chat_req_window,
-	api_v2_enabled, created_at, updated_at`
+	created_at, updated_at`
 
 // ScanPlayer scans player fields from any pgx scan function (Row or Rows).
 func ScanPlayer(scanFn func(dest ...any) error) (*Player, error) {
@@ -81,7 +80,7 @@ func ScanPlayer(scanFn func(dest ...any) error) (*Player, error) {
 		&p.ID, &p.Name, &p.Nickname, &p.WhatsApp, &p.PasswordHash,
 		&p.Role, &p.Active, &p.MustChangePassword, &p.AvatarURL,
 		&p.ChatEnabled, &p.ChatReqCount, &p.ChatReqWindow,
-		&p.ApiV2Enabled, &p.CreatedAt, &p.UpdatedAt,
+		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -105,7 +104,7 @@ const playerColumns = `
 	id, name, nickname, whatsapp, password_hash,
 	role, active, must_change_password, avatar_url,
 	chat_enabled, chat_req_count, chat_req_window,
-	api_v2_enabled, created_at, updated_at`
+	created_at, updated_at`
 
 // GetPlayerByWhatsApp fetches an active player by their WhatsApp number.
 func GetPlayerByWhatsApp(ctx context.Context, pool *pgxpool.Pool, whatsapp string) (*Player, error) {
@@ -263,68 +262,27 @@ func RevokeAllRefreshTokensForPlayer(ctx context.Context, pool *pgxpool.Pool, pl
 	return err
 }
 
-// UpdatePlayerApiV2Enabled toggles the api_v2_enabled flag.
-func UpdatePlayerApiV2Enabled(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, enabled bool) error {
-	_, err := pool.Exec(ctx,
-		`UPDATE players SET api_v2_enabled = $1 WHERE id = $2`,
-		enabled, id,
-	)
-	return err
-}
-
-// ListPlayersForApiV2 returns all non-admin players with their api_v2_enabled status.
-type PlayerApiV2Row struct {
-	ID           uuid.UUID
-	Name         string
-	WhatsApp     string
-	ApiV2Enabled bool
-}
-
-func ListPlayersForApiV2(ctx context.Context, pool *pgxpool.Pool, limit, offset int) ([]PlayerApiV2Row, error) {
-	rows, err := pool.Query(ctx,
-		`SELECT id, name, whatsapp, api_v2_enabled
-		 FROM players
-		 WHERE role != 'admin' AND active = true
-		 ORDER BY name ASC
-		 LIMIT $1 OFFSET $2`,
-		limit, offset,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var result []PlayerApiV2Row
-	for rows.Next() {
-		var r PlayerApiV2Row
-		if err := rows.Scan(&r.ID, &r.Name, &r.WhatsApp, &r.ApiV2Enabled); err != nil {
-			return nil, err
-		}
-		result = append(result, r)
-	}
-	return result, rows.Err()
-}
-
 // PlayerMatch row for player's match history
 type PlayerMatch struct {
-	ID            uuid.UUID
-	GroupID       uuid.UUID
-	Number        int
-	Hash          string
-	MatchDate     string
-	StartTime     string
-	EndTime       *string
-	Location      string
-	Address       *string
-	CourtType     *string
+	ID             uuid.UUID
+	GroupID        uuid.UUID
+	Number         int
+	Hash           string
+	MatchDate      string
+	StartTime      string
+	EndTime        *string
+	Location       string
+	Address        *string
+	CourtType      *string
 	PlayersPerTeam *int
-	MaxPlayers    *int
-	Notes         *string
-	Status        string
-	CreatedAt     string
-	UpdatedAt     string
-	GroupName     string
-	GroupTimezone string
-	MyAttendance  string
+	MaxPlayers     *int
+	Notes          *string
+	Status         string
+	CreatedAt      string
+	UpdatedAt      string
+	GroupName      string
+	GroupTimezone  string
+	MyAttendance   string
 }
 
 // GetPlayerMatches returns matches for a player
@@ -754,19 +712,18 @@ func DeletePlayerAvatarURL(ctx context.Context, pool *pgxpool.Pool, playerID uui
 
 // ChatUser row for chat users listing
 type ChatUser struct {
-	ID           uuid.UUID
-	Name         string
-	Nickname     *string
-	AvatarURL    *string
-	ChatEnabled  bool
-	ApiV2Enabled bool
-	CreatedAt    time.Time
+	ID          uuid.UUID
+	Name        string
+	Nickname    *string
+	AvatarURL   *string
+	ChatEnabled bool
+	CreatedAt   time.Time
 }
 
 // ListChatUsers returns all chat users for admin
 func ListChatUsers(ctx context.Context, pool *pgxpool.Pool) ([]ChatUser, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT id, name, nickname, avatar_url, chat_enabled, api_v2_enabled, created_at
+		SELECT id, name, nickname, avatar_url, chat_enabled, created_at
 		FROM players
 		WHERE role = 'player'
 		ORDER BY created_at DESC`)
@@ -779,7 +736,7 @@ func ListChatUsers(ctx context.Context, pool *pgxpool.Pool) ([]ChatUser, error) 
 	for rows.Next() {
 		var u ChatUser
 		if err := rows.Scan(&u.ID, &u.Name, &u.Nickname, &u.AvatarURL,
-			&u.ChatEnabled, &u.ApiV2Enabled, &u.CreatedAt); err != nil {
+			&u.ChatEnabled, &u.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
@@ -789,14 +746,14 @@ func ListChatUsers(ctx context.Context, pool *pgxpool.Pool) ([]ChatUser, error) 
 
 // AdminStats row for admin dashboard stats
 type AdminStats struct {
-	TotalMatches       int
-	TotalGroups        int
-	TotalPlayers       int
-	PlatformMinutes    int
-	SignupsTotal       int
-	Signups7D          int
-	Signups30D         int
-	TotalReviews       int
+	TotalMatches    int
+	TotalGroups     int
+	TotalPlayers    int
+	PlatformMinutes int
+	SignupsTotal    int
+	Signups7D       int
+	Signups30D      int
+	TotalReviews    int
 }
 
 // GetAdminStats returns platform-wide statistics
@@ -891,11 +848,11 @@ func ListMatches(ctx context.Context, pool *pgxpool.Pool, status *string, limit,
 
 // AdminGroup row for groups list
 type AdminGroup struct {
-	ID          uuid.UUID
-	Name        string
-	Description *string
-	Slug        string
-	CreatedAt   time.Time
+	ID           uuid.UUID
+	Name         string
+	Description  *string
+	Slug         string
+	CreatedAt    time.Time
 	TotalMembers int
 	TotalMatches int
 }
@@ -1151,11 +1108,11 @@ func ListPlayers(ctx context.Context, pool *pgxpool.Pool, search *string, limit,
 
 // AndroidBetaSignup row for beta signups list
 type AndroidBetaSignup struct {
-	ID        uuid.UUID
-	Email     string
-	PlayerID  *uuid.UUID
+	ID         uuid.UUID
+	Email      string
+	PlayerID   *uuid.UUID
 	PlayerName *string
-	CreatedAt time.Time
+	CreatedAt  time.Time
 }
 
 // CountBetaSignups returns count of beta signups
@@ -1188,36 +1145,4 @@ func ListBetaSignups(ctx context.Context, pool *pgxpool.Pool, limit, offset int)
 		signups = append(signups, s)
 	}
 	return signups, rows.Err()
-}
-
-// ApiV2User row for API v2 users list
-type ApiV2User struct {
-	ID           uuid.UUID
-	Name         string
-	WhatsApp     string
-	ApiV2Enabled bool
-}
-
-// ListApiV2Users returns paginated API v2 users
-func ListApiV2Users(ctx context.Context, pool *pgxpool.Pool, limit, offset int) ([]ApiV2User, error) {
-	rows, err := pool.Query(ctx, `
-		SELECT id, name, whatsapp, api_v2_enabled
-		FROM players
-		WHERE role != 'admin' AND active = true
-		ORDER BY name ASC
-		LIMIT $1 OFFSET $2`, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []ApiV2User
-	for rows.Next() {
-		var u ApiV2User
-		if err := rows.Scan(&u.ID, &u.Name, &u.WhatsApp, &u.ApiV2Enabled); err != nil {
-			return nil, err
-		}
-		users = append(users, u)
-	}
-	return users, rows.Err()
 }

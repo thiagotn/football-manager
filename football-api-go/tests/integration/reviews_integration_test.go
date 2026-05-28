@@ -10,7 +10,6 @@ import (
 func TestReviews_GetMyReview_None(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/reviews/me before creating a review
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews/me", p.Token, nil)
@@ -22,7 +21,6 @@ func TestReviews_GetMyReview_None(t *testing.T) {
 func TestReviews_CreateReview(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// PUT /api/v2/reviews/me to create review
 	res := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
@@ -36,7 +34,6 @@ func TestReviews_CreateReview(t *testing.T) {
 func TestReviews_UpdateReview(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Create initial review
 	createRes := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
@@ -57,7 +54,6 @@ func TestReviews_UpdateReview(t *testing.T) {
 func TestReviews_CreateReview_InvalidRating(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// PUT with invalid rating (out of bounds)
 	res := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
@@ -70,7 +66,6 @@ func TestReviews_CreateReview_InvalidRating(t *testing.T) {
 func TestReviews_CreateReview_MissingRating(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// PUT without rating field
 	res := apiCall(t, srv, http.MethodPut, "/api/v2/reviews/me", p.Token, map[string]any{
@@ -83,7 +78,6 @@ func TestReviews_GetSummary(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// GET /api/v2/reviews/summary (admin only)
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews/summary", admin.Token, nil)
@@ -95,7 +89,6 @@ func TestReviews_GetAllReviews(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// GET /api/v2/reviews to list all reviews (admin only)
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/reviews", admin.Token, nil)

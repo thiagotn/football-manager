@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 )
 
@@ -304,122 +303,6 @@ func TestLoginRateLimiter(t *testing.T) {
 
 		// We can't easily test the actual time window without modifying internals,
 		// but we've verified the rate limiting logic works
-	})
-}
-
-// ────── ApiV2Access Middleware ──────
-
-func TestApiV2AccessMiddleware(t *testing.T) {
-	t.Run("allows unauthenticated requests", func(t *testing.T) {
-		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		router := chi.NewRouter()
-		router.Use(middleware.ApiV2Access)
-		router.Get("/", okHandler)
-
-		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
-		rec := httptest.NewRecorder()
-
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-	})
-
-	t.Run("allows admin users", func(t *testing.T) {
-		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		router := chi.NewRouter()
-		router.Use(middleware.ApiV2Access)
-		router.Get("/", okHandler)
-
-		admin := fakePlayer(asAdmin())
-		ctx := middleware.InjectPlayerForTest(context.Background(), admin)
-
-		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
-		req = req.WithContext(ctx)
-		rec := httptest.NewRecorder()
-
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-	})
-
-	t.Run("blocks regular player without api_v2_enabled", func(t *testing.T) {
-		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		router := chi.NewRouter()
-		router.Use(middleware.ApiV2Access)
-		router.Get("/", okHandler)
-
-		player := fakePlayer(func(p *db.Player) {
-			p.ApiV2Enabled = false
-		})
-		ctx := middleware.InjectPlayerForTest(context.Background(), player)
-
-		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
-		req = req.WithContext(ctx)
-		rec := httptest.NewRecorder()
-
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusForbidden, rec.Code)
-
-		var body map[string]string
-		json.NewDecoder(rec.Body).Decode(&body)
-		assert.Equal(t, "API_V2_NOT_ENABLED", body["detail"])
-	})
-
-	t.Run("allows regular player with api_v2_enabled", func(t *testing.T) {
-		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		router := chi.NewRouter()
-		router.Use(middleware.ApiV2Access)
-		router.Get("/", okHandler)
-
-		player := fakePlayer(func(p *db.Player) {
-			p.ApiV2Enabled = true
-			p.Role = db.PlayerRolePlayer
-		})
-		ctx := middleware.InjectPlayerForTest(context.Background(), player)
-
-		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
-		req = req.WithContext(ctx)
-		rec := httptest.NewRecorder()
-
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
-	})
-
-	t.Run("admin bypasses api_v2_enabled flag", func(t *testing.T) {
-		okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		router := chi.NewRouter()
-		router.Use(middleware.ApiV2Access)
-		router.Get("/", okHandler)
-
-		admin := fakePlayer(asAdmin(), func(p *db.Player) {
-			p.ApiV2Enabled = false
-		})
-		ctx := middleware.InjectPlayerForTest(context.Background(), admin)
-
-		req := httptest.NewRequestWithContext(testCtx, http.MethodGet, "/", nil)
-		req = req.WithContext(ctx)
-		rec := httptest.NewRecorder()
-
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusOK, rec.Code)
 	})
 }
 

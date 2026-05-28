@@ -72,20 +72,17 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	r.Use(middleware.Recovery)
 	r.Use(middleware.CORS(cfg.CORSOriginsList()))
 
-	// Health check — no auth, exempt from api_v2_enabled gate
+	// Health check — no auth
 	r.Get("/api/v2/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
 	authMw := middleware.Auth(cfg.SecretKey, pool)
-	// In development, bypass the api_v2_enabled gate so all authenticated players
-	// can access /api/v2 without manually flipping the flag in the DB.
-	apiV2Mw := middleware.ApiV2AccessFor(cfg.AppEnv == "development")
 
 	r.Route("/api/v2", func(r chi.Router) {
 		// ── Auth routes (public + protected combined — avoids chi double-mount) ──
-		r.Mount("/auth", authH.Routes(authMw, apiV2Mw))
+		r.Mount("/auth", authH.Routes(authMw))
 
 		// ── Other public routes (no auth required) ────────────────────
 		// /matches/discover: optional auth — when a token is present, the
@@ -107,10 +104,9 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		// Beta signup — optional auth
 		r.Post("/beta/android-signup", betaH.AndroidSignup)
 
-		// ── Authenticated routes (JWT + api_v2_enabled gate) ──────────
+		// ── Authenticated routes (JWT) ────────────────────────────────
 		r.Group(func(r chi.Router) {
 			r.Use(authMw)
-			r.Use(apiV2Mw)
 
 			// (auth routes already mounted above via authH.Routes)
 

@@ -18,7 +18,6 @@ func Conflict(msg string) error      { return &APIError{Code: 409, Detail: msg} 
 func Unprocessable(msg string) error { return &APIError{Code: 422, Detail: msg} }
 func TooManyRequests() error         { return &APIError{Code: 429, Detail: "too many requests"} }
 func PlanLimitExceeded() error       { return &APIError{Code: 403, Detail: "PLAN_LIMIT_EXCEEDED"} }
-func APIV2NotEnabled() error         { return &APIError{Code: 403, Detail: "API_V2_NOT_ENABLED"} }
 func Internal(msg string) error      { return &APIError{Code: 500, Detail: msg} }
 
 func Unprocessablef(format string, args ...any) error {

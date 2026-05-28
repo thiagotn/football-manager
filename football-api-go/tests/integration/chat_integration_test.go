@@ -10,7 +10,6 @@ import (
 func TestChat_SendMessage_WithoutAccess(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// POST /api/v2/chat without chat access enabled
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/chat", p.Token, map[string]any{
@@ -24,10 +23,8 @@ func TestChat_SendMessage_WithAccess(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Enable chat access for player
 	apiCall(t, srv, http.MethodPatch, "/api/v2/admin/chat-users/"+p.ID, admin.Token, map[string]any{
@@ -46,10 +43,8 @@ func TestChat_SendMessage_InvalidPayload(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Enable chat access
 	apiCall(t, srv, http.MethodPatch, "/api/v2/admin/chat-users/"+p.ID, admin.Token, map[string]any{
@@ -65,10 +60,8 @@ func TestChat_SendMessage_EmptyMessage(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Enable chat access
 	apiCall(t, srv, http.MethodPatch, "/api/v2/admin/chat-users/"+p.ID, admin.Token, map[string]any{

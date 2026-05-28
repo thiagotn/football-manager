@@ -10,7 +10,6 @@ import (
 func TestPlayers_GetMe_Success(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/players/me
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/me", p.Token, nil)
@@ -29,7 +28,6 @@ func TestPlayers_GetMe_NoAuth(t *testing.T) {
 func TestPlayers_GetPlayerByID_Success(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/players/{id} — player fetching their own profile
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/"+p.ID, p.Token, nil)
@@ -40,7 +38,6 @@ func TestPlayers_GetPlayerByID_NotFound(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// GET /api/v2/players/{id} for non-existent player (admin can access any player)
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/00000000-0000-0000-0000-000000000000", admin.Token, nil)
@@ -50,7 +47,6 @@ func TestPlayers_GetPlayerByID_NotFound(t *testing.T) {
 func TestPlayers_GetPlayerByID_InvalidUUID(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/players/{id} with invalid UUID
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/invalid-uuid", p.Token, nil)
@@ -60,7 +56,6 @@ func TestPlayers_GetPlayerByID_InvalidUUID(t *testing.T) {
 func TestPlayers_UpdatePlayer_Success(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Test Player")
-	enableApiV2(t, p.ID)
 
 	// PATCH /api/v2/players/{id}
 	res := apiCall(t, srv, http.MethodPatch, "/api/v2/players/"+p.ID, p.Token, map[string]any{
@@ -73,9 +68,7 @@ func TestPlayers_UpdatePlayer_Success(t *testing.T) {
 func TestPlayers_UpdatePlayer_Forbidden(t *testing.T) {
 	srv := newTestServer(t)
 	p1 := registerAndLogin(t, srv, "Player 1")
-	enableApiV2(t, p1.ID)
 	p2 := registerAndLogin(t, srv, "Player 2")
-	enableApiV2(t, p2.ID)
 
 	// Player 2 tries to update Player 1's profile
 	res := apiCall(t, srv, http.MethodPatch, "/api/v2/players/"+p1.ID, p2.Token, map[string]any{
@@ -87,7 +80,6 @@ func TestPlayers_UpdatePlayer_Forbidden(t *testing.T) {
 func TestPlayers_ListPlayers_AdminOnly(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// Regular player tries to list players
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players", p.Token, nil)
@@ -98,7 +90,6 @@ func TestPlayers_ListPlayers_AsAdmin(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// Admin lists players
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players", admin.Token, nil)
@@ -110,7 +101,6 @@ func TestPlayers_ResetPassword_AsAdmin(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	player := registerAndLogin(t, srv, "Player")
 
@@ -124,7 +114,6 @@ func TestPlayers_ResetPassword_AsAdmin(t *testing.T) {
 func TestPlayers_ResetPassword_Forbidden(t *testing.T) {
 	srv := newTestServer(t)
 	p1 := registerAndLogin(t, srv, "Player 1")
-	enableApiV2(t, p1.ID)
 	p2 := registerAndLogin(t, srv, "Player 2")
 
 	// Player 1 tries to reset Player 2's password
@@ -137,7 +126,6 @@ func TestPlayers_ResetPassword_Forbidden(t *testing.T) {
 func TestPlayers_GetPlayerStats_Success(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/players/me/stats
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/me/stats", p.Token, nil)
@@ -148,7 +136,6 @@ func TestPlayers_GetPlayerStats_Success(t *testing.T) {
 func TestPlayers_GetPlayerMatches_Success(t *testing.T) {
 	srv := newTestServer(t)
 	p := registerAndLogin(t, srv, "Player")
-	enableApiV2(t, p.ID)
 
 	// GET /api/v2/players/me/matches
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/players/me/matches", p.Token, nil)

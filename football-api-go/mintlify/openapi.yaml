@@ -16,8 +16,6 @@ definitions:
     properties:
       active:
         type: boolean
-      api_v2_enabled:
-        type: boolean
       avatar_url:
         type: string
       chat_enabled:
@@ -66,8 +64,6 @@ definitions:
     properties:
       access_token:
         type: string
-      api_v2_enabled:
-        type: boolean
       avatar_url:
         type: string
       chat_enabled:

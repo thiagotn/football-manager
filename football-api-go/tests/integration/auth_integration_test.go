@@ -11,9 +11,8 @@ import (
 func TestAuth_RegisterLoginMe(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Zico Integration")
-	enableApiV2(t, player.ID)
 
-	// GET /auth/me with token (requires api_v2_enabled=true)
+	// GET /auth/me with token
 	r := apiCall(t, srv, http.MethodGet, "/api/v2/auth/me", player.Token, nil)
 	require.Equal(t, http.StatusOK, r.Code)
 	assert.Equal(t, "Zico Integration", r.Body["name"])
@@ -150,7 +149,6 @@ func TestAuth_ForgotPassword_InvalidOTP(t *testing.T) {
 func TestAuth_SendOTPMe(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "SendOTPMe Test")
-	enableApiV2(t, player.ID) // API v2 endpoints require this flag
 
 	// Send OTP for current authenticated user
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/auth/send-otp/me", player.Token, nil)
@@ -161,7 +159,6 @@ func TestAuth_SendOTPMe(t *testing.T) {
 func TestAuth_VerifyOTPMe(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "VerifyOTPMe Test")
-	enableApiV2(t, player.ID) // API v2 endpoints require this flag
 
 	// Send OTP first
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/auth/send-otp/me", player.Token, nil)
@@ -180,7 +177,6 @@ func TestAuth_VerifyOTPMe(t *testing.T) {
 func TestAuth_ChangePassword(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Change Password Test")
-	enableApiV2(t, player.ID) // API v2 endpoints require this flag
 
 	// Change password with correct current password
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/auth/change-password", player.Token,
@@ -201,7 +197,6 @@ func TestAuth_ChangePassword(t *testing.T) {
 func TestAuth_ChangePassword_WrongCurrentPassword(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Wrong Password Test")
-	enableApiV2(t, player.ID) // API v2 endpoints require this flag
 
 	// Try to change password with incorrect current password
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/auth/change-password", player.Token,

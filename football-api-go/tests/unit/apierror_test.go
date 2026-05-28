@@ -41,14 +41,6 @@ func TestPlanLimitExceeded(t *testing.T) {
 	assert.Equal(t, 403, apiErr.Code)
 }
 
-func TestAPIV2NotEnabled(t *testing.T) {
-	err := apierror.APIV2NotEnabled()
-	require.NotNil(t, err)
-	assert.Equal(t, "API_V2_NOT_ENABLED", err.Error())
-	apiErr := err.(*apierror.APIError)
-	assert.Equal(t, 403, apiErr.Code)
-}
-
 func TestInternal(t *testing.T) {
 	err := apierror.Internal("database connection failed")
 	require.NotNil(t, err)

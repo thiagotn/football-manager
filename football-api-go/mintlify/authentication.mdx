@@ -37,13 +37,3 @@ curl https://api.rachao.app/api/v2/auth/me \
 ## MCP Tokens
 
 Personal access tokens for MCP integrations (Claude CLI, GitHub Copilot) follow the same format but are prefixed with `rachao_`. They are created at `/account/mcp-tokens` in the web app and work identically to JWT tokens for authentication purposes.
-
-## Access control
-
-Access to authenticated endpoints requires `api_v2_enabled = true` on the player record. Super admins are always exempt. If your account does not have access, requests return:
-
-```json
-{ "detail": "API_V2_NOT_ENABLED" }
-```
-
-Contact the platform admin to request access.

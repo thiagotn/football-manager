@@ -18,11 +18,8 @@ func TestRanking_GetRanking_NoAuth(t *testing.T) {
 
 func TestRanking_GetRanking_WithPlayers(t *testing.T) {
 	srv := newTestServer(t)
-	p1 := registerAndLogin(t, srv, "Player 1")
-	enableApiV2(t, p1.ID)
-
-	p2 := registerAndLogin(t, srv, "Player 2")
-	enableApiV2(t, p2.ID)
+	registerAndLogin(t, srv, "Player 1")
+	registerAndLogin(t, srv, "Player 2")
 
 	// GET /api/v2/ranking should return a list
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking", "", nil)
@@ -44,7 +41,6 @@ func TestRanking_GetRanking_WithValidYear(t *testing.T) {
 	srv := newTestServer(t)
 	admin := registerAndLogin(t, srv, "Admin")
 	makeAdmin(t, admin.ID)
-	enableApiV2(t, admin.ID)
 
 	// GET /api/v2/ranking with valid year parameter
 	res := apiCall(t, srv, http.MethodGet, "/api/v2/ranking?year=2024", "", nil)

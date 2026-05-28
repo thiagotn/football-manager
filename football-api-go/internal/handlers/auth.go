@@ -29,7 +29,7 @@ func (h *authHandler) loginRLMiddleware(next http.Handler) http.Handler {
 // Routes returns a single router with both public and protected auth routes.
 // Protected routes are wrapped with the provided auth and apiV2 middlewares.
 // Use this instead of PublicRoutes/ProtectedRoutes to avoid chi double-mount conflicts.
-func (h *authHandler) Routes(authMw, apiV2Mw func(http.Handler) http.Handler) http.Handler {
+func (h *authHandler) Routes(authMw func(http.Handler) http.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Public routes
@@ -45,7 +45,6 @@ func (h *authHandler) Routes(authMw, apiV2Mw func(http.Handler) http.Handler) ht
 	// Protected routes
 	r.Group(func(r chi.Router) {
 		r.Use(authMw)
-		r.Use(apiV2Mw)
 		r.Get("/me", h.getMe)
 		r.Post("/send-otp/me", h.sendOTPMe)
 		r.Post("/verify-otp/me", h.verifyOTPMe)

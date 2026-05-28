@@ -171,19 +171,6 @@ func registerAndLogin(t *testing.T, srv *httptest.Server, name string) testPlaye
 	return p
 }
 
-// enableApiV2 sets api_v2_enabled=true for a player directly in the DB.
-// The auth middleware loads the player fresh from DB on each request, so no
-// re-login is required after calling this.
-func enableApiV2(t *testing.T, playerIDStr string) {
-	t.Helper()
-	pool := getPool(t)
-	playerID, err := uuid.Parse(playerIDStr)
-	require.NoError(t, err)
-	_, err = pool.Exec(context.Background(),
-		`UPDATE players SET api_v2_enabled=true WHERE id=$1`, playerID)
-	require.NoError(t, err)
-}
-
 // registerGroupCleanup schedules deletion of the group and its records at end of test.
 func registerGroupCleanup(t *testing.T, groupIDStr string) {
 	t.Helper()

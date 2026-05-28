@@ -12,7 +12,6 @@ import (
 func TestGroups_CreateAndGet(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Group Owner")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Test Rachão Group"})
@@ -29,7 +28,6 @@ func TestGroups_CreateAndGet(t *testing.T) {
 func TestGroups_ListGroups(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "List Groups Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "My List Group"})
@@ -45,7 +43,6 @@ func TestGroups_ListGroups(t *testing.T) {
 func TestGroups_UpdateGroup(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Update Group Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Before Update"})
@@ -62,7 +59,6 @@ func TestGroups_UpdateGroup(t *testing.T) {
 func TestGroups_GetGroup_NotFound(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "NotFound Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodGet,
 		"/api/v2/groups/"+uuid.New().String(), player.Token, nil)
@@ -72,7 +68,6 @@ func TestGroups_GetGroup_NotFound(t *testing.T) {
 func TestGroups_ListMembers(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Members Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Members Test Group"})
@@ -89,7 +84,6 @@ func TestGroups_ListMembers(t *testing.T) {
 func TestGroups_GetGroupStats(t *testing.T) {
 	srv := newTestServer(t)
 	player := registerAndLogin(t, srv, "Stats Player")
-	enableApiV2(t, player.ID)
 
 	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
 		map[string]any{"name": "Stats Test Group"})
