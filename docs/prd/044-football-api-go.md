@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Versão** | 1.1 |
-| **Status** | 🚧 Em implementação — revisado para entrega como **ambiente de homologação isolado** (banco-cópia + frontend `beta.rachao.app`) |
+| **Status** | 🚧 Em implementação — revisado para entrega como **ambiente de homologação isolado** (Postgres em container Docker + frontend `beta.rachao.app`, deploy via workflow próprio) |
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 (rev. 2026-05-28) |
 
@@ -15,16 +15,16 @@
 
 A API atual (`football-api/`) é construída em Python/FastAPI com SQLAlchemy async. Ela possui ~95 endpoints, 16 domínios e 43 migrations aplicadas. O objetivo deste PRD é criar uma versão equivalente em Go — o `football-api-go/` — como exploração da stack, benchmarking de desempenho e validação de paridade funcional, sem substituir a API Python existente.
 
-A partir da v1.1, a entrega em produção deixa de ser uma "API paralela no mesmo banco" e passa a ser um **ambiente de homologação completo e isolado**: API Go (`api-go`) + **banco de dados dedicado** (cópia da produção) + **frontend próprio** em `beta.rachao.app`. O ambiente sobe em produção, é navegável de ponta a ponta e tem **zero impacto** nos usuários atuais — produção (`rachao.app` / `/api/v1`) permanece intacta.
+A partir da v1.1, a entrega em produção deixa de ser uma "API paralela no mesmo banco" e passa a ser um **ambiente de homologação completo e isolado**: API Go (`api-go`) + **banco PostgreSQL próprio rodando em container Docker no VPS** + **frontend próprio** em `beta.rachao.app`, com **deploy por GitHub Action própria**. O ambiente sobe em produção, é navegável de ponta a ponta e tem **zero impacto** nos usuários atuais — produção (`rachao.app` / `/api/v1`) permanece intacta. Optou-se por um Postgres em container (como no ambiente local), em vez de uma cópia no Supabase, para **evitar o custo** (~US$10/mês) de um projeto Supabase dedicado na mesma região.
 
 ### 1.2 Objetivo
 
-Construir `football-api-go/` com paridade total de endpoints em relação à `football-api/`, de modo que o frontend de homologação consuma a API Go alterando apenas o prefixo da URL base (`/api/v1` → `/api/v2`), sem mudança de contrato de dados. A v2 e seu banco-cópia funcionam como um ambiente de homologação/staging desacoplado de produção.
+Construir `football-api-go/` com paridade total de endpoints em relação à `football-api/`, de modo que o frontend de homologação consuma a API Go alterando apenas o prefixo da URL base (`/api/v1` → `/api/v2`), sem mudança de contrato de dados. A v2 e seu banco Postgres em container funcionam como um ambiente de homologação/staging desacoplado de produção.
 
 ### 1.3 Proposta de valor
 
 - Avaliar ganhos de performance (latência, throughput, uso de memória) versus a stack Python atual
-- Ambiente de homologação real (dados reais, copiados), sem risco de afetar produção
+- Ambiente de homologação isolado (banco próprio em container, schema via migrations + seed de dev), sem risco de afetar produção e sem custo extra de Supabase
 - Servir como base para decisão futura de migração parcial ou total de stack
 - Documentar o processo de porting como referência para decisões de arquitetura futuras
 
@@ -35,7 +35,8 @@ Construir `football-api-go/` com paridade total de endpoints em relação à `fo
 ### 2.1 Incluído em v1.1
 
 - Todos os ~97 endpoints dos 16 domínios atuais (paridade total de contrato HTTP)
-- **Banco PostgreSQL dedicado** — cópia point-in-time da produção (criado pelo usuário no Supabase), conectado via novo secret `DATABASE_URL_HML`. Schema idêntico ao de produção
+- **Banco PostgreSQL próprio em container Docker** (`postgres:16-alpine`) no VPS — schema construído pelas migrations + seed de dev no primeiro start; **sem dados de produção** e **sem custo extra de Supabase**
+- **Deploy do ambiente de homologação via GitHub Action própria** (`deploy-hml.yml`) e docker-compose separado (`docker-compose.hml.yml`), desacoplado do deploy de produção
 - **Frontend de homologação** publicado em `beta.rachao.app` (imagem Docker própria, build apontando para `/api/v2`)
 - **Modo aberto de staging** (`APP_ENV=staging`): OTP por bypass code (sem SMS real), billing off no frontend, sem processamento de webhook Stripe; sem controle de acesso por usuário (isolamento é por ambiente)
 - Documentação interativa via Mintlify em `docs.rachao.app` com OpenAPI playground e `/llms.txt`
@@ -48,7 +49,7 @@ Construir `football-api-go/` com paridade total de endpoints em relação à `fo
 
 - Substituir ou deprecar a `football-api/` Python em produção
 - Alterar schema de banco em produção
-- Sincronização automática contínua entre o banco-cópia e produção (estratégia = re-snapshot manual; ver §3.4 e §15)
+- **Dados de produção no ambiente de homologação** — usa-se schema + seed de dev; a ideia de copiar a base de produção foi descartada por exigir um projeto Supabase dedicado pago (~US$10/mês)
 - Isolamento do Supabase Storage (avatares) — o ambiente pode reutilizar o bucket de produção (ver §3.11)
 - Funcionalidades novas não presentes na API Python
 - Otimizações avançadas de Go (caching custom, profiling, etc.)
@@ -87,28 +88,29 @@ sqlc gera código Go tipado a partir de arquivos SQL em `sql/queries/`, usando p
 **Decisão: `/api/v2/` no mesmo `api.rachao.app`, mas apontando para banco distinto**
 
 ```
-https://api.rachao.app/api/v1/...  →  Python API  (container: api)     →  banco PRODUÇÃO
-https://api.rachao.app/api/v2/...  →  Go API      (container: api-go)   →  banco CÓPIA (homologação)
+https://api.rachao.app/api/v1/...  →  Python API  (container: api)     →  banco PRODUÇÃO (Supabase)
+https://api.rachao.app/api/v2/...  →  Go API      (container: api-go)   →  banco HOMOLOGAÇÃO (Postgres em container, no VPS)
 https://beta.rachao.app/...        →  frontend de homologação (build com VITE_API_URL=.../api/v2)
 https://rachao.app/...             →  frontend de produção (inalterado)
 ```
 
-A regra Traefik `Host('api.rachao.app') && PathPrefix('/api/v2')` aponta para o container Go. Os dois serviços coexistem no mesmo docker-compose de produção, mas **leem bancos diferentes**: o `api` lê o banco de produção e o `api-go` lê o banco-cópia (via `DATABASE_URL_HML`). O frontend de homologação consome a v2 fixando `VITE_API_URL=https://api.rachao.app/api/v2` no build. Produção nunca chama `/api/v2`, logo o roteamento não tem impacto algum nos usuários atuais.
+A regra Traefik `Host('api.rachao.app') && PathPrefix('/api/v2')` aponta para o container Go. Os dois serviços **leem bancos diferentes**: o `api` lê o banco de produção (Supabase) e o `api-go` lê o Postgres de homologação (container `db-hml` na mesma rede do VPS). O frontend de homologação consome a v2 fixando `VITE_API_URL=https://api.rachao.app/api/v2` no build. Produção nunca chama `/api/v2`, logo o roteamento não tem impacto algum nos usuários atuais.
 
-### 3.4 Banco de dados — dedicado (cópia de produção)
+### 3.4 Banco de dados — Postgres em container Docker no VPS
 
-**Decisão: banco PostgreSQL dedicado, cópia point-in-time da produção**
+**Decisão: PostgreSQL próprio (`postgres:16-alpine`) em container, como no ambiente local**
 
-- A API Go conecta a um banco **separado** do de produção, criado pelo usuário no Supabase como cópia do atual, via novo secret **`DATABASE_URL_HML`** (em vez de reutilizar `${DATABASE_URL}`)
-- **Isolamento total**: nenhuma escrita da v2 (criar grupo, partida, presença, etc.) toca os dados de produção — garantia de "zero impacto"
-- Schema idêntico ao de produção (a cópia nasce com as 43 migrations já aplicadas)
-- **Sincronização de schema**: a Go API **não roda migrations** (apenas conecta — ver `internal/db/pool.go`). Migrations futuras aplicadas em produção **não** se propagam ao banco-cópia automaticamente. Estratégia: re-snapshot periódico da produção, ou aplicar manualmente no banco-cópia apenas as migrations novas surgidas em `football-api/migrations/` desde a última cópia (ver decisão D-06 em §13)
-- Em ambiente local, o mesmo postgres do docker-compose é usado
-- O passo a passo para criar o banco-cópia no Supabase está no **Apêndice §15**
+- A API Go conecta a um Postgres **dedicado** rodando em container no VPS (serviço `db-hml`), via `DATABASE_URL` interna (`postgres://football:${POSTGRES_PASSWORD_HML}@db-hml:5432/football_hml?sslmode=disable`) — **não** ao banco de produção
+- **Por que não a cópia no Supabase**: um projeto Supabase dedicado na mesma região custa ~US$10/mês. Como o intuito é homologar funcionalmente, um Postgres em container atende — aceitando que o ambiente terá **dados de seed/dev, não dados de produção**
+- **Isolamento total**: nenhuma escrita da v2 toca produção (bancos fisicamente distintos)
+- **Schema**: construído pelas 43 migrations de `football-api/migrations/*.sql` no **primeiro start** do container, via mount em `/docker-entrypoint-initdb.d/` (Postgres roda os `*.sql` em ordem de nome `001_…`→`044_…`). O `002_seed_dev.sql` popula dados de teste automaticamente. Migrations são idempotentes (`IF NOT EXISTS`)
+- A Go API continua **sem rodar migrations** (apenas conecta — ver `internal/db/pool.go`); quem cria o schema é o initdb do Postgres
+- Manutenção de schema: ao surgir migration nova, basta recriar o volume (`docker volume rm`) para reconstruir do zero, ou aplicá-la manualmente no `db-hml`
+- O passo a passo completo está no **Apêndice §15**
 
 ### 3.5 Migrations — reuso das SQL existentes via golang-migrate
 
-As 43 migrations em `football-api/migrations/*.sql` já estão aplicadas em produção e, por consequência, presentes no banco-cópia (que nasce de um snapshot da produção — ver §15). A Go API conecta ao banco-cópia **sem rodar migrations**. A propagação de migrations futuras ao banco-cópia é tratada em §3.4 / D-06. Em ambiente local, `make migrate` aplica as migrations usando [golang-migrate](https://github.com/golang-migrate/migrate) apontando para `../football-api/migrations/`.
+As 43 migrations em `football-api/migrations/*.sql` já estão aplicadas em produção. No ambiente de homologação, elas constroem o schema do Postgres em container no **primeiro start**, via mount em `/docker-entrypoint-initdb.d/` (ver §3.4 e §15) — a Go API conecta **sem rodar migrations**. Em ambiente local, `make migrate` aplica as migrations apontando para `../football-api/migrations/`.
 
 ### 3.6 Configuração — envconfig
 
@@ -128,7 +130,7 @@ Mesmas variáveis de ambiente da API Python (DATABASE_URL, SECRET_KEY, etc.) —
 
 **Decisão: nenhum gate por usuário; o isolamento é a nível de ambiente**
 
-Como cada ambiente vive isoladamente (produção em `rachao.app`/`/api/v1`/banco de produção; homologação em `beta.rachao.app`/`/api/v2`/banco-cópia), **não há controle de acesso por usuário na v2**. Quem alcança `beta.rachao.app` está, por definição, no ambiente de homologação — o isolamento vem do subdomínio dedicado + banco-cópia, não de uma flag por jogador. O código legado do antigo gate (`api_v2_enabled`: middleware, endpoints admin, coluna, página de gerenciamento) é **removido por limpeza na Fase 7** (§9).
+Como cada ambiente vive isoladamente (produção em `rachao.app`/`/api/v1`/banco de produção; homologação em `beta.rachao.app`/`/api/v2`/Postgres em container), **não há controle de acesso por usuário na v2**. Quem alcança `beta.rachao.app` está, por definição, no ambiente de homologação — o isolamento vem do subdomínio dedicado + banco próprio em container, não de uma flag por jogador. O código legado do antigo gate (`api_v2_enabled`: middleware, endpoints admin, coluna, página de gerenciamento) é **removido por limpeza na Fase 7** (§9).
 
 ### 3.9 Documentação — Mintlify
 
@@ -470,10 +472,10 @@ Todos os ~97 endpoints acima devem estar implementados com o mesmo contrato HTTP
 Todos os routes montados sob `/api/v2/`. A constante `API_PREFIX = "/api/v2"` definida em `config.go`.
 
 ### RF-03 — Banco de dados dedicado (Must)
-Conectar ao **banco-cópia** (homologação) via `DATABASE_URL_HML`, sem DDL adicional. Schema idêntico ao de produção. Nenhuma operação da v2 pode tocar o banco de produção.
+Conectar ao **Postgres de homologação** em container (`db-hml`) via `DATABASE_URL` interna. Schema construído pelas migrations no primeiro start. Nenhuma operação da v2 pode tocar o banco de produção.
 
 ### RF-04 — Formato de JWT compatível (Must)
-A Go API usa o mesmo algoritmo (HS256) e `SECRET_KEY` da Python API, de modo que o formato de token é compatível. **Cada ambiente autentica contra o seu próprio banco** (prod vs. cópia), portanto a interoperabilidade de tokens entre v1 e v2 não é mais um objetivo de design — é apenas um efeito colateral inofensivo da chave compartilhada. O middleware de auth deve suportar também MCP tokens com prefixo `rachao_`.
+A Go API usa o mesmo algoritmo (HS256) e `SECRET_KEY` da Python API, de modo que o formato de token é compatível. **Cada ambiente autentica contra o seu próprio banco** (produção vs. homologação), portanto a interoperabilidade de tokens entre v1 e v2 não é mais um objetivo de design — e na prática um token de produção não encontra o usuário no banco de homologação (bancos independentes). O middleware de auth deve suportar também MCP tokens com prefixo `rachao_`.
 
 ### RF-05 — Documentação Mintlify (Must)
 Documentação pública em `docs.rachao.app` com:
@@ -587,14 +589,13 @@ Campos JSON obrigatórios byte-compatíveis com a Python API. Campos `null` vs. 
 - [ ] `make docs` gera `openapi.yaml` atualizado
 - [ ] Conectar repositório ao Mintlify Cloud → deploy em `docs.rachao.app`
 
-### Fase 6 — Ambiente de homologação (banco-cópia + `beta.rachao.app`)
-- [ ] Usuário cria o banco-cópia no Supabase (snapshot da produção) e fornece `DATABASE_URL_HML` (ver Apêndice §15)
+### Fase 6 — Ambiente de homologação (Postgres em container + `beta.rachao.app`, workflow próprio)
 - [ ] Usuário cria registro DNS `beta.rachao.app` → IP do VPS (Traefik emite cert letsencrypt)
-- [ ] Adicionar secrets no GitHub Actions: `DATABASE_URL_HML` e `OTP_BYPASS_CODE`
-- [ ] `docker-compose.prod.yml`: alterar serviço `api-go` para usar `DATABASE_URL_HML`, `APP_ENV=staging`, `OTP_BYPASS_CODE`, `CORS_ORIGINS=https://beta.rachao.app`, `FRONTEND_URL=https://beta.rachao.app`; remover `STRIPE_WEBHOOK_SECRET` do `api-go`
-- [ ] `docker-compose.prod.yml`: adicionar serviço `frontend-beta`
-- [ ] `traefik-dynamic.yml`: adicionar router/serviço `Host('beta.rachao.app')` → `frontend-beta:3000`
-- [ ] `main.yml`: injetar `DATABASE_URL_HML` e `OTP_BYPASS_CODE` no `.env.prod`; adicionar build+push da imagem `football-manager-frontend-beta` com os build args da v2 (`VITE_API_URL=https://api.rachao.app/api/v2`, `VITE_BILLING_ENABLED=false`)
+- [ ] Adicionar secrets no GitHub Actions: `POSTGRES_PASSWORD_HML` e `OTP_BYPASS_CODE`
+- [ ] **Mover** o serviço `api-go` de `docker-compose.prod.yml` para o novo `docker-compose.hml.yml`
+- [ ] Criar `football-api/docker-compose.hml.yml` com: `db-hml` (`postgres:16-alpine` + volume + migrations montadas em `/docker-entrypoint-initdb.d/`), `api-go` (DATABASE_URL → `db-hml`, `APP_ENV=staging`, `OTP_BYPASS_CODE`, `CORS_ORIGINS`/`FRONTEND_URL=https://beta.rachao.app`, sem `STRIPE_WEBHOOK_SECRET`) e `frontend-beta`; rede `app-net` como **external** (a do projeto de produção)
+- [ ] `traefik-dynamic.yml`: adicionar routers `Host('api.rachao.app') && PathPrefix('/api/v2')` → `api-go:8080` e `Host('beta.rachao.app')` → `frontend-beta:3000` (Traefik é o ingress compartilhado)
+- [ ] Criar workflow próprio `.github/workflows/deploy-hml.yml` (build da imagem `frontend-beta` + deploy do `docker-compose.hml.yml` no VPS), desacoplado de `main.yml`
 - [ ] Validar navegação ponta-a-ponta em `beta.rachao.app` sem afetar produção
 
 ### Fase 7 — Remoção do gate `api_v2_enabled` (limpeza de código morto)
@@ -724,90 +725,192 @@ jobs:
           cache-to: type=gha,scope=api-go,mode=max
 ```
 
+### 10.1 Workflow próprio de deploy da homologação — `deploy-hml.yml`
+
+Workflow **separado** do `main.yml` (produção). Responsável por buildar a imagem `frontend-beta` e subir a stack de homologação (`docker-compose.hml.yml`) no VPS. A imagem `api-go` é reutilizada (já buildada por `api-go.yml`).
+
+```yaml
+name: Deploy Homologação (beta + api-go v2)
+
+on:
+  workflow_dispatch:        # disparo manual, como o main.yml
+
+jobs:
+  build-frontend-beta:
+    name: Build & Push frontend-beta
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./football-frontend
+          push: true
+          build-args: |
+            VITE_API_URL=https://api.rachao.app/api/v2
+            VITE_BILLING_ENABLED=false
+            # + PUBLIC_LEGAL_* iguais ao build de produção
+          tags: ghcr.io/${{ github.repository_owner }}/football-manager-frontend-beta:latest
+
+  deploy:
+    name: Deploy HML stack to VPS
+    runs-on: ubuntu-latest
+    needs: build-frontend-beta
+    steps:
+      - uses: actions/checkout@v6
+      - name: Copy HML files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "football-api/docker-compose.hml.yml,football-api/migrations"
+          target: "/opt/football-manager"
+          strip_components: 1
+      - name: Deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: POSTGRES_PASSWORD_HML,OTP_BYPASS_CODE
+          script: |
+            cd /opt/football-manager
+            # upsert dos secrets de HML em .env.hml (POSTGRES_PASSWORD_HML, OTP_BYPASS_CODE,
+            # SECRET_KEY, TWILIO_*, SUPABASE_*, ANTHROPIC_API_KEY, LLM_MODEL, VAPID_*)
+            set -a; source .env.hml; set +a
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker compose -f docker-compose.hml.yml -p football-manager-hml pull
+            docker compose -f docker-compose.hml.yml -p football-manager-hml up -d --remove-orphans
+            docker image prune -f
+```
+
+**Notas de integração:**
+- **Project name separado** (`-p football-manager-hml`): isola o ciclo de vida da stack de homologação do `--remove-orphans` do deploy de produção (`main.yml`, projeto `football-manager`).
+- **Rede compartilhada**: o `docker-compose.hml.yml` declara `app-net` como **external** (`football-manager_app-net`), para que os containers de HML entrem na mesma rede do Traefik de produção e sejam roteáveis.
+- **Traefik (ingress compartilhado)**: os routers de `/api/v2` e `beta.rachao.app` vivem no `traefik-dynamic.yml` (file provider, sem labels), que é mantido pelo deploy de produção — por isso o `deploy-hml.yml` **não** sobrescreve esse arquivo.
+- Versões de actions Node 24-compatíveis (checkout@v6, docker actions v3/v6, appleboy scp@v0.1.7/ssh@v1).
+
 ---
 
-## 11. Traefik e docker-compose.prod.yml
+## 11. Traefik e docker-compose (produção + homologação)
 
-> O router `api-go` já existe em `traefik-dynamic.yml` e o serviço `api-go` já existe em
-> `docker-compose.prod.yml` (Fase 5). A Fase 6 muda o **banco/ambiente** do `api-go` e
-> **adiciona** o frontend de homologação.
+> O `api-go` **sai** do `docker-compose.prod.yml` (onde estava desde a Fase 5) e passa a viver no
+> novo `docker-compose.hml.yml`, junto do Postgres de homologação (`db-hml`) e do `frontend-beta`.
+> O `docker-compose.prod.yml` perde o bloco `api-go`.
 
-**`football-api/traefik-dynamic.yml`** — router `api-go` (já existente, inalterado) + novo router `frontend-beta`:
+**`football-api/docker-compose.hml.yml`** (novo) — stack de homologação:
+
+```yaml
+name: football-manager-hml
+
+services:
+  db-hml:
+    image: postgres:16-alpine
+    container_name: football-db-hml
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: football
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_HML}
+      POSTGRES_DB: football_hml
+    volumes:
+      - db_hml_data:/var/lib/postgresql/data
+      # migrations rodam só no primeiro init (volume vazio), em ordem 001_…→044_…
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U football -d football_hml"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [app-net]
+
+  api-go:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-api-go:latest
+    container_name: football-api-go
+    restart: unless-stopped
+    environment:
+      APP_ENV: staging                          # não-produtivo → habilita OTP bypass + sem gate
+      DATABASE_URL: postgres://football:${POSTGRES_PASSWORD_HML}@db-hml:5432/football_hml?sslmode=disable
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: https://beta.rachao.app
+      FRONTEND_URL: https://beta.rachao.app
+      OTP_BYPASS_CODE: ${OTP_BYPASS_CODE}       # registro/login sem SMS real
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_VERIFY_SID: ${TWILIO_VERIFY_SID}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      # STRIPE_WEBHOOK_SECRET intencionalmente ausente → rota de webhook não é registrada
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_CLAIMS_EMAIL: ${VAPID_CLAIMS_EMAIL}
+    depends_on:
+      db-hml:
+        condition: service_healthy
+    expose: ["8080"]
+    networks: [app-net]
+
+  frontend-beta:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-frontend-beta:latest
+    container_name: football-frontend-beta
+    restart: unless-stopped
+    environment:
+      ORIGIN: https://beta.rachao.app
+      API_INTERNAL_URL: http://api-go:8080/api/v2
+    networks: [app-net]
+
+volumes:
+  db_hml_data:
+
+networks:
+  app-net:
+    external: true
+    name: football-manager_app-net   # rede do projeto de produção (Traefik)
+```
+
+**`football-api/traefik-dynamic.yml`** — adicionar os dois routers (apontam para os serviços de HML na rede compartilhada):
 
 ```yaml
 http:
   routers:
-    api-go:                                   # já existe — inalterado
+    api-go:
       rule: "Host(`api.rachao.app`) && PathPrefix(`/api/v2`)"
       service: api-go
-      tls:
-        certResolver: letsencrypt
-    frontend-beta:                            # NOVO
+      tls: { certResolver: letsencrypt }
+    frontend-beta:
       rule: "Host(`beta.rachao.app`)"
       service: frontend-beta
-      tls:
-        certResolver: letsencrypt
-
+      tls: { certResolver: letsencrypt }
   services:
-    api-go:                                   # já existe — inalterado
+    api-go:
       loadBalancer:
-        servers:
-          - url: "http://api-go:8080"
-    frontend-beta:                            # NOVO
+        servers: [ { url: "http://api-go:8080" } ]
+    frontend-beta:
       loadBalancer:
-        servers:
-          - url: "http://frontend-beta:3000"
+        servers: [ { url: "http://frontend-beta:3000" } ]
 ```
 
-**`football-api/docker-compose.prod.yml`** — `api-go` revisado (aponta para o banco-cópia + modo staging):
-
-```yaml
-api-go:
-  image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-api-go:latest
-  environment:
-    APP_ENV: staging                          # ambiente não-produtivo → habilita OTP bypass
-    DATABASE_URL: ${DATABASE_URL_HML}         # banco-CÓPIA, não o de produção
-    SECRET_KEY: ${SECRET_KEY}
-    CORS_ORIGINS: https://beta.rachao.app
-    FRONTEND_URL: https://beta.rachao.app
-    OTP_BYPASS_CODE: ${OTP_BYPASS_CODE}       # registro/login sem SMS real
-    TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-    TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-    TWILIO_VERIFY_SID: ${TWILIO_VERIFY_SID}
-    SUPABASE_URL: ${SUPABASE_URL}
-    SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-    LLM_MODEL: ${LLM_MODEL}
-    STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-    # STRIPE_WEBHOOK_SECRET intencionalmente ausente → rota de webhook não é registrada
-    VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
-    VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
-    VAPID_CLAIMS_EMAIL: ${VAPID_CLAIMS_EMAIL}
-  networks: [app-net]
-  restart: unless-stopped
-```
-
-**`football-api/docker-compose.prod.yml`** — novo serviço `frontend-beta`:
-
-```yaml
-frontend-beta:
-  image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-frontend-beta:latest
-  environment:
-    ORIGIN: https://beta.rachao.app
-    API_INTERNAL_URL: http://api-go:8080/api/v2
-  networks: [app-net]
-  restart: unless-stopped
-```
-
-> O roteamento fica no arquivo `traefik-dynamic.yml` (file provider), não em labels — seguindo o
-> padrão já adotado pelos demais serviços do projeto.
+> Roteamento via file provider (`traefik-dynamic.yml`), não labels — padrão do projeto. Como o
+> Traefik resolve `api-go`/`frontend-beta` por alias na rede `football-manager_app-net`, os
+> containers de HML precisam estar nessa rede (por isso `external: true`).
 
 ---
 
 ## 12. Critérios de Aceite
 
 - [ ] `GET /api/v2/health` retorna `{"status":"ok"}` com HTTP 200
-- [ ] `api-go` em produção conecta ao **banco-cópia** (`DATABASE_URL_HML`), não ao de produção
+- [ ] `api-go` conecta ao **Postgres de homologação em container** (`db-hml`), não ao de produção
+- [ ] O schema do `db-hml` é criado pelas migrations no primeiro start (volume novo), com seed de dev
+- [ ] A stack de homologação sobe via **workflow próprio** (`deploy-hml.yml`), separada do deploy de produção (`main.yml`)
 - [ ] Uma escrita feita via v2/beta (ex: criar grupo) **não aparece** no banco/UI de produção (isolamento)
 - [ ] Produção permanece intacta: `rachao.app` e `/api/v1` continuam funcionando normalmente
 - [ ] `beta.rachao.app` carrega e navega ponta-a-ponta: login via OTP bypass → `POST /api/v2/groups` → `POST /api/v2/groups/{id}/matches` → `POST /api/v2/groups/{id}/matches/{id}/attendance`
@@ -816,8 +919,8 @@ frontend-beta:
 - [ ] `golangci-lint` passa sem warnings
 - [ ] Imagem Docker production ≤ 30MB
 - [ ] GitHub Actions workflow verde (lint + unit + integration + build)
-- [ ] Response JSON de `GET /api/v2/groups` é estruturalmente equivalente a `GET /api/v1/groups` para os mesmos dados (logo após a cópia)
-- [ ] Qualquer conta existente na base-cópia navega na v2 sem bloqueio por usuário (sem gate)
+- [ ] Response JSON de `GET /api/v2/groups` é estruturalmente equivalente a `GET /api/v1/groups` (mesma forma de JSON)
+- [ ] Qualquer conta criada no banco de homologação navega na v2 sem bloqueio por usuário (sem gate)
 - [ ] `docs.rachao.app` está acessível com playground Mintlify funcional para ao menos `POST /api/v2/auth/login`, `GET /api/v2/groups` e `GET /api/v2/health`
 
 ---
@@ -829,10 +932,10 @@ frontend-beta:
 | D-01 | Incluir `POST /api/v2/chat` (Anthropic SSE) na v1.0? | ✅ Sim / ❌ Deixar para v2.0 | aguardando |
 | D-02 | Supabase Storage (avatar) em v1.0? | ✅ Sim / ❌ Endpoint retorna 501 até Fase 4 | aguardando |
 | D-03 | Stripe webhooks em v1.0? | ✅ Sim (paridade total) / ❌ Fora do scope inicial | aguardando |
-| D-04 | Subir `api-go` em produção durante qual fase? | Fase 1 / Fase 2 / Fase 5/6 | ✅ resolvido — Fase 6, como ambiente de homologação isolado (banco-cópia + `beta.rachao.app`) |
+| D-04 | Subir `api-go` em produção durante qual fase? | Fase 1 / Fase 2 / Fase 5/6 | ✅ resolvido — Fase 6, como ambiente de homologação isolado (Postgres em container + `beta.rachao.app`) |
 | D-05 | Benchmark formal no PRD de resultado? | Criar PRD 045 de performance / Incluir no README | aguardando |
-| D-06 | Sincronização de schema do banco-cópia com produção | Re-snapshot periódico / Aplicar manualmente novas migrations / Automatizar no deploy | aguardando |
-| D-07 | Isolar o Supabase Storage (avatares) do `api-go`? | Reusar bucket de prod (cosmético) / Criar bucket próprio no projeto-cópia | aguardando |
+| D-06 | Banco de homologação: Postgres em container vs. cópia no Supabase | Container (sem custo, dados de seed) / Cópia Supabase (~US$10/mês, dados reais) | ✅ resolvido — Postgres em container por custo |
+| D-07 | Isolar o Supabase Storage (avatares) do `api-go`? | Reusar bucket de prod (cosmético) / Criar bucket próprio dedicado | aguardando |
 
 ---
 
@@ -842,7 +945,7 @@ Variáveis do `api-go` **no ambiente de homologação** (as marcadas com ★ dif
 
 ```env
 APP_ENV=staging                                          # ★ ambiente não-produtivo → habilita OTP bypass
-DATABASE_URL=${DATABASE_URL_HML}                          # ★ banco-CÓPIA (não o de produção)
+DATABASE_URL=postgres://football:${POSTGRES_PASSWORD_HML}@db-hml:5432/football_hml?sslmode=disable  # ★ Postgres em container
 SECRET_KEY=<jwt-signing-key>                              #   igual ao de produção
 CORS_ORIGINS=https://beta.rachao.app                      # ★
 FRONTEND_URL=https://beta.rachao.app                      # ★
@@ -875,6 +978,14 @@ VAPID_PUBLIC_KEY=
 VAPID_CLAIMS_EMAIL=admin@rachao.app
 ```
 
+**Variáveis do container `db-hml`** (Postgres):
+
+```env
+POSTGRES_USER=football
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD_HML}   # ★ secret
+POSTGRES_DB=football_hml
+```
+
 **Build args do `frontend-beta`** (baked em build-time):
 
 ```env
@@ -886,64 +997,38 @@ PUBLIC_LEGAL_FORUM_CITY=...
 PUBLIC_LEGAL_CONTACT_EMAIL=...
 ```
 
-**Novos secrets GitHub Actions necessários:** **`DATABASE_URL_HML`** (connection string do banco-cópia, gerada pelo usuário no Supabase — ver §15) e **`OTP_BYPASS_CODE`**. Os demais secrets já existem no repositório.
+**Novos secrets GitHub Actions necessários:** **`POSTGRES_PASSWORD_HML`** (senha do Postgres de homologação) e **`OTP_BYPASS_CODE`**. Os demais secrets já existem no repositório.
 
 ---
 
-## 15. Apêndice — Cópia do banco no Supabase (passo a passo)
+## 15. Apêndice — Banco Postgres de homologação em container
 
-Procedimento executado **pelo usuário** para criar o banco-cópia que alimenta `DATABASE_URL_HML`.
+O banco de homologação é um `postgres:16-alpine` em container no VPS — **espelha o setup local** (`football-api-go/docker-compose.yml`), porém com schema construído pelas migrations no primeiro start.
 
-**Premissas:**
-- Produção é Supabase (região sa-east-1 / São Paulo). O auth do app é JWT próprio + tabela `players` — **não** usa Supabase Auth. Todos os dados do app vivem no schema **`public`** (o Supabase gere `auth`, `storage`, `extensions`, etc.). Logo, copia-se **apenas `public`**.
-- Ter cliente Postgres **16+** instalado (`pg_dump` / `pg_restore` / `psql`) — versão do client ≥ do servidor.
+**Como o schema é criado (mecanismo):**
+- O serviço `db-hml` monta `football-api/migrations` em `/docker-entrypoint-initdb.d/` (read-only).
+- Na **primeira inicialização** (volume `db_hml_data` vazio), o Postgres executa todos os `*.sql` desse diretório **em ordem alfabética** — como os arquivos são `001_…` … `044_…` (zero-padded), a ordem é a correta.
+- O `002_seed_dev.sql` popula **dados de teste/seed** automaticamente → o ambiente nasce navegável, sem precisar de dados de produção.
+- As migrations são idempotentes (`IF NOT EXISTS` / `ON CONFLICT`); o `__init__.py` no diretório é ignorado (não é `.sql`).
+- A Go API **não roda migrations** — apenas conecta ao `db-hml` já inicializado.
 
-**Passo a passo:**
+**Operação:**
+- **Subir/atualizar**: o `deploy-hml.yml` faz SCP de `migrations/` + `docker-compose.hml.yml` e roda `docker compose -f docker-compose.hml.yml -p football-manager-hml up -d`.
+- **Resetar do zero / aplicar migrations novas**: como o initdb só roda em volume vazio, para reconstruir o schema (após uma migration nova) basta recriar o volume:
+  ```bash
+  cd /opt/football-manager
+  docker compose -f docker-compose.hml.yml -p football-manager-hml down
+  docker volume rm football-manager-hml_db_hml_data
+  docker compose -f docker-compose.hml.yml -p football-manager-hml up -d
+  ```
+  Alternativamente, aplicar a migration manualmente: `docker exec -i football-db-hml psql -U football -d football_hml < migrations/NNN_nova.sql`.
 
-1. **Criar novo projeto Supabase** (mesma org, região **sa-east-1**), com senha de DB forte. Anotar o `PROJECT_REF` e a senha.
+**Premissas/observações:**
+- O initdb roda os scripts como superusuário (`football`), suficiente para todo o DDL das migrations.
+- O banco não é exposto publicamente (sem `ports:`), acessível apenas na `app-net` — `api-go` o alcança por `db-hml:5432`.
+- **Sem dados de produção** por decisão de custo (ver D-06): a fidelidade é de schema + seed, não de dados reais.
 
-2. **Obter as duas connection strings** (Dashboard → Project Settings → Database → Connection string → URI). Preferir a **Session pooler** (porta 5432, IPv4 — o VPS pode não ter IPv6):
-   ```
-   PROD_URL="postgresql://postgres.<ref_prod>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
-   HML_URL="postgresql://postgres.<ref_novo>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
-   ```
-
-3. **Dump do schema `public` da produção** (schema + dados), formato custom comprimido:
-   ```bash
-   pg_dump "$PROD_URL" \
-     --schema=public \
-     --no-owner --no-privileges --no-publications --no-subscriptions \
-     -Fc -f rachao_prod.dump
-   ```
-   (`--no-owner --no-privileges` evita erros de role/ACL específicos do Supabase.)
-
-4. **Restaurar no projeto novo** (o schema `public` já existe vazio no projeto novo):
-   ```bash
-   pg_restore --no-owner --no-privileges --no-acl \
-     --disable-triggers -d "$HML_URL" rachao_prod.dump
-   ```
-   Em caso de re-execução, usar `--clean --if-exists` para limpar antes de restaurar.
-
-5. **Validar a cópia** (comparar contagens com a produção):
-   ```bash
-   psql "$HML_URL" -c "select count(*) from players;" \
-                   -c "select count(*) from groups;" \
-                   -c "select count(*) from matches;"
-   # conferir também que a tabela de controle de migrations reflete as 43 já aplicadas
-   ```
-
-6. **Registrar o secret**: usar a `HML_URL` (session pooler, porta 5432) como GitHub secret **`DATABASE_URL_HML`**. Evitar a porta 6543 (transaction pooler) com pgx por causa de prepared statements; se precisar usá-la, anexar `?default_query_exec_mode=simple_protocol`.
-
-**Alternativa (Supabase CLI):**
-```bash
-supabase db dump --db-url "$PROD_URL" -f schema.sql            # estrutura
-supabase db dump --db-url "$PROD_URL" --data-only -f data.sql  # dados
-psql "$HML_URL" -f schema.sql && psql "$HML_URL" -f data.sql
-```
-
-**Sincronização futura (schema drift):** o banco-cópia é point-in-time. Para acompanhar produção, re-rodar o dump/restore periodicamente, **ou** aplicar manualmente no banco-cópia apenas as migrations novas surgidas em `football-api/migrations/` desde a última cópia (ver D-06).
-
-**Storage (avatares) — nota:** as imagens ficam no Supabase Storage do projeto de produção. Se o `api-go` mantiver `SUPABASE_URL` apontando para produção, avatares aparecem mas uploads no beta gravariam no bucket de prod. Para isolamento total, criar bucket no projeto novo e apontar `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` do `api-go` para ele (avatares antigos ficariam quebrados até copiar os objetos). Cosmético — ver D-07.
+**Storage (avatares) — nota:** as imagens ficam no Supabase Storage de produção. Se o `api-go` mantiver `SUPABASE_URL` apontando para produção, avatares aparecem, mas uploads no beta gravariam no bucket de prod. Para isolamento total, criar um bucket dedicado e apontar `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` do `api-go` para ele. Cosmético — ver D-07.
 
 ---
 
@@ -953,27 +1038,34 @@ Ponto de vista sobre o que a subida do beta + v2 representa para o VPS.
 
 ### 16.1 O que roda hoje no VPS
 
-`docker-compose.prod.yml` sobe **traefik**, **api** (Python/FastAPI), **frontend** (SvelteKit adapter-node), **api-go** (Go) e **mcp** — atualmente **sem limites de recursos** (`mem_limit`/`cpus` não definidos em nenhum serviço). O **PostgreSQL não roda no VPS** — é Supabase externo. Há ainda a stack de monitoramento (compose separado): Prometheus, Grafana, cAdvisor, node-exporter e Uptime Kuma.
+`docker-compose.prod.yml` sobe **traefik**, **api** (Python/FastAPI), **frontend** (SvelteKit adapter-node), **api-go** (Go) e **mcp** — atualmente **sem limites de recursos** (`mem_limit`/`cpus` não definidos em nenhum serviço). Hoje o **PostgreSQL não roda no VPS** — é Supabase externo. Há ainda a stack de monitoramento (compose separado): Prometheus, Grafana, cAdvisor, node-exporter e Uptime Kuma.
+
+> **Mudança em relação à revisão anterior:** ao trocar a cópia no Supabase por um Postgres em container, **passa a existir um banco rodando no próprio VPS** — este é o item de maior peso desta nova avaliação.
 
 ### 16.2 O que efetivamente é novo
 
-- **`api-go` (v2) já está em produção desde a Fase 5.** A Fase 6 **não adiciona um container de API novo** — apenas troca o `DATABASE_URL` do `api-go` para o banco-cópia (externo) e ajusta env (`APP_ENV`, `CORS_ORIGINS`, etc.). Impacto de runtime ≈ nulo.
-- **`frontend-beta` é o único container novo no VPS:** um segundo servidor Node SSR (SvelteKit adapter-node), equivalente ao frontend de produção.
+- **`api-go` (v2) já estava em produção desde a Fase 5.** A Fase 6 **move** o container para o `docker-compose.hml.yml` e troca seu `DATABASE_URL` para o `db-hml`, mas **não é um processo novo** — runtime praticamente igual.
+- **`db-hml` (Postgres em container) é novo no VPS** — antes o banco era externo (Supabase); agora roda localmente. **Principal novo consumidor de RAM e o único que adiciona disco persistente.**
+- **`frontend-beta` é novo no VPS:** um segundo servidor Node SSR (SvelteKit adapter-node), equivalente ao frontend de produção.
 
 ### 16.3 Impacto por recurso
 
 | Recurso | Impacto previsto |
 |---|---|
-| **RAM** | Item principal. Um processo Node SSR (adapter-node) costuma usar **~80–150 MB** em idle. Como é homologação (tráfego baixo, poucos testers), tende ao piso da faixa. O `api-go` (Go) é leve (~15–40 MB) e **já contabilizado**. Estimativa de acréscimo: **~100–150 MB** (só o `frontend-beta`). |
-| **CPU** | Negligível em idle; SSR só consome CPU sob request, e o tráfego de homologação é esporádico. Traefik com +1 router/serviço e +1 cert TLS (`beta.rachao.app`): overhead irrelevante. |
-| **Disco** | +1 imagem no VPS (`frontend-beta`). Compartilha as camadas-base com a imagem do frontend de produção (mesmo Dockerfile/base alpine) → o incremento real é só a camada da aplicação. O `docker image prune -f` já roda no deploy. Storage da imagem no GHCR é fora do VPS. |
-| **Banco de dados** | **Zero carga no VPS** — o banco-cópia vive no Supabase (externo). Sem novo Postgres local, sem disco/IO de banco. O custo recai sobre o plano Supabase do novo projeto. |
-| **Rede/egress** | Tráfego de homologação baixo. O `api-go` ↔ Supabase-cópia adiciona conexões de saída, mas em volume pequeno. |
-| **CI/CD** | +1 build de imagem (`frontend-beta`) por deploy do frontend → mais minutos de CI e storage no GHCR — **não** no VPS. |
+| **RAM** | Item principal, e **maior do que na revisão anterior**. Dois novos consumidores: **`db-hml`** (Postgres `shared_buffers` default 128 MB + processos → ~**150–250 MB** sob uso leve) e **`frontend-beta`** (Node SSR idle ~**80–150 MB**). O `api-go` (Go, ~15–40 MB) já existia. **Acréscimo total estimado: ~250–400 MB de RAM.** |
+| **CPU** | Negligível em idle. Postgres de homologação fica quase ocioso (poucos testers); SSR só consome sob request. Traefik com +2 routers e +1 cert TLS: irrelevante. |
+| **Disco** | **Agora há disco persistente novo**: o volume `db_hml_data` (schema + seed + dados de teste acumulados) — parte de poucos MB e cresce com o uso. Mais +1 imagem (`frontend-beta`, compartilha camadas-base com o frontend de prod) e a imagem `postgres:16-alpine` (~80–100 MB, possivelmente já em cache). `docker image prune -f` cobre imagens órfãs, **não** volumes. |
+| **Banco de dados** | **Passa a haver carga local no VPS** (CPU/RAM/IO do `db-hml`), em troca de **zero custo de Supabase**. Volume baixo de homologação → IO pequeno. |
+| **Rede/egress** | Tráfego de homologação baixo. `api-go` ↔ `db-hml` é **interno** (mesma rede Docker) — sem egress. |
+| **CI/CD** | +1 build de imagem (`frontend-beta`) por deploy → mais minutos de CI e storage no GHCR — **não** no VPS. |
 
 ### 16.4 Conclusão e recomendações
 
-- Impacto previsto no VPS é **pequeno e localizado**: essencialmente **+1 processo Node (~100–150 MB RAM)**. Sem novo banco, sem nova API, CPU/disco marginais.
-- Como **nenhum container tem `mem_limit`/`cpus` hoje**, vale definir um teto para o `frontend-beta` (ex.: `mem_limit: 256m`) para que um pico em homologação não pressione a RAM de produção — idealmente, aplicar limites a todos os serviços.
-- **Gargalo mais provável é RAM**, não CPU/disco. Antes da subida, verificar o headroom de memória do host: a stack de monitoramento + Python API + 2 frontends Node + 2 APIs já somam um consumo relevante. Em VPS pequeno (ex.: 2 GB), considerar limites por container ou avaliar upgrade.
-- Já existe observabilidade (cAdvisor + node-exporter + Grafana): **acompanhar RAM/CPU do host e do `frontend-beta` após o deploy** para validar a estimativa acima.
+- O impacto **subiu** em relação à opção Supabase: agora são **~250–400 MB de RAM** (Postgres + frontend-beta) + **um volume de disco** no VPS — não mais "+1 processo Node". É um trade-off consciente: **economia de ~US$10/mês** no Supabase em troca de consumo no host. O usuário já aceitou ("por mais que tenha impacto provável").
+- Como **nenhum container tem `mem_limit`/`cpus` hoje**, recomenda-se definir tetos no `docker-compose.hml.yml`:
+  - `db-hml`: `mem_limit: 384m` e considerar `command: postgres -c shared_buffers=64MB` para reduzir o reservado.
+  - `frontend-beta`: `mem_limit: 256m`.
+  - Assim um pico em homologação não pressiona a RAM de produção.
+- **Gargalo mais provável é RAM.** Antes da subida, **verificar o headroom de memória do host**: monitoramento + Python API + 2 frontends Node + 2 APIs + agora 1 Postgres somam um consumo relevante. Em VPS de **2 GB o risco é real** — avaliar limites por container ou upgrade (ex.: 4 GB).
+- Disco: acompanhar o crescimento de `db_hml_data`; se necessário, resetar o volume periodicamente (ver §15).
+- Já existe observabilidade (cAdvisor + node-exporter + Grafana): **acompanhar RAM/CPU/disco do host, do `db-hml` e do `frontend-beta` após o deploy** para validar as estimativas.
