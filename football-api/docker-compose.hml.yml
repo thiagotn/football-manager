@@ -1,0 +1,79 @@
+name: football-manager-hml
+
+# Stack de HOMOLOGAÇÃO (beta.rachao.app + api-go /api/v2).
+# Sobe via workflow próprio .github/workflows/deploy-hml.yml — desacoplada do deploy de produção.
+# Usa a rede do projeto de produção (Traefik) como external, para ser roteável pelo ingress compartilhado.
+
+services:
+
+  # ── Postgres de homologação ────────────────────────────────────
+  db-hml:
+    image: postgres:16-alpine
+    container_name: football-db-hml
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: football
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_HML}
+      POSTGRES_DB: football_hml
+    volumes:
+      - db_hml_data:/var/lib/postgresql/data
+      # Migrations rodam só no primeiro init (volume vazio), em ordem 001_…→NNN_…
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U football -d football_hml"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-net
+
+  # ── API Go (/api/v2) ───────────────────────────────────────────
+  api-go:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-api-go:latest
+    container_name: football-api-go
+    restart: unless-stopped
+    environment:
+      APP_ENV: staging                          # não-produtivo → habilita OTP bypass + sem gate
+      DATABASE_URL: postgres://football:${POSTGRES_PASSWORD_HML}@db-hml:5432/football_hml?sslmode=disable
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: https://beta.rachao.app
+      FRONTEND_URL: https://beta.rachao.app
+      OTP_BYPASS_CODE: ${OTP_BYPASS_CODE}       # registro/login sem SMS real
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_VERIFY_SID: ${TWILIO_VERIFY_SID}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-claude-haiku-4-5}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      # STRIPE_WEBHOOK_SECRET intencionalmente ausente → rota de webhook não é registrada
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_CLAIMS_EMAIL: ${VAPID_CLAIMS_EMAIL}
+    depends_on:
+      db-hml:
+        condition: service_healthy
+    expose:
+      - "8080"
+    networks:
+      - app-net
+
+  # ── Frontend de homologação (beta.rachao.app) ──────────────────
+  frontend-beta:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-thiagotn}/football-manager-frontend-beta:latest
+    container_name: football-frontend-beta
+    restart: unless-stopped
+    environment:
+      ORIGIN: https://beta.rachao.app
+      API_INTERNAL_URL: http://api-go:8080/api/v2
+    networks:
+      - app-net
+
+volumes:
+  db_hml_data:
+
+networks:
+  app-net:
+    external: true
+    name: football-manager_app-net   # rede do projeto de produção (Traefik)
