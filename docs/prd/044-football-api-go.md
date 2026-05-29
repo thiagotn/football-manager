@@ -727,7 +727,7 @@ jobs:
 
 ### 10.1 Workflow próprio de deploy da homologação — `deploy-hml.yml`
 
-Workflow **separado** do `main.yml` (produção). Responsável por buildar a imagem `frontend-beta` e subir a stack de homologação (`docker-compose.hml.yml`) no VPS. A imagem `api-go` é reutilizada (já buildada por `api-go.yml`).
+Workflow **separado** do `main.yml` (produção). Builda as imagens `api-go` **e** `frontend-beta` a partir do código atual (gated por unit + integration + audit) e sobe a stack de homologação (`docker-compose.hml.yml`) no VPS. Buildar o `api-go` aqui é essencial: garante que a imagem fique em sincronia com as migrations aplicadas no `db-hml` (do contrário um `api-go` antigo pode consultar colunas já removidas — ex.: `api_v2_enabled` após a migration 045 — e quebrar com 500).
 
 ```yaml
 name: Deploy Homologação (beta + api-go v2)
