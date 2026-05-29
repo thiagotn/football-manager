@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/config"
 	"github.com/thiagotn/football-manager/football-api-go/internal/handlers"
@@ -68,9 +69,13 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	// Global middlewares
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
+	r.Use(middleware.Metrics)
 	r.Use(chiMiddleware.Logger)
 	r.Use(middleware.Recovery)
 	r.Use(middleware.CORS(cfg.CORSOriginsList()))
+
+	// Prometheus metrics — raiz, sem auth, acessível só internamente (Traefik só roteia /api/v2).
+	r.Handle("/metrics", promhttp.Handler())
 
 	// Health check — no auth
 	r.Get("/api/v2/health", func(w http.ResponseWriter, r *http.Request) {
