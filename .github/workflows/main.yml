@@ -1,4 +1,4 @@
-name: Build & Deploy Web
+name: Deploy Produção (web + api v1 + mcp)
 
 on:
   workflow_dispatch:
