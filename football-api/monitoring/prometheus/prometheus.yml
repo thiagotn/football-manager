@@ -4,10 +4,16 @@ global:
 
 scrape_configs:
 
-  # Métricas da API FastAPI (/metrics exposto pelo prometheus-fastapi-instrumentator)
+  # Métricas da API v1 FastAPI (/metrics exposto pelo prometheus-fastapi-instrumentator)
   - job_name: 'api'
     static_configs:
       - targets: ['football-api:8000']
+    metrics_path: '/metrics'
+
+  # Métricas da API v2 Go (/metrics exposto pelo middleware de instrumentação)
+  - job_name: 'api-go'
+    static_configs:
+      - targets: ['football-api-go:8080']
     metrics_path: '/metrics'
 
   # Métricas dos containers Docker (CPU, RAM, rede por container)

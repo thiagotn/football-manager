@@ -65,6 +65,12 @@ jobs:
               --env-file .env.monitoring \
               up -d --remove-orphans
 
+            echo "==> Reiniciando Prometheus para recarregar prometheus.yml (scrape configs)..."
+            docker compose \
+              -f docker-compose.monitoring.prod.yml \
+              --env-file .env.monitoring \
+              restart prometheus
+
             echo "==> Reiniciando Grafana para recarregar provisioning files..."
             docker compose \
               -f docker-compose.monitoring.prod.yml \

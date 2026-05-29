@@ -1,0 +1,15 @@
+# Provisionamento de dashboards (as-code).
+# O Grafana carrega os .json deste diretório como dashboards na pasta "rachao.app".
+apiVersion: 1
+
+providers:
+  - name: 'rachao'
+    orgId: 1
+    folder: 'rachao.app'
+    type: file
+    disableDeletion: false
+    editable: true
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

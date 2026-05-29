@@ -1071,3 +1071,29 @@ Ponto de vista sobre o que a subida do beta + v2 representa para o VPS.
 - **Gargalo mais provável é RAM.** Antes da subida, **verificar o headroom de memória do host**: monitoramento + Python API + 2 frontends Node + 2 APIs + agora 1 Postgres somam um consumo relevante. Em VPS de **2 GB o risco é real** — avaliar limites por container ou upgrade (ex.: 4 GB).
 - Disco: acompanhar o crescimento de `db_hml_data`; se necessário, resetar o volume periodicamente (ver §15).
 - Já existe observabilidade (cAdvisor + node-exporter + Grafana): **acompanhar RAM/CPU/disco do host, do `db-hml` e do `frontend-beta` após o deploy** para validar as estimativas.
+
+---
+
+## 17. Checklist de paridade v2 → produção oficial
+
+A v2 (api-go) é candidata a substituir a v1 como API oficial de produção. Checklist do que falta
+para paridade plena (atualizar conforme avança):
+
+- [x] **Observabilidade** — `/metrics` (histograma `http_request_duration_seconds` com labels
+  `method/handler/status_code`, espelhando o instrumentator v1), scrape job `api-go` no Prometheus,
+  alertas Grafana por job (5xx + fora-do-ar para v1 e v2) e dashboard versionado
+  (`monitoring/grafana/provisioning/dashboards/apis.json`). cAdvisor/node-exporter já cobrem
+  container/host.
+- [ ] **Avatar — rate limit**: v1 limita uploads via tabela `avatar_upload_logs`; v2 ainda não.
+- [ ] **Avatar — response**: v1 retorna o `PlayerResponse` completo; v2 retorna só `{avatar_url}`.
+- [ ] **Documentação**: anotações `swaggo/swag` + `openapi.yaml` atualizado + Mintlify Cloud
+  (`docs.rachao.app`) — pendências da Fase 5.
+- [ ] **Banco de produção**: definir banco gerenciado/migrations para o cutover (hoje a v2 usa
+  Postgres em container + seed de dev; ver §3.4 e D-06).
+- [ ] **Logging estruturado / request-id**: conferir paridade do formato de logs com o v1 (structlog).
+- [ ] **Health endpoint**: o `/health` da v1 retorna `uptime` e `version`; o `/api/v2/health`
+  retorna só `{"status":"ok"}` — enriquecer para paridade.
+- [ ] **Uptime Kuma**: adicionar monitores HTTP para `https://api.rachao.app/api/v2/health` e
+  `https://beta.rachao.app` (configuração manual na UI do Kuma).
+- [ ] **Audit endpoint-a-endpoint** (contrato HTTP, status codes, regras de negócio) usando o skill
+  `api-compare` — verificação autoritativa de paridade, recomendada antes do cutover.
