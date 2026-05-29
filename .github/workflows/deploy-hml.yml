@@ -225,6 +225,17 @@ jobs:
             echo "==> Subindo stack de homologação..."
             docker compose -f docker-compose.hml.yml -p football-manager-hml up -d --remove-orphans
 
+            # Traefik observa um único arquivo bind-montado; o inotify não dispara de
+            # forma confiável quando o arquivo é substituído no host. Recriamos o Traefik
+            # apenas quando traefik-dynamic.yml de fato mudou (evita blip em redeploys
+            # que não alteram a config), para que ele carregue o router beta.rachao.app.
+            HOST_SUM=$(md5sum < traefik-dynamic.yml | awk '{print $1}')
+            CONT_SUM=$(docker exec football-traefik cat /etc/traefik/dynamic.yml 2>/dev/null | md5sum | awk '{print $1}' || true)
+            if [ "$HOST_SUM" != "$CONT_SUM" ]; then
+              echo "==> traefik-dynamic.yml mudou — reiniciando Traefik para recarregar routers..."
+              docker restart football-traefik || true
+            fi
+
             docker image prune -f
             docker logout ghcr.io
             docker compose -f docker-compose.hml.yml -p football-manager-hml ps
