@@ -92,18 +92,6 @@ jobs:
           DEPLOY_DIR: ${{ env.DEPLOY_DIR }}
           POSTGRES_PASSWORD_HML: ${{ secrets.POSTGRES_PASSWORD_HML }}
           OTP_BYPASS_CODE: ${{ secrets.OTP_BYPASS_CODE }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_VERIFY_SID: ${{ secrets.TWILIO_VERIFY_SID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
-          VAPID_CLAIMS_EMAIL: ${{ secrets.VAPID_CLAIMS_EMAIL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -111,14 +99,21 @@ jobs:
           port: ${{ secrets.VPS_PORT || '22' }}
           timeout: 60s
           command_timeout: 15m
-          envs: GHCR_TOKEN,ACTOR,DEPLOY_DIR,POSTGRES_PASSWORD_HML,OTP_BYPASS_CODE,SECRET_KEY,TWILIO_ACCOUNT_SID,TWILIO_AUTH_TOKEN,TWILIO_VERIFY_SID,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,ANTHROPIC_API_KEY,LLM_MODEL,STRIPE_SECRET_KEY,VAPID_PRIVATE_KEY,VAPID_PUBLIC_KEY,VAPID_CLAIMS_EMAIL
+          envs: GHCR_TOKEN,ACTOR,DEPLOY_DIR,POSTGRES_PASSWORD_HML,OTP_BYPASS_CODE
           script: |
             set -euo pipefail
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
             cd "$DEPLOY_DIR"
 
-            # upsert dos secrets de HML em .env.hml
-            for VAR in POSTGRES_PASSWORD_HML OTP_BYPASS_CODE SECRET_KEY TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_VERIFY_SID SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY ANTHROPIC_API_KEY LLM_MODEL STRIPE_SECRET_KEY VAPID_PRIVATE_KEY VAPID_PUBLIC_KEY VAPID_CLAIMS_EMAIL; do
+            # A stack HML reaproveita os secrets compartilhados de produção (.env.prod):
+            # SECRET_KEY, TWILIO_*, SUPABASE_*, ANTHROPIC_API_KEY, LLM_MODEL, STRIPE_SECRET_KEY, VAPID_*.
+            if [ ! -f .env.prod ]; then
+              echo "ERRO: .env.prod ausente — a stack de produção precisa estar provisionada antes do HML."
+              exit 1
+            fi
+
+            # upsert apenas dos secrets específicos de HML em .env.hml
+            for VAR in POSTGRES_PASSWORD_HML OTP_BYPASS_CODE; do
               VAL="${!VAR}"
               if [ -n "$VAL" ]; then
                 if grep -q "^${VAR}=" .env.hml 2>/dev/null; then
@@ -129,7 +124,8 @@ jobs:
               fi
             done
 
-            set -a; source .env.hml; set +a
+            # carrega compartilhados (.env.prod) + específicos de HML (.env.hml)
+            set -a; source .env.prod; source .env.hml; set +a
 
             echo "==> Pull das imagens da stack HML..."
             docker compose -f docker-compose.hml.yml -p football-manager-hml pull

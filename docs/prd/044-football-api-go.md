@@ -782,9 +782,10 @@ jobs:
           envs: POSTGRES_PASSWORD_HML,OTP_BYPASS_CODE
           script: |
             cd /opt/football-manager
-            # upsert dos secrets de HML em .env.hml (POSTGRES_PASSWORD_HML, OTP_BYPASS_CODE,
-            # SECRET_KEY, TWILIO_*, SUPABASE_*, ANTHROPIC_API_KEY, LLM_MODEL, VAPID_*)
-            set -a; source .env.hml; set +a
+            # secrets compartilhados (SECRET_KEY, TWILIO_*, SUPABASE_*, ANTHROPIC_API_KEY,
+            # LLM_MODEL, STRIPE_SECRET_KEY, VAPID_*) vêm do .env.prod já existente no VPS;
+            # só os específicos de HML (POSTGRES_PASSWORD_HML, OTP_BYPASS_CODE) são injetados em .env.hml
+            set -a; source .env.prod; source .env.hml; set +a
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             docker compose -f docker-compose.hml.yml -p football-manager-hml pull
             docker compose -f docker-compose.hml.yml -p football-manager-hml up -d --remove-orphans
