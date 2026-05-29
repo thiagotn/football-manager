@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	cryptorand "crypto/rand"
 	"context"
+	cryptorand "crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -206,25 +206,25 @@ func (h *PlayerHandler) myMatches(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type matchItem struct {
-		ID            uuid.UUID `json:"id"`
-		GroupID       uuid.UUID `json:"group_id"`
-		Number        int       `json:"number"`
-		Hash          string    `json:"hash"`
-		MatchDate     string    `json:"match_date"`
-		StartTime     string    `json:"start_time"`
-		EndTime       *string   `json:"end_time"`
-		Location      string    `json:"location"`
-		Address       *string   `json:"address"`
-		CourtType     *string   `json:"court_type"`
+		ID             uuid.UUID `json:"id"`
+		GroupID        uuid.UUID `json:"group_id"`
+		Number         int       `json:"number"`
+		Hash           string    `json:"hash"`
+		MatchDate      string    `json:"match_date"`
+		StartTime      string    `json:"start_time"`
+		EndTime        *string   `json:"end_time"`
+		Location       string    `json:"location"`
+		Address        *string   `json:"address"`
+		CourtType      *string   `json:"court_type"`
 		PlayersPerTeam *int      `json:"players_per_team"`
-		MaxPlayers    *int      `json:"max_players"`
-		Notes         *string   `json:"notes"`
-		Status        string    `json:"status"`
-		CreatedAt     string    `json:"created_at"`
-		UpdatedAt     string    `json:"updated_at"`
-		GroupName     string    `json:"group_name"`
-		GroupTimezone string    `json:"group_timezone"`
-		MyAttendance  string    `json:"my_attendance"`
+		MaxPlayers     *int      `json:"max_players"`
+		Notes          *string   `json:"notes"`
+		Status         string    `json:"status"`
+		CreatedAt      string    `json:"created_at"`
+		UpdatedAt      string    `json:"updated_at"`
+		GroupName      string    `json:"group_name"`
+		GroupTimezone  string    `json:"group_timezone"`
+		MyAttendance   string    `json:"my_attendance"`
 	}
 
 	result := make([]matchItem, len(matches))
@@ -298,12 +298,12 @@ type playerFullStatsResp struct {
 	Top5Count             int               `json:"top5_count"`
 	TotalGoals            int               `json:"total_goals"`
 	TotalAssists          int               `json:"total_assists"`
-	CurrentStreak        int               `json:"current_streak"`
-	BestStreak           int               `json:"best_streak"`
-	AttendanceRate       int               `json:"attendance_rate"`
-	MonthlyStats         []monthlyStatItem `json:"monthly_stats"`
-	RecentMatches        []recentMatchItem `json:"recent_matches"`
-	Groups               []groupStatItem   `json:"groups"`
+	CurrentStreak         int               `json:"current_streak"`
+	BestStreak            int               `json:"best_streak"`
+	AttendanceRate        int               `json:"attendance_rate"`
+	MonthlyStats          []monthlyStatItem `json:"monthly_stats"`
+	RecentMatches         []recentMatchItem `json:"recent_matches"`
+	Groups                []groupStatItem   `json:"groups"`
 }
 
 func (h *PlayerHandler) myStatsFull(w http.ResponseWriter, r *http.Request) {
@@ -706,13 +706,29 @@ func (h *PlayerHandler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	const maxSize = 5 << 20 // 5 MB
 	r.Body = http.MaxBytesReader(w, r.Body, maxSize)
-	data, err := io.ReadAll(r.Body)
+
+	// Frontend envia multipart/form-data com o campo "file".
+	file, _, err := r.FormFile("file")
 	if err != nil {
-		renderError(w, apierror.Unprocessable("failed to read upload body"))
+		renderError(w, apierror.Unprocessable("file field required"))
 		return
 	}
-	if len(data) == 0 {
+	defer file.Close() //nolint:errcheck
+
+	raw, err := io.ReadAll(file)
+	if err != nil {
+		renderError(w, apierror.Unprocessable("failed to read upload"))
+		return
+	}
+	if len(raw) == 0 {
 		renderError(w, apierror.Unprocessable("empty file"))
+		return
+	}
+
+	// Decodifica + crop/resize 256×256 + encode WebP (paridade com a API Python).
+	data, err := services.ProcessAvatarWebP(raw)
+	if err != nil {
+		renderError(w, apierror.Unprocessable("invalid image. Use JPG, PNG or WebP"))
 		return
 	}
 
