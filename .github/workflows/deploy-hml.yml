@@ -269,3 +269,19 @@ jobs:
             docker image prune -f
             docker logout ghcr.io
             docker compose -f docker-compose.hml.yml -p football-manager-hml ps
+
+  # ──────────────────────────────────────────────────────────────
+  # NOTIFY — Telegram (reusable workflow)
+  # ──────────────────────────────────────────────────────────────
+  notify:
+    name: Notify Telegram
+    needs: [unit-tests, integration-tests, audit, build-api-go, build-frontend-beta, deploy]
+    if: always()
+    uses: ./.github/workflows/notify-telegram.yml
+    with:
+      workflow_name: "Deploy Homologação"
+      results_json: >-
+        {"Unit":"${{ needs.unit-tests.result }}","Integration":"${{ needs.integration-tests.result }}","Audit":"${{ needs.audit.result }}","Build api-go":"${{ needs.build-api-go.result }}","Build beta":"${{ needs.build-frontend-beta.result }}","Deploy":"${{ needs.deploy.result }}"}
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

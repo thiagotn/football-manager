@@ -1,0 +1,81 @@
+name: Notify Telegram (reusable)
+
+# Workflow reutilizável: envia uma notificação ao Telegram com o resultado dos jobs.
+# Uso (no workflow chamador):
+#   notify:
+#     needs: [job-a, job-b]
+#     if: always()
+#     uses: ./.github/workflows/notify-telegram.yml
+#     with:
+#       workflow_name: "Meu Workflow"
+#       results_json: >-
+#         {"Job A":"${{ needs.job-a.result }}","Job B":"${{ needs.job-b.result }}"}
+#     secrets:
+#       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+#       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+on:
+  workflow_call:
+    inputs:
+      workflow_name:
+        description: "Nome do workflow exibido na mensagem"
+        required: true
+        type: string
+      results_json:
+        description: 'JSON {label: result} dos jobs (ex.: {"Unit":"success","Build":"failure"})'
+        required: true
+        type: string
+    secrets:
+      TELEGRAM_BOT_TOKEN:
+        required: true
+      TELEGRAM_CHAT_ID:
+        required: true
+
+jobs:
+  notify:
+    name: Notify Telegram
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notification
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WORKFLOW: ${{ inputs.workflow_name }}
+          RESULTS: ${{ inputs.results_json }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+          SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          icon() {
+            case "$1" in
+              success)   echo "✅" ;;
+              failure)   echo "❌" ;;
+              cancelled) echo "🚫" ;;
+              skipped)   echo "⏭️" ;;
+              *)         echo "❓" ;;
+            esac
+          }
+
+          # Monta a linha de jobs e calcula o status geral a partir do JSON {label: result}.
+          JOBS=""
+          OVERALL="success"
+          while IFS=$'\t' read -r label result; do
+            [ -z "$label" ] && continue
+            if [ -n "$JOBS" ]; then JOBS="${JOBS}  |  "; fi
+            JOBS="${JOBS}$(icon "$result") ${label}"
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              OVERALL="failure"
+            fi
+          done < <(echo "$RESULTS" | jq -r 'to_entries[] | "\(.key)\t\(.value)"')
+
+          if [ "$OVERALL" = "success" ]; then STATUS="✅ Sucesso"; else STATUS="❌ Falha"; fi
+
+          NL=$'\n'
+          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>${NL}${NL}🔀 <code>${REF_NAME}</code>  👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>${NL}${NL}${JOBS}${NL}${NL}<b>${STATUS}</b>${NL}🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
+
+          jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" \
+            '{chat_id: $chat_id, parse_mode: "HTML", text: $text, disable_web_page_preview: true}' \
+          | curl -sf -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" -d @- \
+          || echo "::warning::Falha ao enviar notificação Telegram"
