@@ -25,6 +25,11 @@ on:
         description: 'JSON {label: result} dos jobs (ex.: {"Unit":"success","Build":"failure"})'
         required: true
         type: string
+      extra:
+        description: "Linha extra opcional na mensagem (HTML), ex.: Play Store track"
+        required: false
+        type: string
+        default: ""
     secrets:
       TELEGRAM_BOT_TOKEN:
         required: true
@@ -42,6 +47,7 @@ jobs:
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           WORKFLOW: ${{ inputs.workflow_name }}
           RESULTS: ${{ inputs.results_json }}
+          EXTRA: ${{ inputs.extra }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           ACTOR: ${{ github.actor }}
           SHA: ${{ github.sha }}
@@ -72,7 +78,9 @@ jobs:
           if [ "$OVERALL" = "success" ]; then STATUS="✅ Sucesso"; else STATUS="❌ Falha"; fi
 
           NL=$'\n'
-          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>${NL}${NL}🔀 <code>${REF_NAME}</code>  👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>${NL}${NL}${JOBS}${NL}${NL}<b>${STATUS}</b>${NL}🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
+          CONTEXT="🔀 <code>${REF_NAME}</code>  👤 ${ACTOR}  📝 <code>${SHA:0:7}</code>"
+          [ -n "$EXTRA" ] && CONTEXT="${CONTEXT}${NL}${EXTRA}"
+          MESSAGE="<b>🚀 rachao.app · ${WORKFLOW}</b>${NL}${NL}${CONTEXT}${NL}${NL}${JOBS}${NL}${NL}<b>${STATUS}</b>${NL}🔗 <a href=\"${RUN_URL}\">Ver execução</a>"
 
           jq -n --arg chat_id "$CHAT_ID" --arg text "$MESSAGE" \
             '{chat_id: $chat_id, parse_mode: "HTML", text: $text, disable_web_page_preview: true}' \
