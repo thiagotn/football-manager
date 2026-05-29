@@ -795,7 +795,7 @@ jobs:
 **Notas de integração:**
 - **Project name separado** (`-p football-manager-hml`): isola o ciclo de vida da stack de homologação do `--remove-orphans` do deploy de produção (`main.yml`, projeto `football-manager`).
 - **Rede compartilhada**: o `docker-compose.hml.yml` declara `app-net` como **external** (`football-manager_app-net`), para que os containers de HML entrem na mesma rede do Traefik de produção e sejam roteáveis.
-- **Traefik (ingress compartilhado)**: os routers de `/api/v2` e `beta.rachao.app` vivem no `traefik-dynamic.yml` (file provider, sem labels), que é mantido pelo deploy de produção — por isso o `deploy-hml.yml` **não** sobrescreve esse arquivo.
+- **Traefik (ingress compartilhado)**: os routers de `/api/v2` e `beta.rachao.app` vivem no `traefik-dynamic.yml` (file provider, sem labels). O `deploy-hml.yml` **também copia** esse arquivo (mesmo conteúdo do repo que o `main.yml` usa) — necessário para o Traefik conhecer o router `beta.rachao.app` e emitir o cert Let's Encrypt. O Traefik observa o arquivo (`watch=true`) e recarrega sem restart.
 - Versões de actions Node 24-compatíveis (checkout@v6, docker actions v3/v6, appleboy scp@v0.1.7/ssh@v1).
 
 ---
