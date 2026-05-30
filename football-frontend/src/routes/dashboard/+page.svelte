@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore, currentPlayer, isAdmin } from '$lib/stores/auth';
   import { groups, players as playersApi } from '$lib/api';
@@ -14,12 +13,22 @@
   let statsLoading = $state(false);
   let statsError = $state('');
 
-  onMount(async () => {
-    try {
-      myGroups = await groups.list();
-    } finally {
-      loading = false;
-    }
+  // Busca de grupos atrelada ao player atual: re-roda quando o jogador muda
+  // (troca de conta via logout+login). Mais robusto que onMount, que pode não
+  // disparar de forma confiável quando o dashboard é montado via redirect-em-cadeia
+  // (ex.: super admin sai → outro user entra → /admin redireciona pra /dashboard).
+  let groupsFetchedFor: string | null = $state(null);
+  $effect(() => {
+    if ($authStore.loading) return;
+    const pid = $currentPlayer?.id;
+    if (!pid) return;
+    if (groupsFetchedFor === pid) return;
+    groupsFetchedFor = pid;
+    loading = true;
+    groups.list()
+      .then(g => { myGroups = g; })
+      .catch(() => { myGroups = []; })
+      .finally(() => { loading = false; });
   });
 
   // Redireciona super admins para o painel dedicado
