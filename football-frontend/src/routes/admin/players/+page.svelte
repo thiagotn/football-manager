@@ -264,7 +264,7 @@
 
     <!-- Pagination -->
     {#if totalPages > 1}
-      <div class="flex items-center justify-between mt-4 text-sm text-gray-400">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-sm text-gray-400">
         <span>Página {page} de {totalPages} — {total} registros</span>
         <div class="flex gap-2">
           <button

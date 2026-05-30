@@ -395,7 +395,7 @@
 
     <!-- Paginação -->
     {#if totalPages > 1}
-      <div class="flex items-center justify-between text-sm text-gray-400">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-400">
         <span>Página {currentPage} de {totalPages} · {list.total} assinantes</span>
         <div class="flex gap-2">
           <button

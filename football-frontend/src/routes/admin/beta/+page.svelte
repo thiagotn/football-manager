@@ -92,7 +92,7 @@
 
       <!-- Pagination -->
       {#if list.total > PAGE_SIZE}
-        <div class="flex items-center justify-between mt-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-6">
           <button
             onclick={() => { page--; fetchData(); }}
             disabled={page === 1}

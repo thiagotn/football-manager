@@ -156,7 +156,7 @@
 
         <!-- Paginação -->
         {#if list.total_pages > 1}
-          <div class="flex items-center justify-center gap-3 mt-6">
+          <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
             <button
               class="btn-secondary btn-sm"
               disabled={page === 1 || loading}

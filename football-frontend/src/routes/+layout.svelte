@@ -67,7 +67,7 @@
   {#if isAppPage}
     <Navbar />
   {/if}
-  <main class="flex-1 {browser && !$page.url.pathname.startsWith('/admin') ? 'pb-44 min-[940px]:pb-0' : ''}">
+  <main class="flex-1 {browser && !$page.url.pathname.startsWith('/admin') ? 'pb-44 min-[940px]:pb-0' : 'pb-16 min-[940px]:pb-0'}">
     <slot />
   </main>
   {#if browser && !$page.url.pathname.startsWith('/admin')}
