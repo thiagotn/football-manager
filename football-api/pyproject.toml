@@ -27,10 +27,14 @@ apscheduler = "^3.10.0"
 pywebpush = "^2.0.0"
 stripe = "^10.0.0"
 twilio = "^9.0.0"
-prometheus-fastapi-instrumentator = "^6.1.0"
+# Constraints diretas para forçar versões SEM vulnerabilidades conhecidas em deps
+# transitivas. Sem isso, o pip-audit no main.yml falha.
+aiohttp = ">=3.14.0"   # transitiva (pywebpush, twilio) — CVE-2026-34993 / CVE-2026-47265
+idna = ">=3.15"        # transitiva (httpx, requests) — CVE-2026-45409
+pyjwt = ">=2.13.0"     # transitiva (python-jose) — PYSEC-2026-{175,177,178,179}
+prometheus-fastapi-instrumentator = "^8.0.0"  # 8.x libera starlette>=1.0.0 (fix de PYSEC-2026-161)
 pillow = "^12.0.0"
 anthropic = "^0.97.0"
-idna = ">=3.15"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
