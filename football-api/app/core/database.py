@@ -11,12 +11,15 @@ class Base(DeclarativeBase):
 
 def create_engine():
     settings = get_settings()
+    # Engine secundário/legado — coexiste com o de db/session.py. Mantemos pool
+    # baixo (3 + 2) porque o limite do Supabase pooler é compartilhado entre os
+    # dois engines (15 sessões máx no total).
     return create_async_engine(
         settings.database_url,
         echo=settings.debug,
         pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
+        pool_size=3,
+        max_overflow=2,
     )
 
 

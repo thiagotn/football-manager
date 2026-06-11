@@ -17,10 +17,15 @@ class Base(DeclarativeBase):
 
 def get_engine():
     settings = get_settings()
+    # Supabase Supavisor (session pooler) aceita no máximo 15 conexões concorrentes;
+    # mantemos pool_size + max_overflow bem abaixo disso para deixar folga para os
+    # jobs do APScheduler (recurrence diário, status_sync horário) e qualquer outro
+    # consumidor secundário (ex.: o engine de core/database.py).
     return create_async_engine(
         _normalize_db_url(settings.database_url),
-        pool_size=10,
-        max_overflow=20,
+        pool_size=5,
+        max_overflow=5,
+        pool_pre_ping=True,
         echo=settings.debug,
     )
 

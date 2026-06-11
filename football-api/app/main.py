@@ -1,5 +1,6 @@
 import time
 from contextlib import asynccontextmanager
+from zoneinfo import ZoneInfo
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -24,6 +25,9 @@ def setup_logging():
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        # Renderiza o traceback como string no campo "exception" quando logger.exception()
+        # é usado (sem isto, o JSONRenderer recebia exc_info=True e descartava a stack).
+        structlog.processors.format_exc_info,
     ]
     if settings.is_prod:
         processors.append(structlog.processors.JSONRenderer())
@@ -43,7 +47,9 @@ async def lifespan(app: FastAPI):
 
     await run_migrations(get_settings().database_url)
 
-    scheduler = AsyncIOScheduler(timezone="America/Sao_Paulo")
+    # Usar ZoneInfo direto (em vez de string) para garantir que a tz seja aplicada
+    # mesmo sem pytz/tzlocal instalados na imagem (caso contrário cai pra UTC silenciosamente).
+    scheduler = AsyncIOScheduler(timezone=ZoneInfo("America/Sao_Paulo"))
     # 07h: fecha partidas passadas + cria próximos rachões por recorrência
     scheduler.add_job(run_recurrence_job, CronTrigger(hour=7, minute=0))
     # A cada hora (:30): fecha partidas passadas e transiciona para IN_PROGRESS
