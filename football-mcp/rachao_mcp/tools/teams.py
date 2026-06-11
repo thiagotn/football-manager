@@ -4,14 +4,14 @@ _READ = {"readOnlyHint": True, "idempotentHint": True}
 _WRITE = {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False}
 
 
-async def get_teams(group_id: str, match_id: str) -> list[dict]:
+async def get_teams(match_id: str) -> list[dict]:
     """Times já sorteados para uma partida."""
-    return await api.get(f"/groups/{group_id}/matches/{match_id}/teams")
+    return await api.get(f"/matches/{match_id}/teams")
 
 
-async def draw_teams(group_id: str, match_id: str) -> list[dict]:
+async def draw_teams(match_id: str) -> list[dict]:
     """Sorteia times equilibrados para uma partida. Substitui sorteio anterior se existir."""
-    return await api.post(f"/groups/{group_id}/matches/{match_id}/teams/draw", json={})
+    return await api.post(f"/matches/{match_id}/teams", json={})
 
 
 READ_TOOLS: list[tuple] = [

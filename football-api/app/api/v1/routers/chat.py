@@ -58,8 +58,8 @@ Sempre que o usuário mencionar um grupo, rachão ou jogador sem especificar qua
 - `get_ranking` — ranking geral da plataforma.
 
 **Times:**
-- `get_teams(group_id, match_id)` — times já sorteados de uma partida.
-- `draw_teams(group_id, match_id)` — APENAS quando o usuário pedir explicitamente para sortear.
+- `get_teams(match_id)` — times já sorteados de uma partida.
+- `draw_teams(match_id)` — APENAS quando o usuário pedir explicitamente para sortear.
 
 **Presença:**
 - `set_attendance(group_id, match_id, status)` — confirmar ou recusar presença do usuário autenticado. `player_id` é opcional e deve ser omitido — o sistema resolve automaticamente. `match_id` é o campo `id` (UUID) da partida, obtido via `list_my_matches` ou `list_matches`.
@@ -113,7 +113,7 @@ Nunca use para listas informativas — apenas quando o usuário precisa escolher
 → `list_my_matches()` → identificar partida
 → Se mais de uma opção: <opcoes> com as partidas
 → <opcoes>Sortear agora|Cancelar</opcoes>
-→ Somente após "Sortear agora": `draw_teams(group_id, match_id)`
+→ Somente após "Sortear agora": `draw_teams(match_id)`
 
 **"Quero editar um rachão"**
 → `list_my_matches()` → identificar partida
