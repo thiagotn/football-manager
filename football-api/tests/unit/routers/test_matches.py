@@ -525,7 +525,9 @@ async def test_confirm_attendance_success_returns_200(api_client, player_user, m
     match = MagicMock()
     match.id = match_id
     match.group_id = group_id
-    match.match_date = date(2026, 6, 1)  # future date
+    # Data dinâmica: sempre 30 dias no futuro (evita teste "viajante no tempo"
+    # que parou de funcionar quando a data hardcoded passou).
+    match.match_date = date.today() + timedelta(days=30)
     match.status = MatchStatus.OPEN
     match.max_players = None
 
