@@ -193,12 +193,18 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.DefaultClient.Do(anthropicReq)
 	if err != nil {
+		log.Printf("chat_anthropic_dial_failed player_id=%s err=%v", player.ID, err)
 		emitError("erro ao conectar com o assistente. Tente novamente.")
 		return
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
+		// Lê (até 1KB) e loga o body do Anthropic pra diagnóstico. Sem isso o
+		// handler ficava mudo: 200 com mensagem genérica e nenhuma pista da causa.
+		bodyPreview, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		log.Printf("chat_anthropic_non_ok player_id=%s status=%d body=%q model=%s",
+			player.ID, resp.StatusCode, string(bodyPreview), h.llmModel)
 		emitError("erro ao conectar com o assistente. Tente novamente.")
 		return
 	}
@@ -249,6 +255,10 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			emit("[DONE]")
 			return
 		case "error":
+			// Loga o conteúdo do evento de erro do Anthropic pra diagnóstico
+			// (ex.: erro do servidor MCP propagado, modelo inválido, rate limit etc.).
+			errPayload, _ := event["error"]
+			log.Printf("chat_anthropic_stream_error player_id=%s err=%v", player.ID, errPayload)
 			emitError("erro ao conectar com o assistente. Tente novamente.")
 			return
 		}
