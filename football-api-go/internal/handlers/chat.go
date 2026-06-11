@@ -163,13 +163,14 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Opt-in para o beta MCP vai via header anthropic-beta (abaixo); colocar
+	// "betas" no body produz 400 "Extra inputs are not permitted".
 	reqBody := map[string]any{
 		"model":      h.llmModel,
 		"max_tokens": 1024,
 		"stream":     true,
 		"system":     systemPrompt,
 		"messages":   req.Messages,
-		"betas":      []string{"mcp-client-2025-04-04"},
 		"mcp_servers": []map[string]any{
 			{
 				"type":                "url",
