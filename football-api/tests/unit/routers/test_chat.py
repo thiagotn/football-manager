@@ -118,6 +118,18 @@ async def test_chat_unauthenticated_returns_401(anon_client):
     assert response.status_code == 401
 
 
+@pytest.mark.asyncio
+async def test_chat_empty_messages_returns_422(api_client, player_user):
+    player_user.chat_enabled = True
+
+    response = await api_client.post(
+        "/api/v1/chat",
+        json={"messages": []},
+    )
+
+    assert response.status_code == 422
+
+
 # ── GET /admin/chat-users ─────────────────────────────────────────────────────
 
 

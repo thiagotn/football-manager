@@ -714,8 +714,7 @@ func DeletePlayerAvatarURL(ctx context.Context, pool *pgxpool.Pool, playerID uui
 type ChatUser struct {
 	ID          uuid.UUID
 	Name        string
-	Nickname    *string
-	AvatarURL   *string
+	WhatsApp    string
 	ChatEnabled bool
 	CreatedAt   time.Time
 }
@@ -723,7 +722,7 @@ type ChatUser struct {
 // ListChatUsers returns all chat users for admin
 func ListChatUsers(ctx context.Context, pool *pgxpool.Pool) ([]ChatUser, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT id, name, nickname, avatar_url, chat_enabled, created_at
+		SELECT id, name, whatsapp, chat_enabled, created_at
 		FROM players
 		WHERE role = 'player'
 		ORDER BY created_at DESC`)
@@ -735,7 +734,7 @@ func ListChatUsers(ctx context.Context, pool *pgxpool.Pool) ([]ChatUser, error) 
 	var users []ChatUser
 	for rows.Next() {
 		var u ChatUser
-		if err := rows.Scan(&u.ID, &u.Name, &u.Nickname, &u.AvatarURL,
+		if err := rows.Scan(&u.ID, &u.Name, &u.WhatsApp,
 			&u.ChatEnabled, &u.CreatedAt); err != nil {
 			return nil, err
 		}

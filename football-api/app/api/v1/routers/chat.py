@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.dependencies import AdminPlayer, CurrentPlayer, DB
-from app.core.exceptions import ForbiddenError, NotFoundError, RateLimitError
+from app.core.exceptions import ForbiddenError, NotFoundError, RateLimitError, ValidationError
 from app.models.player import Player, PlayerRole
 from app.schemas.chat import ChatAccessUpdate, ChatRequest, ChatUserItem, ChatUsersResponse
 
@@ -155,6 +155,9 @@ async def _check_and_increment_rate_limit(player: Player, db: AsyncSession) -> b
 async def chat(body: ChatRequest, request: Request, current_player: CurrentPlayer, db: DB):
     if not current_player.chat_enabled:
         raise ForbiddenError("Acesso ao assistente não habilitado para este usuário")
+
+    if not body.messages:
+        raise ValidationError("messages must not be empty")
 
     allowed = await _check_and_increment_rate_limit(current_player, db)
     if not allowed:
