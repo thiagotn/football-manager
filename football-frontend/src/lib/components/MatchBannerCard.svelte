@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Clock, MapPin, Lock, LockOpen } from 'lucide-svelte';
+  import { Clock, MapPin, Lock, LockOpen, Loader2 } from 'lucide-svelte';
   import { t } from '$lib/i18n';
   import { formatMatchTimeRange } from '$lib/timezoneUtils';
   import type { MatchDetail } from '$lib/api';
@@ -58,28 +58,40 @@
       />
     </picture>
     <div class="absolute inset-0 bg-primary-900/80"></div>
-      <!-- Status badge + lock — top-right corner -->
-      <div class="absolute top-3 right-3 flex items-center gap-1">
+      <!-- Status badge / pill — top-right corner -->
+      <div class="absolute top-3 right-3 flex items-center gap-2">
         {#if match.status === 'in_progress'}
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
             <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
             {$t('match.live')}
           </span>
+        {:else if showAdminActions}
+          <button
+            type="button"
+            onclick={match.status === 'open' ? onAskClose : onToggleOpen}
+            disabled={togglingStatus}
+            aria-busy={togglingStatus}
+            aria-label={match.status === 'open' ? $t('match.close_title') : $t('match.reopen_title')}
+            title={match.status === 'open' ? $t('match.close_title') : $t('match.reopen_title')}
+            class="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-full text-xs font-semibold transition-colors
+                   {match.status === 'open'
+                     ? 'bg-green-400 text-green-900 hover:bg-green-300 active:bg-green-500'
+                     : 'bg-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-500'}
+                   disabled:opacity-60 disabled:cursor-wait"
+          >
+            {#if togglingStatus}
+              <Loader2 size={14} class="animate-spin" />
+            {:else if match.status === 'open'}
+              <Lock size={14} />
+            {:else}
+              <LockOpen size={14} />
+            {/if}
+            {match.status === 'open' ? $t('match.open') : $t('match.closed')}
+          </button>
         {:else}
           <span class="badge {match.status === 'open' ? 'bg-green-400 text-green-900' : 'bg-gray-400 text-gray-900'}">
             {match.status === 'open' ? $t('match.open') : $t('match.closed')}
           </span>
-        {/if}
-        {#if showAdminActions}
-          {#if match.status === 'closed'}
-            <button onclick={onToggleOpen} disabled={togglingStatus}
-              class="p-0.5 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-              title={$t('match.reopen_title')}><LockOpen size={13} /></button>
-          {:else}
-            <button onclick={onAskClose} disabled={togglingStatus}
-              class="p-0.5 rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-              title={$t('match.close_title')}><Lock size={13} /></button>
-          {/if}
         {/if}
       </div>
 
