@@ -42,6 +42,15 @@
   }
 
   const showAdminActions = $derived(isGroupAdmin && (!!onToggleOpen || !!onAskClose));
+
+  function handleStatusClick() {
+    if (togglingStatus) return;
+    if (match.status === 'open') {
+      onAskClose?.();
+    } else {
+      onToggleOpen?.();
+    }
+  }
 </script>
 
 <div class="card mb-4 overflow-hidden">
@@ -68,7 +77,7 @@
         {:else if showAdminActions}
           <button
             type="button"
-            onclick={match.status === 'open' ? onAskClose : onToggleOpen}
+            onclick={handleStatusClick}
             disabled={togglingStatus}
             aria-busy={togglingStatus}
             aria-label={match.status === 'open' ? $t('match.close_title') : $t('match.reopen_title')}
