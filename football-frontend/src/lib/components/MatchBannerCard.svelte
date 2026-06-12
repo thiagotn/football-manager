@@ -68,7 +68,7 @@
     </picture>
     <div class="absolute inset-0 bg-primary-900/80"></div>
       <!-- Status badge / pill — top-right corner -->
-      <div class="absolute top-3 right-3 flex items-center gap-2">
+      <div class="absolute top-3 right-3 z-10 flex items-center gap-2">
         {#if match.status === 'in_progress'}
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/30 text-red-200 border border-red-400/40">
             <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
