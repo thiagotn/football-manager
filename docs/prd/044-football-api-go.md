@@ -1097,3 +1097,10 @@ para paridade plena (atualizar conforme avança):
   `https://beta.rachao.app` (configuração manual na UI do Kuma).
 - [ ] **Audit endpoint-a-endpoint** (contrato HTTP, status codes, regras de negócio) usando o skill
   `api-compare` — verificação autoritativa de paridade, recomendada antes do cutover.
+- [x] **Match listing — `is_current`/`voting_status`** (issue #7): entregue na v1 e na v2.
+  v1: `football-api/app/services/match_listing.py` + enrich em `routers/matches.py` e
+  `routers/players.py`. v2: `football-api-go/internal/services/voting.go` +
+  `match_listing.go` + `handlers/match_listing.go` wrappers usados em `listGroupMatches`,
+  `createMatch`, `updateMatch` e `myMatches` (este último agrupa por `group_id` antes de
+  classificar). Testes: `tests/unit/services/test_match_listing.py` (v1) e
+  `tests/unit/match_listing_test.go` (v2), 7 cenários cada.

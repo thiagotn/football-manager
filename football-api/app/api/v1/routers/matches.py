@@ -14,6 +14,7 @@ from app.db.repositories.match_stats_repo import MatchStatsRepository
 from app.models.match import AttendanceStatus, Match, MatchStatus
 from app.models.player import PlayerRole
 from app.models.group import GroupMemberRole
+from app.services.match_listing import classify_matches
 from app.services.recurrence import run_recurrence
 from app.services.push import send_push
 
@@ -196,7 +197,17 @@ async def list_group_matches(group_id: uuid.UUID, db: DB, current: CurrentPlayer
                 for pid in confirmed_ids
             ], return_exceptions=True)
 
-    return await repo.get_group_matches(group_id)
+    matches = await repo.get_group_matches(group_id)
+    classification = classify_matches(matches)
+    out: list[MatchResponse] = []
+    for m in matches:
+        is_current, voting_status = classification[str(m.id)]
+        out.append(
+            MatchResponse.model_validate(m).model_copy(
+                update={"is_current": is_current, "voting_status": voting_status}
+            )
+        )
+    return out
 
 
 @router.post("/groups/{group_id}/matches", response_model=MatchResponse, status_code=201)
@@ -250,7 +261,38 @@ async def create_match(group_id: uuid.UUID, body: MatchCreate, db: DB, current: 
         for pid in member_ids
     ], return_exceptions=True)
 
-    return match
+    return _enrich_match(match)
+
+
+def _enrich_match(match: Match) -> MatchResponse:
+    """Devolve MatchResponse com is_current/voting_status preenchidos.
+
+    Para endpoints de match único (create/update/single-fetch), usa apenas o
+    próprio match como contexto — a regra "é o mais recente do grupo" se
+    resolve naturalmente nesse caso.
+    """
+    classification = classify_matches([match])
+    is_current, voting_status = classification[str(match.id)]
+    return MatchResponse(
+        id=match.id,
+        number=match.number,
+        group_id=match.group_id,
+        match_date=match.match_date,
+        start_time=match.start_time,
+        end_time=match.end_time,
+        location=match.location,
+        address=match.address,
+        court_type=match.court_type,
+        players_per_team=match.players_per_team,
+        max_players=match.max_players,
+        notes=match.notes,
+        hash=match.hash,
+        status=match.status,
+        created_at=match.created_at,
+        updated_at=match.updated_at,
+        is_current=is_current,
+        voting_status=voting_status,
+    )
 
 
 @router.get("/groups/{group_id}/matches/{match_id}", response_model=MatchDetailResponse)
@@ -317,7 +359,7 @@ async def update_match(
             for pid in confirmed_ids
         ], return_exceptions=True)
 
-    return match
+    return _enrich_match(match)
 
 
 @router.delete("/groups/{group_id}/matches/{match_id}", status_code=204)

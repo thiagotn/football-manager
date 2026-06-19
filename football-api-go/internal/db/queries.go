@@ -264,25 +264,27 @@ func RevokeAllRefreshTokensForPlayer(ctx context.Context, pool *pgxpool.Pool, pl
 
 // PlayerMatch row for player's match history
 type PlayerMatch struct {
-	ID             uuid.UUID
-	GroupID        uuid.UUID
-	Number         int
-	Hash           string
-	MatchDate      string
-	StartTime      string
-	EndTime        *string
-	Location       string
-	Address        *string
-	CourtType      *string
-	PlayersPerTeam *int
-	MaxPlayers     *int
-	Notes          *string
-	Status         string
-	CreatedAt      string
-	UpdatedAt      string
-	GroupName      string
-	GroupTimezone  string
-	MyAttendance   string
+	ID                   uuid.UUID
+	GroupID              uuid.UUID
+	Number               int
+	Hash                 string
+	MatchDate            string
+	StartTime            string
+	EndTime              *string
+	Location             string
+	Address              *string
+	CourtType            *string
+	PlayersPerTeam       *int
+	MaxPlayers           *int
+	Notes                *string
+	Status               string
+	VoteOpenDelayMinutes int
+	VoteDurationHours    int
+	CreatedAt            string
+	UpdatedAt            string
+	GroupName            string
+	GroupTimezone        string
+	MyAttendance         string
 }
 
 // GetPlayerMatches returns matches for a player
@@ -293,7 +295,8 @@ func GetPlayerMatches(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUI
 			m.match_date::TEXT, m.start_time::TEXT, m.end_time::TEXT,
 			m.location, m.address, m.court_type::TEXT,
 			m.players_per_team, m.max_players, m.notes,
-			m.status::TEXT, m.created_at::TEXT, m.updated_at::TEXT,
+			m.status::TEXT, m.vote_open_delay_minutes, m.vote_duration_hours,
+			m.created_at::TEXT, m.updated_at::TEXT,
 			g.name, g.timezone,
 			a.status::TEXT
 		FROM matches m
@@ -311,7 +314,8 @@ func GetPlayerMatches(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUI
 			&m.MatchDate, &m.StartTime, &m.EndTime,
 			&m.Location, &m.Address, &m.CourtType,
 			&m.PlayersPerTeam, &m.MaxPlayers, &m.Notes,
-			&m.Status, &m.CreatedAt, &m.UpdatedAt,
+			&m.Status, &m.VoteOpenDelayMinutes, &m.VoteDurationHours,
+			&m.CreatedAt, &m.UpdatedAt,
 			&m.GroupName, &m.GroupTimezone, &m.MyAttendance); err != nil {
 			return nil, err
 		}

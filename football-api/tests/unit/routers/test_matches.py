@@ -11,7 +11,7 @@ Regras de negócio cobertas:
 - _build_detail exclui super admin das listas de presença
 - GET /matches/discover sem token → 200 (público)
 """
-from datetime import time
+from datetime import date, time, timedelta
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -45,9 +45,11 @@ def _make_match(hash_: str = "abc123", with_admin: bool = False) -> MagicMock:
     m.group_id = uuid4()
     m.hash = hash_
     m.status = MatchStatus.OPEN
-    m.match_date = "2026-03-10"
+    m.match_date = date.today() + timedelta(days=30)
     m.start_time = time(10, 0)
     m.end_time = None
+    m.vote_open_delay_minutes = 20
+    m.vote_duration_hours = 24
     m.location = "Quadra X"
     m.address = None
     m.court_type = None

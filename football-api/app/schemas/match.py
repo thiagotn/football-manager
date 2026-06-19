@@ -1,11 +1,14 @@
 import uuid
 from datetime import date, datetime, time
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 from app.models.match import AttendanceStatus, CourtType, MatchStatus
 from app.schemas.player import PlayerPublic
+
+VotingStatus = Literal["not_open", "open", "closed"]
 
 
 class MatchCreate(BaseModel):
@@ -70,6 +73,9 @@ class MatchResponse(BaseModel):
     status: MatchStatus
     created_at: datetime
     updated_at: datetime
+    # Listing helpers — see app/services/match_listing.py
+    is_current: bool = False
+    voting_status: VotingStatus = "closed"
 
 
 class MatchDetailResponse(MatchResponse):

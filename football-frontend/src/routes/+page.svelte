@@ -42,14 +42,14 @@
 
   let upcomingMatches = $derived(
     allMatches
-      .filter(m => m.status === 'open' || m.status === 'in_progress')
+      .filter(m => m.is_current)
       .sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b)))
       .slice(0, 8)
   );
 
   let pastMatches = $derived(
     allMatches
-      .filter(m => m.status === 'closed')
+      .filter(m => !m.is_current)
       .sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a)))
       .slice(0, 8)
   );
@@ -237,16 +237,23 @@
                       {fmtDate(m.match_date)}
                       <span class="text-xs text-gray-400 dark:text-gray-500 font-normal ml-1">#{m.number}</span>
                     </p>
-                    {#if m.status === 'in_progress'}
-                      <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
-                        <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                        {$t('dash.live')}
-                      </span>
-                    {:else}
-                      <span class="badge shrink-0 {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
-                        {m.status === 'open' ? $t('dash.open') : $t('dash.closed')}
-                      </span>
-                    {/if}
+                    <div class="shrink-0 flex flex-wrap items-center gap-1 justify-end">
+                      {#if m.status === 'in_progress'}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+                          <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                          {$t('dash.live')}
+                        </span>
+                      {:else}
+                        <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
+                          {m.status === 'open' ? $t('dash.open') : $t('dash.closed')}
+                        </span>
+                      {/if}
+                      {#if m.status === 'closed' && m.voting_status === 'open'}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                          🗳️ {$t('match.voting_open_badge')}
+                        </span>
+                      {/if}
+                    </div>
                   </div>
                   <p class="text-xs text-gray-400 dark:text-gray-500 flex flex-wrap items-center gap-x-2 mt-0.5">
                     <span class="flex items-center gap-1"><Clock size={11} />{m.start_time.slice(0,5)}{m.end_time ? ` – ${m.end_time.slice(0,5)}` : ''}</span>

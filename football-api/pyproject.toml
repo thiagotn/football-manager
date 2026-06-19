@@ -33,6 +33,7 @@ aiohttp = ">=3.14.0"   # transitiva (pywebpush, twilio) — CVE-2026-34993 / CVE
 idna = ">=3.15"        # transitiva (httpx, requests) — CVE-2026-45409
 pyjwt = ">=2.13.0"     # transitiva (python-jose) — PYSEC-2026-{175,177,178,179}
 prometheus-fastapi-instrumentator = "^8.0.0"  # 8.x libera starlette>=1.0.0 (fix de PYSEC-2026-161)
+starlette = ">=1.3.1"  # CVE-2026-54283 — bump direto até a transitiva alcançar
 pillow = "^12.0.0"
 anthropic = "^0.97.0"
 

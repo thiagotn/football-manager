@@ -206,29 +206,53 @@ func (h *PlayerHandler) myMatches(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type matchItem struct {
-		ID             uuid.UUID `json:"id"`
-		GroupID        uuid.UUID `json:"group_id"`
-		Number         int       `json:"number"`
-		Hash           string    `json:"hash"`
-		MatchDate      string    `json:"match_date"`
-		StartTime      string    `json:"start_time"`
-		EndTime        *string   `json:"end_time"`
-		Location       string    `json:"location"`
-		Address        *string   `json:"address"`
-		CourtType      *string   `json:"court_type"`
-		PlayersPerTeam *int      `json:"players_per_team"`
-		MaxPlayers     *int      `json:"max_players"`
-		Notes          *string   `json:"notes"`
-		Status         string    `json:"status"`
-		CreatedAt      string    `json:"created_at"`
-		UpdatedAt      string    `json:"updated_at"`
-		GroupName      string    `json:"group_name"`
-		GroupTimezone  string    `json:"group_timezone"`
-		MyAttendance   string    `json:"my_attendance"`
+		ID             uuid.UUID             `json:"id"`
+		GroupID        uuid.UUID             `json:"group_id"`
+		Number         int                   `json:"number"`
+		Hash           string                `json:"hash"`
+		MatchDate      string                `json:"match_date"`
+		StartTime      string                `json:"start_time"`
+		EndTime        *string               `json:"end_time"`
+		Location       string                `json:"location"`
+		Address        *string               `json:"address"`
+		CourtType      *string               `json:"court_type"`
+		PlayersPerTeam *int                  `json:"players_per_team"`
+		MaxPlayers     *int                  `json:"max_players"`
+		Notes          *string               `json:"notes"`
+		Status         string                `json:"status"`
+		IsCurrent      bool                  `json:"is_current"`
+		VotingStatus   services.VotingStatus `json:"voting_status"`
+		CreatedAt      string                `json:"created_at"`
+		UpdatedAt      string                `json:"updated_at"`
+		GroupName      string                `json:"group_name"`
+		GroupTimezone  string                `json:"group_timezone"`
+		MyAttendance   string                `json:"my_attendance"`
+	}
+
+	// is_current depende do contexto do grupo (existe partida futura? é a mais
+	// recente fechada?). Agrupa por group_id antes de classificar.
+	byGroup := make(map[uuid.UUID][]services.ListingMatch)
+	for _, m := range matches {
+		byGroup[m.GroupID] = append(byGroup[m.GroupID], services.ListingMatch{
+			ID:                   m.ID,
+			Status:               m.Status,
+			MatchDate:            m.MatchDate,
+			StartTime:            m.StartTime,
+			EndTime:              m.EndTime,
+			VoteOpenDelayMinutes: m.VoteOpenDelayMinutes,
+			VoteDurationHours:    m.VoteDurationHours,
+		})
+	}
+	classification := make(map[uuid.UUID]services.ClassificationResult, len(matches))
+	for _, group := range byGroup {
+		for id, res := range services.ClassifyMatches(group) {
+			classification[id] = res
+		}
 	}
 
 	result := make([]matchItem, len(matches))
 	for i, m := range matches {
+		res := classification[m.ID]
 		result[i] = matchItem{
 			ID:             m.ID,
 			GroupID:        m.GroupID,
@@ -244,6 +268,8 @@ func (h *PlayerHandler) myMatches(w http.ResponseWriter, r *http.Request) {
 			MaxPlayers:     m.MaxPlayers,
 			Notes:          m.Notes,
 			Status:         m.Status,
+			IsCurrent:      res.IsCurrent,
+			VotingStatus:   res.VotingStatus,
 			CreatedAt:      m.CreatedAt,
 			UpdatedAt:      m.UpdatedAt,
 			GroupName:      m.GroupName,

@@ -420,7 +420,7 @@ func (h *MatchHandler) listGroupMatches(w http.ResponseWriter, r *http.Request) 
 		renderError(w, err)
 		return
 	}
-	renderJSON(w, http.StatusOK, matches)
+	renderJSON(w, http.StatusOK, enrichGroupMatches(matches))
 }
 
 func (h *MatchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
@@ -516,7 +516,7 @@ func (h *MatchHandler) createMatch(w http.ResponseWriter, r *http.Request) {
 		_ = h.Store.SetAttendance(r.Context(), match.ID, pid, "pending")
 	}
 
-	renderJSON(w, http.StatusCreated, match)
+	renderJSON(w, http.StatusCreated, enrichOneMatch(match))
 }
 
 func (h *MatchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
@@ -613,7 +613,7 @@ func (h *MatchHandler) updateMatch(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err)
 		return
 	}
-	renderJSON(w, http.StatusOK, match)
+	renderJSON(w, http.StatusOK, enrichOneMatch(match))
 }
 
 func (h *MatchHandler) deleteMatch(w http.ResponseWriter, r *http.Request) {

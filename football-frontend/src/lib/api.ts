@@ -157,6 +157,8 @@ export type Match = {
   max_players: number | null;
   notes: string | null; hash: string; status: 'open' | 'in_progress' | 'closed';
   created_at: string; updated_at: string;
+  is_current: boolean;
+  voting_status: 'not_open' | 'open' | 'closed';
 };
 export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string; position: string | null; nickname: string | null };
 export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean; group_timezone: string };

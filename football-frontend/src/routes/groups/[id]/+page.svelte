@@ -212,8 +212,8 @@
   function matchSortKey(m: { match_date: string; start_time: string }) {
     return `${m.match_date}T${m.start_time}`;
   }
-  let upcomingMatches = $derived(matchList.filter(m => m.status === 'open' || m.status === 'in_progress').sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b))));
-  let pastMatches = $derived(matchList.filter(m => m.status === 'closed').sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a))));
+  let upcomingMatches = $derived(matchList.filter(m => m.is_current).sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b))));
+  let pastMatches = $derived(matchList.filter(m => !m.is_current).sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a))));
 
   let confirmOpen = $state(false);
   let confirmMessage = $state('');
@@ -700,16 +700,23 @@
                       <span class="text-primary-600 dark:text-primary-400 font-bold text-base mr-1">#{m.number}</span>{fmtDate(m.match_date)}
                     </p>
                   </div>
-                  {#if m.status === 'in_progress'}
-                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
-                      <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                      {$t('group.status_in_progress')}
-                    </span>
-                  {:else}
-                    <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'} shrink-0">
-                      {m.status === 'open' ? $t('group.status_open') : $t('group.status_closed')}
-                    </span>
-                  {/if}
+                  <div class="shrink-0 flex flex-wrap items-center gap-1 justify-end">
+                    {#if m.status === 'in_progress'}
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                        {$t('group.status_in_progress')}
+                      </span>
+                    {:else}
+                      <span class="badge {m.status === 'open' ? 'badge-green' : 'badge-gray'}">
+                        {m.status === 'open' ? $t('group.status_open') : $t('group.status_closed')}
+                      </span>
+                    {/if}
+                    {#if m.status === 'closed' && m.voting_status === 'open'}
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                        🗳️ {$t('match.voting_open_badge')}
+                      </span>
+                    {/if}
+                  </div>
                 </div>
 
                 <!-- Time + Location -->

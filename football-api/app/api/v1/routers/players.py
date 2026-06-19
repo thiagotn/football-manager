@@ -25,6 +25,7 @@ from app.db.repositories.player_stats_repo import PlayerStatsRepository
 from app.models.player import Player, PlayerRole
 from app.schemas.match import MatchResponse, PlayerMatchItem
 from app.schemas.player import PlayerCreate, PlayerResponse, PlayerUpdate, ResetPasswordResponse
+from app.services.match_listing import classify_matches
 from app.services.telegram import notify_new_player
 from app.schemas.player_stats import PlayerFullStats
 from app.schemas.player_public import PlayerPublicStats
@@ -54,9 +55,24 @@ def _real_ip(request: Request) -> str:
 async def get_my_matches(db: DB, current: CurrentPlayer):
     repo = MatchRepository(db)
     rows = await repo.get_player_matches(current.id)
+
+    # is_current depende do contexto do grupo (existe partida futura? é a mais
+    # recente fechada?), então classifica por grupo antes de montar a resposta.
+    by_group: dict[uuid.UUID, list] = {}
+    for match, _gname, _gtz, _mine in rows:
+        by_group.setdefault(match.group_id, []).append(match)
+    classification: dict[str, tuple[bool, str]] = {}
+    for matches in by_group.values():
+        classification.update(classify_matches(matches))
+
     return [
         PlayerMatchItem(
-            **MatchResponse.model_validate(match).model_dump(),
+            **MatchResponse.model_validate(match).model_copy(
+                update={
+                    "is_current": classification[str(match.id)][0],
+                    "voting_status": classification[str(match.id)][1],
+                }
+            ).model_dump(),
             group_name=group_name,
             group_timezone=group_timezone,
             my_attendance=my_attendance,
