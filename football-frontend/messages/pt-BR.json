@@ -483,7 +483,7 @@
   "match.vote_not_open_soon": "Imediatamente após o término da partida",
   "match.vote_not_open_delay": "{n} min após o término da partida",
   "match.results_promo_title": "Votação encerrada!",
-  "match.results_promo_desc": "Confira quem foram os melhores desta partida.",
+  "match.results_promo_desc": "Confira quais foram os melhores desta partida.",
   "match.results_promo_btn": "Ver resultado completo",
   "match.results_promo_close": "Fechar",
   "match.close_confirm": "Encerrar esta partida? Os jogadores não poderão mais confirmar presença.",
