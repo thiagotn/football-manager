@@ -10,10 +10,10 @@ class DashboardPage:
         self.page.goto("/groups")
 
     def select_upcoming_tab(self):
-        self.page.get_by_role("button", name="Próximos Rachões").click()
+        self.page.get_by_role("button", name="Atuais").click()
 
     def select_past_tab(self):
-        self.page.get_by_role("button", name="Últimos Rachões").click()
+        self.page.get_by_role("button", name="Últimos").click()
 
     def group_links(self):
         return self.page.locator("a[href^='/groups/']")

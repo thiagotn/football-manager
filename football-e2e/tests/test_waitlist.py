@@ -76,7 +76,7 @@ def test_modal_editar_grupo_exibe_toggle_publico(admin_page: Page, first_group_u
 def test_admin_ve_painel_lista_de_espera_em_grupo_publico(admin_page: Page, first_group_url: str):
     """
     Admin on a public group with an open match should see the waitlist panel
-    (even if empty) in the Próximos tab.
+    (even if empty) in the Atuais tab.
     """
     admin_page.goto(first_group_url)
     admin_page.wait_for_load_state("networkidle")

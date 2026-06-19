@@ -26,7 +26,7 @@ def test_dashboard_exibe_grupos(admin_page: Page):
 
 def test_grupo_exibe_tres_abas(first_group_page):
     page, gp = first_group_page
-    expect(page.get_by_role("button", name=lambda n: "Próximos" in n)).to_be_visible()
+    expect(page.get_by_role("button", name=lambda n: "Atuais" in n)).to_be_visible()
     expect(page.get_by_role("button", name=lambda n: "Últimos" in n)).to_be_visible()
     expect(page.get_by_role("button", name=lambda n: "Jogadores" in n)).to_be_visible()
 

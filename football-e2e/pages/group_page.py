@@ -8,7 +8,7 @@ class GroupPage:
         self.page = page
 
     def tab_upcoming(self):
-        self.page.get_by_role("button", name=re.compile(r"Próximos")).click()
+        self.page.get_by_role("button", name=re.compile(r"Atuais")).click()
 
     def tab_past(self):
         self.page.get_by_role("button", name=re.compile(r"Últimos")).click()
