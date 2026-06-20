@@ -17,18 +17,20 @@ type VoteTop5Item struct {
 }
 
 type VoteTop5Result struct {
-	Position int       `json:"position"`
-	PlayerID uuid.UUID `json:"player_id"`
-	Name     string    `json:"name"`
-	Nickname *string   `json:"nickname"`
-	Points   int       `json:"points"`
+	Position  int       `json:"position"`
+	PlayerID  uuid.UUID `json:"player_id"`
+	Name      string    `json:"name"`
+	Nickname  *string   `json:"nickname"`
+	AvatarURL *string   `json:"avatar_url"`
+	Points    int       `json:"points"`
 }
 
 type VoteFlopResult struct {
-	PlayerID uuid.UUID `json:"player_id"`
-	Name     string    `json:"name"`
-	Nickname *string   `json:"nickname"`
-	Votes    int       `json:"votes"`
+	PlayerID  uuid.UUID `json:"player_id"`
+	Name      string    `json:"name"`
+	Nickname  *string   `json:"nickname"`
+	AvatarURL *string   `json:"avatar_url"`
+	Votes     int       `json:"votes"`
 }
 
 type VoteResults struct {
@@ -218,12 +220,12 @@ func GetPendingVotes(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID
 func GetVoteResults(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) (*VoteResults, error) {
 	// Top5 aggregated
 	top5rows, err := pool.Query(ctx, `
-		SELECT t.player_id, p.name, p.nickname, SUM(t.points) AS total_points
+		SELECT t.player_id, p.name, p.nickname, p.avatar_url, SUM(t.points) AS total_points
 		FROM match_vote_top5 t
 		JOIN match_votes v ON v.id = t.vote_id
 		JOIN players p ON p.id = t.player_id
 		WHERE v.match_id = $1
-		GROUP BY t.player_id, p.name, p.nickname
+		GROUP BY t.player_id, p.name, p.nickname, p.avatar_url
 		ORDER BY total_points DESC`,
 		matchID,
 	)
@@ -237,7 +239,7 @@ func GetVoteResults(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) 
 	pos, rank := 0, 0
 	for top5rows.Next() {
 		var r VoteTop5Result
-		if err := top5rows.Scan(&r.PlayerID, &r.Name, &r.Nickname, &r.Points); err != nil {
+		if err := top5rows.Scan(&r.PlayerID, &r.Name, &r.Nickname, &r.AvatarURL, &r.Points); err != nil {
 			return nil, err
 		}
 		rank++
@@ -254,12 +256,12 @@ func GetVoteResults(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) 
 
 	// Flop aggregated
 	floprows, err := pool.Query(ctx, `
-		SELECT f.player_id, p.name, p.nickname, COUNT(f.id) AS vote_count
+		SELECT f.player_id, p.name, p.nickname, p.avatar_url, COUNT(f.id) AS vote_count
 		FROM match_vote_flop f
 		JOIN match_votes v ON v.id = f.vote_id
 		JOIN players p ON p.id = f.player_id
 		WHERE v.match_id = $1
-		GROUP BY f.player_id, p.name, p.nickname
+		GROUP BY f.player_id, p.name, p.nickname, p.avatar_url
 		ORDER BY vote_count DESC`,
 		matchID,
 	)
@@ -272,7 +274,7 @@ func GetVoteResults(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) 
 	maxFlop := -1
 	for floprows.Next() {
 		var r VoteFlopResult
-		if err := floprows.Scan(&r.PlayerID, &r.Name, &r.Nickname, &r.Votes); err != nil {
+		if err := floprows.Scan(&r.PlayerID, &r.Name, &r.Nickname, &r.AvatarURL, &r.Votes); err != nil {
 			return nil, err
 		}
 		if maxFlop < 0 {

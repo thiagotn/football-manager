@@ -229,6 +229,8 @@
             {#each top3 as item}
               {@const pos = item.position}
               <div class="flex flex-col items-center gap-1 flex-1">
+                <!-- Avatar above name (issue #8) -->
+                <AvatarImage name={item.name} avatarUrl={item.avatar_url} size={pos === 1 ? 56 : 48} class="ring-2 ring-white dark:ring-gray-800 shadow" />
                 <!-- Name + medal above podium block -->
                 <p class="text-center text-xs font-semibold text-gray-800 dark:text-gray-100 leading-tight line-clamp-2 px-1">{playerDisplayName(item.name, item.nickname)}</p>
                 <span class="text-xl">{MEDALS[pos]}</span>

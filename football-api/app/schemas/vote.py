@@ -65,6 +65,7 @@ class Top5ResultItem(BaseModel):
     player_id: UUID
     name: str
     nickname: str | None = None
+    avatar_url: str | None = None
     points: int
 
 
@@ -72,6 +73,7 @@ class FlopResultItem(BaseModel):
     player_id: UUID
     name: str
     nickname: str | None = None
+    avatar_url: str | None = None
     votes: int
 
 
