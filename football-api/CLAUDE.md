@@ -64,9 +64,9 @@ A última migration criada é `045_drop_api_v2_enabled.sql`.
 |---------|-----------------|
 | `billing.py` | Cálculo de MRR, limites de plano |
 | `billing_stripe.py` | Criação de checkout, webhook handlers |
-| `push.py` | `send_push(db, player_id, title, body, url)` |
-| `recurrence.py` | Geração de próxima partida recorrente |
 | `match_listing.py` | `classify_matches(matches)` — calcula `is_current`/`voting_status` por partida do grupo (combina status, janela de votação e "mais recente sem próxima criada"). Single source of truth do filtro "Atuais" do frontend. |
+| `push.py` | `send_push(db, player_id, title, body, url)` + `send_push_to_group_admins(db, group_id, *, title, body, url, exclude=None)` — fanout para coordenação cross-admin. |
+| `recurrence.py` | Geração de próxima partida recorrente |
 | `storage.py` | Upload/remoção de avatares no Supabase Storage |
 | `team_builder.py` | Algoritmo snake-draft de times equilibrados |
 | `twilio_verify.py` | `send_otp(whatsapp)`, `check_otp(whatsapp, code)` — E.164 |

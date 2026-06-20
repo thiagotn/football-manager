@@ -15,6 +15,7 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
+	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
 
@@ -41,8 +42,20 @@ type GroupStore interface {
 	UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error
 	GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error)
 	EnsureMemberInCurrentPeriod(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
 	GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
+
+	// Waitlist
+	CreateWaitlistEntry(ctx context.Context, p db.CreateWaitlistEntryParams) (*db.WaitlistEntry, error)
+	GetWaitlistEntryForPlayer(ctx context.Context, matchID, playerID uuid.UUID) (*db.WaitlistEntry, error)
+	GetWaitlistEntryByID(ctx context.Context, entryID uuid.UUID) (*db.WaitlistEntry, error)
+	GetPendingWaitlistForMatch(ctx context.Context, matchID uuid.UUID) ([]db.WaitlistEntry, error)
+	UpdateWaitlistEntryStatus(ctx context.Context, entryID uuid.UUID, status string, reviewerID uuid.UUID) error
+
+	// Admin lookup (used by services.NotifyGroupAdmins)
+	GetGroupAdminIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 }
 
 type pgGroupStore struct {
@@ -121,15 +134,52 @@ func (s *pgGroupStore) EnsureMemberInCurrentPeriod(ctx context.Context, groupID,
 func (s *pgGroupStore) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
 	return db.GetPlayerByID(ctx, s.pool, playerID)
 }
+func (s *pgGroupStore) CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error) {
+	return db.CountAttendances(ctx, s.pool, matchID, status)
+}
+func (s *pgGroupStore) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
+	return db.GetMatchByID(ctx, s.pool, matchID)
+}
+func (s *pgGroupStore) CreateWaitlistEntry(ctx context.Context, p db.CreateWaitlistEntryParams) (*db.WaitlistEntry, error) {
+	return db.CreateWaitlistEntry(ctx, s.pool, p)
+}
+func (s *pgGroupStore) GetWaitlistEntryForPlayer(ctx context.Context, matchID, playerID uuid.UUID) (*db.WaitlistEntry, error) {
+	return db.GetWaitlistEntryForPlayer(ctx, s.pool, matchID, playerID)
+}
+func (s *pgGroupStore) GetWaitlistEntryByID(ctx context.Context, entryID uuid.UUID) (*db.WaitlistEntry, error) {
+	return db.GetWaitlistEntryByID(ctx, s.pool, entryID)
+}
+func (s *pgGroupStore) GetPendingWaitlistForMatch(ctx context.Context, matchID uuid.UUID) ([]db.WaitlistEntry, error) {
+	return db.GetPendingWaitlistForMatch(ctx, s.pool, matchID)
+}
+func (s *pgGroupStore) UpdateWaitlistEntryStatus(ctx context.Context, entryID uuid.UUID, status string, reviewerID uuid.UUID) error {
+	return db.UpdateWaitlistEntryStatus(ctx, s.pool, entryID, status, reviewerID)
+}
+func (s *pgGroupStore) GetGroupAdminIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return db.GetGroupAdminIDs(ctx, s.pool, groupID)
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type GroupHandler struct {
 	Store GroupStore
+	pool  *pgxpool.Pool          // raw pool for cross-domain calls (push fanout)
+	push  services.PushService   // injected push service (no-op stub today)
 }
 
 func NewGroupHandler(pool *pgxpool.Pool) *GroupHandler {
-	return &GroupHandler{Store: &pgGroupStore{pool: pool}}
+	return &GroupHandler{
+		Store: &pgGroupStore{pool: pool},
+		pool:  pool,
+		push:  services.NewPushService(pool),
+	}
+}
+
+// NewGroupHandlerWithDeps lets tests inject the Store and PushService directly.
+// pool can be nil when only handlers that don't fan-out by pool (e.g. push helpers
+// that only need the PushService) are exercised.
+func NewGroupHandlerWithDeps(store GroupStore, pool *pgxpool.Pool, push services.PushService) *GroupHandler {
+	return &GroupHandler{Store: store, pool: pool, push: push}
 }
 
 func (h *GroupHandler) Routes() chi.Router {
@@ -150,6 +200,7 @@ func (h *GroupHandler) Routes() chi.Router {
 		r.Get("/stats", h.groupStats)
 		r.Get("/waitlist", h.listWaitlist)
 		r.Post("/waitlist", h.joinWaitlist)
+		r.Patch("/waitlist/{entryID}", h.reviewWaitlist)
 	})
 	return r
 }
@@ -998,9 +1049,47 @@ func (h *GroupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find next open match — waitlist always attaches to a specific match.
+	matchIDs, err := h.Store.GetOpenMatchesForGroup(r.Context(), groupID)
+	if err != nil || len(matchIDs) == 0 {
+		renderError(w, apierror.Forbidden("no open match accepting waitlist"))
+		return
+	}
+	matchID := matchIDs[0]
+
+	// Already on waitlist?
+	if existing, _ := h.Store.GetWaitlistEntryForPlayer(r.Context(), matchID, player.ID); existing != nil {
+		renderError(w, apierror.Conflict("already on waitlist for this match"))
+		return
+	}
+
+	entry, err := h.Store.CreateWaitlistEntry(r.Context(), db.CreateWaitlistEntryParams{
+		MatchID:  matchID,
+		PlayerID: player.ID,
+		Intro:    req.Intro,
+	})
+	if err != nil {
+		renderError(w, apierror.Internal("failed to create waitlist entry"))
+		return
+	}
+
+	// Fanout to group admins.
+	_, _ = services.NotifyGroupAdmins(r.Context(), h.Store, h.push, groupID, nil,
+		services.PushNotification{
+			Title: "⚽ Novo candidato — " + group.Name,
+			Body:  player.Name + " quer participar do rachão. Acesse o grupo para revisar.",
+			URL:   "https://rachao.app/groups/" + groupID.String(),
+		})
+
 	renderJSON(w, http.StatusCreated, map[string]any{
-		"status":  "pending",
-		"message": "waitlist join recorded",
+		"id":              entry.ID,
+		"match_id":        entry.MatchID,
+		"player_id":       entry.PlayerID,
+		"player_name":     player.Name,
+		"player_nickname": player.Nickname,
+		"intro":           entry.Intro,
+		"status":          entry.Status,
+		"created_at":      entry.CreatedAt,
 	})
 }
 
@@ -1022,15 +1111,150 @@ func (h *GroupHandler) listWaitlist(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get open matches for the group
 	matchIDs, err := h.Store.GetOpenMatchesForGroup(r.Context(), groupID)
 	if err != nil || len(matchIDs) == 0 {
 		renderJSON(w, http.StatusOK, []any{})
 		return
 	}
 
-	// Return empty list for now (waitlist data model not fully implemented in Go API)
-	renderJSON(w, http.StatusOK, []any{})
+	entries, err := h.Store.GetPendingWaitlistForMatch(r.Context(), matchIDs[0])
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	if entries == nil {
+		entries = []db.WaitlistEntry{}
+	}
+	renderJSON(w, http.StatusOK, entries)
+}
+
+type reviewWaitlistReq struct {
+	Action string `json:"action"` // "accept" | "reject"
+}
+
+func (h *GroupHandler) reviewWaitlist(w http.ResponseWriter, r *http.Request) {
+	player := middleware.PlayerFromCtx(r.Context())
+	groupID, err := groupIDParam(r)
+	if err != nil {
+		renderError(w, apierror.NotFound("group not found"))
+		return
+	}
+	entryID, err := uuid.Parse(chi.URLParam(r, "entryID"))
+	if err != nil {
+		renderError(w, apierror.NotFound("entry not found"))
+		return
+	}
+
+	var req reviewWaitlistReq
+	if err := decodeJSON(r, &req); err != nil {
+		renderError(w, err)
+		return
+	}
+	if req.Action != "accept" && req.Action != "reject" {
+		renderError(w, apierror.Unprocessable("action must be 'accept' or 'reject'"))
+		return
+	}
+
+	group, err := h.Store.GetGroupByID(r.Context(), groupID)
+	if err != nil || group == nil {
+		renderError(w, apierror.NotFound("group not found"))
+		return
+	}
+
+	// Authorization: super-admin or admin of the group
+	if player.Role != db.PlayerRoleAdmin {
+		member, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
+		if err != nil || member.Role != db.GroupMemberRoleAdmin {
+			renderError(w, apierror.Forbidden("only group admins can review candidates"))
+			return
+		}
+	}
+
+	entry, err := h.Store.GetWaitlistEntryByID(r.Context(), entryID)
+	if err != nil || entry == nil {
+		renderError(w, apierror.NotFound("entry not found"))
+		return
+	}
+	if entry.Status != "pending" {
+		renderError(w, apierror.Conflict("entry already reviewed"))
+		return
+	}
+
+	match, err := h.Store.GetMatchByID(r.Context(), entry.MatchID)
+	if err != nil || match == nil || match.GroupID != groupID {
+		renderError(w, apierror.NotFound("entry not found"))
+		return
+	}
+
+	if req.Action == "accept" {
+		// Vacancy check
+		if match.MaxPlayers != nil {
+			confirmed, _ := h.Store.CountAttendances(r.Context(), match.ID, "confirmed")
+			if confirmed >= *match.MaxPlayers {
+				renderError(w, apierror.Forbidden("match is full"))
+				return
+			}
+		}
+		// Add as group member if not already
+		if _, err := h.Store.GetGroupMember(r.Context(), groupID, entry.PlayerID); err != nil {
+			if _, err := h.Store.AddGroupMember(r.Context(), groupID, entry.PlayerID, db.GroupMemberRoleMember); err != nil {
+				renderError(w, apierror.Internal("failed to add member"))
+				return
+			}
+			displayName := entry.PlayerName
+			if entry.PlayerNick != nil && *entry.PlayerNick != "" {
+				displayName = *entry.PlayerNick
+			}
+			_ = h.Store.EnsureMemberInCurrentPeriod(r.Context(), groupID, entry.PlayerID, displayName)
+		}
+		// Confirm attendance on the waitlist match + pending on other open matches
+		_ = h.Store.SetAttendance(r.Context(), match.ID, entry.PlayerID, "confirmed")
+		openMatches, _ := h.Store.GetOpenMatchesForGroup(r.Context(), groupID)
+		for _, mid := range openMatches {
+			if mid != match.ID {
+				_ = h.Store.SetAttendance(r.Context(), mid, entry.PlayerID, "pending")
+			}
+		}
+		if err := h.Store.UpdateWaitlistEntryStatus(r.Context(), entry.ID, "accepted", player.ID); err != nil {
+			renderError(w, apierror.Internal("failed to update entry"))
+			return
+		}
+		// Push to candidate
+		_ = h.push.SendToPlayers(r.Context(), []uuid.UUID{entry.PlayerID},
+			services.PushNotification{
+				Title: "✅ Você foi aceito!",
+				Body:  "Bem-vindo ao grupo " + group.Name + "!",
+				URL:   "https://rachao.app/match/" + match.Hash,
+			})
+		// Fanout to other admins
+		_, _ = services.NotifyGroupAdmins(r.Context(), h.Store, h.push, groupID, &player.ID,
+			services.PushNotification{
+				Title: "✅ Novo jogador no grupo — " + group.Name,
+				Body:  entry.PlayerName + " foi aceito por " + player.Name + ".",
+				URL:   "https://rachao.app/groups/" + groupID.String(),
+			})
+		entry.Status = "accepted"
+	} else {
+		if err := h.Store.UpdateWaitlistEntryStatus(r.Context(), entry.ID, "rejected", player.ID); err != nil {
+			renderError(w, apierror.Internal("failed to update entry"))
+			return
+		}
+		_ = h.push.SendToPlayers(r.Context(), []uuid.UUID{entry.PlayerID},
+			services.PushNotification{
+				Title: "❌ Candidatura não aprovada",
+				Body:  "Sua candidatura para o grupo " + group.Name + " não foi aprovada desta vez.",
+				URL:   "https://rachao.app/groups/" + groupID.String(),
+			})
+		_, _ = services.NotifyGroupAdmins(r.Context(), h.Store, h.push, groupID, &player.ID,
+			services.PushNotification{
+				Title: "❌ Candidato rejeitado — " + group.Name,
+				Body:  entry.PlayerName + " foi rejeitado por " + player.Name + ".",
+				URL:   "https://rachao.app/groups/" + groupID.String(),
+			})
+		entry.Status = "rejected"
+	}
+
+	renderJSON(w, http.StatusOK, entry)
 }
 
 // normalizePhone strips common formatting from a phone number.

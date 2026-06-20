@@ -1097,6 +1097,13 @@ para paridade plena (atualizar conforme avança):
   `https://beta.rachao.app` (configuração manual na UI do Kuma).
 - [ ] **Audit endpoint-a-endpoint** (contrato HTTP, status codes, regras de negócio) usando o skill
   `api-compare` — verificação autoritativa de paridade, recomendada antes do cutover.
+- [x] **Waitlist — domínio completo + cross-admin push** (issue #9): a v2 tinha apenas stubs
+  (`listWaitlist` retornando `[]`, `joinWaitlist` sem persistência, sem `PATCH /waitlist/{id}`).
+  Portado integralmente em `football-api-go/internal/db/waitlist.go` (struct + queries),
+  `internal/services/push_fanout.go` (`NotifyGroupAdmins` espelhando `send_push_to_group_admins`),
+  e `internal/handlers/groups.go` (joinWaitlist persistente, listWaitlist com query real,
+  novo `reviewWaitlist` em `PATCH /api/v2/groups/{id}/waitlist/{entryID}`). Push fanout para
+  outros admins acontece em accept e reject nas duas APIs.
 - [x] **Match listing — `is_current`/`voting_status`** (issue #7): entregue na v1 e na v2.
   v1: `football-api/app/services/match_listing.py` + enrich em `routers/matches.py` e
   `routers/players.py`. v2: `football-api-go/internal/services/voting.go` +

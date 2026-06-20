@@ -788,6 +788,30 @@ func (m *mockGroupStoreForBusiness) CreatePlayer(ctx context.Context, args db.Cr
 func (m *mockGroupStoreForBusiness) UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error {
 	return nil
 }
+func (m *mockGroupStoreForBusiness) CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error) {
+	return 0, nil
+}
+func (m *mockGroupStoreForBusiness) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) CreateWaitlistEntry(ctx context.Context, p db.CreateWaitlistEntryParams) (*db.WaitlistEntry, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) GetWaitlistEntryForPlayer(ctx context.Context, matchID, playerID uuid.UUID) (*db.WaitlistEntry, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) GetWaitlistEntryByID(ctx context.Context, entryID uuid.UUID) (*db.WaitlistEntry, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) GetPendingWaitlistForMatch(ctx context.Context, matchID uuid.UUID) ([]db.WaitlistEntry, error) {
+	return nil, nil
+}
+func (m *mockGroupStoreForBusiness) UpdateWaitlistEntryStatus(ctx context.Context, entryID uuid.UUID, status string, reviewerID uuid.UUID) error {
+	return nil
+}
+func (m *mockGroupStoreForBusiness) GetGroupAdminIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
 
 // ── Matches Business Logic Tests ──────────────────────────────────────────────
 // Foundation for testing: Attendance validation, match status transitions

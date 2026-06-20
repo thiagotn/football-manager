@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.models.group import GroupMember, GroupMemberRole
 from app.models.push_subscription import PushSubscription
 
 logger = structlog.get_logger()
@@ -81,3 +82,33 @@ async def send_push(
                 url=url,
                 status=status,
             )
+
+
+async def send_push_to_group_admins(
+    db: AsyncSession,
+    group_id: uuid.UUID,
+    *,
+    title: str,
+    body: str,
+    url: str = "/",
+    exclude: uuid.UUID | None = None,
+) -> None:
+    """Fan-out push to every admin of a group, optionally excluding one player.
+
+    Used for cross-admin coordination (e.g. notifying other admins when one of
+    them accepts a waitlist candidate). Mirrors NotifyGroupAdmins in the Go
+    API for parity (PRD 044 §17).
+    """
+    result = await db.execute(
+        select(GroupMember.player_id).where(
+            GroupMember.group_id == group_id,
+            GroupMember.role == GroupMemberRole.ADMIN,
+        )
+    )
+    admin_ids = [aid for aid in result.scalars().all() if aid != exclude]
+    if not admin_ids:
+        return
+    await asyncio.gather(*[
+        send_push(db, aid, title=title, body=body, url=url)
+        for aid in admin_ids
+    ], return_exceptions=True)

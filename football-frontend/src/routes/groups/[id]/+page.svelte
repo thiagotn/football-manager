@@ -366,13 +366,15 @@
 
   async function acceptWaitlist(entryId: string) {
     acceptingWaitlist = entryId;
+    const candidate = waitlistEntries.find(e => e.id === entryId);
+    const candidateName = candidate?.player_nickname || candidate?.player_name || '';
     try {
       await groupsApi.reviewWaitlist(groupId, entryId, 'accept');
       waitlistEntries = waitlistEntries.filter(e => e.id !== entryId);
       const [g, ms] = await Promise.all([groupsApi.get(groupId), matchesApi.list(groupId)]);
       group = g;
       matchList = ms;
-      toastSuccess($t('group.accept_waitlist_success'));
+      toastSuccess($t('group.accept_waitlist_named').replace('{name}', candidateName));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao aceitar candidato');
     }
@@ -381,10 +383,12 @@
 
   async function rejectWaitlist(entryId: string) {
     rejectingWaitlist = entryId;
+    const candidate = waitlistEntries.find(e => e.id === entryId);
+    const candidateName = candidate?.player_nickname || candidate?.player_name || '';
     try {
       await groupsApi.reviewWaitlist(groupId, entryId, 'reject');
       waitlistEntries = waitlistEntries.filter(e => e.id !== entryId);
-      toastSuccess($t('group.reject_waitlist_success'));
+      toastSuccess($t('group.reject_waitlist_named').replace('{name}', candidateName));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao rejeitar candidato');
     }

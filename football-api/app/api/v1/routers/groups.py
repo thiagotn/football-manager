@@ -34,7 +34,7 @@ from app.models.group import GroupMember, GroupMemberRole
 from app.models.match import Attendance, AttendanceStatus, MatchStatus
 from app.models.player import PlayerRole
 from app.models.waitlist import WaitlistStatus
-from app.services.push import send_push
+from app.services.push import send_push, send_push_to_group_admins
 from app.schemas.group import (
     AddMemberRequest,
     AddMemberByPhoneRequest,
@@ -591,22 +591,12 @@ async def join_waitlist(group_id: uuid.UUID, body: WaitlistJoinRequest, db: DB, 
     entry = await w_repo.create(open_match.id, current.id, body.intro)
 
     # Notify all group admins
-    result = await db.execute(
-        select(GroupMember.player_id).where(
-            GroupMember.group_id == group_id,
-            GroupMember.role == GroupMemberRole.ADMIN,
-        )
+    await send_push_to_group_admins(
+        db, group_id,
+        title=f"⚽ Novo candidato — {group.name}",
+        body=f"{current.name} quer participar do rachão em {_fmt_date(open_match.match_date)}. Acesse o grupo para revisar.",
+        url=f"https://rachao.app/groups/{group_id}",
     )
-    admin_ids = list(result.scalars().all())
-    await asyncio.gather(*[
-        send_push(
-            db, aid,
-            title=f"⚽ Novo candidato — {group.name}",
-            body=f"{current.name} quer participar do rachão em {_fmt_date(open_match.match_date)}. Acesse o grupo para revisar.",
-            url=f"https://rachao.app/groups/{group_id}",
-        )
-        for aid in admin_ids
-    ], return_exceptions=True)
 
     return WaitlistEntryResponse(
         id=entry.id,
@@ -760,6 +750,13 @@ async def review_waitlist_entry(
             body=f"Bem-vindo ao grupo {group.name}! Sua presença no rachão de {_fmt_date(match.match_date)} foi confirmada.",
             url=f"https://rachao.app/match/{match.hash}",
         )
+        await send_push_to_group_admins(
+            db, group_id,
+            title=f"✅ Novo jogador no grupo — {group.name}",
+            body=f"{candidate_player.name} foi aceito por {current.name}.",
+            url=f"https://rachao.app/groups/{group_id}",
+            exclude=current.id,
+        )
     else:
         await w_repo.reject(entry, current.id)
 
@@ -768,6 +765,13 @@ async def review_waitlist_entry(
             title="❌ Candidatura não aprovada",
             body=f"Sua candidatura para o grupo {group.name} não foi aprovada desta vez.",
             url=f"https://rachao.app/groups/{group_id}",
+        )
+        await send_push_to_group_admins(
+            db, group_id,
+            title=f"❌ Candidato rejeitado — {group.name}",
+            body=f"{candidate_player.name} foi rejeitado por {current.name}.",
+            url=f"https://rachao.app/groups/{group_id}",
+            exclude=current.id,
         )
 
     return WaitlistEntryResponse(

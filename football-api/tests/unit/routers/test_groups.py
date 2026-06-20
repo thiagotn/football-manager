@@ -836,6 +836,106 @@ async def test_review_waitlist_non_group_admin_returns_403(api_client, mocker):
     assert response.status_code == 403
 
 
+@pytest.mark.asyncio
+async def test_review_waitlist_accept_notifies_other_admins(api_client, mocker, player_user):
+    """Aceitar candidato dispara send_push_to_group_admins excluindo o caller."""
+    group = _make_group("Pelada")
+    group.id = uuid4()
+    group_admin = MagicMock()
+    group_admin.role = "admin"
+
+    from datetime import date
+    match = MagicMock()
+    match.id = uuid4()
+    match.group_id = group.id
+    match.hash = "h" * 10
+    match.match_date = date(2026, 4, 1)
+    match.max_players = None
+
+    entry = MagicMock()
+    entry.id = uuid4()
+    entry.match_id = match.id
+    entry.player_id = uuid4()
+    entry.match = match
+    entry.player = MagicMock(name="Cand", nickname=None)
+    entry.player.name = "Candidato"
+    entry.intro = None
+    entry.status = "pending"
+    entry.created_at = "2026-04-01T10:00:00"
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=group_admin))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.add_member", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.FinanceRepository.ensure_member_in_current_period", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.WaitlistRepository.get_by_id", new=AsyncMock(return_value=entry))
+    mocker.patch("app.api.v1.routers.groups.WaitlistRepository.accept", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.MatchRepository.upsert_attendance", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.MatchRepository.get_active_matches", new=AsyncMock(return_value=[match]))
+    mocker.patch("app.api.v1.routers.groups.send_push", new=AsyncMock(return_value=None))
+    fanout = mocker.patch(
+        "app.api.v1.routers.groups.send_push_to_group_admins",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group.id}/waitlist/{entry.id}",
+        json={"action": "accept"},
+    )
+
+    assert response.status_code == 200
+    fanout.assert_awaited_once()
+    kwargs = fanout.await_args.kwargs
+    assert kwargs["exclude"] == player_user.id
+    assert "aceito" in kwargs["body"].lower()
+
+
+@pytest.mark.asyncio
+async def test_review_waitlist_reject_notifies_other_admins(api_client, mocker, player_user):
+    """Rejeitar candidato também dispara fanout para outros admins."""
+    group = _make_group("Pelada")
+    group.id = uuid4()
+    group_admin = MagicMock()
+    group_admin.role = "admin"
+
+    match = MagicMock()
+    match.id = uuid4()
+    match.group_id = group.id
+    match.hash = "h" * 10
+    match.match_date = "2026-04-01"
+
+    entry = MagicMock()
+    entry.id = uuid4()
+    entry.match_id = match.id
+    entry.player_id = uuid4()
+    entry.match = match
+    entry.player = MagicMock(name="Cand", nickname=None)
+    entry.player.name = "Candidato"
+    entry.intro = None
+    entry.status = "pending"
+    entry.created_at = "2026-04-01T10:00:00"
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=group_admin))
+    mocker.patch("app.api.v1.routers.groups.WaitlistRepository.get_by_id", new=AsyncMock(return_value=entry))
+    mocker.patch("app.api.v1.routers.groups.WaitlistRepository.reject", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.send_push", new=AsyncMock(return_value=None))
+    fanout = mocker.patch(
+        "app.api.v1.routers.groups.send_push_to_group_admins",
+        new=AsyncMock(return_value=None),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group.id}/waitlist/{entry.id}",
+        json={"action": "reject"},
+    )
+
+    assert response.status_code == 200
+    fanout.assert_awaited_once()
+    kwargs = fanout.await_args.kwargs
+    assert kwargs["exclude"] == player_user.id
+    assert "rejeitado" in kwargs["body"].lower()
+
+
 # ── GET /groups/{id}/members/lookup ──────────────────────────────────────────
 
 
