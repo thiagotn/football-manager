@@ -83,6 +83,30 @@ export function copyToClipboard(text) {
   return navigator.clipboard.writeText(text);
 }
 
+/**
+ * Tenta o Web Share API nativo (Android/iOS — abre menu do sistema). Em
+ * navegadores sem suporte (desktop, Firefox), cai para WhatsApp web com texto
+ * pré-preenchido.
+ * @param {{title: string, text: string, url?: string}} opts
+ * @returns {Promise<'native' | 'cancelled' | 'whatsapp'>}
+ */
+export async function nativeShare({ title, text, url }) {
+  const composed = url ? `${text}\n\n${url}` : text;
+  if (typeof navigator !== 'undefined' && navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      return 'native';
+    } catch (e) {
+      // AbortError: usuário cancelou; outros: fallback.
+      if (e && e.name === 'AbortError') return 'cancelled';
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.open(`https://wa.me/?text=${encodeURIComponent(composed)}`, '_blank');
+  }
+  return 'whatsapp';
+}
+
 export function toastStore() {
   let toasts = $state([]);
   function show(message, type = 'success') {

@@ -7,14 +7,14 @@
 
   let { data } = $props();
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X, Shuffle, ExternalLink, UserPlus } from 'lucide-svelte';
+  import { Clock, MapPin, Calendar, CheckCircle, XCircle, Clock3, Link2, Users, Lock, LockOpen, X, Shuffle, ExternalLink, UserPlus, Megaphone } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import VoteForm from '$lib/components/VoteForm.svelte';
   import VoteResults from '$lib/components/VoteResults.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
-  import { relativeDate, playerDisplayName } from '$lib/utils.js';
+  import { relativeDate, playerDisplayName, nativeShare } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
   import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
 
@@ -299,6 +299,44 @@
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
     toastSuccess($t('match.link_copied'));
+  }
+
+  // Lista quem está confirmado mas ainda não votou — usado pelo botão "Cobrar votos".
+  let pendingVoters = $derived(
+    voteStatus && voteStatus.status === 'open' && match
+      ? confirmed.filter(a => !voteStatus!.voted_player_ids.includes(a.player.id))
+      : []
+  );
+  let alreadyVoted = $derived(
+    voteStatus && voteStatus.status === 'open' && match
+      ? confirmed.filter(a => voteStatus!.voted_player_ids.includes(a.player.id))
+      : []
+  );
+
+  async function shareVotingList() {
+    if (!match || !voteStatus || voteStatus.status !== 'open') return;
+    const votedLine = alreadyVoted.length
+      ? alreadyVoted.map(a => `- ${playerDisplayName(a.player.name, a.nickname ?? a.player.nickname)}`).join('\n')
+      : '—';
+    const pendingLine = pendingVoters.length
+      ? pendingVoters.map(a => `- ${playerDisplayName(a.player.name, a.nickname ?? a.player.nickname)}`).join('\n')
+      : '—';
+    const text = [
+      `🗳️ *${$t('match.voting_share_header').replace('{number}', String(match.number)).replace('{group}', match.group_name)}*`,
+      '',
+      `✅ ${$t('match.voting_share_voted_label').replace('{n}', String(alreadyVoted.length))}`,
+      votedLine,
+      '',
+      `⏳ ${$t('match.voting_share_pending_label').replace('{n}', String(pendingVoters.length))}`,
+      pendingLine,
+      '',
+      `⚠️ ${$t('match.voting_share_warning')}`,
+    ].join('\n');
+    await nativeShare({
+      title: $t('match.voting_share_title'),
+      text,
+      url: window.location.href,
+    });
   }
 
   async function toggleStatus(newStatus: 'open' | 'closed') {
@@ -750,17 +788,22 @@
 
 
       <!-- Share -->
-      <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
-        <button onclick={shareWhatsApp} class="flex-1 btn btn-secondary justify-center gap-2">
+      <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3">
+        <button onclick={shareWhatsApp} class="flex-1 min-w-[140px] btn btn-secondary justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.558 4.121 1.533 5.853L.036 23.964l6.252-1.639A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-4.998-1.366l-.358-.213-3.712.974 1.014-3.598-.233-.371A9.818 9.818 0 1 1 12 21.818z"/>
           </svg>
           {$t('match.whatsapp_share')}
         </button>
-        <button onclick={copyLink} class="flex-1 btn btn-secondary justify-center gap-2">
+        <button onclick={copyLink} class="flex-1 min-w-[140px] btn btn-secondary justify-center gap-2">
           <Link2 size={16} /> {$t('match.copy_link')}
         </button>
+        {#if isGroupAdmin && voteStatus?.status === 'open' && pendingVoters.length > 0}
+          <button onclick={shareVotingList} class="flex-1 min-w-[140px] btn btn-secondary justify-center gap-2 border-amber-400/40 text-amber-700 dark:text-amber-300">
+            <Megaphone size={16} /> {$t('match.share_voting_status')}
+          </button>
+        {/if}
       </div>
       <div class="mt-4 text-center">
         <a href="https://rachao.app" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">rachao.app © 2026</a>
