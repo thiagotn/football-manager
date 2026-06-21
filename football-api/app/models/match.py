@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, time
+from datetime import date, datetime, time
 from enum import Enum as PyEnum
 
 from sqlalchemy import Date, ForeignKey, Integer, SmallInteger, String, Text, Time, UniqueConstraint
@@ -74,6 +74,7 @@ class Match(Base, UUIDMixin, TimestampMixin):
     vote_notified: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")
     vote_open_delay_minutes: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=20, server_default="20")
     vote_duration_hours: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=24, server_default="24")
+    vote_reminder_sent_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id", ondelete="SET NULL"), nullable=True
     )

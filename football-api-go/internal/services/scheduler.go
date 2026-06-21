@@ -20,12 +20,14 @@ import (
 type Scheduler struct {
 	cron *cron.Cron
 	pool *pgxpool.Pool
+	push PushService
 }
 
 func NewScheduler(pool *pgxpool.Pool) *Scheduler {
 	return &Scheduler{
 		cron: cron.New(),
 		pool: pool,
+		push: NewPushService(pool),
 	}
 }
 
@@ -38,8 +40,11 @@ func (s *Scheduler) Start() error {
 	if _, err := s.cron.AddFunc("0 7 * * *", s.runRecurrence); err != nil {
 		return err
 	}
+	if _, err := s.cron.AddFunc("*/5 * * * *", s.runVoteReminder); err != nil {
+		return err
+	}
 	s.cron.Start()
-	slog.Info("scheduler started", "jobs", []string{"status_sync@:30", "recurrence@07:00"})
+	slog.Info("scheduler started", "jobs", []string{"status_sync@:30", "recurrence@07:00", "vote_reminder@*/5"})
 	return nil
 }
 
@@ -68,4 +73,14 @@ func (s *Scheduler) runRecurrence() {
 		return
 	}
 	slog.Info("scheduler: recurrence completed", "matches_created", created)
+}
+
+func (s *Scheduler) runVoteReminder() {
+	ctx := context.Background()
+	notified, err := RunVoteReminderJob(ctx, s.pool, s.push)
+	if err != nil {
+		slog.Error("scheduler: vote reminder failed", "error", err)
+		return
+	}
+	slog.Info("scheduler: vote reminder completed", "matches_notified", notified)
 }

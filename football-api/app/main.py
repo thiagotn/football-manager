@@ -14,6 +14,7 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db.migrate import run_migrations
 from app.services.recurrence import run_recurrence_job, run_status_sync_job
+from app.services.vote_reminder import run_vote_reminder_job
 
 logger = structlog.get_logger()
 
@@ -55,6 +56,8 @@ async def lifespan(app: FastAPI):
     # A cada hora (:30): fecha partidas passadas e transiciona para IN_PROGRESS
     # Roda em :30 para não coincidir com o job das 07:00
     scheduler.add_job(run_status_sync_job, CronTrigger(minute=30))
+    # A cada 5 min: avisa quem ainda não votou nos últimos 30 min da janela (issue #6)
+    scheduler.add_job(run_vote_reminder_job, CronTrigger(minute="*/5"))
     scheduler.start()
     logger.info("api_started", version=get_settings().app_version)
 

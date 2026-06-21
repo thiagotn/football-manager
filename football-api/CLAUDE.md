@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `045_drop_api_v2_enabled.sql`.
+A última migration criada é `046_vote_reminder_sent_at.sql`.
 
-**A próxima deve ser numerada `046_`.**
+**A próxima deve ser numerada `047_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -70,6 +70,7 @@ A última migration criada é `045_drop_api_v2_enabled.sql`.
 | `storage.py` | Upload/remoção de avatares no Supabase Storage |
 | `team_builder.py` | Algoritmo snake-draft de times equilibrados |
 | `twilio_verify.py` | `send_otp(whatsapp)`, `check_otp(whatsapp, code)` — E.164 |
+| `vote_reminder.py` | `run_vote_reminder_job()` — cron a cada 5 min; envia push para confirmados-que-não-votaram quando faltam ≤ 30 min para fechar a votação. Idempotente via `matches.vote_reminder_sent_at`. |
 | `voting.py` | `voting_status(match)`, `voting_window(match)` — cálculo lazy |
 
 ---

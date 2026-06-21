@@ -1097,6 +1097,11 @@ para paridade plena (atualizar conforme avança):
   `https://beta.rachao.app` (configuração manual na UI do Kuma).
 - [ ] **Audit endpoint-a-endpoint** (contrato HTTP, status codes, regras de negócio) usando o skill
   `api-compare` — verificação autoritativa de paridade, recomendada antes do cutover.
+- [x] **Vote reminder cron job — 30 min antes de fechar** (issue #6): novo job `*/5 * * * *`
+  em ambos schedulers. v1: `football-api/app/services/vote_reminder.py`. v2:
+  `football-api-go/internal/services/vote_reminder.go` (com `VoteReminderStore` interface para
+  testes). Idempotência por `matches.vote_reminder_sent_at` (migration 046, banco compartilhado
+  entre as duas APIs).
 - [x] **Ranking — penalidade para quem não votou** (issue #3): query do top e flop agora
   ignoram pontos quando o jogador estava confirmado naquela partida mas não tem voto registrado.
   Espelhado em `football-api/app/db/repositories/ranking_repo.py` (helper
