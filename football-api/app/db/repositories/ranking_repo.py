@@ -16,6 +16,7 @@ from typing import Literal
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.models.match import Attendance, AttendanceStatus
 from app.models.match_vote import MatchVote, MatchVoteFlop, MatchVoteTop5
@@ -40,6 +41,36 @@ class RankingRepository:
             .group_by(Attendance.match_id)
             .having(func.count(Attendance.id) >= MIN_ELIGIBLE_VOTERS)
             .scalar_subquery()
+        )
+
+    def _no_confirmed_without_vote(self, voted_player_id):
+        """Issue #3: exclui par (player_id, match_id) onde o jogador estava
+        confirmado naquela partida E não tem voto registrado nela. Aplicado às
+        agregações de top e flop para zerar pontos/votos recebidos por
+        free-riders confirmados.
+
+        `voted_player_id` é a referência ao player_id da tabela agregada
+        (MatchVoteTop5.player_id ou MatchVoteFlop.player_id).
+        """
+        MV = aliased(MatchVote)
+        return ~(
+            select(1)
+            .select_from(Attendance)
+            .where(
+                Attendance.match_id == MatchVote.match_id,
+                Attendance.player_id == voted_player_id,
+                Attendance.status == AttendanceStatus.CONFIRMED,
+                ~(
+                    select(1)
+                    .select_from(MV)
+                    .where(
+                        MV.match_id == Attendance.match_id,
+                        MV.voter_id == Attendance.player_id,
+                    )
+                    .exists()
+                ),
+            )
+            .exists()
         )
 
     def _period_filter(self, year: int | None, month: int | None):
@@ -104,6 +135,7 @@ class RankingRepository:
             .where(
                 MatchVote.match_id.in_(eligible_match_ids),
                 Player.role != PlayerRole.ADMIN,
+                self._no_confirmed_without_vote(MatchVoteTop5.player_id),
             )
             .group_by(
                 MatchVoteTop5.player_id,
@@ -143,6 +175,7 @@ class RankingRepository:
             .where(
                 MatchVote.match_id.in_(eligible_match_ids),
                 Player.role != PlayerRole.ADMIN,
+                self._no_confirmed_without_vote(MatchVoteFlop.player_id),
             )
             .group_by(
                 MatchVoteFlop.player_id,

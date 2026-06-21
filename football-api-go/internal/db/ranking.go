@@ -42,6 +42,19 @@ func GetTopRanking(ctx context.Context, pool *pgxpool.Pool, year *int, month *in
 			GROUP BY match_id HAVING COUNT(*) >= ` + intToStr(minEligibleVoters) + `
 		)
 		AND p.role != 'admin'
+		-- Issue #3: exclui pontos quando o jogador estava confirmado naquela
+		-- partida E não tem voto registrado (penaliza free-rider).
+		AND NOT EXISTS (
+			SELECT 1 FROM attendances a
+			WHERE a.match_id = v.match_id
+			  AND a.player_id = t.player_id
+			  AND a.status = 'confirmed'
+			  AND NOT EXISTS (
+			    SELECT 1 FROM match_votes mv2
+			    WHERE mv2.match_id = a.match_id
+			      AND mv2.voter_id = a.player_id
+			  )
+		)
 		` + periodFilter + `
 		GROUP BY t.player_id, p.name, p.nickname, p.avatar_url
 		ORDER BY total_points DESC
@@ -85,6 +98,19 @@ func GetFlopRanking(ctx context.Context, pool *pgxpool.Pool, year *int, month *i
 			GROUP BY match_id HAVING COUNT(*) >= ` + intToStr(minEligibleVoters) + `
 		)
 		AND p.role != 'admin'
+		-- Issue #3: exclui votos de flop quando o jogador estava confirmado
+		-- naquela partida E não votou (paridade com a regra do top).
+		AND NOT EXISTS (
+			SELECT 1 FROM attendances a
+			WHERE a.match_id = v.match_id
+			  AND a.player_id = f.player_id
+			  AND a.status = 'confirmed'
+			  AND NOT EXISTS (
+			    SELECT 1 FROM match_votes mv2
+			    WHERE mv2.match_id = a.match_id
+			      AND mv2.voter_id = a.player_id
+			  )
+		)
 		` + periodFilter + `
 		GROUP BY f.player_id, p.name, p.nickname, p.avatar_url
 		ORDER BY total_flop_votes DESC

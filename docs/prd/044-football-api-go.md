@@ -1097,6 +1097,11 @@ para paridade plena (atualizar conforme avança):
   `https://beta.rachao.app` (configuração manual na UI do Kuma).
 - [ ] **Audit endpoint-a-endpoint** (contrato HTTP, status codes, regras de negócio) usando o skill
   `api-compare` — verificação autoritativa de paridade, recomendada antes do cutover.
+- [x] **Ranking — penalidade para quem não votou** (issue #3): query do top e flop agora
+  ignoram pontos quando o jogador estava confirmado naquela partida mas não tem voto registrado.
+  Espelhado em `football-api/app/db/repositories/ranking_repo.py` (helper
+  `_no_confirmed_without_vote`) e `football-api-go/internal/db/ranking.go` (mesmo `NOT EXISTS`
+  inline na string SQL de `GetTopRanking`/`GetFlopRanking`).
 - [x] **Waitlist — domínio completo + cross-admin push** (issue #9): a v2 tinha apenas stubs
   (`listWaitlist` retornando `[]`, `joinWaitlist` sem persistência, sem `PATCH /waitlist/{id}`).
   Portado integralmente em `football-api-go/internal/db/waitlist.go` (struct + queries),
