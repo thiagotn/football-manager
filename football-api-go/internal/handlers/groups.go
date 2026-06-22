@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -214,6 +215,7 @@ type createGroupReq struct {
 	PerMatchAmount       *float64 `json:"per_match_amount"`
 	MonthlyAmount        *float64 `json:"monthly_amount"`
 	IsPublic             *bool    `json:"is_public"`
+	VotingEnabled        *bool    `json:"voting_enabled"`
 	VoteOpenDelayMinutes *int     `json:"vote_open_delay_minutes"`
 	VoteDurationHours    *int     `json:"vote_duration_hours"`
 	Timezone             *string  `json:"timezone"`
@@ -226,6 +228,7 @@ type updateGroupReq struct {
 	MonthlyAmount        *float64      `json:"monthly_amount"`
 	RecurrenceEnabled    *bool         `json:"recurrence_enabled"`
 	IsPublic             *bool         `json:"is_public"`
+	VotingEnabled        *bool         `json:"voting_enabled"`
 	VoteOpenDelayMinutes *int          `json:"vote_open_delay_minutes"`
 	VoteDurationHours    *int          `json:"vote_duration_hours"`
 	Timezone             *string       `json:"timezone"`
@@ -416,6 +419,10 @@ func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	if req.IsPublic != nil {
 		isPublic = *req.IsPublic
 	}
+	votingEnabled := true
+	if req.VotingEnabled != nil {
+		votingEnabled = *req.VotingEnabled
+	}
 	voteDelay := 20
 	if req.VoteOpenDelayMinutes != nil {
 		if *req.VoteOpenDelayMinutes < 0 || *req.VoteOpenDelayMinutes > 120 {
@@ -448,6 +455,7 @@ func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 		PerMatchAmount:       req.PerMatchAmount,
 		MonthlyAmount:        req.MonthlyAmount,
 		IsPublic:             isPublic,
+		VotingEnabled:        votingEnabled,
 		VoteOpenDelayMinutes: voteDelay,
 		VoteDurationHours:    voteDur,
 		Timezone:             tz,
@@ -563,6 +571,12 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 	if req.IsPublic != nil {
 		group.IsPublic = *req.IsPublic
 	}
+	// Issue #10: detecta a transição true → false antes de aplicar, para que
+	// possamos disparar o close batch nas votações em andamento depois.
+	closingVoting := req.VotingEnabled != nil && !*req.VotingEnabled && group.VotingEnabled
+	if req.VotingEnabled != nil {
+		group.VotingEnabled = *req.VotingEnabled
+	}
 	if req.VoteOpenDelayMinutes != nil {
 		group.VoteOpenDelayMinutes = *req.VoteOpenDelayMinutes
 	}
@@ -581,6 +595,13 @@ func (h *GroupHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err)
 		return
 	}
+
+	if closingVoting && h.pool != nil {
+		if _, err := db.CloseOpenVotingsForGroup(r.Context(), h.pool, groupID); err != nil {
+			slog.Warn("updateGroup: failed to close open votings after disable", "group_id", groupID, "error", err)
+		}
+	}
+
 	renderJSON(w, http.StatusOK, updated)
 }
 

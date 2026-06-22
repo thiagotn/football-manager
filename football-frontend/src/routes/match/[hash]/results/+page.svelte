@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { votes as votesApi, matches as matchesApi, matchStats, ApiError } from '$lib/api';
   import type { VoteResultsResponse, MatchDetail, VoteBallotsResponse, MatchPlayerStatsResponse } from '$lib/api';
@@ -57,6 +58,12 @@
           matchStats.getPublic(matchHash).catch(() => null),
         ]);
         if (!cancelled) {
+          // Issue #10: grupo desativou votação — não há resultados a mostrar,
+          // redireciona pra tela da partida.
+          if (m && m.group_voting_enabled === false) {
+            goto(`/match/${matchHash}`, { replaceState: true });
+            return;
+          }
           results = r;
           match = m;
           ballots = b;

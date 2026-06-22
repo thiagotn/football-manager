@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `046_vote_reminder_sent_at.sql`.
+A última migration criada é `047_groups_voting_enabled.sql`.
 
-**A próxima deve ser numerada `047_`.**
+**A próxima deve ser numerada `048_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 

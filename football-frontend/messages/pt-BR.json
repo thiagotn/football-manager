@@ -234,6 +234,8 @@
   "group.weekly_recurrence": "Recorrência semanal",
   "group.public": "Público",
   "group.private": "Fechado",
+  "group.voting_enabled": "Votação pós-rachão",
+  "group.voting_enabled_desc": "Quando desativada, partidas encerradas não geram votação dos melhores e da decepção. Já existentes serão fechadas no momento da desativação.",
   "group.vote_settings": "Votação",
   "group.vote_immediate": "inicia imediatamente",
   "group.vote_delay": "inicia em {n}min",

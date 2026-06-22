@@ -176,9 +176,23 @@ async def update_group(group_id: uuid.UUID, body: GroupUpdate, db: DB, current: 
         if not member or member.role != GroupMemberRole.ADMIN:
             raise ForbiddenError("Apenas admins do grupo podem editar")
 
-    for field, value in body.model_dump(exclude_unset=True).items():
+    updates = body.model_dump(exclude_unset=True)
+    # Issue #10: transição true → false fecha imediatamente todas as votações
+    # abertas (vote_duration_hours=0) — mesmo mecanismo do POST /votes/close.
+    closing_voting = (
+        "voting_enabled" in updates
+        and updates["voting_enabled"] is False
+        and group.voting_enabled is True
+    )
+
+    for field, value in updates.items():
         setattr(group, field, value)
     await db.flush()
+
+    if closing_voting:
+        m_repo = MatchRepository(db)
+        await m_repo.close_open_votings_for_group(group_id)
+
     await db.refresh(group)
     return group
 

@@ -89,6 +89,7 @@ def _build_detail(
         group_per_match_amount=match.group.per_match_amount if match.group else None,
         group_monthly_amount=match.group.monthly_amount if match.group else None,
         group_is_public=match.group.is_public if match.group else True,
+        group_voting_enabled=match.group.voting_enabled if match.group else True,
         group_timezone=match.group.timezone if match.group else "America/Sao_Paulo",
     )
 

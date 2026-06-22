@@ -53,6 +53,9 @@ async def _run(session: AsyncSession) -> int:
     now = datetime.now(timezone.utc)
     notified = 0
     for match in candidates:
+        # Issue #10: pula grupos que desativaram a votação.
+        if match.group is not None and match.group.voting_enabled is False:
+            continue
         # `voting_status` / `voting_window` calculam em horário de São Paulo.
         # Comparações com `now` (UTC) abaixo são consistentes porque ambos são
         # aware datetimes.

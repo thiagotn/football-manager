@@ -54,6 +54,7 @@ class GroupCreate(BaseModel):
     per_match_amount: Decimal | None = None
     monthly_amount: Decimal | None = None
     is_public: bool = True
+    voting_enabled: bool = True
     vote_open_delay_minutes: int = Field(20, ge=0, le=120)
     vote_duration_hours: int = Field(24, ge=2, le=72)
     timezone: str = Field("America/Sao_Paulo", max_length=60)
@@ -78,6 +79,7 @@ class GroupUpdate(BaseModel):
     monthly_amount: Decimal | None = None
     recurrence_enabled: bool | None = None
     is_public: bool | None = None
+    voting_enabled: bool | None = None
     vote_open_delay_minutes: int | None = Field(None, ge=0, le=120)
     vote_duration_hours: int | None = Field(None, ge=2, le=72)
     timezone: str | None = Field(None, max_length=60)
@@ -123,6 +125,7 @@ class GroupResponse(BaseModel):
     monthly_amount: Decimal | None
     recurrence_enabled: bool
     is_public: bool
+    voting_enabled: bool = True
     vote_open_delay_minutes: int
     vote_duration_hours: int
     timezone: str = "America/Sao_Paulo"

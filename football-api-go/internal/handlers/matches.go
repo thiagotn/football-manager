@@ -191,6 +191,7 @@ type matchDetailResp struct {
 	GroupPerMatchAmount *float64         `json:"group_per_match_amount"`
 	GroupMonthlyAmount  *float64         `json:"group_monthly_amount"`
 	GroupIsPublic       bool             `json:"group_is_public"`
+	GroupVotingEnabled  bool             `json:"group_voting_enabled"`
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -237,13 +238,15 @@ type matchGroupFields struct {
 	PerMatchAmount *float64
 	MonthlyAmount  *float64
 	IsPublic       bool
+	VotingEnabled  bool
 }
 
 func groupFieldsFromName(name string) matchGroupFields {
 	return matchGroupFields{
-		Name:     name,
-		Timezone: "America/Sao_Paulo",
-		IsPublic: true,
+		Name:          name,
+		Timezone:      "America/Sao_Paulo",
+		IsPublic:      true,
+		VotingEnabled: true,
 	}
 }
 
@@ -254,6 +257,7 @@ func groupFieldsFromMatch(m *db.MatchWithGroupName) matchGroupFields {
 		PerMatchAmount: m.GroupPerMatchAmount,
 		MonthlyAmount:  m.GroupMonthlyAmount,
 		IsPublic:       m.GroupIsPublic,
+		VotingEnabled:  m.GroupVotingEnabled,
 	}
 }
 
@@ -265,6 +269,7 @@ func buildMatchDetail(match *db.Match, atts []db.AttendanceWithPlayer, group mat
 		GroupPerMatchAmount: group.PerMatchAmount,
 		GroupMonthlyAmount:  group.MonthlyAmount,
 		GroupIsPublic:       group.IsPublic,
+		GroupVotingEnabled:  group.VotingEnabled,
 		Attendances:         make([]attendanceResp, 0, len(atts)),
 	}
 	for _, a := range atts {
@@ -558,13 +563,14 @@ func (h *MatchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 	// Fetch group to include its name/timezone/pricing/visibility — the
 	// frontend MatchBannerCard reads match.group_timezone (formatMatchTimeRange)
 	// and other group_* fields directly off the match payload.
-	group := matchGroupFields{Timezone: "America/Sao_Paulo", IsPublic: true}
+	group := matchGroupFields{Timezone: "America/Sao_Paulo", IsPublic: true, VotingEnabled: true}
 	if g, err := h.Store.GetGroupByID(r.Context(), match.GroupID); err == nil && g != nil {
 		group.Name = g.Name
 		group.Timezone = g.Timezone
 		group.PerMatchAmount = g.PerMatchAmount
 		group.MonthlyAmount = g.MonthlyAmount
 		group.IsPublic = g.IsPublic
+		group.VotingEnabled = g.VotingEnabled
 	}
 
 	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, group))

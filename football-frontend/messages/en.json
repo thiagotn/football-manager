@@ -234,6 +234,8 @@
   "group.weekly_recurrence": "Weekly recurrence",
   "group.public": "Public",
   "group.private": "Private",
+  "group.voting_enabled": "Post-match voting",
+  "group.voting_enabled_desc": "When disabled, closed matches skip the top-5 and flop voting. Any open voting is closed immediately on save.",
   "group.vote_settings": "Voting",
   "group.vote_immediate": "starts immediately",
   "group.vote_delay": "starts in {n}min",

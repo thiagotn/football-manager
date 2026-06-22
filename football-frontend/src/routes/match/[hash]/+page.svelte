@@ -65,6 +65,8 @@
     const m = match;
     if (!m || !$isLoggedIn) return;
     if (m.status !== 'closed') return;
+    // Issue #10: grupo desativou votação — não tenta carregar status (403).
+    if (m.group_voting_enabled === false) return;
     votesApi.getStatus(m.id)
       .then(s => {
         voteStatus = s;

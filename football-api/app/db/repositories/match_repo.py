@@ -98,6 +98,24 @@ class MatchRepository(BaseRepository[Match]):
             self.session.add(Attendance(match_id=match_id, player_id=player_id, status=AttendanceStatus.PENDING))
         await self.session.flush()
 
+    async def close_open_votings_for_group(self, group_id: UUID) -> int:
+        """Issue #10: força o fim da janela de votação em TODAS as partidas
+        closed do grupo (vote_duration_hours=0). Espelha o efeito do botão
+        admin "Encerrar votação" para todas as votações em andamento de uma vez.
+        Retorna quantas partidas foram afetadas.
+        """
+        result = await self.session.execute(
+            update(Match)
+            .where(
+                Match.group_id == group_id,
+                Match.status == MatchStatus.CLOSED,
+                Match.vote_duration_hours > 0,
+            )
+            .values(vote_duration_hours=0)
+        )
+        await self.session.flush()
+        return result.rowcount or 0
+
     async def close_past_matches(self) -> int:
         """
         Atualiza o status das partidas usando horário de Brasília (UTC-3) explícito,

@@ -1097,6 +1097,12 @@ para paridade plena (atualizar conforme avança):
   `https://beta.rachao.app` (configuração manual na UI do Kuma).
 - [ ] **Audit endpoint-a-endpoint** (contrato HTTP, status codes, regras de negócio) usando o skill
   `api-compare` — verificação autoritativa de paridade, recomendada antes do cutover.
+- [x] **Voting opcional por grupo** (issue #10): nova coluna `groups.voting_enabled` (migration
+  047). v1 (`app/api/v1/routers/votes.py` + `vote_reminder.py` + `groups.py` update hook) e v2
+  (`internal/handlers/votes.go` + `vote_reminder.go` + `groups.go` update hook) bloqueiam os
+  endpoints e o cron quando a flag está off. Desativar o toggle dispara
+  `close_open_votings_for_group` (v1) / `CloseOpenVotingsForGroup` (v2) que zera
+  `vote_duration_hours` em todas as partidas closed do grupo, encerrando votações em andamento.
 - [x] **Vote reminder cron job — 30 min antes de fechar** (issue #6): novo job `*/5 * * * *`
   em ambos schedulers. v1: `football-api/app/services/vote_reminder.py`. v2:
   `football-api-go/internal/services/vote_reminder.go` (com `VoteReminderStore` interface para

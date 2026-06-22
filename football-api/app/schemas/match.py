@@ -87,6 +87,7 @@ class MatchDetailResponse(MatchResponse):
     group_per_match_amount: Decimal | None = None
     group_monthly_amount: Decimal | None = None
     group_is_public: bool = True
+    group_voting_enabled: bool = True
     group_timezone: str = "America/Sao_Paulo"
 
 

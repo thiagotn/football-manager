@@ -48,6 +48,7 @@ func (s *pgVoteReminderStore) GetReminderCandidates(ctx context.Context) ([]Vote
 		FROM matches m
 		JOIN groups g ON g.id = m.group_id
 		WHERE m.status = 'closed'
+		  AND g.voting_enabled = true
 		  AND m.vote_reminder_sent_at IS NULL`)
 	if err != nil {
 		return nil, err

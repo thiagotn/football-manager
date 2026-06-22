@@ -40,6 +40,7 @@ type VoteStore interface {
 	GetVoteBallots(ctx context.Context, matchID uuid.UUID) ([]db.Ballot, error)
 	CloseVotingEarly(ctx context.Context, matchID uuid.UUID) error
 	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	GroupVotingEnabled(ctx context.Context, groupID uuid.UUID) (bool, error)
 }
 
 type pgVoteStore struct {
@@ -84,6 +85,9 @@ func (s *pgVoteStore) CloseVotingEarly(ctx context.Context, matchID uuid.UUID) e
 }
 func (s *pgVoteStore) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
 	return db.GetGroupMember(ctx, s.pool, groupID, playerID)
+}
+func (s *pgVoteStore) GroupVotingEnabled(ctx context.Context, groupID uuid.UUID) (bool, error) {
+	return db.GroupVotingEnabled(ctx, s.pool, groupID)
 }
 
 type VoteHandler struct {
@@ -150,6 +154,26 @@ func confirmedPlayerIDs(attendances []db.AttendanceWithPlayer) []uuid.UUID {
 	return ids
 }
 
+// ensureVotingEnabled returns true when the group has voting on; otherwise it
+// writes the appropriate error response (403 for authenticated, 404 for public
+// callers) and returns false so the handler can early-return. Issue #10.
+func (h *VoteHandler) ensureVotingEnabled(w http.ResponseWriter, r *http.Request, groupID uuid.UUID, publicView bool) bool {
+	enabled, err := h.Store.GroupVotingEnabled(r.Context(), groupID)
+	if err != nil {
+		renderError(w, apierror.NotFound("group not found"))
+		return false
+	}
+	if !enabled {
+		if publicView {
+			renderError(w, apierror.NotFound("voting disabled for this group"))
+		} else {
+			renderError(w, apierror.Forbidden("VOTING_DISABLED"))
+		}
+		return false
+	}
+	return true
+}
+
 func (h *VoteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 	matchIDStr := chi.URLParam(r, "matchID")
 	matchID, err := uuid.Parse(matchIDStr)
@@ -167,6 +191,9 @@ func (h *VoteHandler) GetVoteStatus(w http.ResponseWriter, r *http.Request) {
 	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
+		return
+	}
+	if !h.ensureVotingEnabled(w, r, match.GroupID, false) {
 		return
 	}
 
@@ -266,6 +293,9 @@ func (h *VoteHandler) SubmitVote(w http.ResponseWriter, r *http.Request) {
 	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
+		return
+	}
+	if !h.ensureVotingEnabled(w, r, match.GroupID, false) {
 		return
 	}
 
@@ -383,6 +413,9 @@ func (h *VoteHandler) GetPublicVoteResults(w http.ResponseWriter, r *http.Reques
 		renderError(w, apierror.NotFound("match not found"))
 		return
 	}
+	if !h.ensureVotingEnabled(w, r, match.GroupID, true) {
+		return
+	}
 	if votingStatus(match) != "closed" {
 		renderError(w, apierror.NotFound("results not available"))
 		return
@@ -409,6 +442,9 @@ func (h *VoteHandler) GetPublicVoteBallots(w http.ResponseWriter, r *http.Reques
 	match, err := h.Store.GetMatchByHash(r.Context(), hash)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
+		return
+	}
+	if !h.ensureVotingEnabled(w, r, match.GroupID, true) {
 		return
 	}
 	if votingStatus(match) != "closed" {
@@ -445,6 +481,9 @@ func (h *VoteHandler) GetVoteResults(w http.ResponseWriter, r *http.Request) {
 	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
+		return
+	}
+	if !h.ensureVotingEnabled(w, r, match.GroupID, false) {
 		return
 	}
 	if votingStatus(match) != "closed" {
@@ -485,6 +524,9 @@ func (h *VoteHandler) CloseVoting(w http.ResponseWriter, r *http.Request) {
 	match, err := h.Store.GetMatchByID(r.Context(), matchID)
 	if err != nil {
 		renderError(w, apierror.NotFound("match not found"))
+		return
+	}
+	if !h.ensureVotingEnabled(w, r, match.GroupID, false) {
 		return
 	}
 

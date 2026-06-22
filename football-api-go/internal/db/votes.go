@@ -181,6 +181,7 @@ func GetPendingVotes(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID
 			AND a.player_id = $1
 			AND a.status = 'confirmed'
 		WHERE m.status = 'closed'
+		  AND g.voting_enabled = true
 		  AND NOT EXISTS (
 			SELECT 1 FROM match_votes mv
 			WHERE mv.match_id = m.id AND mv.voter_id = $1

@@ -234,6 +234,8 @@
   "group.weekly_recurrence": "Recurrencia semanal",
   "group.public": "Público",
   "group.private": "Privado",
+  "group.voting_enabled": "Votación post-partido",
+  "group.voting_enabled_desc": "Cuando se desactiva, los partidos cerrados no abren votación. Las votaciones abiertas se cierran al guardar.",
   "group.vote_settings": "Votación",
   "group.vote_immediate": "inicia inmediatamente",
   "group.vote_delay": "inicia en {n}min",

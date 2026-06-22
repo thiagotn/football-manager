@@ -38,6 +38,12 @@ async def _get_match_or_404(match_id: uuid.UUID, db: DB):
     return match
 
 
+def _ensure_voting_enabled(match) -> None:
+    """Issue #10: bloqueia endpoints de votação quando o grupo desativou a feature."""
+    if match.group and match.group.voting_enabled is False:
+        raise ForbiddenError("VOTING_DISABLED")
+
+
 def _confirmed_ids(match) -> list[uuid.UUID]:
     return [
         a.player_id
@@ -49,6 +55,7 @@ def _confirmed_ids(match) -> list[uuid.UUID]:
 @router.get("/matches/{match_id}/votes/status", response_model=VoteStatusResponse)
 async def get_vote_status(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     match = await _get_match_or_404(match_id, db)
+    _ensure_voting_enabled(match)
 
     status = voting_status(match)
     opens_at, closes_at = voting_window(match)
@@ -65,7 +72,8 @@ async def get_vote_status(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     if status in ("open", "closed"):
         voted_ids = await vote_repo.voter_ids(match_id)
 
-    # Dispara push notification na primeira chamada com status 'open'
+    # Dispara push notification na primeira chamada com status 'open'.
+    # Já filtrado por _ensure_voting_enabled acima — chega aqui só se ligado.
     if status == "open" and not match.vote_notified:
         match.vote_notified = True
         await db.flush()
@@ -102,6 +110,7 @@ async def get_vote_status(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
 @router.post("/matches/{match_id}/votes", status_code=201)
 async def submit_vote(match_id: uuid.UUID, body: VoteSubmitRequest, db: DB, current: CurrentPlayer):
     match = await _get_match_or_404(match_id, db)
+    _ensure_voting_enabled(match)
 
     # Valida janela
     if voting_status(match) != "open":
@@ -164,6 +173,7 @@ async def get_pending_votes(db: DB, current: CurrentPlayer):
                 AND a.player_id = :player_id
                 AND a.status = 'confirmed'
             WHERE m.status = 'closed'
+              AND g.voting_enabled = true
               AND NOT EXISTS (
                 SELECT 1 FROM match_votes mv
                 WHERE mv.match_id = m.id AND mv.voter_id = :player_id
@@ -208,6 +218,8 @@ async def get_public_vote_results(match_hash: str, db: DB):
     match = await m_repo.get_by_hash_with_attendances(match_hash)
     if not match:
         raise NotFoundError("Partida não encontrada")
+    if match.group and match.group.voting_enabled is False:
+        raise NotFoundError("Votação desabilitada neste grupo")
     if voting_status(match) != "closed":
         raise NotFoundError("Resultados não disponíveis")
     vote_repo = VoteRepository(db)
@@ -232,6 +244,8 @@ async def get_public_vote_ballots(match_hash: str, db: DB):
     match = await m_repo.get_by_hash_with_attendances(match_hash)
     if not match:
         raise NotFoundError("Partida não encontrada")
+    if match.group and match.group.voting_enabled is False:
+        raise NotFoundError("Votação desabilitada neste grupo")
     if voting_status(match) != "closed":
         raise NotFoundError("Cédulas não disponíveis")
     vote_repo = VoteRepository(db)
@@ -243,6 +257,7 @@ async def get_public_vote_ballots(match_hash: str, db: DB):
 @router.get("/matches/{match_id}/votes/results", response_model=VoteResultsResponse)
 async def get_vote_results(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     match = await _get_match_or_404(match_id, db)
+    _ensure_voting_enabled(match)
 
     if voting_status(match) != "closed":
         raise ForbiddenError("RESULTS_NOT_AVAILABLE")
@@ -264,6 +279,7 @@ async def get_vote_results(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
 async def close_voting_early(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
     """Encerra a votação imediatamente. Restrito ao admin do grupo ou super-admin."""
     match = await _get_match_or_404(match_id, db)
+    _ensure_voting_enabled(match)
 
     # Verifica permissão: super-admin ou admin do grupo
     if current.role != PlayerRole.ADMIN:

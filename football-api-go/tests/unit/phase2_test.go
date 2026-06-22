@@ -343,6 +343,7 @@ type mockVoteStore struct {
 	getVoteBallotsFn         func(ctx context.Context, matchID uuid.UUID) ([]db.Ballot, error)
 	closeVotingEarlyFn       func(ctx context.Context, matchID uuid.UUID) error
 	getGroupMemberFn         func(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	groupVotingEnabledFn     func(ctx context.Context, groupID uuid.UUID) (bool, error)
 }
 
 func (m *mockVoteStore) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
@@ -434,6 +435,15 @@ func (m *mockVoteStore) GetGroupMember(ctx context.Context, groupID, playerID uu
 		return m.getGroupMemberFn(ctx, groupID, playerID)
 	}
 	return nil, db.ErrNotFound
+}
+
+func (m *mockVoteStore) GroupVotingEnabled(ctx context.Context, groupID uuid.UUID) (bool, error) {
+	if m.groupVotingEnabledFn != nil {
+		return m.groupVotingEnabledFn(ctx, groupID)
+	}
+	// Default true to preserve existing test behaviour — tests that exercise the
+	// off-path set their own stub.
+	return true, nil
 }
 
 func voteRouter(store handlers.VoteStore) http.Handler {

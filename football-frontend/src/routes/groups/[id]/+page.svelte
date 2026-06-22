@@ -143,7 +143,7 @@
   let saving = $state(false);
 
 
-  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, vote_open_delay_minutes: 20, vote_duration_hours: 24, timezone: 'America/Sao_Paulo' });
+  let editForm = $state({ name: '', description: '', per_match_amount: '', monthly_amount: '', recurrence_enabled: false, is_public: true, voting_enabled: true, vote_open_delay_minutes: 20, vote_duration_hours: 24, timezone: 'America/Sao_Paulo' });
   let editTeamSlots = $state<TeamSlot[]>([]);
 
   // Waitlist
@@ -259,6 +259,7 @@
       monthly_amount: group.monthly_amount != null ? String(group.monthly_amount) : '',
       recurrence_enabled: group.recurrence_enabled,
       is_public: group.is_public,
+      voting_enabled: group.voting_enabled ?? true,
       vote_open_delay_minutes: group.vote_open_delay_minutes ?? 20,
       vote_duration_hours: group.vote_duration_hours ?? 24,
       timezone: group.timezone ?? 'America/Sao_Paulo',
@@ -296,6 +297,7 @@
         monthly_amount: editForm.monthly_amount !== '' ? parseFloat(editForm.monthly_amount) : null,
         recurrence_enabled: editForm.recurrence_enabled,
         is_public: editForm.is_public,
+        voting_enabled: editForm.voting_enabled,
         vote_open_delay_minutes: editForm.vote_open_delay_minutes,
         vote_duration_hours: editForm.vote_duration_hours,
         timezone: editForm.timezone,
@@ -1508,6 +1510,17 @@
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
         Quando ativo, qualquer pessoa com o link pode solicitar entrada no próximo rachão via lista de espera.
       </p>
+    </div>
+    <div class="form-group">
+      <label class="flex items-center gap-3 cursor-pointer select-none">
+        <div class="relative">
+          <input type="checkbox" class="sr-only peer" bind:checked={editForm.voting_enabled} />
+          <div class="w-10 h-6 bg-gray-200 dark:bg-gray-600 peer-checked:bg-primary-600 rounded-full transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+        </div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('group.voting_enabled')}</span>
+      </label>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{$t('group.voting_enabled_desc')}</p>
     </div>
     <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
       <label class="label" for="egtimezone">{$t('new_group.timezone_label')}</label>

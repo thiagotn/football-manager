@@ -34,6 +34,7 @@ type Group struct {
 	MonthlyAmount        *float64   `json:"monthly_amount"`
 	RecurrenceEnabled    bool       `json:"recurrence_enabled"`
 	IsPublic             bool       `json:"is_public"`
+	VotingEnabled        bool       `json:"voting_enabled"`
 	VoteOpenDelayMinutes int        `json:"vote_open_delay_minutes"`
 	VoteDurationHours    int        `json:"vote_duration_hours"`
 	Timezone             string     `json:"timezone"`
@@ -69,7 +70,7 @@ const groupSelectCols = `
 	g.id, g.name, g.description, g.slug,
 	g.per_match_amount::FLOAT8,
 	g.monthly_amount::FLOAT8,
-	g.recurrence_enabled, g.is_public,
+	g.recurrence_enabled, g.is_public, g.voting_enabled,
 	g.vote_open_delay_minutes, g.vote_duration_hours,
 	g.timezone, g.team_slots,
 	g.created_at, g.updated_at`
@@ -78,7 +79,7 @@ const groupReturnCols = `
 	id, name, description, slug,
 	per_match_amount::FLOAT8,
 	monthly_amount::FLOAT8,
-	recurrence_enabled, is_public,
+	recurrence_enabled, is_public, voting_enabled,
 	vote_open_delay_minutes, vote_duration_hours,
 	timezone, team_slots,
 	created_at, updated_at`
@@ -89,7 +90,7 @@ func scanGroup(scanFn func(dest ...any) error) (*Group, error) {
 	err := scanFn(
 		&g.ID, &g.Name, &g.Description, &g.Slug,
 		&g.PerMatchAmount, &g.MonthlyAmount,
-		&g.RecurrenceEnabled, &g.IsPublic,
+		&g.RecurrenceEnabled, &g.IsPublic, &g.VotingEnabled,
 		&g.VoteOpenDelayMinutes, &g.VoteDurationHours,
 		&g.Timezone, &slotsJSON,
 		&g.CreatedAt, &g.UpdatedAt,
@@ -146,6 +147,7 @@ type CreateGroupParams struct {
 	PerMatchAmount       *float64
 	MonthlyAmount        *float64
 	IsPublic             bool
+	VotingEnabled        bool
 	VoteOpenDelayMinutes int
 	VoteDurationHours    int
 	Timezone             string
@@ -155,12 +157,12 @@ func CreateGroup(ctx context.Context, pool *pgxpool.Pool, p CreateGroupParams) (
 	row := pool.QueryRow(ctx, `
 		INSERT INTO groups
 			(name, description, slug, per_match_amount, monthly_amount,
-			 is_public, vote_open_delay_minutes, vote_duration_hours, timezone)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+			 is_public, voting_enabled, vote_open_delay_minutes, vote_duration_hours, timezone)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		RETURNING `+groupReturnCols,
 		p.Name, p.Description, p.Slug,
 		p.PerMatchAmount, p.MonthlyAmount,
-		p.IsPublic, p.VoteOpenDelayMinutes, p.VoteDurationHours, p.Timezone,
+		p.IsPublic, p.VotingEnabled, p.VoteOpenDelayMinutes, p.VoteDurationHours, p.Timezone,
 	)
 	return scanGroup(row.Scan)
 }
@@ -175,18 +177,49 @@ func UpdateGroupFull(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID,
 		UPDATE groups SET
 			name=$1, description=$2,
 			per_match_amount=$3, monthly_amount=$4,
-			recurrence_enabled=$5, is_public=$6,
-			vote_open_delay_minutes=$7, vote_duration_hours=$8,
-			timezone=$9, team_slots=$10
-		WHERE id=$11
+			recurrence_enabled=$5, is_public=$6, voting_enabled=$7,
+			vote_open_delay_minutes=$8, vote_duration_hours=$9,
+			timezone=$10, team_slots=$11
+		WHERE id=$12
 		RETURNING `+groupReturnCols,
 		g.Name, g.Description,
 		g.PerMatchAmount, g.MonthlyAmount,
-		g.RecurrenceEnabled, g.IsPublic,
+		g.RecurrenceEnabled, g.IsPublic, g.VotingEnabled,
 		g.VoteOpenDelayMinutes, g.VoteDurationHours,
 		g.Timezone, slotsJSON, groupID,
 	)
 	return scanGroup(row.Scan)
+}
+
+// GroupVotingEnabled returns the flag value for a single group with minimal
+// overhead (no JOINs, no SELECT *). Used by vote handlers to gate endpoints
+// when the group opted out of post-match voting (issue #10). Returns
+// ErrNotFound when the group does not exist.
+func GroupVotingEnabled(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID) (bool, error) {
+	var enabled bool
+	err := pool.QueryRow(ctx,
+		`SELECT voting_enabled FROM groups WHERE id = $1`, groupID,
+	).Scan(&enabled)
+	if err == pgx.ErrNoRows {
+		return false, ErrNotFound
+	}
+	return enabled, err
+}
+
+// CloseOpenVotingsForGroup forces every closed match of a group to have
+// vote_duration_hours = 0 — same effect as the admin "close voting" button,
+// but applied in batch when voting_enabled flips to false (issue #10).
+func CloseOpenVotingsForGroup(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID) (int64, error) {
+	tag, err := pool.Exec(ctx, `
+		UPDATE matches
+		SET vote_duration_hours = 0
+		WHERE group_id = $1
+		  AND status = 'closed'
+		  AND vote_duration_hours > 0`, groupID)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
 }
 
 func DeleteGroup(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID) error {
