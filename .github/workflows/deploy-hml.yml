@@ -255,6 +255,57 @@ jobs:
             echo "==> Subindo stack de homologação..."
             docker compose -f docker-compose.hml.yml -p football-manager-hml up -d --remove-orphans
 
+            # Aplica migrations pendentes no db-hml.
+            #
+            # O bind /docker-entrypoint-initdb.d só roda na PRIMEIRA inicialização
+            # do volume — qualquer migration nova adicionada depois disso nunca
+            # entra automaticamente. Sem este passo, cada nova ALTER TABLE
+            # quebra o api-go em beta até a coluna ser criada à mão (já
+            # aconteceu com 047_groups_voting_enabled.sql).
+            #
+            # Espelha o esquema do app/db/migrate.py da API Python (tabela
+            # schema_migrations rastreando o que foi aplicado).
+            echo "==> Aplicando migrations pendentes no db-hml..."
+            until docker exec football-db-hml pg_isready -U football -d football_hml >/dev/null 2>&1; do
+              sleep 1
+            done
+            # Cria a tabela de tracking se nova. Quando criamos pela primeira
+            # vez, fazemos BOOTSTRAP marcando todas as migrations atuais como
+            # aplicadas — porque o /docker-entrypoint-initdb.d já as rodou
+            # na primeira inicialização do volume e algumas migrations antigas
+            # não são idempotentes (CREATE TYPE, INSERT seed, etc.).
+            bootstrap_needed=$(docker exec football-db-hml psql -U football -d football_hml -tAc \
+              "SELECT to_regclass('public.schema_migrations') IS NULL")
+            docker exec football-db-hml psql -U football -d football_hml -v ON_ERROR_STOP=1 -c "
+              CREATE TABLE IF NOT EXISTS schema_migrations (
+                filename TEXT PRIMARY KEY,
+                applied_at TIMESTAMPTZ DEFAULT NOW()
+              );
+            " >/dev/null
+            if [ "$bootstrap_needed" = "t" ]; then
+              echo "    → bootstrap: registrando migrations já aplicadas pelo init container"
+              for f in $(ls migrations/*.sql | sort); do
+                fname=$(basename "$f")
+                docker exec football-db-hml psql -U football -d football_hml -c \
+                  "INSERT INTO schema_migrations (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" >/dev/null
+              done
+              echo "==> Bootstrap concluído — próximos deploys aplicarão apenas migrations novas."
+            else
+              for f in $(ls migrations/*.sql | sort); do
+                fname=$(basename "$f")
+                already=$(docker exec football-db-hml psql -U football -d football_hml -tAc \
+                  "SELECT 1 FROM schema_migrations WHERE filename='$fname'")
+                if [ "$already" = "1" ]; then
+                  continue
+                fi
+                echo "    → aplicando $fname"
+                docker exec -i football-db-hml psql -U football -d football_hml -v ON_ERROR_STOP=1 < "$f"
+                docker exec football-db-hml psql -U football -d football_hml -c \
+                  "INSERT INTO schema_migrations (filename) VALUES ('$fname') ON CONFLICT DO NOTHING" >/dev/null
+              done
+              echo "==> Migrations em dia."
+            fi
+
             # Traefik observa um único arquivo bind-montado; o inotify não dispara de
             # forma confiável quando o arquivo é substituído no host. Recriamos o Traefik
             # apenas quando traefik-dynamic.yml de fato mudou (evita blip em redeploys
