@@ -12,9 +12,16 @@ declare const self: ServiceWorkerGlobalScope;
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST ?? []);
 
-// API: sempre rede, nunca cache
+// API: sempre rede, nunca cache.
+//
+// Importante: só interceptar quando a chamada é mesma origem. Em dev o
+// frontend bate em `/api/*` (proxy do vite, mesma origem); em prod a API vive
+// em `api.rachao.app` (cross-origin) e o SW interceptando esses requests
+// quebrava o handshake CORS quando workbox refazia o fetch internamente,
+// fazendo o dashboard receber "no-response" mesmo com a API saudável.
+// Cross-origin passa direto pelo fetch nativo do navegador.
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api'),
+  ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/api'),
   new NetworkOnly()
 );
 
