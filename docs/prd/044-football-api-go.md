@@ -1138,3 +1138,14 @@ para paridade plena (atualizar conforme avança):
   completo, agora pode gravar presença **de outro jogador** (mantendo o bloqueio da própria),
   espelhando o v1. Testes: `tests/unit/routers/test_matches.py` (v1, 4 cenários) e
   `tests/integration/matches_integration_test.go` (v2, votação aberta → 200 / encerrada → 403).
+- [x] **Resultados da votação — desempate pelo ranking do grupo**: quando dois jogadores
+  empatam nos pontos da partida, o resultado favorece quem tem **menos** pontos no ranking do
+  grupo até a data da partida (`ORDER BY total_points DESC, group_score ASC, name ASC`, sendo
+  `group_score` = soma dos pontos top5 do jogador nas partidas do grupo com `match_date <=`
+  data da partida — aproximação intencional, sem replicar a elegibilidade ≥10 do `/ranking`).
+  v1: `football-api/app/db/repositories/vote_repo.py:get_results` (subquery correlacionada).
+  v2: `football-api-go/internal/db/votes.go:GetVoteResults` (subquery SQL). O frontend
+  (`results/+page.svelte`) passou a montar o pódio/lista pela **ordem do array** com numeração
+  sequencial, corrigindo o 3º lugar que sumia em empates (RANK gerava buraco de posição).
+  Teste: `tests/integration/votes_integration_test.go` (v2, empatado com menos pontos no grupo
+  vem primeiro).

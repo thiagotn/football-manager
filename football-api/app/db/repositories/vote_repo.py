@@ -2,7 +2,9 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
+from app.models.match import Match
 from app.models.match_vote import MatchVote, MatchVoteFlop, MatchVoteTop5
 from app.models.player import Player
 from app.services.voting import POINTS
@@ -58,6 +60,26 @@ class VoteRepository:
         await self.session.flush()
 
     async def get_results(self, match_id: UUID) -> dict:
+        # Desempate: entre jogadores empatados nos pontos da partida, favorecer quem tem
+        # MENOS pontos no ranking do grupo até a data desta partida (asc). `name` é o
+        # desempate final determinístico.
+        cur_group = select(Match.group_id).where(Match.id == match_id).scalar_subquery()
+        cur_date = select(Match.match_date).where(Match.id == match_id).scalar_subquery()
+        _MV5 = aliased(MatchVoteTop5)
+        _MV = aliased(MatchVote)
+        _M = aliased(Match)
+        group_score = (
+            select(func.coalesce(func.sum(_MV5.points), 0))
+            .join(_MV, _MV.id == _MV5.vote_id)
+            .join(_M, _M.id == _MV.match_id)
+            .where(
+                _MV5.player_id == Player.id,
+                _M.group_id == cur_group,
+                _M.match_date <= cur_date,
+            )
+            .scalar_subquery()
+        )
+
         # Top 5 — soma de pontos por jogador
         top5_q = await self.session.execute(
             select(
@@ -71,7 +93,7 @@ class VoteRepository:
             .join(Player, Player.id == MatchVoteTop5.player_id)
             .where(MatchVote.match_id == match_id)
             .group_by(MatchVoteTop5.player_id, Player.name, Player.nickname, Player.avatar_url)
-            .order_by(func.sum(MatchVoteTop5.points).desc())
+            .order_by(func.sum(MatchVoteTop5.points).desc(), group_score.asc(), Player.name.asc())
         )
         top5_rows = top5_q.all()
 

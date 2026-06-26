@@ -16,9 +16,9 @@
       <p class="text-xs text-gray-400 dark:text-gray-500 text-center py-2">Nenhum voto registrado.</p>
     {:else}
       <div class="space-y-1.5">
-        {#each results.top5 as item}
+        {#each results.top5 as item, i}
           <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-            <span class="w-6 text-lg shrink-0">{MEDALS[item.position] ?? '  '}</span>
+            <span class="w-6 text-lg shrink-0">{MEDALS[i + 1] ?? '  '}</span>
             <span class="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{playerDisplayName(item.name, item.nickname)}</span>
             <span class="text-xs font-bold text-primary-600 dark:text-primary-400 shrink-0">{item.points} pts</span>
           </div>

@@ -219,7 +219,9 @@ func GetPendingVotes(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID
 }
 
 func GetVoteResults(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) (*VoteResults, error) {
-	// Top5 aggregated
+	// Top5 aggregated. Tie-break: among players tied on this match's points, favor the
+	// one with FEWER points in the group ranking up to this match's date (asc); name asc
+	// is the final deterministic tie-break.
 	top5rows, err := pool.Query(ctx, `
 		SELECT t.player_id, p.name, p.nickname, p.avatar_url, SUM(t.points) AS total_points
 		FROM match_vote_top5 t
@@ -227,7 +229,17 @@ func GetVoteResults(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) 
 		JOIN players p ON p.id = t.player_id
 		WHERE v.match_id = $1
 		GROUP BY t.player_id, p.name, p.nickname, p.avatar_url
-		ORDER BY total_points DESC`,
+		ORDER BY total_points DESC,
+			(
+				SELECT COALESCE(SUM(t2.points), 0)
+				FROM match_vote_top5 t2
+				JOIN match_votes v2 ON v2.id = t2.vote_id
+				JOIN matches m2 ON m2.id = v2.match_id
+				WHERE t2.player_id = t.player_id
+				  AND m2.group_id = (SELECT group_id FROM matches WHERE id = $1)
+				  AND m2.match_date <= (SELECT match_date FROM matches WHERE id = $1)
+			) ASC,
+			p.name ASC`,
 		matchID,
 	)
 	if err != nil {

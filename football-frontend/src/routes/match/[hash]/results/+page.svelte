@@ -85,7 +85,6 @@
   });
 
   const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-  const PODIUM_ORDER = [2, 1, 3]; // 2nd left, 1st center, 3rd right
 
   function podiumHeight(pos: number): string {
     if (pos === 1) return 'h-24';
@@ -105,15 +104,26 @@
     return 'text-amber-800 dark:text-amber-600';
   }
 
+  // Pódio/lista montados pela ORDEM do array (já ordenado pelo backend, incl. desempate),
+  // com numeração sequencial por índice (`rank`). Não usar `position` do backend, que tem
+  // buracos em empates (ranking de competição) e fazia o 3º sumir.
   let top3 = $derived(
-    results ? PODIUM_ORDER.map(p => results!.top5.find(x => x.position === p)).filter(Boolean) as typeof results.top5 : []
+    results
+      ? ([
+          results.top5[1] && { ...results.top5[1], rank: 2 }, // 2º à esquerda
+          results.top5[0] && { ...results.top5[0], rank: 1 }, // 1º ao centro
+          results.top5[2] && { ...results.top5[2], rank: 3 }, // 3º à direita
+        ].filter(Boolean) as (typeof results.top5[number] & { rank: number })[])
+      : []
   );
-  let rest = $derived(results ? results.top5.filter(x => x.position > 3) : []);
+  let rest = $derived(
+    results ? results.top5.slice(3).map((x, i) => ({ ...x, rank: i + 4 })) : []
+  );
 
   function shareResults() {
     if (!results || !match) return;
-    const top3 = results.top5.filter(p => p.position <= 3).map(p => `${MEDALS[p.position]} ${playerDisplayName(p.name, p.nickname)} (${p.points} pts)`).join('\n');
-    const rest = results.top5.filter(p => p.position > 3).map(p => `#${p.position} ${playerDisplayName(p.name, p.nickname)} (${p.points} pts)`).join('\n');
+    const top3 = results.top5.slice(0, 3).map((p, i) => `${MEDALS[i + 1]} ${playerDisplayName(p.name, p.nickname)} (${p.points} pts)`).join('\n');
+    const rest = results.top5.slice(3).map((p, i) => `#${i + 4} ${playerDisplayName(p.name, p.nickname)} (${p.points} pts)`).join('\n');
     const flop = results.flop.length > 0
       ? results.flop.map(p => `😬 ${playerDisplayName(p.name, p.nickname)} (${p.votes} voto${p.votes !== 1 ? 's' : ''})`).join('\n')
       : null;
@@ -234,7 +244,7 @@
           <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center mb-6">{$t('results.podium')}</p>
           <div class="flex items-end justify-center gap-3">
             {#each top3 as item}
-              {@const pos = item.position}
+              {@const pos = item.rank}
               <div class="flex flex-col items-center gap-1 flex-1">
                 <!-- Avatar above name (issue #8) -->
                 <AvatarImage name={item.name} avatarUrl={item.avatar_url} size={pos === 1 ? 56 : 48} class="ring-2 ring-white dark:ring-gray-800 shadow" />
@@ -262,7 +272,7 @@
                 {@const pct = Math.round((item.points / maxPoints()) * 100)}
                 <div class="px-4 py-3">
                   <div class="flex items-center gap-2 mb-1">
-                    <span class="text-sm font-semibold text-gray-500 dark:text-gray-400 w-6 shrink-0">{item.position}º</span>
+                    <span class="text-sm font-semibold text-gray-500 dark:text-gray-400 w-6 shrink-0">{item.rank}º</span>
                     <span class="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{playerDisplayName(item.name, item.nickname)}</span>
                     <span class="text-xs font-bold text-primary-600 dark:text-primary-400 shrink-0">{item.points} pts</span>
                   </div>
