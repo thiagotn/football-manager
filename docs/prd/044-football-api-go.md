@@ -1127,3 +1127,14 @@ para paridade plena (atualizar conforme avança):
   `createMatch`, `updateMatch` e `myMatches` (este último agrupa por `group_id` antes de
   classificar). Testes: `tests/unit/services/test_match_listing.py` (v1) e
   `tests/unit/match_listing_test.go` (v2), 7 cenários cada.
+- [x] **Adicionar jogador a partida reaberta durante a votação**: admin do grupo (ou super
+  admin) pode reabrir uma partida encerrada e confirmar quem esqueceu de presença enquanto a
+  **votação está em andamento** (`voting_enabled` + janela aberta). O *auto-close* de partidas
+  de data passada no endpoint de presença passou a ser gateado por `voting_status == "open"`,
+  então a partida reaberta permanece `open` durante a votação. v1:
+  `football-api/app/api/v1/routers/matches.py` (`set_attendance`, usa
+  `app/services/voting.py:voting_status`). v2: `football-api-go/internal/handlers/matches.go`
+  (`setAttendance`, usa `votingStatus`/`GetGroupByID`) — e o super admin, antes bloqueado por
+  completo, agora pode gravar presença **de outro jogador** (mantendo o bloqueio da própria),
+  espelhando o v1. Testes: `tests/unit/routers/test_matches.py` (v1, 4 cenários) e
+  `tests/integration/matches_integration_test.go` (v2, votação aberta → 200 / encerrada → 403).

@@ -3,6 +3,7 @@ package integration_test
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -83,6 +84,59 @@ func TestMatches_SetAttendance_Confirmed(t *testing.T) {
 		map[string]any{"player_id": playerUUID.String(), "status": "confirmed"})
 	require.Equal(t, http.StatusOK, r.Code)
 	assert.Equal(t, "confirmed", r.Body["status"])
+}
+
+// A group admin can still confirm attendance on a past-dated match while voting is in
+// progress (e.g. reopened to add who forgot to confirm).
+func TestMatches_SetAttendance_PastMatch_VotingOpen(t *testing.T) {
+	srv := newTestServer(t)
+	player := registerAndLogin(t, srv, "Voting Open Player")
+
+	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
+		map[string]any{"name": "Voting Open Group"})
+	require.Equal(t, http.StatusCreated, r.Code)
+	groupID, _ := r.Body["id"].(string)
+	registerGroupCleanup(t, groupID)
+
+	// Match was yesterday, ending late, so the voting window is open right now.
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	r = apiCall(t, srv, http.MethodPost,
+		"/api/v2/groups/"+groupID+"/matches", player.Token,
+		map[string]any{"match_date": yesterday, "start_time": "20:00", "end_time": "23:59", "location": "Quadra Tardia"})
+	require.Equal(t, http.StatusCreated, r.Code)
+	matchID, _ := r.Body["id"].(string)
+
+	r = apiCall(t, srv, http.MethodPost,
+		"/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player.Token,
+		map[string]any{"player_id": player.ID, "status": "confirmed"})
+	require.Equal(t, http.StatusOK, r.Code, "should accept attendance during voting: %v", r.Body)
+	assert.Equal(t, "confirmed", r.Body["status"])
+}
+
+// Once voting has ended on a past match, attendance is blocked again.
+func TestMatches_SetAttendance_PastMatch_VotingClosed(t *testing.T) {
+	srv := newTestServer(t)
+	player := registerAndLogin(t, srv, "Voting Closed Player")
+
+	r := apiCall(t, srv, http.MethodPost, "/api/v2/groups", player.Token,
+		map[string]any{"name": "Voting Closed Group"})
+	require.Equal(t, http.StatusCreated, r.Code)
+	groupID, _ := r.Body["id"].(string)
+	registerGroupCleanup(t, groupID)
+
+	// Match was several days ago — the voting window is long closed.
+	longAgo := time.Now().AddDate(0, 0, -5).Format("2006-01-02")
+	r = apiCall(t, srv, http.MethodPost,
+		"/api/v2/groups/"+groupID+"/matches", player.Token,
+		map[string]any{"match_date": longAgo, "start_time": "20:00", "end_time": "22:00", "location": "Quadra Antiga"})
+	require.Equal(t, http.StatusCreated, r.Code)
+	matchID, _ := r.Body["id"].(string)
+
+	r = apiCall(t, srv, http.MethodPost,
+		"/api/v2/groups/"+groupID+"/matches/"+matchID+"/attendance", player.Token,
+		map[string]any{"player_id": player.ID, "status": "confirmed"})
+	require.Equal(t, http.StatusForbidden, r.Code)
+	assert.Contains(t, r.Body["detail"], "match is closed")
 }
 
 func TestMatches_ListGroupMatches(t *testing.T) {

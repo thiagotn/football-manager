@@ -17,6 +17,7 @@ from uuid import uuid4
 
 import pytest
 
+from app.models.group import GroupMemberRole
 from app.models.match import AttendanceStatus, MatchStatus
 from app.models.player import PlayerRole
 
@@ -568,3 +569,154 @@ async def test_confirm_attendance_success_returns_200(api_client, player_user, m
     )
 
     assert response.status_code == 200
+
+
+# ── Adicionar jogador a partida reaberta durante votação ──────────────────────
+
+
+def _make_reopened_match(group_id, match_id, *, days_ago, status, voting_enabled,
+                         end_time=time(12, 0), delay=0, duration=48):
+    """Partida de data passada (reaberta), com janela de votação configurável."""
+    match = MagicMock()
+    match.id = match_id
+    match.group_id = group_id
+    match.match_date = date.today() - timedelta(days=days_ago)
+    match.status = status
+    match.max_players = None
+    match.end_time = end_time
+    match.vote_open_delay_minutes = delay
+    match.vote_duration_hours = duration
+    match.group = MagicMock()
+    match.group.voting_enabled = voting_enabled
+    return match
+
+
+def _make_other_attendance(match_id, target_id):
+    attendance = MagicMock()
+    attendance.id = uuid4()
+    attendance.match_id = match_id
+    attendance.player_id = target_id
+    attendance.status = AttendanceStatus.CONFIRMED
+    attendance.player = MagicMock()
+    attendance.player.id = target_id
+    attendance.player.name = "Esquecido da Silva"
+    attendance.player.nickname = None
+    attendance.player.avatar_url = None
+    attendance.player.role = PlayerRole.PLAYER
+    attendance.position = None
+    attendance.group_nickname = None
+    return attendance
+
+
+@pytest.mark.asyncio
+async def test_group_admin_adds_player_to_reopened_match_during_voting_returns_200(
+    api_client, mock_db, mocker
+):
+    """Admin do grupo confirma jogador esquecido em partida reaberta com votação aberta."""
+    group_id, match_id, target_id = uuid4(), uuid4(), uuid4()
+    # Partida de ontem, reaberta (OPEN), votação ainda na janela (48h).
+    match = _make_reopened_match(
+        group_id, match_id, days_ago=1, status=MatchStatus.OPEN, voting_enabled=True
+    )
+    member = MagicMock()
+    member.role = GroupMemberRole.ADMIN
+    member.position = "mei"
+
+    mocker.patch("app.api.v1.routers.matches.MatchRepository.get",
+                 new=AsyncMock(return_value=match))
+    mocker.patch("app.api.v1.routers.matches.MatchRepository.upsert_attendance",
+                 new=AsyncMock(return_value=_make_other_attendance(match_id, target_id)))
+    mocker.patch("app.api.v1.routers.matches.GroupRepository.get_member",
+                 new=AsyncMock(return_value=member))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group_id}/matches/{match_id}/attendance",
+        json={"player_id": str(target_id), "status": "confirmed"},
+    )
+
+    assert response.status_code == 200
+    # Não deve ter re-fechado a partida durante a votação.
+    assert match.status == MatchStatus.OPEN
+
+
+@pytest.mark.asyncio
+async def test_super_admin_adds_player_to_reopened_match_during_voting_returns_200(
+    admin_client, mock_db, mocker
+):
+    """Super admin confirma jogador esquecido em partida reaberta com votação aberta."""
+    group_id, match_id, target_id = uuid4(), uuid4(), uuid4()
+    match = _make_reopened_match(
+        group_id, match_id, days_ago=1, status=MatchStatus.OPEN, voting_enabled=True
+    )
+    member = MagicMock()
+    member.role = GroupMemberRole.MEMBER
+    member.position = "ata"
+
+    mocker.patch("app.api.v1.routers.matches.MatchRepository.get",
+                 new=AsyncMock(return_value=match))
+    mocker.patch("app.api.v1.routers.matches.MatchRepository.upsert_attendance",
+                 new=AsyncMock(return_value=_make_other_attendance(match_id, target_id)))
+    mocker.patch("app.api.v1.routers.matches.GroupRepository.get_member",
+                 new=AsyncMock(return_value=member))
+
+    response = await admin_client.post(
+        f"/api/v1/groups/{group_id}/matches/{match_id}/attendance",
+        json={"player_id": str(target_id), "status": "confirmed"},
+    )
+
+    assert response.status_code == 200
+    assert match.status == MatchStatus.OPEN
+
+
+@pytest.mark.asyncio
+async def test_add_player_to_reopened_match_voting_closed_returns_403(
+    api_client, mock_db, mocker
+):
+    """Votação já encerrada → auto-close re-fecha a partida e bloqueia."""
+    group_id, match_id, target_id = uuid4(), uuid4(), uuid4()
+    # Partida de 5 dias atrás, janela de 24h já fechada.
+    match = _make_reopened_match(
+        group_id, match_id, days_ago=5, status=MatchStatus.OPEN,
+        voting_enabled=True, duration=24,
+    )
+    member = MagicMock()
+    member.role = GroupMemberRole.ADMIN
+    member.position = "mei"
+
+    mocker.patch("app.api.v1.routers.matches.MatchRepository.get",
+                 new=AsyncMock(return_value=match))
+    mocker.patch("app.api.v1.routers.matches.GroupRepository.get_member",
+                 new=AsyncMock(return_value=member))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group_id}/matches/{match_id}/attendance",
+        json={"player_id": str(target_id), "status": "confirmed"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_add_player_to_reopened_match_voting_disabled_returns_403(
+    api_client, mock_db, mocker
+):
+    """Grupo com votação desativada → sem exceção; partida passada é re-fechada."""
+    group_id, match_id, target_id = uuid4(), uuid4(), uuid4()
+    match = _make_reopened_match(
+        group_id, match_id, days_ago=1, status=MatchStatus.OPEN, voting_enabled=False
+    )
+    member = MagicMock()
+    member.role = GroupMemberRole.ADMIN
+    member.position = "mei"
+
+    mocker.patch("app.api.v1.routers.matches.MatchRepository.get",
+                 new=AsyncMock(return_value=match))
+    mocker.patch("app.api.v1.routers.matches.GroupRepository.get_member",
+                 new=AsyncMock(return_value=member))
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group_id}/matches/{match_id}/attendance",
+        json={"player_id": str(target_id), "status": "confirmed"},
+    )
+
+    assert response.status_code == 403

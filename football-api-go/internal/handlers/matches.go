@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -652,10 +653,6 @@ func (h *MatchHandler) deleteMatch(w http.ResponseWriter, r *http.Request) {
 
 func (h *MatchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 	player := middleware.PlayerFromCtx(r.Context())
-	if player.Role == db.PlayerRoleAdmin {
-		renderError(w, apierror.Forbidden("admins cannot set attendance"))
-		return
-	}
 	groupID, err := groupIDParam(r)
 	if err != nil {
 		renderError(w, apierror.NotFound("group not found"))
@@ -678,17 +675,24 @@ func (h *MatchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auth check
-	callerMem, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
-	if err != nil {
-		renderError(w, apierror.Forbidden("not a member"))
-		return
-	}
-
-	// Non-admins can only set their own attendance
-	if callerMem.Role != db.GroupMemberRoleAdmin && req.PlayerID != player.ID {
-		renderError(w, apierror.Forbidden("can only set own attendance"))
-		return
+	// Auth check. Super admins don't participate in matches themselves, but may
+	// manage another player's attendance (e.g. add who forgot to confirm).
+	if player.Role == db.PlayerRoleAdmin {
+		if req.PlayerID == player.ID {
+			renderError(w, apierror.Forbidden("admins cannot set attendance"))
+			return
+		}
+	} else {
+		callerMem, err := h.Store.GetGroupMember(r.Context(), groupID, player.ID)
+		if err != nil {
+			renderError(w, apierror.Forbidden("not a member"))
+			return
+		}
+		// Non-group-admins can only set their own attendance
+		if callerMem.Role != db.GroupMemberRoleAdmin && req.PlayerID != player.ID {
+			renderError(w, apierror.Forbidden("can only set own attendance"))
+			return
+		}
 	}
 
 	match, err := h.Store.GetMatchByID(r.Context(), matchID)
@@ -699,6 +703,20 @@ func (h *MatchHandler) setAttendance(w http.ResponseWriter, r *http.Request) {
 	if match.GroupID != groupID {
 		renderError(w, apierror.NotFound("match not found"))
 		return
+	}
+
+	// Auto-close fallback for past-dated matches. Exception: an admin can reopen a
+	// closed match and add who forgot to confirm while voting is still in progress —
+	// a past-dated OPEN (reopened) match stays open only during the voting window.
+	today := time.Now().In(brtLoc).Format("2006-01-02")
+	if match.Status == "open" && match.MatchDate < today {
+		votingInProgress := false
+		if group, gerr := h.Store.GetGroupByID(r.Context(), groupID); gerr == nil && group.VotingEnabled {
+			votingInProgress = votingStatus(match) == "open"
+		}
+		if !votingInProgress {
+			match.Status = "closed"
+		}
 	}
 	if match.Status == "closed" {
 		renderError(w, apierror.Forbidden("match is closed"))

@@ -36,12 +36,15 @@ func groupMatchURL(groupID, matchID string) string {
 
 // ── setAttendance ─────────────────────────────────────────────────────────────
 
-func TestSetAttendance_AdminForbidden(t *testing.T) {
+// A super admin doesn't participate in matches, so setting their OWN attendance is
+// forbidden (returns before any DB call). Managing another player's attendance is
+// allowed and exercised via integration tests.
+func TestSetAttendance_AdminForbiddenForSelf(t *testing.T) {
 	admin := fakePlayer(asAdmin())
 	r := matchesRouter(admin)
 
 	url := groupMatchURL(uuid.New().String(), uuid.New().String()) + "/attendance"
-	w := postJSON(r, url, `{"player_id":"`+uuid.New().String()+`","status":"confirmed"}`)
+	w := postJSON(r, url, `{"player_id":"`+admin.ID.String()+`","status":"confirmed"}`)
 	assert.Equal(t, http.StatusForbidden, w.Code)
 	assert.Contains(t, w.Body.String(), "admins cannot set attendance")
 }

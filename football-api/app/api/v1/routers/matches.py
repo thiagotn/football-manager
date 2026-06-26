@@ -17,6 +17,7 @@ from app.models.group import GroupMemberRole
 from app.services.match_listing import classify_matches
 from app.services.recurrence import run_recurrence
 from app.services.push import send_push
+from app.services.voting import voting_status
 
 _MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
 
@@ -496,11 +497,18 @@ async def set_attendance(
     if not match or match.group_id != group_id:
         raise NotFoundError("Partida não encontrada")
 
-    # Fecha automaticamente se a data já passou (fallback — usa UTC-3 explícito)
+    # Fecha automaticamente se a data já passou (fallback — usa UTC-3 explícito).
+    # Exceção: admin pode reabrir uma partida encerrada e adicionar quem esqueceu de
+    # confirmar enquanto a votação estiver em andamento — nesse caso não re-fechamos.
     today_brazil = datetime.now(timezone(timedelta(hours=-3))).date()
     if match.match_date < today_brazil and match.status == MatchStatus.OPEN:
-        match.status = MatchStatus.CLOSED
-        await db.flush()
+        voting_in_progress = (
+            bool(match.group and match.group.voting_enabled)
+            and voting_status(match) == "open"
+        )
+        if not voting_in_progress:
+            match.status = MatchStatus.CLOSED
+            await db.flush()
 
     if match.status not in (MatchStatus.OPEN, MatchStatus.IN_PROGRESS):
         raise ForbiddenError("Esta partida está encerrada")
