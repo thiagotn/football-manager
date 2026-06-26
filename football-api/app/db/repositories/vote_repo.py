@@ -73,7 +73,8 @@ class VoteRepository:
             .join(_MV, _MV.id == _MV5.vote_id)
             .join(_M, _M.id == _MV.match_id)
             .where(
-                _MV5.player_id == Player.id,
+                # Correlaciona pela coluna AGRUPADA (não Player.id, que não está no GROUP BY)
+                _MV5.player_id == MatchVoteTop5.player_id,
                 _M.group_id == cur_group,
                 _M.match_date <= cur_date,
             )
