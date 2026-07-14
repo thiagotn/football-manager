@@ -577,10 +577,14 @@ async def test_confirm_attendance_success_returns_200(api_client, player_user, m
 def _make_reopened_match(group_id, match_id, *, days_ago, status, voting_enabled,
                          end_time=time(12, 0), delay=0, duration=48):
     """Partida de data passada (reaberta), com janela de votação configurável."""
+    from datetime import datetime as dt, timezone
+    # "Hoje" no mesmo relógio do endpoint (UTC-3): entre 21h BRT e meia-noite,
+    # date.today() em UTC já virou o dia e "ontem UTC" == "hoje Brasil".
+    today_brazil = dt.now(timezone(timedelta(hours=-3))).date()
     match = MagicMock()
     match.id = match_id
     match.group_id = group_id
-    match.match_date = date.today() - timedelta(days=days_ago)
+    match.match_date = today_brazil - timedelta(days=days_ago)
     match.status = status
     match.max_players = None
     match.end_time = end_time
