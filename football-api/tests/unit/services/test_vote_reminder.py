@@ -214,3 +214,19 @@ async def test_job_records_failure_without_raising(mocker):
     assert _counter() == failures_before + 1
     assert _gauge() == gauge_before  # heartbeat NÃO avança em falha
     session.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_candidates_query_eager_loads_group():
+    """Regressão: `match.group` é lido no loop (issue #10); sem selectinload o
+    lazy-load em contexto async levanta MissingGreenlet e derruba o job."""
+    from sqlalchemy.orm import Load
+
+    session = _mock_session([])
+    await _run(session)
+
+    stmt = session.execute.await_args.args[0]
+    loaded_paths = [
+        str(opt.path) for opt in stmt._with_options if isinstance(opt, Load)
+    ]
+    assert any("group" in p for p in loaded_paths), loaded_paths

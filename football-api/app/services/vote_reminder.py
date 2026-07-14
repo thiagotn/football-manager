@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 import structlog
 from sqlalchemy import and_, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.job_metrics import JOB_VOTE_REMINDER, record_job_failure, record_job_success
 from app.db.session import get_session_factory
@@ -47,7 +48,12 @@ async def _run(session: AsyncSession) -> int:
     # Apenas partidas closed sem lembrete enviado ainda.
     candidates = (
         await session.execute(
-            select(Match).where(
+            select(Match)
+            # Eager load: `match.group` é lido no loop abaixo (issue #10) e o
+            # lazy-load fora do greenlet do SQLAlchemy async levanta
+            # MissingGreenlet, derrubando o job inteiro a cada tick.
+            .options(selectinload(Match.group))
+            .where(
                 Match.status == MatchStatus.CLOSED,
                 Match.vote_reminder_sent_at.is_(None),
             )
