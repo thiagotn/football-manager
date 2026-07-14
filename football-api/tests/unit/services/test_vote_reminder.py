@@ -146,3 +146,71 @@ async def test_match_with_voting_not_open_yet_is_skipped():
         sent = await _run(session)
     assert sent == 0
     mock_push.assert_not_awaited()
+
+
+# ── heartbeat do job (app/core/job_metrics.py) ────────────────────────────────
+
+import os
+import time as _time
+
+from prometheus_client import REGISTRY
+
+from app.core.job_metrics import JOB_VOTE_REMINDER
+from app.services.vote_reminder import run_vote_reminder_job
+
+_PID = str(os.getpid())
+
+
+def _gauge():
+    return REGISTRY.get_sample_value(
+        "scheduler_job_last_success_timestamp_seconds",
+        {"job_name": JOB_VOTE_REMINDER, "pid": _PID},
+    )
+
+
+def _counter():
+    return REGISTRY.get_sample_value(
+        "scheduler_job_failures_total", {"job_name": JOB_VOTE_REMINDER, "pid": _PID}
+    ) or 0.0
+
+
+def _patch_job_session(mocker):
+    session = MagicMock()
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+    factory = MagicMock()
+    factory.return_value.__aenter__ = AsyncMock(return_value=session)
+    factory.return_value.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch("app.services.vote_reminder.get_session_factory", return_value=factory)
+    return session
+
+
+@pytest.mark.asyncio
+async def test_job_records_heartbeat_even_with_zero_sent(mocker):
+    """Heartbeat de liveness: avança mesmo quando nenhum push foi enviado."""
+    _patch_job_session(mocker)
+    mocker.patch("app.services.vote_reminder._run", new=AsyncMock(return_value=0))
+
+    t0 = _time.time()
+    await run_vote_reminder_job()
+
+    assert _gauge() is not None
+    assert _gauge() >= t0
+
+
+@pytest.mark.asyncio
+async def test_job_records_failure_without_raising(mocker):
+    session = _patch_job_session(mocker)
+    mocker.patch(
+        "app.services.vote_reminder._run",
+        new=AsyncMock(side_effect=RuntimeError("pooler saturado")),
+    )
+
+    gauge_before = _gauge()
+    failures_before = _counter()
+
+    await run_vote_reminder_job()  # não deve propagar a exceção
+
+    assert _counter() == failures_before + 1
+    assert _gauge() == gauge_before  # heartbeat NÃO avança em falha
+    session.rollback.assert_awaited_once()

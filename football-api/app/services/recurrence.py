@@ -5,6 +5,12 @@ from datetime import date, datetime, timezone, timedelta
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.job_metrics import (
+    JOB_RECURRENCE,
+    JOB_STATUS_SYNC,
+    record_job_failure,
+    record_job_success,
+)
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.match_repo import MatchRepository
 from app.db.session import get_session_factory
@@ -155,9 +161,11 @@ async def run_status_sync_job() -> None:
             if closed:
                 logger.info("status_sync_auto_closed", matches_closed=closed)
             await _send_in_progress_pushes(session, m_repo, in_progress_candidates)
+            record_job_success(JOB_STATUS_SYNC)
         except Exception:
             await session.rollback()
             logger.exception("status_sync_job_failed")
+            record_job_failure(JOB_STATUS_SYNC)
 
 
 async def run_recurrence_job() -> None:
@@ -174,6 +182,8 @@ async def run_recurrence_job() -> None:
             await session.commit()
             logger.info("recurrence_job_done", matches_created=count)
             await _send_in_progress_pushes(session, m_repo, in_progress_candidates)
+            record_job_success(JOB_RECURRENCE)
         except Exception:
             await session.rollback()
             logger.exception("recurrence_job_failed")
+            record_job_failure(JOB_RECURRENCE)

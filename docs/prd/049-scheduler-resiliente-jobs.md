@@ -13,6 +13,7 @@ O rachão semanal do Futebol GQC (#17, previsto para 09/07) não foi criado pelo
 3. **04/07 21h00 BRT (05/07 00:00 UTC)** — último evento de job nos logs. A partir daí, **silêncio total dos schedulers dos dois workers** por ~43h: nenhum `recurrence_job_done` (logado incondicionalmente), nenhum `vote_reminder_job_*`, nada. A API HTTP continuou servindo normalmente.
 4. Causa provável do travamento permanente: conexões do pool mortas durante o incidente ficaram penduradas em `await` sem timeout (`pool_pre_ping`/queries não têm `command_timeout`); com `max_instances=1` (default do APScheduler), o job travado bloqueia silenciosamente todas as execuções seguintes — e os warnings de "skipped" do APScheduler não aparecem nos logs (logger sem handler configurado).
 5. **Remediação aplicada em 06/07**: `docker restart football-api`. Schedulers voltaram; a partida atrasada é criada na próxima execução das 07h.
+6. **Reincidência em 07/07** (noite seguinte ao restart) — mesmo padrão: saturação `EMAXCONNSESSION` no pico ~20h BRT, scheduler mudo a partir de 00:00 UTC, job das 07h não rodou. **Causa raiz confirmada por inspeção de rede** (`nsenter ... ss -tn`): o próprio `football-api` segurava **15/15 conexões do pooler às 07h, sem tráfego** — 2 workers × 2 engines (`session.py` + `core/database.py`) × `pool_size=5` = até 20 conexões idle mantidas indefinidamente (sem `pool_recycle`), acima do teto de 15 do Supavisor. Agravante: `run_recurrence_job`/`run_status_sync_job`/`run_vote_reminder_job` chamam `get_session_factory()` sem argumento, criando **um engine + pool novos a cada execução** (vote_reminder: a cada 5 min × 2 workers) em vez de reusar o singleton — engines async abandonados não fecham conexões asyncpg de forma confiável no GC. Remediação manual: restart + `docker exec football-api python3 -c "import asyncio; from app.services.recurrence import run_recurrence_job; asyncio.run(run_recurrence_job())"` (executar UMA vez, fora das 07h) → partida GQC #17 criada. **Enquanto este PRD não for implementado, a falha tende a reincidir toda noite.**
 
 O sintoma para o usuário final: rachão não criado, lembretes de votação não enviados, partidas não fechadas/transicionadas automaticamente — tudo silenciosamente.
 
@@ -57,8 +58,15 @@ Em `app/db/session.py` (e no engine secundário de `app/core/database.py`):
 
 ### 4. Observabilidade / heartbeat
 
-- Cada job grava timestamp da última execução bem-sucedida (tabela `job_heartbeats` ou métrica Prometheus `job_last_success_timestamp`)
-- Alerta (Uptime Kuma ou alertmanager/Grafana já existentes na VPS) se `recurrence` não roda há > 25h ou `status_sync` há > 2h
+> **✅ Parcialmente implementado em 2026-07-13** (antecipado após a reincidência de 12-13/07):
+> - Métricas Prometheus `scheduler_job_last_success_timestamp_seconds{job_name,pid}` e `scheduler_job_failures_total{job_name,pid}` em `football-api/app/core/job_metrics.py`, registradas inline nos 3 jobs e inicializadas no lifespan
+> - 3 regras de alerta Grafana (grupo "Scheduler" em `football-api/monitoring/grafana/provisioning/alerting/rules.yml`): scheduler mudo (> 20min sem vote_reminder, critical), recorrência > 26h (critical), jobs falhando (warning) — notificação via contact point Telegram existente
+> - Painéis no dashboard `apis.json` (row "Scheduler v1"): idade do último sucesso por job + falhas
+>
+> Pendentes deste item: log `*_job_done` incondicional e retenção de logs.
+
+- ~~Cada job grava timestamp da última execução bem-sucedida (tabela `job_heartbeats` ou métrica Prometheus `job_last_success_timestamp`)~~ ✅
+- ~~Alerta (Uptime Kuma ou alertmanager/Grafana já existentes na VPS) se `recurrence` não roda há > 25h ou `status_sync` há > 2h~~ ✅ (via Grafana unified alerting)
 - Logar `*_job_done` incondicionalmente em **todos** os jobs (hoje `vote_reminder` e `status_sync` são silenciosos em sucesso, o que dificultou o diagnóstico)
 - Aumentar retenção de logs do container (`logging.options.max-size/max-file` no compose prod) — no incidente, a janela de ~2 dias quase apagou as evidências
 

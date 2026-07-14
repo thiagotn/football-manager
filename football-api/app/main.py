@@ -12,6 +12,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.job_metrics import init_job_metrics
 from app.db.migrate import run_migrations
 from app.services.recurrence import run_recurrence_job, run_status_sync_job
 from app.services.vote_reminder import run_vote_reminder_job
@@ -58,6 +59,8 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(run_status_sync_job, CronTrigger(minute=30))
     # A cada 5 min: avisa quem ainda não votou nos últimos 30 min da janela (issue #6)
     scheduler.add_job(run_vote_reminder_job, CronTrigger(minute="*/5"))
+    # Inicializa os heartbeats dos jobs (série presente desde o boot — ver job_metrics.py)
+    init_job_metrics()
     scheduler.start()
     logger.info("api_started", version=get_settings().app_version)
 

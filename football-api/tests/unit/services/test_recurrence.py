@@ -423,3 +423,107 @@ async def test_recurrence_retries_hash_on_collision(mocker):
     result = await run_recurrence(session)
 
     assert result == 1
+
+
+# ── heartbeat dos jobs (app/core/job_metrics.py) ──────────────────────────────
+
+import os
+import time
+
+from prometheus_client import REGISTRY
+
+from app.core.job_metrics import JOB_RECURRENCE, JOB_STATUS_SYNC
+from app.services.recurrence import run_recurrence_job, run_status_sync_job
+
+_PID = str(os.getpid())
+
+
+def _gauge(job_name):
+    return REGISTRY.get_sample_value(
+        "scheduler_job_last_success_timestamp_seconds", {"job_name": job_name, "pid": _PID}
+    )
+
+
+def _counter(job_name):
+    return REGISTRY.get_sample_value(
+        "scheduler_job_failures_total", {"job_name": job_name, "pid": _PID}
+    ) or 0.0
+
+
+def _patch_job_session(mocker):
+    """Substitui get_session_factory por uma factory que entrega uma sessão mock."""
+    session = MagicMock()
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+    factory = MagicMock()
+    factory.return_value.__aenter__ = AsyncMock(return_value=session)
+    factory.return_value.__aexit__ = AsyncMock(return_value=False)
+    mocker.patch("app.services.recurrence.get_session_factory", return_value=factory)
+    return session
+
+
+def _patch_match_repo(mocker, *, close_side_effect=None):
+    repo = MagicMock()
+    repo.get_in_progress_candidates = AsyncMock(return_value=[])
+    repo.close_past_matches = AsyncMock(return_value=0, side_effect=close_side_effect)
+    mocker.patch("app.services.recurrence.MatchRepository", return_value=repo)
+    return repo
+
+
+@pytest.mark.asyncio
+async def test_recurrence_job_records_heartbeat_on_success(mocker):
+    _patch_job_session(mocker)
+    _patch_match_repo(mocker)
+    mocker.patch("app.services.recurrence.run_recurrence", new=AsyncMock(return_value=0))
+
+    t0 = time.time()
+    await run_recurrence_job()
+
+    assert _gauge(JOB_RECURRENCE) is not None
+    assert _gauge(JOB_RECURRENCE) >= t0
+
+
+@pytest.mark.asyncio
+async def test_recurrence_job_records_failure_without_raising(mocker):
+    session = _patch_job_session(mocker)
+    _patch_match_repo(mocker)
+    mocker.patch(
+        "app.services.recurrence.run_recurrence",
+        new=AsyncMock(side_effect=RuntimeError("pooler saturado")),
+    )
+
+    gauge_before = _gauge(JOB_RECURRENCE)
+    failures_before = _counter(JOB_RECURRENCE)
+
+    await run_recurrence_job()  # não deve propagar a exceção
+
+    assert _counter(JOB_RECURRENCE) == failures_before + 1
+    assert _gauge(JOB_RECURRENCE) == gauge_before  # heartbeat NÃO avança em falha
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_status_sync_job_records_heartbeat_on_success(mocker):
+    _patch_job_session(mocker)
+    _patch_match_repo(mocker)
+
+    t0 = time.time()
+    await run_status_sync_job()
+
+    assert _gauge(JOB_STATUS_SYNC) is not None
+    assert _gauge(JOB_STATUS_SYNC) >= t0
+
+
+@pytest.mark.asyncio
+async def test_status_sync_job_records_failure_without_raising(mocker):
+    session = _patch_job_session(mocker)
+    _patch_match_repo(mocker, close_side_effect=RuntimeError("pooler saturado"))
+
+    gauge_before = _gauge(JOB_STATUS_SYNC)
+    failures_before = _counter(JOB_STATUS_SYNC)
+
+    await run_status_sync_job()  # não deve propagar a exceção
+
+    assert _counter(JOB_STATUS_SYNC) == failures_before + 1
+    assert _gauge(JOB_STATUS_SYNC) == gauge_before
+    session.rollback.assert_awaited_once()

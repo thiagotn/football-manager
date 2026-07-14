@@ -514,3 +514,227 @@ groups:
           api: v2
         annotations:
           summary: "API v2 não está respondendo ao scrape do Prometheus"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Scheduler (API v1): heartbeat dos jobs do APScheduler
+  #
+  # Detecta o incidente recorrente do pooler Supabase (EMAXCONNSESSION):
+  # os jobs falham à noite e depois os schedulers dos 2 workers ficam
+  # permanentemente mudos (ver docs/prd/049-scheduler-resiliente-jobs.md).
+  #
+  # Métricas expostas por app/core/job_metrics.py com label `pid` (um por
+  # worker uvicorn). Como cada scrape cai num worker aleatório, as regras
+  # usam max()/sum() sobre max_over_time/increase: disparam apenas quando
+  # AMBOS os workers estão mudos — exatamente o modo do incidente.
+  # ──────────────────────────────────────────────────────────────────────
+  - orgId: 1
+    name: Scheduler
+    folder: Alertas
+    interval: 1m
+    rules:
+
+      # ── Scheduler mudo: vote_reminder (a cada 5min) sem sucesso > 20min ──
+      - uid: alert-scheduler-mute
+        title: "Scheduler v1 — mudo (vote_reminder sem sucesso > 20min)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: "time() - max(max_over_time(scheduler_job_last_success_timestamp_seconds{job_name=\"vote_reminder\"}[15m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 1200
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        isPaused: false
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scheduler da API v1 está mudo — nenhum job vote_reminder concluiu nos últimos 20 min (incidente do pooler Supabase). Remediação: docker restart football-api"
+          description: "Idade do último sucesso: {{ with $values.B }}{{ if .Value }}{{ .Value | printf \"%.0f\" }}{{ else }}N/A{{ end }}{{ else }}N/A{{ end }}s"
+
+      # ── Recorrência sem concluir > 26h (job diário das 07h não rodou) ──
+      - uid: alert-recurrence-stale
+        title: "Scheduler v1 — recorrência sem concluir > 26h"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: "time() - max(max_over_time(scheduler_job_last_success_timestamp_seconds{job_name=\"recurrence\"}[15m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 93600
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 15m
+        isPaused: false
+        labels:
+          severity: critical
+        annotations:
+          summary: "Job de recorrência (07h) não conclui há mais de 26h — próximo rachão pode não ter sido criado. Ver playbook no PRD 049"
+          description: "Idade do último sucesso: {{ with $values.B }}{{ if .Value }}{{ .Value | printf \"%.0f\" }}{{ else }}N/A{{ end }}{{ else }}N/A{{ end }}s"
+
+      # ── Jobs falhando: aviso antecipado da saturação do pooler ─────────
+      # increase() por série `pid` é monotônico; imprecisão residual dos
+      # gaps de scrape alternado é aceitável para um warning.
+      - uid: alert-scheduler-failures
+        title: "Scheduler v1 — jobs falhando (saturação do pooler?)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: "sum(increase(scheduler_job_failures_total[15m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 3
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        isPaused: false
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jobs do scheduler v1 falhando repetidamente — provável saturação do pooler Supabase (EMAXCONNSESSION). O scheduler tende a travar em seguida"
+          description: "Falhas nos últimos 15 min: {{ with $values.B }}{{ if .Value }}{{ .Value | printf \"%.0f\" }}{{ else }}N/A{{ end }}{{ else }}N/A{{ end }}"

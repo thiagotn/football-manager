@@ -14,6 +14,7 @@ import structlog
 from sqlalchemy import and_, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.job_metrics import JOB_VOTE_REMINDER, record_job_failure, record_job_success
 from app.db.session import get_session_factory
 from app.models.match import Attendance, AttendanceStatus, Match, MatchStatus
 from app.models.match_vote import MatchVote
@@ -33,9 +34,12 @@ async def run_vote_reminder_job() -> None:
             await session.commit()
             if sent:
                 logger.info("vote_reminder_job_done", matches_notified=sent)
+            # Heartbeat de liveness — registra mesmo com sent=0
+            record_job_success(JOB_VOTE_REMINDER)
         except Exception:
             await session.rollback()
             logger.exception("vote_reminder_job_failed")
+            record_job_failure(JOB_VOTE_REMINDER)
 
 
 async def _run(session: AsyncSession) -> int:
