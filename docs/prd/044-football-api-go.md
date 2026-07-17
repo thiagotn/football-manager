@@ -7,6 +7,8 @@
 | **Autor** | thiagotn |
 | **Data** | 2026-05-20 (rev. 2026-05-28) |
 
+> **Nota de infra (2026-07-16)**: o ambiente de homologação no VPS (`beta.rachao.app` + `api-go` + `db-hml`, stack `docker-compose.hml.yml`) foi **desligado** — não estava em uso e o projeto migrará para o homelab, que passará a servir a v2 (ver workflow `frontend-homelab.yml` e ADR 0002 do repo homelab). O workflow `deploy-hml.yml` e o `docker-compose.hml.yml` foram removidos; os builds de imagem da v2 (`api-go.yml`, step no `main.yml` e `frontend-homelab.yml`) continuam ativos. As seções §3.10/§3.11 e o roteiro de deploy abaixo descrevem o ambiente como existia até essa data.
+
 ---
 
 ## 1. Visão Geral

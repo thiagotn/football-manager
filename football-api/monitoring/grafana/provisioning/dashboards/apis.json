@@ -7,7 +7,7 @@
   "templating": { "list": [] },
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
-  "title": "APIs rachao.app (v1 + v2)",
+  "title": "API rachao.app (v1)",
   "uid": "rachao-apis",
   "version": 1,
   "panels": [
@@ -121,7 +121,7 @@
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "up{job=~\"api|api-go\"}",
+          "expr": "up{job=\"api\"}",
           "legendFormat": "{{job}}"
         }
       ]

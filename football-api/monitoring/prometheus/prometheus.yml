@@ -10,12 +10,6 @@ scrape_configs:
       - targets: ['football-api:8000']
     metrics_path: '/metrics'
 
-  # Métricas da API v2 Go (/metrics exposto pelo middleware de instrumentação)
-  - job_name: 'api-go'
-    static_configs:
-      - targets: ['football-api-go:8080']
-    metrics_path: '/metrics'
-
   # Métricas dos containers Docker (CPU, RAM, rede por container)
   - job_name: 'cadvisor'
     static_configs:

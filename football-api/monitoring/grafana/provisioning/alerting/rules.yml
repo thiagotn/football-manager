@@ -17,6 +17,15 @@
 
 apiVersion: 1
 
+# Regras removidas do provisionamento precisam ser deletadas explicitamente,
+# senão permanecem no banco do Grafana e continuam disparando.
+# API v2 (Go) desativada no VPS em 2026-07-16 (migração para o homelab).
+deleteRules:
+  - orgId: 1
+    uid: alert-5xx-rate-high-v2
+  - orgId: 1
+    uid: alert-api-v2-down
+
 groups:
   # ──────────────────────────────────────────────────────────────────────
   # Infraestrutura: RAM, disco e CPU do host (via Node Exporter)
@@ -311,75 +320,6 @@ groups:
           summary: "API v1 — taxa de erros 5xx acima de 1%"
           description: "Taxa atual: {{ with $values.B }}{{ if .Value }}{{ .Value | printf \"%.2f\" }}{{ else }}N/A{{ end }}{{ else }}N/A{{ end }}% das requisições"
 
-      # ── API v2 (Go): taxa de erros 5xx > 1% por 5 minutos ───────────
-      - uid: alert-5xx-rate-high-v2
-        title: "API v2 — Taxa de erros 5xx > 1%"
-        condition: C
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: prometheus
-            model:
-              editorMode: code
-              expr: "sum(rate(http_request_duration_seconds_count{job=\"api-go\",status_code=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count{job=\"api-go\"}[5m])) * 100"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: A
-          - refId: B
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: __expr__
-            model:
-              refId: B
-              type: reduce
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: A
-              reducer: last
-              settings:
-                mode: dropNN
-          - refId: C
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: __expr__
-            model:
-              refId: C
-              type: threshold
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: B
-              conditions:
-                - evaluator:
-                    params:
-                      - 1
-                    type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - C
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
-        noDataState: OK
-        execErrState: OK
-        for: 5m
-        isPaused: false
-        labels:
-          severity: critical
-          api: v2
-        annotations:
-          summary: "API v2 — taxa de erros 5xx acima de 1%"
-          description: "Taxa atual: {{ with $values.B }}{{ if .Value }}{{ .Value | printf \"%.2f\" }}{{ else }}N/A{{ end }}{{ else }}N/A{{ end }}% das requisições"
-
       # ── API v1 fora do ar (up == 0 por 2 minutos) ───────────────────
       - uid: alert-api-v1-down
         title: "API v1 — fora do ar"
@@ -446,74 +386,6 @@ groups:
           severity: critical
         annotations:
           summary: "API v1 não está respondendo ao scrape do Prometheus"
-
-      # ── API v2 fora do ar (up == 0 por 2 minutos) ───────────────────
-      - uid: alert-api-v2-down
-        title: "API v2 — fora do ar"
-        condition: C
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 120
-              to: 0
-            datasourceUid: prometheus
-            model:
-              editorMode: code
-              expr: "up{job=\"api-go\"}"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: A
-          - refId: B
-            relativeTimeRange:
-              from: 120
-              to: 0
-            datasourceUid: __expr__
-            model:
-              refId: B
-              type: reduce
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: A
-              reducer: last
-              settings:
-                mode: dropNN
-          - refId: C
-            relativeTimeRange:
-              from: 120
-              to: 0
-            datasourceUid: __expr__
-            model:
-              refId: C
-              type: threshold
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: B
-              conditions:
-                - evaluator:
-                    params:
-                      - 1
-                    type: lt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - C
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
-        noDataState: OK
-        execErrState: OK
-        for: 2m
-        isPaused: false
-        labels:
-          severity: critical
-          api: v2
-        annotations:
-          summary: "API v2 não está respondendo ao scrape do Prometheus"
 
   # ──────────────────────────────────────────────────────────────────────
   # Scheduler (API v1): heartbeat dos jobs do APScheduler

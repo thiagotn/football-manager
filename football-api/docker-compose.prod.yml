@@ -72,8 +72,9 @@ services:
       - app-net
 
   # ── API Go (/api/v2) ──────────────────────────────────────────
-  # Movida para a stack de HOMOLOGAÇÃO em docker-compose.hml.yml
-  # (Postgres em container + frontend-beta), deployada por deploy-hml.yml.
+  # Desativada no VPS em 2026-07-16 (stack de homologação beta.rachao.app
+  # desligada). A v2 será servida pelo homelab — imagens continuam sendo
+  # buildadas por api-go.yml, frontend-homelab.yml e main.yml.
 
   # ── MCP Server ────────────────────────────────────────────────
   mcp:
