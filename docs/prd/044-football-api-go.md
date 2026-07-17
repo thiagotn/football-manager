@@ -1086,6 +1086,15 @@ para paridade plena (atualizar conforme avança):
   alertas Grafana por job (5xx + fora-do-ar para v1 e v2) e dashboard versionado
   (`monitoring/grafana/provisioning/dashboards/apis.json`). cAdvisor/node-exporter já cobrem
   container/host.
+- [x] **Scheduler resiliente — timeout + heartbeat** (PRD 049 §5, issue #11, 2026-07-17): cada job
+  roda com `context.WithTimeout` de 120s (`ExecuteJob` em `internal/services/scheduler.go`) e
+  registra heartbeat Prometheus em `internal/services/job_metrics.go` — mesmos nomes da v1
+  (`app/core/job_metrics.py`): `scheduler_job_last_success_timestamp_seconds{job_name}` e
+  `scheduler_job_failures_total{job_name}` (sem o label `pid`; processo único). Cron endurecido com
+  `WithChain(SkipIfStillRunning, Recover)` e `WithLocation(America/Sao_Paulo)` + `time/tzdata`
+  embutido no binário (a imagem scratch não tem zoneinfo — sem o embed, crons e janela de votação
+  caíam silenciosamente para UTC). Alertas/coleta no homelab: ServiceMonitor + PrometheusRule em
+  `helm/apps/rachao/` (repo homelab, ADR 0002 Fase 4).
 - [ ] **Avatar — rate limit**: v1 limita uploads via tabela `avatar_upload_logs`; v2 ainda não.
 - [ ] **Avatar — response**: v1 retorna o `PlayerResponse` completo; v2 retorna só `{avatar_url}`.
 - [ ] **Documentação**: anotações `swaggo/swag` + `openapi.yaml` atualizado + Mintlify Cloud

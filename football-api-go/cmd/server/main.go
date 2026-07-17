@@ -24,6 +24,12 @@ import (
 	"syscall"
 	"time"
 
+	// tzdata embutido no binário: a imagem de produção é scratch (sem
+	// /usr/share/zoneinfo) e o app depende de America/Sao_Paulo — crons do
+	// scheduler e janela de votação (handlers/votes.go). Sem este embed,
+	// time.LoadLocation falha e tudo cai silenciosamente para UTC.
+	_ "time/tzdata"
+
 	"github.com/thiagotn/football-manager/football-api-go/internal/config"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/server"
@@ -49,6 +55,7 @@ func main() {
 	// Skipped in test env to avoid jobs firing during integration tests.
 	var scheduler *services.Scheduler
 	if cfg.AppEnv != "test" {
+		services.InitJobMetrics()
 		scheduler = services.NewScheduler(pool)
 		if err := scheduler.Start(); err != nil {
 			slog.Error("scheduler start failed", "error", err)

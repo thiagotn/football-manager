@@ -74,6 +74,14 @@ Em `app/db/session.py` (e no engine secundário de `app/core/database.py`):
 
 Se a API Go (v2) assumir jobs agendados no futuro, aplicar as mesmas garantias (job único, timeouts, heartbeat). Atualizar PRD 044 §17 se aplicável.
 
+> ✅ **Atendido na v2 em 2026-07-17** (a v2 já rodava os 3 jobs no homelab): timeout de 120s por job
+> (`ExecuteJob`), heartbeat Prometheus com os mesmos nomes de métrica da v1
+> (`internal/services/job_metrics.go`), `SkipIfStillRunning`+`Recover` no cron e timezone
+> America/Sao_Paulo garantido via `time/tzdata` embutido (a imagem scratch rodava os crons em UTC).
+> Job único é estrutural na v2 (1 processo, `replicas: 1`). Coleta/alertas: ServiceMonitor +
+> PrometheusRule + dashboard em `helm/apps/rachao/` no repo homelab (Telegram via Alertmanager).
+> Registrado no PRD 044 §17. Os §§1–3 deste PRD (v1 no VPS) permanecem pendentes.
+
 ---
 
 ## Fora de escopo
