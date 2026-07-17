@@ -19,7 +19,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 003 | [verificacao-whatsapp.md](003-verificacao-whatsapp.md) | ✅ | OTP via Twilio Verify (SMS). Canal WhatsApp pendente de aprovação Twilio/Meta |
+| 003 | [verificacao-whatsapp.md](003-verificacao-whatsapp.md) | ✅ | OTP via Twilio Verify (SMS). Canal WhatsApp: superado pela proposta do PRD 050 |
+| 050 | [otp-whatsapp-nativo.md](050-otp-whatsapp-nativo.md) | 📋 | Substituir Twilio por WhatsApp Cloud API nativa (Meta) — ~90% mais barato; exige camada própria de estado de OTP + setup Meta (WABA, template, webhook). Aguardando decisão/pré-requisitos |
 | 025 | [otp-bypass-local.md](025-otp-bypass-local.md) | ✅ | `OTP_BYPASS_CODE` em `.env.docker` para dev local |
 | 016 | [troca-de-senha-com-otp.md](016-troca-de-senha-com-otp.md) | ✅ | Troca de senha via OTP quando usuário não lembra a senha atual |
 | 023 | [validacao-senha-igual.md](023-validacao-senha-igual.md) | ✅ | Backend 422 + feedback inline no frontend |

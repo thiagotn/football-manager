@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Versão** | 1.4 |
-| **Status** | Implementado — SMS ativo; migração para WhatsApp pendente de aprovação Twilio |
+| **Status** | Implementado — SMS ativo. Migração de canal: ver **PRD 050** (WhatsApp Cloud API nativa substituindo a Twilio — proposta de 2026-07-17 que retoma a "Opção B" deste PRD) |
 | **Data** | Março de 2026 |
 | **Plataforma** | https://rachao.app |
 
