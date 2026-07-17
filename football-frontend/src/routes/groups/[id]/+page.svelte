@@ -10,7 +10,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
   import TimePicker from '$lib/components/TimePicker.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X, Sparkles } from 'lucide-svelte';
   import { BIB_COLOR_PALETTE } from '$lib/team-names';
   import type { TeamSlot } from '$lib/api';
   import PageBackground from '$lib/components/PageBackground.svelte';
@@ -197,10 +197,25 @@
 
   const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-  let nonAdminMembers = $derived(
-    (group?.members.filter(m => m.player.role !== 'admin') ?? [])
-      .sort((a, b) => playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }))
-  );
+  // Filtro/ordenação da aba Jogadores. "Recém-ingressante" = entrou no grupo
+  // (group_members.created_at) nos últimos RECENT_JOIN_DAYS dias.
+  const RECENT_JOIN_DAYS = 7;
+  let memberSort = $state<'name' | 'recent'>('name');
+  let memberFilterRecent = $state(false);
+
+  function isRecentMember(m: GroupMember): boolean {
+    return Date.now() - new Date(m.created_at).getTime() < RECENT_JOIN_DAYS * 86_400_000;
+  }
+
+  let baseMembers = $derived(group?.members.filter(m => m.player.role !== 'admin') ?? []);
+  let recentMembersCount = $derived(baseMembers.filter(isRecentMember).length);
+  let nonAdminMembers = $derived.by(() => {
+    const list = memberFilterRecent ? baseMembers.filter(isRecentMember) : baseMembers;
+    if (memberSort === 'recent') {
+      return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return [...list].sort((a, b) => playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }));
+  });
   let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string } | null>(null);
   let selfEditNickname = $state('');
   let selfEditOpen = $state(false);
@@ -881,12 +896,33 @@
           <button class="btn-secondary btn-sm" onclick={() => showAddMemberByPhone = true}><UserPlus size={14} /> {$t('group.add_member_btn')}</button>
         </div>
       {/if}
+      {#if baseMembers.length > 0}
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <div class="flex gap-1">
+            <button
+              class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {memberSort === 'name' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
+              onclick={() => { memberSort = 'name'; }}>
+              {$t('group.sort_name')}
+            </button>
+            <button
+              class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {memberSort === 'recent' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
+              onclick={() => { memberSort = 'recent'; }}>
+              {$t('group.sort_recent')}
+            </button>
+          </div>
+          <button
+            class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors border inline-flex items-center gap-1 {memberFilterRecent ? 'bg-primary-600 text-white border-primary-600' : 'border-white/20 text-gray-300 hover:border-primary-400'}"
+            onclick={() => { memberFilterRecent = !memberFilterRecent; }}>
+            <Sparkles size={12} /> {$t('group.filter_recent').replace('{n}', String(recentMembersCount))}
+          </button>
+        </div>
+      {/if}
       <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
         {#if nonAdminMembers.length === 0}
           <div class="px-6 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
             <Users size={32} class="mx-auto mb-2 opacity-40" />
-            <p>{$t('group.no_players')}</p>
-            {#if isGroupAdmin()}
+            <p>{memberFilterRecent ? $t('group.no_recent_members') : $t('group.no_players')}</p>
+            {#if isGroupAdmin() && !memberFilterRecent}
               <button class="btn-primary mt-4 btn-sm" onclick={() => showAddMemberByPhone = true}><UserPlus size={14} /> {$t('group.add_player')}</button>
             {/if}
           </div>
@@ -904,8 +940,11 @@
                   <StarRating rating={m.skill_stars} readonly size={13} />
                 </div>
               {/if}
-              {#if m.role === 'admin' || m.position}
+              {#if m.role === 'admin' || m.position || isRecentMember(m)}
                 <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+                  {#if isRecentMember(m)}
+                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{$t('group.badge_new')}</span>
+                  {/if}
                   {#if m.role === 'admin'}
                     <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{$t('group.role_president')}</span>
                   {/if}

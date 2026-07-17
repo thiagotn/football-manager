@@ -33,3 +33,12 @@ class GroupPage:
 
     def member_rows(self):
         return self.page.locator(".divide-y > div")
+
+    def sort_by_name_pill(self):
+        return self.page.get_by_role("button", name=re.compile(r"Nome A"))
+
+    def sort_by_recent_pill(self):
+        return self.page.get_by_role("button", name=re.compile(r"Mais recentes"))
+
+    def filter_recent_chip(self):
+        return self.page.get_by_role("button", name=re.compile(r"Recém-ingressantes"))
