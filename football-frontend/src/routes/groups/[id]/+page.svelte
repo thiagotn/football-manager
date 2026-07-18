@@ -10,7 +10,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
   import TimePicker from '$lib/components/TimePicker.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X, Sparkles } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X } from 'lucide-svelte';
   import { BIB_COLOR_PALETTE } from '$lib/team-names';
   import type { TeamSlot } from '$lib/api';
   import PageBackground from '$lib/components/PageBackground.svelte';
@@ -201,20 +201,28 @@
   // (group_members.created_at) nos últimos RECENT_JOIN_DAYS dias.
   const RECENT_JOIN_DAYS = 7;
   let memberSort = $state<'name' | 'recent'>('name');
-  let memberFilterRecent = $state(false);
+  let nameSortDir = $state<'asc' | 'desc'>('asc');
 
   function isRecentMember(m: GroupMember): boolean {
     return Date.now() - new Date(m.created_at).getTime() < RECENT_JOIN_DAYS * 86_400_000;
   }
 
-  let baseMembers = $derived(group?.members.filter(m => m.player.role !== 'admin') ?? []);
-  let recentMembersCount = $derived(baseMembers.filter(isRecentMember).length);
-  let nonAdminMembers = $derived.by(() => {
-    const list = memberFilterRecent ? baseMembers.filter(isRecentMember) : baseMembers;
-    if (memberSort === 'recent') {
-      return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  // Clique na pill de nome: ativa a ordenação por nome; se já ativa, inverte a direção
+  function toggleNameSort() {
+    if (memberSort === 'name') {
+      nameSortDir = nameSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      memberSort = 'name';
     }
-    return [...list].sort((a, b) => playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }));
+  }
+
+  let baseMembers = $derived(group?.members.filter(m => m.player.role !== 'admin') ?? []);
+  let nonAdminMembers = $derived.by(() => {
+    if (memberSort === 'recent') {
+      return [...baseMembers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    const dir = nameSortDir === 'desc' ? -1 : 1;
+    return [...baseMembers].sort((a, b) => dir * playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }));
   });
   let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string } | null>(null);
   let selfEditNickname = $state('');
@@ -901,8 +909,8 @@
           <div class="flex gap-1">
             <button
               class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {memberSort === 'name' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
-              onclick={() => { memberSort = 'name'; }}>
-              {$t('group.sort_name')}
+              onclick={toggleNameSort}>
+              {memberSort === 'name' && nameSortDir === 'desc' ? $t('group.sort_name_desc') : $t('group.sort_name')}
             </button>
             <button
               class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors {memberSort === 'recent' ? 'bg-primary-500 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}"
@@ -910,19 +918,14 @@
               {$t('group.sort_recent')}
             </button>
           </div>
-          <button
-            class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors border inline-flex items-center gap-1 {memberFilterRecent ? 'bg-primary-600 text-white border-primary-600' : 'border-white/20 text-gray-300 hover:border-primary-400'}"
-            onclick={() => { memberFilterRecent = !memberFilterRecent; }}>
-            <Sparkles size={12} /> {$t('group.filter_recent').replace('{n}', String(recentMembersCount))}
-          </button>
         </div>
       {/if}
       <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
         {#if nonAdminMembers.length === 0}
           <div class="px-6 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
             <Users size={32} class="mx-auto mb-2 opacity-40" />
-            <p>{memberFilterRecent ? $t('group.no_recent_members') : $t('group.no_players')}</p>
-            {#if isGroupAdmin() && !memberFilterRecent}
+            <p>{$t('group.no_players')}</p>
+            {#if isGroupAdmin()}
               <button class="btn-primary mt-4 btn-sm" onclick={() => showAddMemberByPhone = true}><UserPlus size={14} /> {$t('group.add_player')}</button>
             {/if}
           </div>

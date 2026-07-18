@@ -75,25 +75,30 @@ def test_aba_jogadores_ordena_por_mais_recentes(first_group_page):
     expect(gp.member_rows()).to_have_count(rows_before)
 
 
-def test_aba_jogadores_filtra_recem_ingressantes(first_group_page):
+def test_aba_jogadores_inverte_ordenacao_por_nome(first_group_page):
     import re
 
     page, gp = first_group_page
     gp.tab_members()
-    chip = gp.filter_recent_chip()
-    if chip.count() == 0:
+    pill = gp.sort_by_name_pill()
+    if pill.count() == 0:
         pytest.skip("Grupo sem membros no ambiente de teste")
-    match = re.search(r"\((\d+)\)", chip.inner_text())
-    assert match, "chip deve exibir a contagem de recém-ingressantes"
-    recent_count = int(match.group(1))
-    chip.click()
-    if recent_count == 0:
-        expect(page.get_by_text("Ninguém entrou no grupo")).to_be_visible()
-    else:
-        # Só os recém-ingressantes ficam visíveis, todos com badge "Novo"
-        expect(gp.member_rows()).to_have_count(recent_count)
-        expect(page.get_by_text("Novo", exact=True).first).to_be_visible()
-    chip.click()  # desativa o filtro e a lista completa volta
+    rows = gp.member_rows()
+    count = rows.count()
+    first_before = rows.first.inner_text()
+
+    # Pill ativa: segundo clique inverte para Z–A
+    pill.click()
+    expect(page.get_by_role("button", name=re.compile(r"Nome Z–A"))).to_be_visible()
+    expect(gp.member_rows()).to_have_count(count)
+    if count > 1:
+        first_after = gp.member_rows().first.inner_text()
+        assert first_after != first_before, "primeira linha deve mudar ao inverter para Z–A"
+
+    # Terceiro clique volta para A–Z e restaura a primeira linha
+    pill.click()
+    expect(page.get_by_role("button", name=re.compile(r"Nome A–Z"))).to_be_visible()
+    assert gp.member_rows().first.inner_text() == first_before
 
 
 def test_aba_proximos_exibe_botao_novo_rachao(first_group_page):
