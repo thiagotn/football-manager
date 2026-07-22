@@ -320,7 +320,7 @@ jobs:
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
           build-args: |
-            VITE_API_URL=https://api.rachao.app/api/v1
+            VITE_API_URL=https://api.rachao.app/api/v2
             PUBLIC_LEGAL_CONTROLLER_NAME=${{ secrets.LEGAL_CONTROLLER_NAME }}
             PUBLIC_LEGAL_CONTROLLER_DOC=${{ secrets.LEGAL_CONTROLLER_DOC }}
             PUBLIC_LEGAL_FORUM_CITY=${{ secrets.LEGAL_FORUM_CITY }}
