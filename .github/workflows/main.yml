@@ -1,4 +1,8 @@
-name: Deploy Produção (web + api v1 + mcp)
+# Pipeline principal: testes + build/push das imagens para o GHCR.
+# O deploy no VPS foi removido em 2026-07-22 após o cutover para o homelab
+# (ADR 0002 do repo homelab): quem faz rollout agora é o Argo CD, consumindo
+# as tags :<sha> publicadas aqui (bump em helm/apps/rachao/kustomization.yaml).
+name: CI & Build (web + api v1/v2 + mcp)
 
 on:
   workflow_dispatch:
@@ -8,7 +12,6 @@ env:
   API_GO_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-api-go
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-frontend
   MCP_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-mcp
-  DEPLOY_DIR: /opt/football-manager
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -329,134 +332,18 @@ jobs:
           cache-to: type=gha,scope=frontend,mode=max
 
   # ──────────────────────────────────────────────────────────────
-  # JOB 4 — Deploy no VPS via SSH
-  # ──────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy to VPS
-    runs-on: ubuntu-latest
-    needs: build
-    environment: production
-    timeout-minutes: 20
-    if: always() && needs.build.result == 'success'
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Aguardar VPS disponível
-        run: |
-          HOST="${{ secrets.VPS_HOST }}"
-          PORT="${{ secrets.VPS_PORT || 22 }}"
-          echo "Verificando conectividade SSH em $HOST:$PORT..."
-          for i in $(seq 1 6); do
-            if nc -zw 8 "$HOST" "$PORT" 2>/dev/null; then
-              echo "VPS acessível ✓"
-              exit 0
-            fi
-            echo "Tentativa $i/6 — aguardando 20s..."
-            sleep 20
-          done
-          echo "Erro: VPS inacessível após 6 tentativas (~2 min)"
-          exit 1
-
-      - name: Copiar arquivos para o VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || '22' }}
-          timeout: 60s
-          source: "football-api/docker-compose.prod.yml,football-api/traefik-dynamic.yml,football-api/migrations"
-          target: ${{ env.DEPLOY_DIR }}
-          strip_components: 1
-
-      - name: Deploy
-        uses: appleboy/ssh-action@v1
-        env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTOR: ${{ github.actor }}
-          SHA: ${{ github.sha }}
-          DEPLOY_DIR: ${{ env.DEPLOY_DIR }}
-          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
-          VAPID_CLAIMS_EMAIL: ${{ secrets.VAPID_CLAIMS_EMAIL }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          STRIPE_PRICE_BASIC_MONTHLY: ${{ secrets.STRIPE_PRICE_BASIC_MONTHLY }}
-          STRIPE_PRICE_BASIC_YEARLY: ${{ secrets.STRIPE_PRICE_BASIC_YEARLY }}
-          STRIPE_PRICE_PRO_MONTHLY: ${{ secrets.STRIPE_PRICE_PRO_MONTHLY }}
-          STRIPE_PRICE_PRO_YEARLY: ${{ secrets.STRIPE_PRICE_PRO_YEARLY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_VERIFY_SID: ${{ secrets.TWILIO_VERIFY_SID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          MCP_RACHAO_TOKEN: ${{ secrets.MCP_RACHAO_TOKEN }}
-          MCP_SECRET_KEY: ${{ secrets.MCP_SECRET_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || '22' }}
-          timeout: 60s
-          command_timeout: 15m
-          envs: GHCR_TOKEN,ACTOR,SHA,DEPLOY_DIR,VAPID_PRIVATE_KEY,VAPID_PUBLIC_KEY,VAPID_CLAIMS_EMAIL,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,STRIPE_PRICE_BASIC_MONTHLY,STRIPE_PRICE_BASIC_YEARLY,STRIPE_PRICE_PRO_MONTHLY,STRIPE_PRICE_PRO_YEARLY,DATABASE_URL,TWILIO_ACCOUNT_SID,TWILIO_AUTH_TOKEN,TWILIO_VERIFY_SID,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,MCP_RACHAO_TOKEN,MCP_SECRET_KEY,ANTHROPIC_API_KEY,LLM_MODEL,TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID
-          script: |
-            set -euo pipefail
-
-            echo "==> Login no GHCR..."
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
-
-            cd "$DEPLOY_DIR"
-
-            for VAR in VAPID_PRIVATE_KEY VAPID_PUBLIC_KEY VAPID_CLAIMS_EMAIL STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_PRICE_BASIC_MONTHLY STRIPE_PRICE_BASIC_YEARLY STRIPE_PRICE_PRO_MONTHLY STRIPE_PRICE_PRO_YEARLY DATABASE_URL TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_VERIFY_SID SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY MCP_RACHAO_TOKEN MCP_SECRET_KEY ANTHROPIC_API_KEY LLM_MODEL TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID; do
-              VAL="${!VAR}"
-              if [ -n "$VAL" ]; then
-                if grep -q "^${VAR}=" .env.prod 2>/dev/null; then
-                  sed -i "s|^${VAR}=.*|${VAR}=${VAL}|" .env.prod
-                else
-                  echo "${VAR}=${VAL}" >> .env.prod
-                fi
-              fi
-            done
-
-            set -a; source .env.prod; set +a
-
-            echo "==> [1/2] Pull das novas imagens (sha: $SHA)..."
-            docker compose -f docker-compose.prod.yml pull
-
-            echo "==> [2/2] Reiniciando todos os serviços..."
-            docker compose -f docker-compose.prod.yml up -d \
-              --force-recreate \
-              --remove-orphans
-
-            echo "==> Removendo imagens antigas..."
-            docker image prune -f
-
-            echo "==> Logout do GHCR..."
-            docker logout ghcr.io
-
-            echo ""
-            echo "Deploy concluido com sucesso!"
-            docker compose -f docker-compose.prod.yml ps
-
-  # ──────────────────────────────────────────────────────────────
-  # JOB 5 — Notificação Telegram ao fim do pipeline
+  # JOB 4 — Notificação Telegram ao fim do pipeline
+  # (o deploy no VPS foi removido no cutover para o homelab — ADR 0002)
   # ──────────────────────────────────────────────────────────────
   notify:
     name: Notify Telegram
-    needs: [unit-tests, mcp-tests, npm-audit, e2e, build, deploy]
+    needs: [unit-tests, mcp-tests, npm-audit, e2e, build]
     if: always()
     uses: ./.github/workflows/notify-telegram.yml
     with:
       workflow_name: ${{ github.workflow }}
       results_json: >-
-        {"Unit":"${{ needs.unit-tests.result }}","MCP":"${{ needs.mcp-tests.result }}","Audit":"${{ needs.npm-audit.result }}","E2E":"${{ needs.e2e.result }}","Build":"${{ needs.build.result }}","Deploy":"${{ needs.deploy.result }}"}
+        {"Unit":"${{ needs.unit-tests.result }}","MCP":"${{ needs.mcp-tests.result }}","Audit":"${{ needs.npm-audit.result }}","E2E":"${{ needs.e2e.result }}","Build":"${{ needs.build.result }}"}
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
