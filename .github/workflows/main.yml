@@ -122,7 +122,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: football-mcp
-        run: uv pip install --system -e ".[dev]"
+        run: uv pip install --system --prerelease=allow -e ".[dev]"
 
       - name: Run MCP unit tests
         working-directory: football-mcp
