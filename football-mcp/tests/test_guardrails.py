@@ -55,26 +55,26 @@ async def test_allowlist_does_not_affect_non_group_paths(monkeypatch, client):
 
 # ── Read-only mode ─────────────────────────────────────────────────────────────
 
-def _registered_tool_names(server) -> set[str]:
-    return set(server._tool_manager._tools.keys())
+async def _registered_tool_names(server) -> set[str]:
+    return {tool.name for tool in await server.list_tools()}
 
 
-def test_read_only_excludes_write_tools(monkeypatch):
+async def test_read_only_excludes_write_tools(monkeypatch):
     monkeypatch.setenv("RACHAO_MCP_READ_ONLY", "true")
     from rachao_mcp.server import create_server
     server = create_server()
-    names = _registered_tool_names(server)
+    names = await _registered_tool_names(server)
     assert "create_match" not in names
     assert "update_match" not in names
     assert "set_attendance" not in names
     assert "draw_teams" not in names
 
 
-def test_read_only_keeps_read_tools(monkeypatch):
+async def test_read_only_keeps_read_tools(monkeypatch):
     monkeypatch.setenv("RACHAO_MCP_READ_ONLY", "true")
     from rachao_mcp.server import create_server
     server = create_server()
-    names = _registered_tool_names(server)
+    names = await _registered_tool_names(server)
     assert "list_groups" in names
     assert "list_matches" in names
     assert "get_match" in names
@@ -82,29 +82,29 @@ def test_read_only_keeps_read_tools(monkeypatch):
     assert "get_ranking" in names
 
 
-def test_write_mode_includes_all_tools(monkeypatch):
+async def test_write_mode_includes_all_tools(monkeypatch):
     monkeypatch.setenv("RACHAO_MCP_READ_ONLY", "false")
     from rachao_mcp.server import create_server
     server = create_server()
-    names = _registered_tool_names(server)
+    names = await _registered_tool_names(server)
     assert "create_match" in names
     assert "draw_teams" in names
 
 
 # ── Allowed tools allowlist ────────────────────────────────────────────────────
 
-def test_allowed_tools_filters_registered_tools(monkeypatch):
+async def test_allowed_tools_filters_registered_tools(monkeypatch):
     monkeypatch.setenv("RACHAO_MCP_ALLOWED_TOOLS", "list_groups,list_matches")
     from rachao_mcp.server import create_server
     server = create_server()
-    names = _registered_tool_names(server)
+    names = await _registered_tool_names(server)
     assert names == {"list_groups", "list_matches"}
 
 
-def test_no_allowed_tools_registers_all_read(monkeypatch):
+async def test_no_allowed_tools_registers_all_read(monkeypatch):
     from rachao_mcp.server import create_server
     server = create_server()
-    names = _registered_tool_names(server)
+    names = await _registered_tool_names(server)
     expected_read = {
         "list_groups", "get_group", "get_group_stats",
         "list_my_matches", "list_matches", "get_match", "discover_matches",
