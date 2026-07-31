@@ -20,11 +20,11 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
 | 003 | [verificacao-whatsapp.md](003-verificacao-whatsapp.md) | ✅ | OTP via Twilio Verify (SMS). Canal WhatsApp: superado pela proposta do PRD 050 |
-| 050 | [otp-whatsapp-nativo.md](050-otp-whatsapp-nativo.md) | 📋 | Substituir Twilio por WhatsApp Cloud API nativa (Meta) — ~90% mais barato; exige camada própria de estado de OTP + setup Meta (WABA, template, webhook). Aguardando decisão/pré-requisitos |
-| 025 | [otp-bypass-local.md](025-otp-bypass-local.md) | ✅ | `OTP_BYPASS_CODE` em `.env.docker` para dev local |
 | 016 | [troca-de-senha-com-otp.md](016-troca-de-senha-com-otp.md) | ✅ | Troca de senha via OTP quando usuário não lembra a senha atual |
 | 023 | [validacao-senha-igual.md](023-validacao-senha-igual.md) | ✅ | Backend 422 + feedback inline no frontend |
+| 025 | [otp-bypass-local.md](025-otp-bypass-local.md) | ✅ | `OTP_BYPASS_CODE` em `.env.docker` para dev local |
 | 026 | [otp-leitura-automatica-sms.md](026-otp-leitura-automatica-sms.md) | ⏸ | `autocomplete="one-time-code"` ativo (iOS). WebOTP Android aguarda template Twilio aprovado. `$effect` revertido por interferência no foco dos inputs |
+| 050 | [otp-whatsapp-nativo.md](050-otp-whatsapp-nativo.md) | 📋 | Substituir Twilio por WhatsApp Cloud API nativa (Meta) — ~90% mais barato; exige camada própria de estado de OTP + setup Meta (WABA, template, webhook). Aguardando decisão/pré-requisitos |
 
 ---
 
@@ -32,9 +32,9 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 010 | [planos-precificacao.md](010-planos-precificacao.md) | ✅ | Referência de precificação — preços confirmados: Basic R$19,90/mês · Pro R$39,90/mês |
 | 001 | [planos-assinatura.md](001-planos-assinatura.md) | ✅ | Sistema completo de planos e assinatura via Stripe |
 | 004 | [minha-conta-plano.md](004-minha-conta-plano.md) | ✅ | `/account/subscription` e `/plans` implementados |
+| 010 | [planos-precificacao.md](010-planos-precificacao.md) | ✅ | Referência de precificação — preços confirmados: Basic R$19,90/mês · Pro R$39,90/mês |
 | 014 | [admin-subscriptions.md](014-admin-subscriptions.md) | ✅ | Painel `/admin/subscriptions` — resumo, breakdown, tabela de assinantes, ativação manual |
 | 046 | [admin-alteracao-manual-plano.md](046-admin-alteracao-manual-plano.md) | 📋 | Admin: alteração manual de plano para assinantes ativos (sem passar por Stripe) |
 
@@ -70,13 +70,13 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 019 | [grupos-publicos-lista-de-espera.md](019-grupos-publicos-lista-de-espera.md) | ✅ | Grupos públicos, lista de espera e feed de descoberta |
 | 000 | [recorrencia-heranca-convidados.md](000-recorrencia-heranca-convidados.md) | ✅ | Herança de convidados entre partidas recorrentes |
 | 005 | [votacao-pos-partida.md](005-votacao-pos-partida.md) | ✅ | Votação pós-partida completa com aba de Estatísticas |
-| 012 | [avaliacao-jogadores-e-montagem-de-times.md](012-avaliacao-jogadores-e-montagem-de-times.md) | ✅ | Notas por grupo, flag de goleiro, sorteio equilibrado e páginas públicas de times e resultados |
-| 011 | [configuracao-votacao-por-grupo.md](011-configuracao-votacao-por-grupo.md) | ✅ | Delay configurável por grupo |
 | 006 | [avaliacao-app.md](006-avaliacao-app.md) | ✅ | Votação pós-partida v1.5 com banner de pendências e estatísticas com filtro por período |
+| 011 | [configuracao-votacao-por-grupo.md](011-configuracao-votacao-por-grupo.md) | ✅ | Delay configurável por grupo |
+| 012 | [avaliacao-jogadores-e-montagem-de-times.md](012-avaliacao-jogadores-e-montagem-de-times.md) | ✅ | Notas por grupo, flag de goleiro, sorteio equilibrado e páginas públicas de times e resultados |
 | 015 | [financeiro-grupo.md](015-financeiro-grupo.md) | ✅ | Controle financeiro por grupo (mensalidade, avulso, histórico) |
+| 019 | [grupos-publicos-lista-de-espera.md](019-grupos-publicos-lista-de-espera.md) | ✅ | Grupos públicos, lista de espera e feed de descoberta |
 | 021 | [timezone-por-grupo.md](021-timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
 | 036 | [gols-e-assistencias.md](036-gols-e-assistencias.md) | ✅ | Registro de gols e assistências por partida — somente admin do grupo |
 | 037 | [cores-de-coletes.md](037-cores-de-coletes.md) | ✅ | Cores de coletes e nomes customizados por time no grupo — até 5 slots por grupo |
@@ -87,8 +87,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 024 | [auto-idioma-por-pais.md](024-auto-idioma-por-pais.md) | ✅ | Troca automática de idioma via seletor de país em `/login` e `/register` |
 | 020 | [internacionalizacao-e-whatsapp-global.md](020-internacionalizacao-e-whatsapp-global.md) | ✅ | WhatsApp E.164 + i18n pt-BR/en/es completo (Paraglide) |
+| 024 | [auto-idioma-por-pais.md](024-auto-idioma-por-pais.md) | ✅ | Troca automática de idioma via seletor de país em `/login` e `/register` |
 
 ---
 
@@ -104,6 +104,13 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
+| 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
+| 013 | [minhas-estatisticas.md](013-minhas-estatisticas.md) | ✅ | Estatísticas por jogador |
+| 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
+| 022 | [migracao-uuid-v7.md](022-migracao-uuid-v7.md) | 📋 | Migração de UUID v4 → v7 nas PKs |
+| 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
+| 029 | [ranking-geral.md](029-ranking-geral.md) | ✅ | Ranking geral da plataforma (top e flop) |
+| 032 | [publicacao-lojas.md](032-publicacao-lojas.md) | 📋 | TWA Android (Fase 1 aprovada) + Flutter nativo (Fase 2 em avaliação). Inclui arquitetura do monorepo, workflow GitHub Actions e checklist completo |
 | 039 | [mcp-server.md](039-mcp-server.md) | ✅ | Servidor MCP para usar a API do rachao.app no Claude CLI e GitHub Copilot |
 | 040 | [mcp-personal-access-tokens.md](040-mcp-personal-access-tokens.md) | ✅ | Tokens MCP pessoais por usuário — criação com expiração, listagem e revogação |
 | 041 | [mcp-http-bearer-auth.md](041-mcp-http-bearer-auth.md) | ✅ | Repasse do Bearer token do usuário ao backend no modo HTTP do MCP |
@@ -111,17 +118,10 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 043 | [security-audit-hardening.md](043-security-audit-hardening.md) | ✅ | Auditoria de segurança do repositório — 7 achados classificados com plano de remediação |
 | 044 | [football-api-go.md](044-football-api-go.md) | 🚧 | Port da API rachao.app em Go (Chi + sqlc + pgx/v5) — `/api/v2`, paridade total de endpoints; entrega como ambiente de homologação isolado (banco-cópia + frontend `beta.rachao.app`) |
 | 045 | [guia-go-football-api.md](045-guia-go-football-api.md) | 📖 | Guia de estudo Go estruturado como livro — 17 capítulos guiados pela implementação da football-api-go (rev. 2026-05-27 com Store interface, scheduler robfig/cron, dev bypass) |
-| 048 | [rachao-cli-go.md](048-rachao-cli-go.md) | 📖 | Guia de estudo Go complementar — CLI para rachao.app (cobra, persistência local, formatação, 5 UCs: login/me/grupos/ranking/partidas); continuação pedagógica de PRD 045 |
 | 047 | [refactor-handlers-hybrid-strategy.md](047-refactor-handlers-hybrid-strategy.md) | 🚧 | Refactor handlers Go v2 para padrão hybrid Store interface — Phase 1 ✅ (beta, push, ranking, reviews, mcp_tokens) · Phases 2-4 pendentes |
+| 048 | [rachao-cli-go.md](048-rachao-cli-go.md) | 📖 | Guia de estudo Go complementar — CLI para rachao.app (cobra, persistência local, formatação, 5 UCs: login/me/grupos/ranking/partidas); continuação pedagógica de PRD 045 |
 | 049 | [scheduler-resiliente-jobs.md](049-scheduler-resiliente-jobs.md) | 📋 | Scheduler único + timeouts + heartbeat para jobs agendados — pós-mortem do incidente 04-06/07/2026 (APScheduler travado, rachão GQC não criado). Implementar após migração para o homelab |
 | 051 | [migracao-mcp-2026-07-28.md](051-migracao-mcp-2026-07-28.md) | 📋 | Migração do football-mcp para a spec MCP 2026-07-28 via SDK oficial `mcp==2.0.0b1` (FastMCP→MCPServer, stateless HTTP, pin exato). Aprovado para execução no beta |
-| 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
-| 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
-| 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
-| 022 | [migracao-uuid-v7.md](022-migracao-uuid-v7.md) | 📋 | Migração de UUID v4 → v7 nas PKs |
-| 013 | [minhas-estatisticas.md](013-minhas-estatisticas.md) | ✅ | Estatísticas por jogador |
-| 029 | [ranking-geral.md](029-ranking-geral.md) | ✅ | Ranking geral da plataforma (top e flop) |
-| 032 | [publicacao-lojas.md](032-publicacao-lojas.md) | 📋 | TWA Android (Fase 1 aprovada) + Flutter nativo (Fase 2 em avaliação). Inclui arquitetura do monorepo, workflow GitHub Actions e checklist completo |
 
 ---
 
@@ -129,8 +129,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 017 | [seo-landing-page.md](017-seo-landing-page.md) | ✅ | SEO e meta tags da landing page |
 | 008 | [politica-de-privacidade.md](008-politica-de-privacidade.md) | ✅ | Publicada em `/privacy` |
 | 009 | [termos-de-uso.md](009-termos-de-uso.md) | ✅ | Publicados em `/terms`. Modal de aceite obrigatório implementado |
+| 017 | [seo-landing-page.md](017-seo-landing-page.md) | ✅ | SEO e meta tags da landing page |
 | 030 | [lp-jogadores-organico.md](030-lp-jogadores-organico.md) | 📋 | Landing page para aquisição orgânica de jogadores |
 | 031 | [lp-unificada.md](031-lp-unificada.md) | ✅ | Landing page unificada para organizadores e jogadores |
