@@ -114,6 +114,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 048 | [rachao-cli-go.md](048-rachao-cli-go.md) | 📖 | Guia de estudo Go complementar — CLI para rachao.app (cobra, persistência local, formatação, 5 UCs: login/me/grupos/ranking/partidas); continuação pedagógica de PRD 045 |
 | 047 | [refactor-handlers-hybrid-strategy.md](047-refactor-handlers-hybrid-strategy.md) | 🚧 | Refactor handlers Go v2 para padrão hybrid Store interface — Phase 1 ✅ (beta, push, ranking, reviews, mcp_tokens) · Phases 2-4 pendentes |
 | 049 | [scheduler-resiliente-jobs.md](049-scheduler-resiliente-jobs.md) | 📋 | Scheduler único + timeouts + heartbeat para jobs agendados — pós-mortem do incidente 04-06/07/2026 (APScheduler travado, rachão GQC não criado). Implementar após migração para o homelab |
+| 051 | [migracao-mcp-2026-07-28.md](051-migracao-mcp-2026-07-28.md) | 📋 | Migração do football-mcp para a spec MCP 2026-07-28 via SDK oficial `mcp==2.0.0b1` (FastMCP→MCPServer, stateless HTTP, pin exato). Aprovado para execução no beta |
 | 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
 | 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
