@@ -5,6 +5,8 @@ import pytest
 import respx
 
 from rachao_mcp.tools.matches import (
+    get_match_stats,
+    get_vote_results,
     create_match,
     discover_matches,
     get_match,
@@ -130,3 +132,41 @@ async def test_set_attendance_resolves_player_id_from_me(mock_api):
     assert body["player_id"] == "resolved-uuid"
     assert body["status"] == "confirmed"
     assert result["status"] == "confirmed"
+
+
+@pytest.mark.asyncio
+async def test_get_match_stats(mock_api):
+    mock_api.get("/matches/public/abc123/player-stats").mock(
+        return_value=httpx.Response(200, json={
+            "match_hash": "abc123",
+            "registered": True,
+            "stats": [{"player_name": "Zico", "goals": 3, "assists": 1}],
+        })
+    )
+    result = await get_match_stats("abc123")
+    assert result["registered"] is True
+    assert result["stats"][0]["goals"] == 3
+
+
+@pytest.mark.asyncio
+async def test_get_vote_results(mock_api):
+    mock_api.get("/matches/public/abc123/votes/results").mock(
+        return_value=httpx.Response(200, json={
+            "top5": [{"player_name": "Zico", "points": 12}],
+            "flop": None,
+            "total_voters": 8,
+            "eligible_voters": 12,
+        })
+    )
+    result = await get_vote_results("abc123")
+    assert result["top5"][0]["player_name"] == "Zico"
+    assert result["total_voters"] == 8
+
+
+@pytest.mark.asyncio
+async def test_get_vote_results_not_available_while_voting_open(mock_api):
+    mock_api.get("/matches/public/abc123/votes/results").mock(
+        return_value=httpx.Response(404, json={"detail": "results not available"})
+    )
+    with pytest.raises(LookupError):
+        await get_vote_results("abc123")

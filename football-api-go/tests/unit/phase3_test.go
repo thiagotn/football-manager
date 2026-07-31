@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -666,6 +667,7 @@ type mockGroupStoreForBusiness struct {
 	ensureMemberInCurrentPeriodFn   func(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
 	getPlayerByIDFn                 func(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
 	setAttendanceFn                 func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	getGroupStatsFn                 func(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error)
 }
 
 func (m *mockGroupStoreForBusiness) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
@@ -687,6 +689,13 @@ func (m *mockGroupStoreForBusiness) CountGroupMembers(ctx context.Context, group
 		return m.countGroupMembersFn(ctx, groupID)
 	}
 	return 0, nil
+}
+
+func (m *mockGroupStoreForBusiness) GetGroupStats(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error) {
+	if m.getGroupStatsFn != nil {
+		return m.getGroupStatsFn(ctx, groupID, monthStart, monthEnd, year)
+	}
+	return []db.GroupPlayerStat{}, nil
 }
 
 func (m *mockGroupStoreForBusiness) CountGroupAdminCount(ctx context.Context, playerID uuid.UUID) (int, error) {

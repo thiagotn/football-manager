@@ -41,6 +41,17 @@ async def discover_matches() -> list[dict]:
     return await api.get("/matches/discover")
 
 
+async def get_match_stats(match_hash: str) -> dict:
+    """Gols e assistências por jogador de uma partida. Aceita hash público."""
+    return await api.get(f"/matches/public/{match_hash}/player-stats")
+
+
+async def get_vote_results(match_hash: str) -> dict:
+    """Resultado da votação pós-partida: top 5 (melhor jogador = 1º), flop e total de votantes.
+    Aceita hash público. Disponível apenas após o encerramento da votação (antes disso retorna não encontrado)."""
+    return await api.get(f"/matches/public/{match_hash}/votes/results")
+
+
 async def create_match(
     group_id: str,
     match_date: str,
@@ -99,6 +110,8 @@ READ_TOOLS: list[tuple] = [
     (list_matches, _READ),
     (get_match, _READ),
     (discover_matches, _READ),
+    (get_match_stats, _READ),
+    (get_vote_results, _READ),
 ]
 
 WRITE_TOOLS: list[tuple] = [

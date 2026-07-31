@@ -46,12 +46,14 @@ Sempre que o usuário mencionar um grupo, rachão ou jogador sem especificar qua
 **Grupos:**
 - ` + "`list_groups`" + ` — chame SEMPRE que o contexto envolver grupos, antes de qualquer outra ferramenta. Retorna grupos com seus IDs.
 - ` + "`get_group(group_id)`" + ` — use após identificar o grupo correto via ` + "`list_groups`" + `.
-- ` + "`get_group_stats(group_id)`" + ` — artilheiros, assistências e presença dentro de um grupo.
+- ` + "`get_group_stats(group_id, period?, month?)`" + ` — estatísticas agregadas do grupo por jogador: pontos de votação, flops e minutos jogados. ` + "`period`" + `: annual (padrão) | monthly; ` + "`month`" + `: YYYY-MM. Para dados de UMA partida específica, use ` + "`get_match_stats`" + `/` + "`get_vote_results`" + `.
 
 **Rachões (partidas):**
 - ` + "`list_my_matches`" + ` — lista TODOS os rachões do usuário em todos os seus grupos de uma só vez, **ordenados por data asc (mais próximo primeiro)**. Use SEMPRE que o contexto não envolva um grupo específico (ex: "próximo rachão", "confirmações de hoje", "meus rachões"). O primeiro item da lista com status ` + "`open`" + ` é sempre o próximo rachão.
 - ` + "`list_matches(group_id)`" + ` — rachões de um grupo específico. Use apenas quando o grupo já estiver identificado.
 - ` + "`get_match(match_hash)`" + ` — detalhes de uma partida já identificada: presença confirmada/recusada/pendente, times e stats. Use SEMPRE que o usuário perguntar sobre confirmações, lista de presença ou detalhes de uma partida que já está no contexto da conversa.
+- ` + "`get_match_stats(match_hash)`" + ` — gols e assistências por jogador de uma partida.
+- ` + "`get_vote_results(match_hash)`" + ` — resultado da votação pós-partida: top 5 (1º lugar = melhor jogador), flop e total de votantes. Só disponível após o fim da votação; se retornar não encontrado, informe que a votação ainda está aberta.
 - ` + "`discover_matches`" + ` — rachões abertos em toda a plataforma (não só os do usuário).
 - ` + "`create_match(...)`" + ` — APENAS quando o usuário pedir explicitamente para criar um rachão.
 - ` + "`update_match(...)`" + ` — APENAS quando o usuário pedir para editar um rachão existente.
@@ -78,6 +80,9 @@ Sempre que o usuário mencionar um grupo, rachão ou jogador sem especificar qua
 
 **"Como está o ranking do meu grupo?"**
 → ` + "`list_groups()`" + ` → se mais de um grupo, perguntar qual → ` + "`get_group_stats(group_id)`" + `.
+
+**"Quem foi o melhor jogador do último rachão?" / "Quem fez gol ontem?"**
+→ ` + "`list_groups()`" + ` → ` + "`list_matches(group_id)`" + ` → identificar a partida encerrada mais recente e reter o ` + "`hash`" + ` → ` + "`get_vote_results(hash)`" + ` (melhor jogador = 1º do top 5) e/ou ` + "`get_match_stats(hash)`" + ` (gols/assistências). Se a votação ainda estiver aberta, diga isso explicitamente — não invente motivos.
 
 ## Opções clicáveis
 

@@ -13,9 +13,12 @@ async def get_group(group_id: str) -> dict:
     return await api.get(f"/groups/{group_id}")
 
 
-async def get_group_stats(group_id: str) -> dict:
-    """Artilheiros, assistências e presença por jogador do grupo."""
-    return await api.get(f"/groups/{group_id}/stats")
+async def get_group_stats(group_id: str, period: str = "annual", month: str | None = None) -> dict:
+    """Estatísticas agregadas do grupo por jogador: pontos de votação, votos de flop e minutos jogados.
+    period: annual (padrão) | monthly. month: YYYY-MM (usado com period=monthly).
+    Para gols/assistências ou melhor jogador de UMA partida, use get_match_stats / get_vote_results."""
+    params = f"?period={period}" + (f"&month={month}" if month else "")
+    return await api.get(f"/groups/{group_id}/stats{params}")
 
 
 READ_TOOLS: list[tuple] = [

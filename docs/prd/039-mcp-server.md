@@ -46,7 +46,7 @@ Criar um servidor MCP (`football-mcp/`) dentro do monorepo que exponha as opera�
 |------|----------|-----------|
 | `list_groups` | `GET /groups` | Lista todos os grupos do usuário autenticado |
 | `get_group` | `GET /groups/{id}` | Detalhes de um grupo: membros, stats, slots de times |
-| `get_group_stats` | `GET /groups/{id}/stats` | Artilheiros, assistências, presença por jogador |
+| `get_group_stats` | `GET /groups/{id}/stats` | Estatísticas agregadas por jogador: pontos de votação, flops, minutos jogados (`period`/`month`) |
 
 ### Partidas
 | Tool | Endpoint | Descrição |
@@ -57,6 +57,8 @@ Criar um servidor MCP (`football-mcp/`) dentro do monorepo que exponha as opera�
 | `update_match` | `PATCH /groups/{id}/matches/{mid}` | Atualizar partida (data, horário, local, status) |
 | `set_attendance` | `POST /groups/{id}/matches/{mid}/attendance` | Confirmar/recusar presença de um jogador |
 | `discover_matches` | `GET /matches/discover` | Partidas públicas abertas (sem autenticação obrigatória) |
+| `get_match_stats` | `GET /matches/public/{hash}/player-stats` | Gols e assistências por jogador da partida (2026-07-31) |
+| `get_vote_results` | `GET /matches/public/{hash}/votes/results` | Votação pós-partida: top 5 (melhor jogador), flop, votantes (2026-07-31) |
 
 ### Jogadores
 | Tool | Endpoint | Descrição |

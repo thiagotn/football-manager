@@ -108,6 +108,7 @@ async def test_no_allowed_tools_registers_all_read(monkeypatch):
     expected_read = {
         "list_groups", "get_group", "get_group_stats",
         "list_my_matches", "list_matches", "get_match", "discover_matches",
+        "get_match_stats", "get_vote_results",
         "list_players", "get_my_stats", "get_ranking",
         "get_teams",
         "create_match", "update_match", "set_attendance",

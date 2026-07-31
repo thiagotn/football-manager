@@ -1095,6 +1095,11 @@ para paridade plena (atualizar conforme avança):
   embutido no binário (a imagem scratch não tem zoneinfo — sem o embed, crons e janela de votação
   caíam silenciosamente para UTC). Alertas/coleta no homelab: ServiceMonitor + PrometheusRule em
   `helm/apps/rachao/` (repo homelab, ADR 0002 Fase 4).
+- [x] **Group stats** (2026-07-31): `GET /groups/{id}/stats` era um stub (`players: []` sempre —
+  quebrava a aba Estatísticas do frontend e o `get_group_stats` do MCP via chat). Implementada a
+  paridade com a v1 (`group_stats_repo.py`): pontos de votação, flops e minutos jogados por
+  jogador em partidas encerradas com votação encerrada, com `period=annual|monthly` e `month`
+  (`db.GetGroupStats` + handler `groupStats`).
 - [ ] **Avatar — rate limit**: v1 limita uploads via tabela `avatar_upload_logs`; v2 ainda não.
 - [ ] **Avatar — response**: v1 retorna o `PlayerResponse` completo; v2 retorna só `{avatar_url}`.
 - [ ] **Documentação**: anotações `swaggo/swag` + `openapi.yaml` atualizado + Mintlify Cloud

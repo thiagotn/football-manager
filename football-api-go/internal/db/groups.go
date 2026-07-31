@@ -404,3 +404,97 @@ func PlanMembersLimit(plan string) int {
 		return 30
 	}
 }
+
+// GroupPlayerStat is one row of the per-player aggregated stats of a group
+// (vote points, flop votes and minutes played across eligible matches).
+type GroupPlayerStat struct {
+	PlayerID      uuid.UUID `json:"player_id"`
+	DisplayName   string    `json:"display_name"`
+	VotePoints    int       `json:"vote_points"`
+	FlopVotes     int       `json:"flop_votes"`
+	MinutesPlayed int       `json:"minutes_played"`
+}
+
+// GetGroupStats ports the v1 group stats query (group_stats_repo.py): eligible
+// matches are closed AND with voting also closed (match end + vote delay +
+// vote duration in BRT already past). Pass monthStart/monthEnd for a monthly
+// period, or year for the annual period.
+func GetGroupStats(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]GroupPlayerStat, error) {
+	dateFilter := `AND EXTRACT(YEAR FROM match_date) = $2`
+	args := []any{groupID, year}
+	if monthStart != nil && monthEnd != nil {
+		dateFilter = `AND match_date BETWEEN $2 AND $3`
+		args = []any{groupID, *monthStart, *monthEnd}
+	}
+
+	query := `
+WITH eligible_matches AS (
+    SELECT id, match_date
+    FROM   matches
+    WHERE  group_id = $1
+      AND  status   = 'closed'
+      AND  (
+        (match_date + COALESCE(end_time, '23:59:00'::time))::timestamp
+        AT TIME ZONE 'America/Sao_Paulo'
+        + (vote_open_delay_minutes || ' minutes')::interval
+        + (vote_duration_hours    || ' hours')::interval
+      ) < NOW()
+    ` + dateFilter + `
+),
+vote_pts AS (
+    SELECT mvt.player_id,
+           SUM(mvt.points) AS total_points
+    FROM   match_vote_top5 mvt
+    JOIN   match_votes mv ON mv.id  = mvt.vote_id
+    JOIN   eligible_matches em ON em.id = mv.match_id
+    GROUP BY mvt.player_id
+),
+flop_cnt AS (
+    SELECT mvf.player_id,
+           COUNT(*) AS total_flops
+    FROM   match_vote_flop mvf
+    JOIN   match_votes mv ON mv.id = mvf.vote_id
+    JOIN   eligible_matches em ON em.id = mv.match_id
+    GROUP BY mvf.player_id
+),
+mins AS (
+    SELECT a.player_id,
+           SUM(GREATEST(0, EXTRACT(EPOCH FROM (m.end_time - m.start_time)) / 60))::int AS total_minutes
+    FROM   attendances a
+    JOIN   matches m ON m.id = a.match_id
+    JOIN   eligible_matches em ON em.id = m.id
+    WHERE  a.status    = 'confirmed'
+      AND  m.end_time  IS NOT NULL
+    GROUP BY a.player_id
+)
+SELECT
+    p.id                                    AS player_id,
+    COALESCE(p.nickname, p.name)            AS display_name,
+    COALESCE(vp.total_points,  0)::int      AS vote_points,
+    COALESCE(fc.total_flops,   0)::int      AS flop_votes,
+    COALESCE(ms.total_minutes, 0)::int      AS minutes_played
+FROM   group_members gm
+JOIN   players p        ON p.id = gm.player_id
+LEFT JOIN vote_pts  vp  ON vp.player_id = p.id
+LEFT JOIN flop_cnt  fc  ON fc.player_id = p.id
+LEFT JOIN mins      ms  ON ms.player_id = p.id
+WHERE  gm.group_id = $1
+  AND  p.role != 'admin'
+ORDER BY vote_points DESC, display_name ASC`
+
+	rows, err := pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	stats := make([]GroupPlayerStat, 0)
+	for rows.Next() {
+		var s GroupPlayerStat
+		if err := rows.Scan(&s.PlayerID, &s.DisplayName, &s.VotePoints, &s.FlopVotes, &s.MinutesPlayed); err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+	return stats, rows.Err()
+}

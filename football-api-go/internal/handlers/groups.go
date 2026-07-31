@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -34,6 +36,7 @@ type GroupStore interface {
 	UpdateGroupMember(ctx context.Context, groupID, playerID uuid.UUID, p db.UpdateGroupMemberParams) (*db.GroupMember, error)
 	RemoveGroupMember(ctx context.Context, groupID, playerID uuid.UUID) error
 	CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error)
+	GetGroupStats(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error)
 	GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	GetNonAdminMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	GetPlayerPlan(ctx context.Context, playerID uuid.UUID) (string, error)
@@ -101,6 +104,9 @@ func (s *pgGroupStore) RemoveGroupMember(ctx context.Context, groupID, playerID 
 }
 func (s *pgGroupStore) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error) {
 	return db.CountGroupMembers(ctx, s.pool, groupID)
+}
+func (s *pgGroupStore) GetGroupStats(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error) {
+	return db.GetGroupStats(ctx, s.pool, groupID, monthStart, monthEnd, year)
 }
 func (s *pgGroupStore) GetGroupMemberPlayerIDs(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
 	return db.GetGroupMemberPlayerIDs(ctx, s.pool, groupID)
@@ -1027,13 +1033,46 @@ func (h *GroupHandler) groupStats(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// Simplified stats: return member count for now
-	count, _ := h.Store.CountGroupMembers(r.Context(), groupID)
+	// Paridade com a v1 (group_stats_repo.py): pontos de votação, flops e
+	// minutos jogados por jogador, em partidas encerradas com votação encerrada.
+	period := r.URL.Query().Get("period")
+	month := r.URL.Query().Get("month")
+	if month != "" && !statsMonthRe.MatchString(month) {
+		month = ""
+	}
+
+	var (
+		players     []db.GroupPlayerStat
+		periodLabel string
+		err2        error
+	)
+	if period == "monthly" && month != "" {
+		year, _ := strconv.Atoi(month[:4])
+		m, _ := strconv.Atoi(month[5:7])
+		start := time.Date(year, time.Month(m), 1, 0, 0, 0, 0, time.UTC)
+		end := start.AddDate(0, 1, -1)
+		players, err2 = h.Store.GetGroupStats(r.Context(), groupID, &start, &end, 0)
+		periodLabel = fmt.Sprintf("%s %d", statsMonthsPT[m-1], year)
+	} else {
+		year := time.Now().UTC().Year()
+		players, err2 = h.Store.GetGroupStats(r.Context(), groupID, nil, nil, year)
+		periodLabel = fmt.Sprintf("Ano %d", year)
+	}
+	if err2 != nil {
+		renderError(w, apierror.Internal("failed to load group stats"))
+		return
+	}
 	renderJSON(w, http.StatusOK, map[string]any{
-		"total_members": count,
-		"players":       []any{},
-		"period_label":  "all",
+		"players":      players,
+		"period_label": periodLabel,
 	})
+}
+
+var statsMonthRe = regexp.MustCompile(`^\d{4}-(0[1-9]|1[0-2])$`)
+
+var statsMonthsPT = [...]string{
+	"Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+	"Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 }
 
 func (h *GroupHandler) joinWaitlist(w http.ResponseWriter, r *http.Request) {
