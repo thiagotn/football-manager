@@ -3,96 +3,103 @@ package services
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-const storageBucket = "avatars"
+// avatarPrefix é o prefixo dos objetos de avatar dentro do bucket de mídia.
+const avatarPrefix = "avatars/"
 
-// StorageService handles avatar upload/deletion via Supabase Storage HTTP API.
+// legacySupabaseMarker identifica URLs públicas antigas do Supabase Storage
+// ainda persistidas em players.avatar_url antes do backfill para o R2.
+const legacySupabaseMarker = "/storage/v1/object/public/avatars/"
+
+// StorageService handles avatar upload/deletion on Cloudflare R2 via the S3 API.
 type StorageService struct {
-	baseURL        string
-	serviceRoleKey string
+	client        *minio.Client
+	bucket        string
+	publicBaseURL string
 }
 
-func NewStorageService(supabaseURL, serviceRoleKey string) *StorageService {
-	return &StorageService{
-		baseURL:        strings.TrimRight(supabaseURL, "/"),
-		serviceRoleKey: serviceRoleKey,
+// NewStorageService creates a storage client for Cloudflare R2.
+func NewStorageService(accountID, accessKeyID, secretAccessKey, bucket, publicBaseURL string) (*StorageService, error) {
+	if accountID == "" {
+		return nil, fmt.Errorf("storage: missing R2 account ID")
 	}
+	endpoint := accountID + ".r2.cloudflarestorage.com"
+	return NewStorageServiceWithEndpoint(endpoint, true, accessKeyID, secretAccessKey, bucket, publicBaseURL)
+}
+
+// NewStorageServiceWithEndpoint targets an arbitrary S3-compatible endpoint
+// (local MinIO em dev, httptest em testes).
+func NewStorageServiceWithEndpoint(endpoint string, useSSL bool, accessKeyID, secretAccessKey, bucket, publicBaseURL string) (*StorageService, error) {
+	if accessKeyID == "" || secretAccessKey == "" || bucket == "" || publicBaseURL == "" {
+		return nil, fmt.Errorf("storage: missing configuration")
+	}
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: useSSL,
+		Region: "auto",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("storage: %w", err)
+	}
+	return &StorageService{
+		client:        client,
+		bucket:        bucket,
+		publicBaseURL: strings.TrimRight(publicBaseURL, "/"),
+	}, nil
 }
 
 func (s *StorageService) IsConfigured() bool {
-	return s.baseURL != "" && s.serviceRoleKey != ""
+	return s != nil && s.client != nil
 }
 
-// ExtractStoragePath extracts the relative file path from a Supabase public URL.
-// Example: ".../object/public/avatars/uuid-token.webp" → "uuid-token.webp"
+// ExtractStoragePath extracts the object key from a public avatar URL.
+// Aceita os dois formatos: o atual (https://cdn.rachao.app/avatars/x.webp)
+// e o legado do Supabase (https://<ref>.supabase.co/storage/v1/object/public/avatars/x.webp),
+// que continua no banco até o backfill — nos dois casos o key é "avatars/x.webp".
 func (s *StorageService) ExtractStoragePath(avatarURL string) string {
-	marker := "/public/" + storageBucket + "/"
-	idx := strings.Index(avatarURL, marker)
-	if idx == -1 {
-		return ""
+	if idx := strings.Index(avatarURL, legacySupabaseMarker); idx != -1 {
+		return avatarPrefix + avatarURL[idx+len(legacySupabaseMarker):]
 	}
-	return avatarURL[idx+len(marker):]
+	if rest, ok := strings.CutPrefix(avatarURL, s.publicBaseURL+"/"); ok && strings.HasPrefix(rest, avatarPrefix) {
+		return rest
+	}
+	return ""
 }
 
-// UploadAvatar uploads WebP bytes to Supabase Storage and returns the public URL.
-// playerID and token form the filename as "<playerID>-<token>.webp".
+// UploadAvatar uploads WebP bytes to R2 and returns the public URL.
+// playerID and token form the object key as "avatars/<playerID>-<token>.webp".
 func (s *StorageService) UploadAvatar(ctx context.Context, playerID, token string, data []byte) (string, error) {
 	if !s.IsConfigured() {
 		return "", fmt.Errorf("storage not configured")
 	}
-	path := playerID + "-" + token + ".webp"
-	uploadURL := s.baseURL + "/storage/v1/object/" + storageBucket + "/" + path
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, bytes.NewReader(data))
+	key := avatarPrefix + playerID + "-" + token + ".webp"
+	_, err := s.client.PutObject(ctx, s.bucket, key, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+		ContentType: "image/webp",
+		// O nome do objeto muda a cada upload (token aleatório), então a URL é imutável.
+		CacheControl: "public, max-age=31536000, immutable",
+	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("storage upload failed: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+s.serviceRoleKey)
-	req.Header.Set("Content-Type", "image/webp")
-	req.Header.Set("x-upsert", "true")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("storage upload failed: HTTP %d", resp.StatusCode)
-	}
-
-	return s.baseURL + "/storage/v1/object/public/" + storageBucket + "/" + path, nil
+	return s.publicBaseURL + "/" + key, nil
 }
 
-// DeleteAvatarByURL removes a file from Supabase Storage using its public URL.
+// DeleteAvatarByURL removes an object from R2 using its public URL.
 // Best-effort: errors are silently ignored.
 func (s *StorageService) DeleteAvatarByURL(ctx context.Context, avatarURL string) error {
 	if !s.IsConfigured() {
 		return nil
 	}
-	path := s.ExtractStoragePath(avatarURL)
-	if path == "" {
+	key := s.ExtractStoragePath(avatarURL)
+	if key == "" {
 		return nil
 	}
-	deleteURL := s.baseURL + "/storage/v1/object/" + storageBucket
-	body, _ := json.Marshal(map[string]any{"prefixes": []string{path}})
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteURL, bytes.NewReader(body))
-	if err != nil {
-		return nil
-	}
-	req.Header.Set("Authorization", "Bearer "+s.serviceRoleKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close() //nolint:errcheck
+	_ = s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{})
 	return nil
 }

@@ -459,9 +459,9 @@ Acesse **Settings → Secrets and variables → Actions** no repositório e crie
 
 | Secret | Descrição |
 |--------|-----------|
-| `DATABASE_URL` | Connection string do Supabase (`postgresql+asyncpg://...`) |
-| `SUPABASE_URL` | URL do projeto Supabase (para Storage) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço do Supabase |
+| `DATABASE_URL` | Connection string do Postgres (produção: Postgres no homelab, secret `rachao-db` no k8s) |
+
+> Storage de avatares: Cloudflare R2 (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL`) — configurado no secret `rachao-api` do homelab, não em GitHub Actions. O Supabase (banco e Storage) foi descomissionado.
 
 #### Autenticação / OTP (`main.yml`)
 

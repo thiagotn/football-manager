@@ -16,7 +16,7 @@ Port da API rachao.app em Go — mesmo banco de dados, mesma tabela de JWT, pari
 | **Queries** | [sqlc](https://sqlc.dev) — geração de código type-safe a partir de SQL |
 | **Auth** | JWT HS256 — mesma `SECRET_KEY` da API Python |
 | **Streaming** | Server-Sent Events (SSE) para `/api/v2/chat` |
-| **Storage** | Supabase Storage (HTTP direto — sem SDK) |
+| **Storage** | Cloudflare R2 via S3 API (`minio-go`) — servido por `cdn.rachao.app` |
 | **OTP** | Twilio Verify (opcional; sem config aceita qualquer código) |
 | **Docs** | [Mintlify](https://mintlify.com) + `openapi.yaml` gerado via `swaggo/swag` |
 | **CI/CD** | GitHub Actions → GHCR → VPS |
@@ -108,7 +108,7 @@ football-api-go/
 │   │   ├── auth.go             # Login, registro, OTP, troca de senha
 │   │   ├── groups.go           # Grupos, membros, skill, lista de espera
 │   │   ├── matches.go          # Partidas, presenças, discover, stats
-│   │   ├── players.go          # Jogadores, avatar (Supabase Storage)
+│   │   ├── players.go          # Jogadores, avatar (Cloudflare R2)
 │   │   ├── teams.go            # Sorteio de times (snake-draft)
 │   │   ├── votes.go            # Votação pós-partida
 │   │   ├── finance.go          # Controle financeiro por grupo
@@ -133,7 +133,7 @@ football-api-go/
 │   └── services/
 │       ├── auth.go             # JWT issue/verify, bcrypt, OTP via Twilio
 │       ├── billing_stripe.go   # Checkout, cancelamento de assinatura
-│       ├── storage.go          # Upload/remoção de avatares no Supabase
+│       ├── storage.go          # Upload/remoção de avatares no Cloudflare R2
 │       ├── twilio.go           # SendOTP / CheckOTP (E.164)
 │       └── recurrence.go       # Criação de partidas recorrentes + status sync
 ├── tests/
@@ -209,8 +209,11 @@ A API expõe ~99 endpoints sob `/api/v2`, estruturalmente equivalentes à `footb
 | `TWILIO_ACCOUNT_SID` | Não | SID da conta Twilio |
 | `TWILIO_AUTH_TOKEN` | Não | Token Twilio |
 | `TWILIO_VERIFY_SERVICE_SID` | Não | SID do serviço Twilio Verify |
-| `SUPABASE_URL` | Não | URL do projeto Supabase (para Storage de avatares) |
-| `SUPABASE_SERVICE_KEY` | Não | Service role key do Supabase |
+| `R2_ACCOUNT_ID` | Não | Account ID da Cloudflare (para R2 — Storage de avatares) |
+| `R2_ACCESS_KEY_ID` | Não | Access Key do API Token do R2 |
+| `R2_SECRET_ACCESS_KEY` | Não | Secret Key do API Token do R2 |
+| `R2_BUCKET` | Não | Bucket R2 (padrão: `rachao-media`) |
+| `R2_PUBLIC_BASE_URL` | Não | Base pública das URLs de mídia (padrão: `https://cdn.rachao.app`) |
 | `ANTHROPIC_API_KEY` | Não | Chave da API Anthropic (para `/api/v2/chat`) |
 | `LLM_MODEL` | Não | Modelo Anthropic (padrão: `claude-haiku-4-5`) |
 | `STRIPE_SECRET_KEY` | Não | Chave secreta da API Stripe |

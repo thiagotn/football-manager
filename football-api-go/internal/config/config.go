@@ -29,9 +29,12 @@ type Config struct {
 	TwilioAuthToken  string `envconfig:"TWILIO_AUTH_TOKEN"`
 	TwilioVerifySID  string `envconfig:"TWILIO_VERIFY_SID"`
 
-	// Supabase Storage
-	SupabaseURL            string `envconfig:"SUPABASE_URL"`
-	SupabaseServiceRoleKey string `envconfig:"SUPABASE_SERVICE_ROLE_KEY"`
+	// Cloudflare R2 (avatares e mídia — servidos via R2PublicBaseURL)
+	R2AccountID       string `envconfig:"R2_ACCOUNT_ID"`
+	R2AccessKeyID     string `envconfig:"R2_ACCESS_KEY_ID"`
+	R2SecretAccessKey string `envconfig:"R2_SECRET_ACCESS_KEY"`
+	R2Bucket          string `envconfig:"R2_BUCKET" default:"rachao-media"`
+	R2PublicBaseURL   string `envconfig:"R2_PUBLIC_BASE_URL" default:"https://cdn.rachao.app"`
 
 	// Anthropic
 	AnthropicAPIKey string `envconfig:"ANTHROPIC_API_KEY"`

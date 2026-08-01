@@ -151,34 +151,44 @@ func TestVerifyWebhookSignature_TimestampTooOld(t *testing.T) {
 // ────── Storage Service Pure Logic ──────
 
 func TestStorageIsConfigured(t *testing.T) {
-	t.Run("configured when both URL and key present", func(t *testing.T) {
-		storage := services.NewStorageService("https://example.supabase.co", "key_abc123")
+	t.Run("configured when all R2 params present", func(t *testing.T) {
+		storage, err := services.NewStorageService("acct", "key", "secret", "rachao-media", "https://cdn.rachao.app")
+		require.NoError(t, err)
 		assert.True(t, storage.IsConfigured())
 	})
 
-	t.Run("not configured when URL empty", func(t *testing.T) {
-		storage := services.NewStorageService("", "key_abc123")
+	t.Run("constructor errors when account ID empty", func(t *testing.T) {
+		storage, err := services.NewStorageService("", "key", "secret", "rachao-media", "https://cdn.rachao.app")
+		assert.Error(t, err)
 		assert.False(t, storage.IsConfigured())
 	})
 
-	t.Run("not configured when key empty", func(t *testing.T) {
-		storage := services.NewStorageService("https://example.supabase.co", "")
+	t.Run("constructor errors when credentials empty", func(t *testing.T) {
+		storage, err := services.NewStorageService("acct", "", "", "rachao-media", "https://cdn.rachao.app")
+		assert.Error(t, err)
 		assert.False(t, storage.IsConfigured())
 	})
 
-	t.Run("not configured when both empty", func(t *testing.T) {
-		storage := services.NewStorageService("", "")
+	t.Run("nil service is not configured", func(t *testing.T) {
+		var storage *services.StorageService
 		assert.False(t, storage.IsConfigured())
 	})
 }
 
 func TestStorageExtractStoragePath(t *testing.T) {
-	storage := services.NewStorageService("https://example.supabase.co", "key_abc123")
+	storage, err := services.NewStorageService("acct", "key", "secret", "rachao-media", "https://cdn.rachao.app")
+	require.NoError(t, err)
 
-	t.Run("extracts path from valid URL", func(t *testing.T) {
+	t.Run("extracts key from legacy Supabase URL", func(t *testing.T) {
 		url := "https://example.supabase.co/storage/v1/object/public/avatars/player123-token456.webp"
 		path := storage.ExtractStoragePath(url)
-		assert.Equal(t, "player123-token456.webp", path)
+		assert.Equal(t, "avatars/player123-token456.webp", path)
+	})
+
+	t.Run("extracts key from CDN URL", func(t *testing.T) {
+		url := "https://cdn.rachao.app/avatars/player123-token456.webp"
+		path := storage.ExtractStoragePath(url)
+		assert.Equal(t, "avatars/player123-token456.webp", path)
 	})
 
 	t.Run("returns empty for URL without marker", func(t *testing.T) {
@@ -187,10 +197,16 @@ func TestStorageExtractStoragePath(t *testing.T) {
 		assert.Equal(t, "", path)
 	})
 
+	t.Run("returns empty for CDN URL outside avatars prefix", func(t *testing.T) {
+		url := "https://cdn.rachao.app/other/file.webp"
+		path := storage.ExtractStoragePath(url)
+		assert.Equal(t, "", path)
+	})
+
 	t.Run("handles URL with multiple path segments", func(t *testing.T) {
 		url := "https://example.supabase.co/storage/v1/object/public/avatars/00000000-0000-0000-0000-000000000001-abc.webp"
 		path := storage.ExtractStoragePath(url)
-		assert.Equal(t, "00000000-0000-0000-0000-000000000001-abc.webp", path)
+		assert.Equal(t, "avatars/00000000-0000-0000-0000-000000000001-abc.webp", path)
 	})
 
 	t.Run("returns empty for malformed URL", func(t *testing.T) {

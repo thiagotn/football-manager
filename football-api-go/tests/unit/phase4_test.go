@@ -87,33 +87,40 @@ func TestChat_MissingMessages(t *testing.T) {
 
 // ── storage service ───────────────────────────────────────────────────────────
 
-func TestStorage_ExtractPath_Valid(t *testing.T) {
-	svc := services.NewStorageService("https://example.supabase.co", "service-key")
+func newTestStorage(t *testing.T) *services.StorageService {
+	t.Helper()
+	svc, err := services.NewStorageService("acct123", "key", "secret", "rachao-media", "https://cdn.rachao.app")
+	if err != nil {
+		t.Fatalf("NewStorageService: %v", err)
+	}
+	return svc
+}
+
+func TestStorage_ExtractPath_LegacySupabase(t *testing.T) {
+	svc := newTestStorage(t)
 	path := svc.ExtractStoragePath("https://example.supabase.co/storage/v1/object/public/avatars/player-token.webp")
-	assert.Equal(t, "player-token.webp", path)
+	assert.Equal(t, "avatars/player-token.webp", path)
+}
+
+func TestStorage_ExtractPath_CDN(t *testing.T) {
+	svc := newTestStorage(t)
+	path := svc.ExtractStoragePath("https://cdn.rachao.app/avatars/player-token.webp")
+	assert.Equal(t, "avatars/player-token.webp", path)
 }
 
 func TestStorage_ExtractPath_Invalid(t *testing.T) {
-	svc := services.NewStorageService("", "")
+	svc := newTestStorage(t)
 	path := svc.ExtractStoragePath("https://example.com/other/path")
 	assert.Equal(t, "", path)
 }
 
 func TestStorage_IsConfigured_False(t *testing.T) {
-	svc := services.NewStorageService("", "")
+	svc, err := services.NewStorageService("", "", "", "", "")
+	assert.Error(t, err)
 	assert.False(t, svc.IsConfigured())
 }
 
 func TestStorage_IsConfigured_True(t *testing.T) {
-	svc := services.NewStorageService("https://example.supabase.co", "key")
-	assert.True(t, svc.IsConfigured())
-}
-
-// ── recurrence service helpers ────────────────────────────────────────────────
-
-func TestRecurrence_FmtDatePT_IsNotEmpty(t *testing.T) {
-	// Just verify the service package compiles and has no obvious import issues
-	// by constructing a storage service (same package)
-	svc := services.NewStorageService("u", "k")
+	svc := newTestStorage(t)
 	assert.True(t, svc.IsConfigured())
 }

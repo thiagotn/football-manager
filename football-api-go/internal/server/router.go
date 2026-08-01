@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -33,8 +34,13 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	}
 
 	var storageSvc *services.StorageService
-	if cfg.SupabaseURL != "" && cfg.SupabaseServiceRoleKey != "" {
-		storageSvc = services.NewStorageService(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
+	if cfg.R2AccountID != "" && cfg.R2AccessKeyID != "" && cfg.R2SecretAccessKey != "" {
+		svc, err := services.NewStorageService(cfg.R2AccountID, cfg.R2AccessKeyID, cfg.R2SecretAccessKey, cfg.R2Bucket, cfg.R2PublicBaseURL)
+		if err != nil {
+			slog.Error("storage init failed — avatar upload disabled", "error", err)
+		} else {
+			storageSvc = svc
+		}
 	}
 
 	pushSvc := services.NewPushService(pool)
