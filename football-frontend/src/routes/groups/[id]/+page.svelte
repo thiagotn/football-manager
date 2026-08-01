@@ -52,7 +52,7 @@
     financeLoading = true;
     financeError = '';
     financeApi.getPeriod(groupId, financeYear, financeMonth)
-      .then(r => { if (!cancelled) financePeriod = r; })
+      .then(r => { if (!cancelled) financePeriod = { ...r, payments: r.payments ?? [] }; })
       .catch(() => { if (!cancelled) financeError = 'Erro ao carregar dados financeiros.'; })
       .finally(() => { if (!cancelled) financeLoading = false; });
     return () => { cancelled = true; };

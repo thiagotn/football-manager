@@ -225,6 +225,9 @@ func (h *FinanceHandler) GetPeriod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if payments == nil {
+		payments = []db.FinancePayment{}
+	}
 	sortPayments(payments)
 	summary := buildFinanceSummary(payments)
 	renderJSON(w, http.StatusOK, map[string]any{

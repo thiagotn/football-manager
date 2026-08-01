@@ -649,7 +649,7 @@ func ListPlayersActive(ctx context.Context, pool *pgxpool.Pool, limit, offset in
 		return nil, err
 	}
 	defer rows.Close()
-	var players []*Player
+	players := []*Player{}
 	for rows.Next() {
 		p, err := ScanPlayer(rows.Scan)
 		if err != nil {

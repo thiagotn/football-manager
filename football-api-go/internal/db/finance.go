@@ -97,7 +97,7 @@ func GetPaymentsForPeriod(ctx context.Context, pool *pgxpool.Pool, periodID uuid
 		return nil, err
 	}
 	defer rows.Close()
-	var payments []FinancePayment
+	payments := []FinancePayment{}
 	for rows.Next() {
 		var p FinancePayment
 		if err := rows.Scan(
