@@ -4,11 +4,9 @@ global:
 
 scrape_configs:
 
-  # Métricas da API v1 FastAPI (/metrics exposto pelo prometheus-fastapi-instrumentator)
-  - job_name: 'api'
-    static_configs:
-      - targets: ['football-api:8000']
-    metrics_path: '/metrics'
+  # API v1 (FastAPI) descomissionada na VPS em 2026-07-31 — app migrado
+  # para a API v2 no homelab; o scrape job 'api' foi removido junto com
+  # as regras de alerta correspondentes (ver alerting/rules.yml).
 
   # Métricas dos containers Docker (CPU, RAM, rede por container)
   - job_name: 'cadvisor'
