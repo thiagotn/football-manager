@@ -27,6 +27,14 @@ from app.services.telegram import notify_new_player
 router = APIRouter(prefix="/invites", tags=["invites"])
 
 
+def _normalize_whatsapp(number: str) -> str:
+    """Strip spaces/dashes/parens; ensure leading + (preserva o formato E.164 do banco)."""
+    cleaned = re.sub(r"[^\d+]", "", number)
+    if cleaned and not cleaned.startswith("+"):
+        cleaned = "+" + cleaned
+    return cleaned
+
+
 @router.post("", response_model=InviteResponse, status_code=201)
 async def create_invite(body: InviteCreateRequest, db: DB, current: CurrentPlayer):
     """Gera um link de convite para entrar em um grupo (válido por 30 minutos, uso único)."""
@@ -62,7 +70,7 @@ async def get_invite_info(token: str, db: DB):
     """Retorna informações do convite (grupo destino) sem autenticação."""
     repo = InviteRepository(db)
     invite = await repo.get_by_token(token)
-    if not invite:
+    if not invite or invite.purpose != "group_join":
         raise NotFoundError("Convite não encontrado")
     if invite.used:
         raise ForbiddenError("Convite já utilizado")
@@ -88,7 +96,7 @@ async def check_whatsapp(token: str, whatsapp: str, db: DB):
     if not invite:
         raise NotFoundError("Convite inválido ou expirado")
 
-    normalized = re.sub(r"\D", "", whatsapp)
+    normalized = _normalize_whatsapp(whatsapp)
     p_repo = PlayerRepository(db)
     player = await p_repo.get_by_whatsapp(normalized)
 
@@ -109,7 +117,7 @@ async def accept_invite(token: str, body: InviteAcceptRequest, db: DB):
     if not invite:
         raise NotFoundError("Convite inválido ou expirado")
 
-    whatsapp = re.sub(r"\D", "", body.whatsapp)
+    whatsapp = _normalize_whatsapp(body.whatsapp)
     p_repo = PlayerRepository(db)
     g_repo = GroupRepository(db)
 

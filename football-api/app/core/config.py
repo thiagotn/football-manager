@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 15  # 15 min — renovado via refresh token
     invite_token_expire_minutes: int = 30
+    claim_token_expire_days: int = 7
 
     # CORS
     cors_origins: str = "http://localhost:5173,http://localhost:3000"

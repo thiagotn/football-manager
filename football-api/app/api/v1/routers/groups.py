@@ -2,15 +2,18 @@ import asyncio
 import re
 import secrets
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import structlog
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.dependencies import DB, CurrentPlayer, AdminPlayer
 from app.core.exceptions import ConflictError, NotFoundError, ForbiddenError, PlanLimitError, ValidationError
 from app.core.security import hash_password
+from app.db.repositories.invite_repo import InviteRepository
 from app.db.repositories.subscription_repo import SubscriptionRepository
 from app.db.repositories.waitlist_repo import WaitlistRepository
 
@@ -54,6 +57,7 @@ from app.schemas.group import (
     WaitlistEntryResponse,
 )
 from app.schemas.group_stats import GroupStatsResponse
+from app.schemas.invite import ClaimInviteResponse
 
 _MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
 
@@ -495,6 +499,7 @@ async def add_member_by_phone(
             whatsapp=normalized,
             password_hash=hash_password(temp_password),
             must_change_password=True,
+            pending_registration=True,
         )
 
         sub_repo = SubscriptionRepository(db)
@@ -528,6 +533,64 @@ async def add_member_by_phone(
     member_response.position = member.position
 
     return AddMemberByPhoneResponse(member=member_response, is_new=is_new)
+
+
+# ── Claim invite (cadastro pendente) ──────────────────────────────────────────
+
+@router.post(
+    "/{group_id}/members/{player_id}/claim-invite",
+    response_model=ClaimInviteResponse,
+    status_code=201,
+)
+async def create_claim_invite(
+    group_id: uuid.UUID,
+    player_id: uuid.UUID,
+    db: DB,
+    current: CurrentPlayer,
+):
+    """Gera um link de convite para o jogador com cadastro pendente assumir a própria conta."""
+    g_repo = GroupRepository(db)
+    group = await g_repo.get(group_id)
+    if not group:
+        raise NotFoundError("Grupo não encontrado")
+
+    if current.role != PlayerRole.ADMIN:
+        caller = await g_repo.get_member(group_id, current.id)
+        if not caller or caller.role != GroupMemberRole.ADMIN:
+            raise ForbiddenError("Apenas admins do grupo podem gerar convites de cadastro")
+
+    member = await g_repo.get_member(group_id, player_id)
+    if not member:
+        raise NotFoundError("Jogador não é membro deste grupo")
+
+    p_repo = PlayerRepository(db)
+    target = await p_repo.get(player_id)
+    if not target:
+        raise NotFoundError("Jogador não encontrado")
+    if target.role == PlayerRole.ADMIN:
+        raise ForbiddenError("Não é possível gerar convite de cadastro para um super admin")
+    if not target.pending_registration:
+        raise ConflictError("PLAYER_NOT_PENDING")
+
+    settings = get_settings()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.claim_token_expire_days)
+    token = secrets.token_urlsafe(32)
+
+    invite = await InviteRepository(db).create(
+        group_id=group_id,
+        token=token,
+        expires_at=expires_at,
+        created_by_id=current.id,
+        purpose="registration_claim",
+        target_player_id=player_id,
+    )
+    logger.info(
+        "claim_invite_created",
+        actor_id=str(current.id),
+        group_id=str(group_id),
+        player_id=str(player_id),
+    )
+    return invite
 
 
 # ── Stats ──────────────────────────────────────────────────────────────────────

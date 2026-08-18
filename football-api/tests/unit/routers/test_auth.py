@@ -175,6 +175,8 @@ async def test_change_password_correct_current_password(api_client, player_user,
     player_user.whatsapp = "+5511999990001"
 
     db_player = MagicMock()
+    db_player.must_change_password = True
+    db_player.pending_registration = True
     mocker.patch(
         "app.api.v1.routers.auth.PlayerRepository.get",
         new=AsyncMock(return_value=db_player),
@@ -186,6 +188,9 @@ async def test_change_password_correct_current_password(api_client, player_user,
     )
 
     assert response.status_code == 204
+    # Troca de senha autenticada limpa as flags de conta provisória
+    assert db_player.must_change_password is False
+    assert db_player.pending_registration is False
 
 
 @pytest.mark.asyncio
@@ -289,6 +294,8 @@ async def test_forgot_password_reset_valid_token(api_client, mocker):
     whatsapp = "+5511999990001"
     otp_token = create_otp_token(whatsapp)
     player = _make_player(whatsapp=whatsapp)
+    player.must_change_password = True
+    player.pending_registration = True
 
     mocker.patch(
         "app.api.v1.routers.auth.PlayerRepository.get_by_whatsapp",
@@ -301,6 +308,9 @@ async def test_forgot_password_reset_valid_token(api_client, mocker):
     )
 
     assert response.status_code == 204
+    # Reset comprova posse do número: limpa as duas flags de conta provisória
+    assert player.must_change_password is False
+    assert player.pending_registration is False
 
 
 @pytest.mark.asyncio

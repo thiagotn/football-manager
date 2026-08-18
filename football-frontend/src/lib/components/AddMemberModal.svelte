@@ -39,6 +39,10 @@
   let successName = $state('');
   let successIsNew = $state(false);
   let successPhone = $state('');
+  let successPlayerId = $state('');
+  let claimLink = $state('');
+  let claimLoading = $state(false);
+  let claimCopied = $state(false);
 
   function reset() {
     step = 'phone';
@@ -54,6 +58,10 @@
     successName = '';
     successIsNew = false;
     successPhone = '';
+    successPlayerId = '';
+    claimLink = '';
+    claimLoading = false;
+    claimCopied = false;
   }
 
   function handleClose() {
@@ -104,6 +112,7 @@
       successName = res.member.player.name;
       successIsNew = res.is_new;
       successPhone = formatPhoneDisplay(phone);
+      successPlayerId = res.member.player.id;
       step = 'success';
       onAdded?.(res.member, res.is_new);
     } catch (e) {
@@ -122,6 +131,23 @@
     saving = false;
   }
 
+  async function generateClaimLink() {
+    claimLoading = true;
+    try {
+      const inv = await groupsApi.createClaimInvite(groupId, successPlayerId);
+      claimLink = `${window.location.origin}/claim/${inv.token}`;
+    } catch (e) {
+      errorMsg = e instanceof ApiError ? e.message : $t('groups.add_manual.error_generic');
+    }
+    claimLoading = false;
+  }
+
+  function copyClaimLink() {
+    navigator.clipboard.writeText(claimLink);
+    claimCopied = true;
+    setTimeout(() => { claimCopied = false; }, 2000);
+  }
+
   async function createAndAdd() {
     if (!name.trim()) return;
     errorMsg = '';
@@ -137,6 +163,7 @@
       successName = res.member.player.name;
       successIsNew = res.is_new;
       successPhone = formatPhoneDisplay(phone);
+      successPlayerId = res.member.player.id;
       step = 'success';
       onAdded?.(res.member, res.is_new);
     } catch (e) {
@@ -290,10 +317,27 @@
         <p class="font-semibold">✅ {$t('groups.add_manual.success_added').replace('{name}', successName)}</p>
         {#if successIsNew}
           <p class="text-green-200/80 text-xs mt-2">
-            {$t('groups.add_manual.success_new_hint').replace('{phone}', successPhone)}
+            {$t('groups.add_manual.claim_hint')}
           </p>
         {/if}
       </div>
+      {#if successIsNew}
+        {#if claimLink}
+          <div class="flex gap-2">
+            <input class="input font-mono text-xs" readonly value={claimLink} />
+            <button class="btn-primary shrink-0" onclick={copyClaimLink}>
+              {claimCopied ? $t('groups.add_manual.claim_copied') : $t('groups.add_manual.claim_copy')}
+            </button>
+          </div>
+        {:else}
+          <button class="btn-secondary w-full justify-center" onclick={generateClaimLink} disabled={claimLoading}>
+            {claimLoading ? '...' : $t('groups.add_manual.claim_generate')}
+          </button>
+        {/if}
+        {#if errorMsg}
+          <p class="text-sm text-red-500">{errorMsg}</p>
+        {/if}
+      {/if}
       <div class="flex justify-end">
         <button class="btn-primary" onclick={handleClose}>{$t('groups.add_manual.close_btn')}</button>
       </div>

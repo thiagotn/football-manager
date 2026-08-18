@@ -59,11 +59,12 @@ type GroupMember struct {
 // GroupMemberWithPlayer extends GroupMember with joined player data.
 type GroupMemberWithPlayer struct {
 	GroupMember
-	PlayerName      string     `json:"player_name"`
-	PlayerNickname  *string    `json:"player_nickname"`
-	PlayerWhatsApp  string     `json:"player_whatsapp"`
-	PlayerAvatarURL *string    `json:"player_avatar_url"`
-	PlayerRole      PlayerRole `json:"player_role"`
+	PlayerName                string     `json:"player_name"`
+	PlayerNickname            *string    `json:"player_nickname"`
+	PlayerWhatsApp            string     `json:"player_whatsapp"`
+	PlayerAvatarURL           *string    `json:"player_avatar_url"`
+	PlayerRole                PlayerRole `json:"player_role"`
+	PlayerPendingRegistration bool       `json:"player_pending_registration"`
 }
 
 const groupSelectCols = `
@@ -259,7 +260,8 @@ func GetGroupMembers(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID)
 			gm.id, gm.group_id, gm.player_id, gm.role::TEXT,
 			gm.skill_stars, gm.position, gm.nickname,
 			gm.created_at, gm.updated_at,
-			p.name, p.nickname, p.whatsapp, p.avatar_url, p.role::TEXT
+			p.name, p.nickname, p.whatsapp, p.avatar_url, p.role::TEXT,
+			p.pending_registration
 		FROM group_members gm
 		JOIN players p ON p.id = gm.player_id
 		WHERE gm.group_id = $1
@@ -278,6 +280,7 @@ func GetGroupMembers(ctx context.Context, pool *pgxpool.Pool, groupID uuid.UUID)
 			&m.CreatedAt, &m.UpdatedAt,
 			&m.PlayerName, &m.PlayerNickname, &m.PlayerWhatsApp,
 			&m.PlayerAvatarURL, &m.PlayerRole,
+			&m.PlayerPendingRegistration,
 		); err != nil {
 			return nil, err
 		}

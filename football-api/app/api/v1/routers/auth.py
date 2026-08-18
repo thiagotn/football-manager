@@ -234,6 +234,7 @@ async def forgot_password_reset(body: ForgotPasswordResetRequest, db: DB):
 
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
+    player.pending_registration = False
     await RefreshTokenRepository(db).revoke_all_for_player(player.id)
     await db.flush()
     logger.info("auth_password_reset", player_id=str(player.id))
@@ -291,6 +292,7 @@ async def change_password(body: ChangePasswordRequest, db: DB, current: CurrentP
     player = await repo.get(current.id)
     player.password_hash = hash_password(body.new_password)
     player.must_change_password = False
+    player.pending_registration = False
     await RefreshTokenRepository(db).revoke_all_for_player(current.id)
     await db.flush()
     logger.info("auth_password_changed", player_id=str(current.id))

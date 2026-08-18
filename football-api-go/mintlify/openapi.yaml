@@ -5,6 +5,50 @@ definitions:
       detail:
         type: string
     type: object
+  db.Invite:
+    properties:
+      created_at:
+        type: string
+      created_by_id:
+        type: string
+      expires_at:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      purpose:
+        type: string
+      target_player_id:
+        type: string
+      token:
+        type: string
+      used:
+        type: boolean
+      used_by_id:
+        type: string
+    type: object
+  handlers.claimCompleteReq:
+    properties:
+      otp_token:
+        type: string
+      password:
+        type: string
+      whatsapp:
+        type: string
+    type: object
+  handlers.claimSendOTPReq:
+    properties:
+      whatsapp:
+        type: string
+    type: object
+  handlers.claimVerifyOTPReq:
+    properties:
+      otp_code:
+        type: string
+      whatsapp:
+        type: string
+    type: object
   services.LoginRequest:
     properties:
       password:
@@ -30,6 +74,8 @@ definitions:
         type: string
       nickname:
         type: string
+      pending_registration:
+        type: boolean
       role:
         type: string
       whatsapp:
@@ -200,6 +246,137 @@ paths:
       summary: Verify OTP (registration)
       tags:
       - auth
+  /claims/{token}:
+    get:
+      description: Public info for a registration-claim invite (target first name
+        + group).
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Get claim invite info
+      tags:
+      - claims
+  /claims/{token}/complete:
+    post:
+      description: Sets the real whatsapp + password on the pending player, clears
+        the provisional flags, marks the invite used and logs the player in.
+      parameters:
+      - description: WhatsApp + otp_token + new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.claimCompleteReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.TokenResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Complete registration claim
+      tags:
+      - claims
+  /claims/{token}/send-otp:
+    post:
+      description: Sends an OTP to the real number the claiming player provided.
+      parameters:
+      - description: WhatsApp number
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.claimSendOTPReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Send OTP for claim
+      tags:
+      - claims
+  /claims/{token}/verify-otp:
+    post:
+      description: Verifies the OTP and returns a signed otp_token proving number
+        ownership.
+      parameters:
+      - description: WhatsApp + OTP code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.claimVerifyOTPReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.VerifyOTPResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Verify OTP for claim
+      tags:
+      - claims
+  /groups/{groupID}/members/{playerID}/claim-invite:
+    post:
+      description: Generates a single-use link (7 days) for a pending-registration
+        member to claim their own account.
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/db.Invite'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apierror.APIError'
+      summary: Create registration-claim invite
+      tags:
+      - groups
 schemes:
 - http
 - https

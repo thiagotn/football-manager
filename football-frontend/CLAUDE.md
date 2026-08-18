@@ -20,6 +20,7 @@
 | `/login` | Login + esqueci minha senha |
 | `/register` | Cadastro (3 steps: WhatsApp → OTP → form) |
 | `/invite/[token]` | Entrada via convite |
+| `/claim/[token]` | Claim de cadastro pendente — jogador informa WhatsApp real, confirma OTP e cria senha |
 | `/match/[hash]` | Detalhe da partida (público + autenticado) |
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
@@ -112,7 +113,7 @@
 
 ## Namespaces de `api.ts`
 
-`auth` · `players` (inclui `getPublicStats`) · `groups` · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `ranking` · `mcpTokens` · `chat`
+`auth` · `players` (inclui `getPublicStats`) · `groups` (inclui `createClaimInvite`) · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `claims` · `ranking` · `mcpTokens` · `chat`
 
 ---
 

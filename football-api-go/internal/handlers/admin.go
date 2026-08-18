@@ -449,7 +449,8 @@ func (h *AdminHandler) listPlayers(w http.ResponseWriter, r *http.Request) {
 		items[i] = map[string]any{
 			"id": p.ID, "name": p.Name, "nickname": p.Nickname, "whatsapp": p.WhatsApp,
 			"role": p.Role, "active": p.Active, "created_at": p.CreatedAt,
-			"avatar_url": p.AvatarURL, "plan": p.Plan, "total_groups": p.TotalGroups,
+			"avatar_url": p.AvatarURL, "pending_registration": p.PendingRegistration,
+			"plan": p.Plan, "total_groups": p.TotalGroups,
 		}
 	}
 	renderJSON(w, http.StatusOK, map[string]any{

@@ -27,7 +27,7 @@ func groupsRouter(player *db.Player) http.Handler {
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	r.Mount("/groups", handlers.NewGroupHandler(nil).Routes())
+	r.Mount("/groups", handlers.NewGroupHandler(nil, nil).Routes())
 	return r
 }
 

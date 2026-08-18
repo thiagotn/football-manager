@@ -106,6 +106,7 @@ class AdminPlayerItem(BaseModel):
     plan: str
     total_groups: int
     avatar_url: str | None = None
+    pending_registration: bool = False
 
 
 class AdminPlayerListResponse(BaseModel):

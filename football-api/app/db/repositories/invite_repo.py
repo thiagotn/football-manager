@@ -26,6 +26,19 @@ class InviteRepository(BaseRepository[InviteToken]):
                 InviteToken.token == token,
                 InviteToken.used == False,
                 InviteToken.expires_at > now,
+                InviteToken.purpose == "group_join",
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_valid_claim_token(self, token: str) -> InviteToken | None:
+        now = datetime.now(timezone.utc)
+        result = await self.session.execute(
+            select(InviteToken).where(
+                InviteToken.token == token,
+                InviteToken.used == False,
+                InviteToken.expires_at > now,
+                InviteToken.purpose == "registration_claim",
             )
         )
         return result.scalar_one_or_none()

@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
+	"github.com/thiagotn/football-manager/football-api-go/internal/config"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 	"github.com/thiagotn/football-manager/football-api-go/internal/services"
@@ -44,6 +45,7 @@ type GroupStore interface {
 	GetPlayerByWhatsApp(ctx context.Context, whatsapp string) (*db.Player, error)
 	CreatePlayer(ctx context.Context, args db.CreatePlayerArgs) (*db.Player, error)
 	UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error
+	CreateClaimInvite(ctx context.Context, groupID, targetPlayerID, createdByID uuid.UUID, token string, expiresAt time.Time) (*db.Invite, error)
 	GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error
 	CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error)
@@ -129,6 +131,9 @@ func (s *pgGroupStore) CreatePlayer(ctx context.Context, args db.CreatePlayerArg
 func (s *pgGroupStore) UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error {
 	return db.UpdatePlayerMustChangePassword(ctx, s.pool, id, val)
 }
+func (s *pgGroupStore) CreateClaimInvite(ctx context.Context, groupID, targetPlayerID, createdByID uuid.UUID, token string, expiresAt time.Time) (*db.Invite, error) {
+	return db.CreateClaimInvite(ctx, s.pool, groupID, targetPlayerID, createdByID, token, expiresAt)
+}
 func (s *pgGroupStore) GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
 	return db.GetOpenMatchesForGroup(ctx, s.pool, groupID)
 }
@@ -172,13 +177,15 @@ type GroupHandler struct {
 	Store GroupStore
 	pool  *pgxpool.Pool          // raw pool for cross-domain calls (push fanout)
 	push  services.PushService   // injected push service (no-op stub today)
+	cfg   *config.Config         // optional; nil in tests (defaults apply)
 }
 
-func NewGroupHandler(pool *pgxpool.Pool) *GroupHandler {
+func NewGroupHandler(pool *pgxpool.Pool, cfg *config.Config) *GroupHandler {
 	return &GroupHandler{
 		Store: &pgGroupStore{pool: pool},
 		pool:  pool,
 		push:  services.NewPushService(pool),
+		cfg:   cfg,
 	}
 }
 
@@ -202,6 +209,7 @@ func (h *GroupHandler) Routes() chi.Router {
 		r.Patch("/members/me", h.updateMyPosition)
 		r.Get("/members/lookup", h.lookupMember)
 		r.Post("/members/by-phone", h.addMemberByPhone)
+		r.Post("/members/{playerID}/claim-invite", h.createClaimInvite)
 		r.Patch("/members/{playerID}", h.updateMember)
 		r.Delete("/members/{playerID}", h.removeMember)
 		r.Get("/stats", h.groupStats)
@@ -271,12 +279,13 @@ type waitlistReq struct {
 }
 
 type memberPlayerView struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	Nickname  *string   `json:"nickname"`
-	Role      string    `json:"role"`
-	WhatsApp  *string   `json:"whatsapp,omitempty"`
-	AvatarURL *string   `json:"avatar_url"`
+	ID                  uuid.UUID `json:"id"`
+	Name                string    `json:"name"`
+	Nickname            *string   `json:"nickname"`
+	Role                string    `json:"role"`
+	WhatsApp            *string   `json:"whatsapp,omitempty"`
+	AvatarURL           *string   `json:"avatar_url"`
+	PendingRegistration bool      `json:"pending_registration"`
 }
 
 type memberResponse struct {
@@ -320,11 +329,12 @@ var positionRe = regexp.MustCompile(`^(gk|zag|lat|mei|ata)$`)
 
 func buildMemberResponse(m db.GroupMemberWithPlayer, isGroupAdmin bool) memberResponse {
 	player := memberPlayerView{
-		ID:        m.PlayerID,
-		Name:      m.PlayerName,
-		Nickname:  m.PlayerNickname,
-		Role:      string(m.PlayerRole),
-		AvatarURL: m.PlayerAvatarURL,
+		ID:                  m.PlayerID,
+		Name:                m.PlayerName,
+		Nickname:            m.PlayerNickname,
+		Role:                string(m.PlayerRole),
+		AvatarURL:           m.PlayerAvatarURL,
+		PendingRegistration: m.PlayerPendingRegistration,
 	}
 	if isGroupAdmin {
 		player.WhatsApp = &m.PlayerWhatsApp
@@ -941,16 +951,17 @@ func (h *GroupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 		}
 		hash, _ := hashPassword("temp-" + req.WhatsApp)
 		target, err = h.Store.CreatePlayer(r.Context(), db.CreatePlayerParams{
-			Name:         strings.TrimSpace(*req.Name),
-			WhatsApp:     req.WhatsApp,
-			PasswordHash: hash,
+			Name:                strings.TrimSpace(*req.Name),
+			WhatsApp:            req.WhatsApp,
+			PasswordHash:        hash,
+			MustChangePassword:  true,
+			PendingRegistration: true,
 		})
 		if err != nil {
 			renderError(w, err)
 			return
 		}
 		_ = h.Store.EnsurePlayerSubscription(r.Context(), target.ID)
-		_ = h.Store.UpdatePlayerMustChangePassword(r.Context(), target.ID, true)
 		isNew = true
 	}
 
@@ -1009,15 +1020,86 @@ func (h *GroupHandler) addMemberByPhone(w http.ResponseWriter, r *http.Request) 
 			CreatedAt:  m.CreatedAt,
 			UpdatedAt:  m.UpdatedAt,
 		},
-		PlayerName:      target.Name,
-		PlayerNickname:  target.Nickname,
-		PlayerWhatsApp:  whatsapp,
-		PlayerAvatarURL: target.AvatarURL,
-		PlayerRole:      target.Role,
+		PlayerName:                target.Name,
+		PlayerNickname:            target.Nickname,
+		PlayerWhatsApp:            whatsapp,
+		PlayerAvatarURL:           target.AvatarURL,
+		PlayerRole:                target.Role,
+		PlayerPendingRegistration: target.PendingRegistration,
 	}
 	resp := buildMemberResponse(memberWithPlayer, true) // caller is admin (checked above)
 
 	renderJSON(w, http.StatusCreated, map[string]any{"member": resp, "is_new": isNew})
+}
+
+// @Summary     Create registration-claim invite
+// @Description Generates a single-use link (7 days) for a pending-registration member to claim their own account.
+// @Tags        groups
+// @Success     201 {object} db.Invite
+// @Failure     403 {object} apierror.APIError
+// @Failure     404 {object} apierror.APIError
+// @Failure     409 {object} apierror.APIError
+// @Router      /groups/{groupID}/members/{playerID}/claim-invite [post]
+func (h *GroupHandler) createClaimInvite(w http.ResponseWriter, r *http.Request) {
+	caller := middleware.PlayerFromCtx(r.Context())
+	groupID, err := groupIDParam(r)
+	if err != nil {
+		renderError(w, apierror.NotFound("group not found"))
+		return
+	}
+	if caller.Role != db.PlayerRoleAdmin {
+		m, err := h.Store.GetGroupMember(r.Context(), groupID, caller.ID)
+		if err != nil || m.Role != db.GroupMemberRoleAdmin {
+			renderError(w, apierror.Forbidden("admin access required"))
+			return
+		}
+	}
+
+	targetID, err := playerIDParam(r)
+	if err != nil {
+		renderError(w, apierror.NotFound("player not found"))
+		return
+	}
+	if _, err := h.Store.GetGroupMember(r.Context(), groupID, targetID); err != nil {
+		renderError(w, apierror.NotFound("player is not a member of this group"))
+		return
+	}
+	target, err := h.Store.GetPlayerByID(r.Context(), targetID)
+	if err != nil {
+		renderError(w, apierror.NotFound("player not found"))
+		return
+	}
+	if target.Role == db.PlayerRoleAdmin {
+		renderError(w, apierror.Forbidden("cannot create claim invite for a global admin"))
+		return
+	}
+	if !target.PendingRegistration {
+		renderError(w, apierror.Conflict("PLAYER_NOT_PENDING"))
+		return
+	}
+
+	token, err := generateToken()
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	days := 7
+	if h.cfg != nil && h.cfg.ClaimTokenExpireDays > 0 {
+		days = h.cfg.ClaimTokenExpireDays
+	}
+	expiresAt := time.Now().Add(time.Duration(days) * 24 * time.Hour)
+
+	inv, err := h.Store.CreateClaimInvite(r.Context(), groupID, targetID, caller.ID, token, expiresAt)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	slog.Info("claim invite created", "group_id", groupID, "player_id", targetID, "actor_id", caller.ID)
+	renderJSON(w, http.StatusCreated, map[string]any{
+		"id":         inv.ID,
+		"token":      inv.Token,
+		"expires_at": inv.ExpiresAt,
+	})
 }
 
 func (h *GroupHandler) groupStats(w http.ResponseWriter, r *http.Request) {

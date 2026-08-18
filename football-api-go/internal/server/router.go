@@ -53,10 +53,11 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 
 	// Handlers
 	authH := handlers.NewAuthHandler(authSvc, loginRL)
-	groupH := handlers.NewGroupHandler(pool)
+	groupH := handlers.NewGroupHandler(pool, cfg)
 	matchH := handlers.NewMatchHandler(pool)
 	playerH := handlers.NewPlayerHandler(pool, storageSvc)
 	inviteH := handlers.NewInviteHandler(pool, authSvc, cfg)
+	claimH := handlers.NewClaimHandler(pool, authSvc)
 	teamH := handlers.NewTeamHandler(pool)
 	voteH := handlers.NewVoteHandler(pool, pushSvc)
 	financeH := handlers.NewFinanceHandler(pool)
@@ -105,6 +106,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		r.Get("/matches/public/{hash}/votes/results", voteH.GetPublicVoteResults)
 		r.Get("/matches/public/{hash}/votes/ballots", voteH.GetPublicVoteBallots)
 		r.Mount("/invites", inviteH.Routes(authMw))
+		r.Mount("/claims", claimH.Routes())
 		r.Get("/matches/{matchID}/teams", teamH.GetTeams)
 		r.Get("/ranking", rankingH.GetRanking)
 		r.Get("/push/vapid-public-key", pushH.GetVapidKey)

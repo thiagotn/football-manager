@@ -110,6 +110,9 @@ type mockAuthService struct {
 	changePasswordFn          func(ctx context.Context, playerID uuid.UUID, req services.ChangePasswordRequest) error
 	refreshTokenFn            func(ctx context.Context, req services.RefreshRequest) (*services.RefreshResponse, error)
 	issueTokenPairForPlayerFn func(ctx context.Context, player *db.Player) (*services.TokenResponse, error)
+	sendOTPToFn               func(whatsapp string) error
+	verifyOTPForFn            func(whatsapp, code string) (string, error)
+	decodeOTPFn               func(token string) (string, error)
 }
 
 func (m *mockAuthService) Login(ctx context.Context, req services.LoginRequest) (*services.TokenResponse, error) {
@@ -150,4 +153,22 @@ func (m *mockAuthService) RefreshToken(ctx context.Context, req services.Refresh
 }
 func (m *mockAuthService) IssueTokenPairForPlayer(ctx context.Context, player *db.Player) (*services.TokenResponse, error) {
 	return m.issueTokenPairForPlayerFn(ctx, player)
+}
+func (m *mockAuthService) SendOTPTo(whatsapp string) error {
+	if m.sendOTPToFn == nil {
+		return nil
+	}
+	return m.sendOTPToFn(whatsapp)
+}
+func (m *mockAuthService) VerifyOTPFor(whatsapp, code string) (string, error) {
+	if m.verifyOTPForFn == nil {
+		return "otp-token", nil
+	}
+	return m.verifyOTPForFn(whatsapp, code)
+}
+func (m *mockAuthService) DecodeOTP(token string) (string, error) {
+	if m.decodeOTPFn == nil {
+		return "", nil
+	}
+	return m.decodeOTPFn(token)
 }

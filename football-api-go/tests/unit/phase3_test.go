@@ -797,6 +797,9 @@ func (m *mockGroupStoreForBusiness) CreatePlayer(ctx context.Context, args db.Cr
 func (m *mockGroupStoreForBusiness) UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error {
 	return nil
 }
+func (m *mockGroupStoreForBusiness) CreateClaimInvite(ctx context.Context, groupID, targetPlayerID, createdByID uuid.UUID, token string, expiresAt time.Time) (*db.Invite, error) {
+	return nil, nil
+}
 func (m *mockGroupStoreForBusiness) CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error) {
 	return 0, nil
 }

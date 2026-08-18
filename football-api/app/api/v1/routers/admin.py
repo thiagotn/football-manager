@@ -362,7 +362,7 @@ async def list_admin_players(
         text("""
             SELECT
                 p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at,
-                p.avatar_url,
+                p.avatar_url, p.pending_registration,
                 COALESCE(ps.plan, 'free') AS plan,
                 COUNT(DISTINCT gm.group_id)::int AS total_groups
             FROM players p
@@ -373,7 +373,7 @@ async def list_admin_players(
                    OR p.name     ILIKE :search
                    OR p.nickname ILIKE :search
                    OR p.whatsapp LIKE  :search)
-            GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
+            GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, p.pending_registration, ps.plan
             ORDER BY p.created_at DESC
             LIMIT :limit OFFSET :offset
         """),

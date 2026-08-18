@@ -1165,3 +1165,25 @@ para paridade plena (atualizar conforme avança):
   sequencial, corrigindo o 3º lugar que sumia em empates (RANK gerava buraco de posição).
   Teste: `tests/integration/votes_integration_test.go` (v2, empatado com menos pontos no grupo
   vem primeiro).
+- [x] **Claim de cadastro pendente + flag `pending_registration`** (2026-08-18): jogadores
+  criados por admin de grupo via `POST /groups/{id}/members/by-phone` nascem com
+  `players.pending_registration = true` (migration **048**, compartilhada — inclui backfill de
+  números fora do E.164 ou `must_change_password` sem refresh token) e aparecem com badge
+  "Cadastro temporário" nas listagens. O admin gera um convite endereçado
+  (`POST /groups/{id}/members/{player_id}/claim-invite`, só para alvo pendente — 409
+  `PLAYER_NOT_PENDING`; `invite_tokens` ganhou `purpose` + `target_player_id`, validade 7 dias
+  via `CLAIM_TOKEN_EXPIRE_DAYS`) e o jogador assume a conta no fluxo público `/claims/{token}`
+  (`GET` info, `POST /send-otp`, `/verify-otp`, `/complete` — OTP obrigatório no número REAL,
+  409 `WHATSAPP_TAKEN` se o número for de outro player; complete troca whatsapp+senha, limpa
+  `pending_registration`/`must_change_password`, revoga refresh tokens e devolve TokenResponse).
+  Reset/troca de senha também limpam a flag nas duas APIs. Bônus v1: fix da normalização de
+  whatsapp em `invites.py` (o `re.sub(r"\D")` removia o `+` e nunca encontrava player
+  existente). v1: `app/api/v1/routers/claims.py` (novo), `groups.py`, `auth.py`, `invites.py`,
+  `models/{player,invite}.py`, `schemas/{player,invite,admin}.py`, `invite_repo.py`. v2:
+  `internal/handlers/claims.go` (novo), `groups.go`, `admin.go`, `invites.go`,
+  `internal/db/{queries,invites,groups}.go`, `services/auth_service.go`
+  (`SendOTPTo`/`VerifyOTPFor`/`DecodeOTP`), `config.go`, `server/router.go`. Testes:
+  `tests/unit/routers/test_claims.py` (v1, 19 cenários) e `tests/unit/claims_test.go` +
+  `tests/integration/claims_integration_test.go` (v2, fluxo completo com OTP bypass).
+  Frontend: rota pública `/claim/[token]`, badges em `/groups/[id]` e `/players`, geração de
+  link no modal de detalhe do membro e no `AddMemberModal`. E2E: `tests/test_claim.py`.

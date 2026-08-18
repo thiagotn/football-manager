@@ -18,6 +18,10 @@ class InviteToken(Base, UUIDMixin, TimestampMixin):
     token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    purpose: Mapped[str] = mapped_column(String(20), nullable=False, default="group_join")
+    target_player_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=True
+    )
     created_by_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=False
     )

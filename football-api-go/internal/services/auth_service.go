@@ -77,16 +77,17 @@ type TokenResponse struct {
 }
 
 type PlayerResponse struct {
-	ID                 string    `json:"id"`
-	Name               string    `json:"name"`
-	Nickname           *string   `json:"nickname,omitempty"`
-	WhatsApp           string    `json:"whatsapp"`
-	Role               string    `json:"role"`
-	Active             bool      `json:"active"`
-	MustChangePassword bool      `json:"must_change_password"`
-	AvatarURL          *string   `json:"avatar_url,omitempty"`
-	ChatEnabled        bool      `json:"chat_enabled"`
-	CreatedAt          time.Time `json:"created_at"`
+	ID                  string    `json:"id"`
+	Name                string    `json:"name"`
+	Nickname            *string   `json:"nickname,omitempty"`
+	WhatsApp            string    `json:"whatsapp"`
+	Role                string    `json:"role"`
+	Active              bool      `json:"active"`
+	MustChangePassword  bool      `json:"must_change_password"`
+	PendingRegistration bool      `json:"pending_registration"`
+	AvatarURL           *string   `json:"avatar_url,omitempty"`
+	ChatEnabled         bool      `json:"chat_enabled"`
+	CreatedAt           time.Time `json:"created_at"`
 }
 
 type RefreshRequest struct {
@@ -127,6 +128,9 @@ type AuthService interface {
 	ChangePassword(ctx context.Context, playerID uuid.UUID, req ChangePasswordRequest) error
 	RefreshToken(ctx context.Context, req RefreshRequest) (*RefreshResponse, error)
 	IssueTokenPairForPlayer(ctx context.Context, player *db.Player) (*TokenResponse, error)
+	SendOTPTo(whatsapp string) error
+	VerifyOTPFor(whatsapp, code string) (string, error)
+	DecodeOTP(token string) (string, error)
 }
 
 // ── Implementation ───────────────────────────────────────────────────────────
@@ -483,6 +487,28 @@ func (s *authService) IssueTokenPairForPlayer(ctx context.Context, player *db.Pl
 	return s.issueTokenPair(ctx, player)
 }
 
+// SendOTPTo sends an OTP to an arbitrary E.164 number (used by the claim flow).
+func (s *authService) SendOTPTo(whatsapp string) error {
+	return s.sendOTPToNumber(whatsapp)
+}
+
+// VerifyOTPFor checks an OTP code for a number and returns a signed otp_token.
+func (s *authService) VerifyOTPFor(whatsapp, code string) (string, error) {
+	if err := validateOTPCode(code); err != nil {
+		return "", err
+	}
+	ok, err := s.checkOTP(whatsapp, code)
+	if err != nil || !ok {
+		return "", apierror.Forbidden("invalid OTP code")
+	}
+	return s.createOTPToken(whatsapp)
+}
+
+// DecodeOTP validates an otp_token and returns the number it certifies.
+func (s *authService) DecodeOTP(token string) (string, error) {
+	return s.decodeOTPToken(token)
+}
+
 func (s *authService) createAccessToken(subject string) (string, error) {
 	exp := time.Duration(s.cfg.AccessTokenExpireMinutes) * time.Minute
 	claims := jwt.RegisteredClaims{
@@ -559,6 +585,11 @@ func (s *authService) checkOTP(whatsapp, code string) (bool, error) {
 	return result.Status != nil && *result.Status == "approved", nil
 }
 
+// NormalizeWhatsApp is the exported strict E.164 normalizer (used by handlers).
+func NormalizeWhatsApp(raw string) (string, error) {
+	return normalizeWhatsApp(raw)
+}
+
 // normalizeWhatsApp strips formatting and validates E.164 format.
 func normalizeWhatsApp(raw string) (string, error) {
 	// Strip everything except digits and leading +
@@ -603,15 +634,16 @@ func generateRefreshToken() (token, hash string, err error) {
 
 func playerToResponse(p *db.Player) *PlayerResponse {
 	return &PlayerResponse{
-		ID:                 p.ID.String(),
-		Name:               p.Name,
-		Nickname:           p.Nickname,
-		WhatsApp:           p.WhatsApp,
-		Role:               string(p.Role),
-		Active:             p.Active,
-		MustChangePassword: p.MustChangePassword,
-		AvatarURL:          p.AvatarURL,
-		ChatEnabled:        p.ChatEnabled,
-		CreatedAt:          p.CreatedAt,
+		ID:                  p.ID.String(),
+		Name:                p.Name,
+		Nickname:            p.Nickname,
+		WhatsApp:            p.WhatsApp,
+		Role:                string(p.Role),
+		Active:              p.Active,
+		MustChangePassword:  p.MustChangePassword,
+		PendingRegistration: p.PendingRegistration,
+		AvatarURL:           p.AvatarURL,
+		ChatEnabled:         p.ChatEnabled,
+		CreatedAt:           p.CreatedAt,
 	}
 }

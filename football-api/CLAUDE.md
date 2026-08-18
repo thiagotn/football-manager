@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `047_groups_voting_enabled.sql`.
+A última migration criada é `048_pending_registration_claim_invites.sql`.
 
-**A próxima deve ser numerada `048_`.**
+**A próxima deve ser numerada `049_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
@@ -25,6 +25,7 @@ A última migration criada é `047_groups_voting_enabled.sql`.
 | `finance.py` | Controle financeiro por grupo |
 | `groups.py` | CRUD de grupos, membros, skill, waitlist, stats |
 | `invites.py` | Convites por link |
+| `claims.py` | Claim de cadastro pendente — fluxo público `/claims/{token}` (info, send-otp, verify-otp, complete) |
 | `matches.py` | Partidas, presenças, discover |
 | `players.py` | CRUD de jogadores, estatísticas, upload/remoção de avatar (`PUT/DELETE /players/me/avatar`) |
 | `push.py` | Web Push (VAPID) |

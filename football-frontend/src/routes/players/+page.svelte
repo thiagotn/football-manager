@@ -243,6 +243,9 @@
                   {#if p.role === 'admin'}
                     <span class="inline-flex items-center px-1.5 py-px rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>
                   {/if}
+                  {#if p.pending_registration}
+                    <span class="inline-flex items-center px-1.5 py-px rounded text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{$t('players.badge_pending')}</span>
+                  {/if}
                 </p>
                 {#if p.nickname}<p class="text-xs text-gray-400">{p.name}</p>{/if}
               </td>

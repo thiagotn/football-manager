@@ -35,6 +35,7 @@ class Player(Base, UUIDMixin, TimestampMixin):
     )
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    pending_registration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     chat_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     chat_req_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

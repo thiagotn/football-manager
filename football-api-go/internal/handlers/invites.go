@@ -207,6 +207,10 @@ func (h *InviteHandler) getInvite(w http.ResponseWriter, r *http.Request) {
 		renderError(w, apierror.Internal("failed to fetch invite"))
 		return
 	}
+	if inv.Purpose != "" && inv.Purpose != db.InvitePurposeGroupJoin {
+		renderError(w, apierror.NotFound("invite not found"))
+		return
+	}
 	if inv.Used {
 		renderError(w, apierror.Forbidden("invite already used"))
 		return
@@ -232,7 +236,8 @@ func (h *InviteHandler) checkInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inv, err := h.Store.GetInviteByToken(r.Context(), token)
-	if err != nil || inv.Used || time.Now().After(inv.ExpiresAt) {
+	if err != nil || inv.Used || time.Now().After(inv.ExpiresAt) ||
+		(inv.Purpose != "" && inv.Purpose != db.InvitePurposeGroupJoin) {
 		renderError(w, apierror.NotFound("invalid or expired invite"))
 		return
 	}
@@ -250,7 +255,8 @@ func (h *InviteHandler) acceptInvite(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 
 	inv, err := h.Store.GetInviteByToken(r.Context(), token)
-	if err != nil || inv.Used || time.Now().After(inv.ExpiresAt) {
+	if err != nil || inv.Used || time.Now().After(inv.ExpiresAt) ||
+		(inv.Purpose != "" && inv.Purpose != db.InvitePurposeGroupJoin) {
 		renderError(w, apierror.NotFound("invalid or expired invite"))
 		return
 	}

@@ -126,6 +126,10 @@
   let showMatch = $state(false);
   let showEditMatch = $state(false);
   let showInvite = $state(false);
+  let showClaimLink = $state(false);
+  let claimLink = $state('');
+  let claimQr = $state('');
+  let claimTargetName = $state('');
   let showEditGroup = $state(false);
   let showAddMemberByPhone = $state(false);
 
@@ -470,6 +474,24 @@
 
   function copyLink() {
     navigator.clipboard.writeText(inviteLink);
+    toastInfo($t('group.link_copied'));
+  }
+
+  async function generateClaimLink(playerId: string, playerName: string) {
+    try {
+      const inv = await groupsApi.createClaimInvite(groupId, playerId);
+      const base = window.location.origin;
+      claimLink = `${base}/claim/${inv.token}`;
+      claimTargetName = playerName;
+      const QRCode = (await import('qrcode')).default;
+      claimQr = await QRCode.toDataURL(claimLink, { width: 256, margin: 2, color: { dark: '#111827', light: '#ffffff' } });
+      showMemberDetail = false;
+      showClaimLink = true;
+    } catch (e) { toastError(e instanceof ApiError ? e.message : $t('group.claim_link_error')); }
+  }
+
+  function copyClaimLink() {
+    navigator.clipboard.writeText(claimLink);
     toastInfo($t('group.link_copied'));
   }
 
@@ -943,8 +965,11 @@
                   <StarRating rating={m.skill_stars} readonly size={13} />
                 </div>
               {/if}
-              {#if m.role === 'admin' || m.position || isRecentMember(m)}
+              {#if m.role === 'admin' || m.position || isRecentMember(m) || m.player.pending_registration}
                 <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+                  {#if m.player.pending_registration}
+                    <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{$t('group.badge_pending_registration')}</span>
+                  {/if}
                   {#if isRecentMember(m)}
                     <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{$t('group.badge_new')}</span>
                   {/if}
@@ -1304,6 +1329,40 @@
   </div>
 </Modal>
 
+<!-- Claim link modal (cadastro pendente) -->
+<Modal bind:open={showClaimLink} title={$t('group.claim_link_title')}>
+  <div class="space-y-4">
+    {#if claimQr}
+      <div class="flex flex-col items-center gap-2">
+        <div class="bg-white rounded-2xl p-3 shadow-inner border border-gray-100 dark:border-gray-700 inline-block">
+          <img src={claimQr} alt="QR Code do link de cadastro" width="220" height="220" class="block" />
+        </div>
+      </div>
+    {/if}
+
+    <div class="alert-info text-xs">{$t('group.claim_link_hint').replace('{name}', claimTargetName)}</div>
+
+    <div class="flex gap-2">
+      <input class="input font-mono text-xs" readonly value={claimLink} />
+      <button class="btn-primary shrink-0" onclick={copyClaimLink} title="Copiar link"><Copy size={16} /></button>
+    </div>
+
+    <a
+      href="https://wa.me/?text={encodeURIComponent($t('group.claim_whatsapp_message').replace('{group}', group?.name ?? '') + '\n' + claimLink)}"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-secondary w-full flex items-center justify-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.558 4.121 1.533 5.853L.036 23.964l6.252-1.639A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-4.998-1.366l-.358-.213-3.712.974 1.014-3.598-.233-.371A9.818 9.818 0 1 1 12 21.818z"/>
+      </svg>
+      {$t('group.invite_whatsapp')}
+    </a>
+
+    <button class="btn-secondary w-full justify-center" onclick={() => showClaimLink = false}>{$t('group.invite_close')}</button>
+  </div>
+</Modal>
+
 <AddMemberModal bind:open={showAddMemberByPhone} {groupId} onAdded={onMemberAdded} />
 
 <!-- Member detail modal -->
@@ -1362,7 +1421,18 @@
         {/if}
       </div>
 
+      {#if selectedMember.player.pending_registration}
+        <div class="alert-info text-xs">{$t('group.claim_pending_hint')}</div>
+      {/if}
+
       <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
+        {#if selectedMember.player.pending_registration}
+          <button
+            onclick={() => generateClaimLink(selectedMember!.player.id, selectedMember!.player.name)}
+            class="btn-sm btn-ghost flex items-center gap-1 border border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400">
+            <Link size={14} /> {$t('group.claim_link_btn')}
+          </button>
+        {/if}
         <button
           onclick={() => {
             roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.group_nickname ?? '' };

@@ -1128,6 +1128,38 @@ async def test_add_by_phone_new_player_with_name(api_client, mocker):
 
 
 @pytest.mark.asyncio
+async def test_add_by_phone_new_player_sets_pending_registration(api_client, mocker):
+    """Jogador criado pelo admin nasce com pending_registration=True (cadastro temporário)."""
+    group = _make_group()
+    new_player = _make_player("Carlos Silva")
+    group_admin = _make_group_admin_member()
+    sub = _make_subscription("pro")
+    new_member = _make_member_mock(new_player)
+
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get", new=AsyncMock(return_value=group))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_member", new=AsyncMock(return_value=group_admin))
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get_by_whatsapp", new=AsyncMock(return_value=None))
+    mocker.patch("app.api.v1.routers.groups.SubscriptionRepository.get_or_create", new=AsyncMock(return_value=sub))
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.get_non_admin_member_ids", new=AsyncMock(return_value=[]))
+    mock_create = mocker.patch(
+        "app.api.v1.routers.groups.PlayerRepository.create", new=AsyncMock(return_value=new_player)
+    )
+    mocker.patch("app.api.v1.routers.groups.GroupRepository.add_member", new=AsyncMock(return_value=new_member))
+    mocker.patch("app.api.v1.routers.groups.MatchRepository.get_active_matches", new=AsyncMock(return_value=[]))
+    mocker.patch("app.api.v1.routers.groups.FinanceRepository.ensure_member_in_current_period", new=AsyncMock())
+
+    response = await api_client.post(
+        f"/api/v1/groups/{group.id}/members/by-phone",
+        json={"whatsapp": "+5511999990099", "name": "Carlos Silva"},
+    )
+
+    assert response.status_code == 201
+    kwargs = mock_create.call_args.kwargs
+    assert kwargs["pending_registration"] is True
+    assert kwargs["must_change_password"] is True
+
+
+@pytest.mark.asyncio
 async def test_add_by_phone_new_player_without_name_returns_422(api_client, mocker):
     """Jogador novo sem nome → 422."""
     group = _make_group()

@@ -27,6 +27,7 @@ from app.models.player import PlayerRole
 def _make_invite(used: bool = False, expired: bool = False) -> MagicMock:
     inv = MagicMock()
     inv.group_id = uuid4()
+    inv.purpose = "group_join"
     inv.used = used
     inv.expires_at = (
         datetime.now(timezone.utc) - timedelta(hours=1)
@@ -437,6 +438,51 @@ async def test_accept_invite_existing_user_already_member_returns_200(api_client
     # Usuário já é membro: recebe JWT sem adicionar novamente
     assert response.status_code == 200
     assert "access_token" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_accept_invite_matches_existing_player_with_plus_prefix(api_client, mocker):
+    """Regressão: a busca por whatsapp deve preservar o '+' do E.164 (bug re.sub \\D)."""
+    invite = _make_invite()
+    player = _make_player()
+    existing_membership = MagicMock()
+
+    mocker.patch(
+        "app.api.v1.routers.invites.InviteRepository.get_valid_token",
+        new=AsyncMock(return_value=invite),
+    )
+    mock_get = mocker.patch(
+        "app.api.v1.routers.invites.PlayerRepository.get_by_whatsapp",
+        new=AsyncMock(return_value=player),
+    )
+    mocker.patch(
+        "app.api.v1.routers.invites.GroupRepository.get_member",
+        new=AsyncMock(return_value=existing_membership),
+    )
+
+    response = await api_client.post(
+        "/api/v1/invites/tokenvalido/accept",
+        json={"whatsapp": "+55 (11) 99999-0001", "password": "senha123"},
+    )
+
+    assert response.status_code == 200
+    # O lookup deve usar o número em E.164 COM o prefixo '+'
+    mock_get.assert_called_with("+5511999990001")
+
+
+@pytest.mark.asyncio
+async def test_get_invite_claim_token_returns_404(api_client, mocker):
+    """Token de claim (registration_claim) não é reconhecido como convite de grupo."""
+    invite = _make_invite()
+    invite.purpose = "registration_claim"
+    mocker.patch(
+        "app.api.v1.routers.invites.InviteRepository.get_by_token",
+        new=AsyncMock(return_value=invite),
+    )
+
+    response = await api_client.get("/api/v1/invites/tokendeclaim")
+
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio

@@ -30,10 +30,11 @@ type Player struct {
 	Nickname           *string    `json:"nickname"`
 	WhatsApp           string     `json:"whatsapp"`
 	PasswordHash       string     `json:"-"`
-	Role               PlayerRole `json:"role"`
-	Active             bool       `json:"active"`
-	MustChangePassword bool       `json:"must_change_password"`
-	AvatarURL          *string    `json:"avatar_url"`
+	Role                PlayerRole `json:"role"`
+	Active              bool       `json:"active"`
+	MustChangePassword  bool       `json:"must_change_password"`
+	PendingRegistration bool       `json:"pending_registration"`
+	AvatarURL           *string    `json:"avatar_url"`
 	ChatEnabled        bool       `json:"chat_enabled"`
 	ChatReqCount       int32      `json:"-"`
 	ChatReqWindow      *time.Time `json:"-"`
@@ -69,7 +70,7 @@ var ErrNotFound = pgx.ErrNoRows
 // PlayerSelectCols is the column list for SELECT queries on the players table.
 const PlayerSelectCols = `
 	id, name, nickname, whatsapp, password_hash,
-	role, active, must_change_password, avatar_url,
+	role, active, must_change_password, pending_registration, avatar_url,
 	chat_enabled, chat_req_count, chat_req_window,
 	created_at, updated_at`
 
@@ -78,7 +79,7 @@ func ScanPlayer(scanFn func(dest ...any) error) (*Player, error) {
 	var p Player
 	err := scanFn(
 		&p.ID, &p.Name, &p.Nickname, &p.WhatsApp, &p.PasswordHash,
-		&p.Role, &p.Active, &p.MustChangePassword, &p.AvatarURL,
+		&p.Role, &p.Active, &p.MustChangePassword, &p.PendingRegistration, &p.AvatarURL,
 		&p.ChatEnabled, &p.ChatReqCount, &p.ChatReqWindow,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
@@ -102,7 +103,7 @@ type CreatePlayerParams = CreatePlayerArgs
 
 const playerColumns = `
 	id, name, nickname, whatsapp, password_hash,
-	role, active, must_change_password, avatar_url,
+	role, active, must_change_password, pending_registration, avatar_url,
 	chat_enabled, chat_req_count, chat_req_window,
 	created_at, updated_at`
 
@@ -140,19 +141,22 @@ func GetPlayerByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*Play
 
 // CreatePlayerArgs holds parameters for CreatePlayer.
 type CreatePlayerArgs struct {
-	Name         string
-	Nickname     *string
-	WhatsApp     string
-	PasswordHash string
+	Name                string
+	Nickname            *string
+	WhatsApp            string
+	PasswordHash        string
+	MustChangePassword  bool
+	PendingRegistration bool
 }
 
 // CreatePlayer inserts a new player and returns the created record.
 func CreatePlayer(ctx context.Context, pool *pgxpool.Pool, args CreatePlayerArgs) (*Player, error) {
 	row := pool.QueryRow(ctx,
-		`INSERT INTO players (name, nickname, whatsapp, password_hash, role)
-		 VALUES ($1, $2, $3, $4, 'player')
+		`INSERT INTO players (name, nickname, whatsapp, password_hash, role, must_change_password, pending_registration)
+		 VALUES ($1, $2, $3, $4, 'player', $5, $6)
 		 RETURNING`+playerColumns,
 		args.Name, args.Nickname, args.WhatsApp, args.PasswordHash,
+		args.MustChangePassword, args.PendingRegistration,
 	)
 	p, err := scanPlayer(row)
 	if err != nil {
@@ -161,11 +165,24 @@ func CreatePlayer(ctx context.Context, pool *pgxpool.Pool, args CreatePlayerArgs
 	return p, nil
 }
 
-// UpdatePlayerPassword updates the password hash and clears must_change_password.
+// UpdatePlayerPassword updates the password hash and clears the provisional-account flags.
 func UpdatePlayerPassword(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, hash string) error {
 	_, err := pool.Exec(ctx,
-		`UPDATE players SET password_hash = $1, must_change_password = false WHERE id = $2`,
+		`UPDATE players SET password_hash = $1, must_change_password = false, pending_registration = false WHERE id = $2`,
 		hash, id,
+	)
+	return err
+}
+
+// ClaimPlayerRegistration finalizes a pending registration claim: sets the real
+// whatsapp + password and clears the provisional-account flags in one statement.
+func ClaimPlayerRegistration(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, whatsapp, hash string) error {
+	_, err := pool.Exec(ctx,
+		`UPDATE players
+		 SET whatsapp = $1, password_hash = $2,
+		     must_change_password = false, pending_registration = false
+		 WHERE id = $3`,
+		whatsapp, hash, id,
 	)
 	return err
 }
@@ -1038,16 +1055,17 @@ func ListSubscriptions(ctx context.Context, pool *pgxpool.Pool, params ListSubsc
 
 // AdminPlayer row for players list
 type AdminPlayer struct {
-	ID          uuid.UUID
-	Name        string
-	Nickname    *string
-	WhatsApp    string
-	Role        string
-	Active      bool
-	CreatedAt   time.Time
-	AvatarURL   *string
-	Plan        string
-	TotalGroups int
+	ID                  uuid.UUID
+	Name                string
+	Nickname            *string
+	WhatsApp            string
+	Role                string
+	Active              bool
+	CreatedAt           time.Time
+	AvatarURL           *string
+	PendingRegistration bool
+	Plan                string
+	TotalGroups         int
 }
 
 // CountPlayers counts players with optional search
@@ -1071,6 +1089,7 @@ func CountPlayers(ctx context.Context, pool *pgxpool.Pool, search *string) (int,
 func ListPlayers(ctx context.Context, pool *pgxpool.Pool, search *string, limit, offset int) ([]AdminPlayer, error) {
 	baseSelect := `
 		SELECT p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url,
+		       p.pending_registration,
 		       COALESCE(ps.plan, 'free') AS plan,
 		       COUNT(DISTINCT gm.group_id)::INT AS total_groups
 		FROM players p
@@ -1085,11 +1104,11 @@ func ListPlayers(ctx context.Context, pool *pgxpool.Pool, search *string, limit,
 		pat := "%" + *search + "%"
 		rows, err = pool.Query(ctx, baseSelect+
 			` AND (p.name ILIKE $1 OR p.nickname ILIKE $1 OR p.whatsapp LIKE $1)
-			  GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
+			  GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, p.pending_registration, ps.plan
 			  ORDER BY p.created_at DESC LIMIT $2 OFFSET $3`, pat, limit, offset)
 	} else {
 		rows, err = pool.Query(ctx, baseSelect+
-			` GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, ps.plan
+			` GROUP BY p.id, p.name, p.nickname, p.whatsapp, p.role, p.active, p.created_at, p.avatar_url, p.pending_registration, ps.plan
 			  ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
 	}
 
@@ -1101,7 +1120,7 @@ func ListPlayers(ctx context.Context, pool *pgxpool.Pool, search *string, limit,
 	var players []AdminPlayer
 	for rows.Next() {
 		var p AdminPlayer
-		if err := rows.Scan(&p.ID, &p.Name, &p.Nickname, &p.WhatsApp, &p.Role, &p.Active, &p.CreatedAt, &p.AvatarURL, &p.Plan, &p.TotalGroups); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Nickname, &p.WhatsApp, &p.Role, &p.Active, &p.CreatedAt, &p.AvatarURL, &p.PendingRegistration, &p.Plan, &p.TotalGroups); err != nil {
 			return nil, err
 		}
 		players = append(players, p)

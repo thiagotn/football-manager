@@ -143,7 +143,7 @@ export type Player = {
   created_at: string; updated_at: string;
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string; avatar_url: string | null };
-export type PlayerMemberView = PlayerPublic & { whatsapp: string };
+export type PlayerMemberView = PlayerPublic & { whatsapp: string; pending_registration?: boolean };
 export type TeamSlot = { color: string | null; name: string | null };
 export type Group = { id: string; name: string; description: string | null; slug: string; per_match_amount: number | null; monthly_amount: number | null; recurrence_enabled: boolean; is_public: boolean; voting_enabled: boolean; vote_open_delay_minutes: number; vote_duration_hours: number; timezone: string; team_slots: TeamSlot[] | null; created_at: string; updated_at: string };
 export type GroupMember = { id: string; player: PlayerMemberView; role: 'admin' | 'member'; skill_stars: number | null; position: string | null; group_nickname: string | null; created_at: string };
@@ -311,6 +311,10 @@ export const groups = {
   },
   addMemberByPhone: (groupId: string, data: AddMemberByPhoneRequest) =>
     post<AddMemberByPhoneResponse>(`/groups/${groupId}/members/by-phone`, data),
+  createClaimInvite: (groupId: string, playerId: string) =>
+    post<{ id: string; token: string; expires_at: string }>(
+      `/groups/${groupId}/members/${playerId}/claim-invite`, {}
+    ),
 };
 
 // ── Matches ───────────────────────────────────────────────────
@@ -534,6 +538,7 @@ export type AdminPlayerItem = {
   plan: string;
   total_groups: number;
   avatar_url: string | null;
+  pending_registration?: boolean;
 };
 
 export type AdminPlayerListResponse = {
@@ -729,6 +734,18 @@ export const invites = {
     get<{ exists: boolean; first_name: string | null }>(`/invites/${token}/check?whatsapp=${encodeURIComponent(whatsapp)}`),
   accept: (token: string, data: { name?: string; nickname?: string; whatsapp: string; password: string }) =>
     post<{ access_token: string; player_id: string; name: string; role: string }>(`/invites/${token}/accept`, data),
+};
+
+// ── Claims (cadastro pendente) ────────────────────────────────
+export const claims = {
+  getInfo: (token: string) =>
+    get<{ valid: boolean; player_first_name: string; group_name: string; expires_at: string }>(`/claims/${token}`),
+  sendOtp: (token: string, whatsapp: string) =>
+    post<{ status: string }>(`/claims/${token}/send-otp`, { whatsapp }),
+  verifyOtp: (token: string, whatsapp: string, otp_code: string) =>
+    post<{ otp_token: string }>(`/claims/${token}/verify-otp`, { whatsapp, otp_code }),
+  complete: (token: string, data: { whatsapp: string; otp_token: string; password: string }) =>
+    post<AuthTokenResponse>(`/claims/${token}/complete`, data),
 };
 
 // ── Android Beta ───────────────────────────────────────────────

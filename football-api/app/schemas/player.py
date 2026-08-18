@@ -77,6 +77,7 @@ class PlayerResponse(BaseModel):
     role: PlayerRole
     active: bool
     must_change_password: bool
+    pending_registration: bool = False
     avatar_url: str | None = None
     chat_enabled: bool = False
     created_at: datetime
@@ -108,3 +109,4 @@ class PlayerMemberView(BaseModel):
     role: PlayerRole
     whatsapp: str
     avatar_url: str | None = None
+    pending_registration: bool = False

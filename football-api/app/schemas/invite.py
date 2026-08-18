@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.player import normalize_whatsapp
 
@@ -33,6 +33,51 @@ class InviteCheckRequest(BaseModel):
 class InviteCheckResponse(BaseModel):
     exists: bool
     first_name: str | None = None
+
+
+class ClaimInviteResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: uuid.UUID
+    token: str
+    expires_at: datetime
+
+
+class ClaimInfoResponse(BaseModel):
+    valid: bool
+    player_first_name: str
+    group_name: str
+    expires_at: datetime
+
+
+class ClaimSendOtpRequest(BaseModel):
+    whatsapp: str
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
+
+
+class ClaimVerifyOtpRequest(BaseModel):
+    whatsapp: str
+    otp_code: str
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
+
+
+class ClaimCompleteRequest(BaseModel):
+    whatsapp: str
+    otp_token: str
+    password: str = Field(..., min_length=6)
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validate_whatsapp(cls, v: str) -> str:
+        return normalize_whatsapp(v)
 
 
 class InviteAcceptRequest(BaseModel):
