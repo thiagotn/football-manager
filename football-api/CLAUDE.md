@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `048_pending_registration_claim_invites.sql`.
+A última migration criada é `049_pending_registration_br_short_numbers.sql`.
 
-**A próxima deve ser numerada `049_`.**
+**A próxima deve ser numerada `050_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 
