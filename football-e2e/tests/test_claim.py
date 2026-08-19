@@ -68,7 +68,10 @@ def claim_setup(admin_storage_state):
         headers=headers,
         timeout=10,
     )
-    claim.raise_for_status()
+    assert claim.status_code == 201, (
+        f"claim-invite falhou: {claim.status_code} {claim.text} "
+        f"(group={group_id} player={player_id})"
+    )
     claim_token = claim.json()["token"]
 
     yield {

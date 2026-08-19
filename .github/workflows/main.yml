@@ -247,6 +247,11 @@ jobs:
             --output=test-results/ \
             --tb=short
 
+      - name: Dump container logs on failure
+        if: failure()
+        working-directory: football-api
+        run: docker compose logs --tail=300 api api-go
+
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4
