@@ -48,6 +48,29 @@ services:
     networks:
       - app-net
 
+  # ── API Go (v2) — consumida pelo frontend, como em prod ──────
+  api-go:
+    build:
+      context: ../football-api-go
+      dockerfile: Dockerfile
+      target: production
+    container_name: football-api-go
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: postgres://postgres:football123@postgres:5432/football?sslmode=disable
+    ports:
+      - "8001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # a api v1 aplica as migrations compartilhadas no startup
+      api:
+        condition: service_started
+    networks:
+      - app-net
+
   # ── Frontend SvelteKit ────────────────────────────────────────
   frontend:
     build:
@@ -65,6 +88,7 @@ services:
       - "3000:3000"
     depends_on:
       - api
+      - api-go
     networks:
       - app-net
 

@@ -208,6 +208,12 @@ jobs:
           timeout 90 bash -c 'until curl -sf http://localhost:8000/health > /dev/null; do sleep 3; done'
           echo "API pronta ✓"
 
+      - name: Wait for API Go (v2) to be ready
+        run: |
+          echo "Aguardando API Go..."
+          timeout 90 bash -c 'until curl -sf http://localhost:8001/api/v2/health > /dev/null; do sleep 3; done'
+          echo "API Go pronta ✓"
+
       - name: Wait for frontend to be ready
         run: |
           echo "Aguardando Frontend..."
