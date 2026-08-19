@@ -45,6 +45,12 @@ type teamsResp struct {
 	Reserves []teamPlayerResp `json:"reserves"`
 }
 
+// ── Request types ─────────────────────────────────────────────────────────────
+
+type drawTeamsRequest struct {
+	Strategy *string `json:"strategy"`
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 func toTeamPlayerResp(p db.PlayerForDraw) teamPlayerResp {
@@ -86,6 +92,23 @@ func (h *teamHandler) DrawTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Body is optional for backwards compatibility (older clients send none).
+	strategy := "balanced"
+	if r.ContentLength > 0 {
+		var body drawTeamsRequest
+		if err := decodeJSON(r, &body); err != nil {
+			renderError(w, err)
+			return
+		}
+		if body.Strategy != nil {
+			strategy = *body.Strategy
+		}
+	}
+	if strategy != "balanced" && strategy != "simple" {
+		renderError(w, apierror.Unprocessable("strategy must be 'balanced' or 'simple'"))
+		return
+	}
+
 	confirmed, err := db.GetConfirmedPlayersForMatch(r.Context(), h.pool, matchID)
 	if err != nil {
 		renderError(w, err)
@@ -99,7 +122,7 @@ func (h *teamHandler) DrawTeams(w http.ResponseWriter, r *http.Request) {
 		slots = group.TeamSlots
 	}
 
-	teamResults, reserves, err := services.BuildTeams(confirmed, *match.PlayersPerTeam, slots)
+	teamResults, reserves, err := services.BuildTeams(confirmed, *match.PlayersPerTeam, slots, strategy)
 	if err != nil {
 		renderError(w, apierror.Unprocessable(err.Error()))
 		return

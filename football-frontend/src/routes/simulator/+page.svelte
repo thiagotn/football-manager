@@ -9,7 +9,7 @@
   import { authStore } from '$lib/stores/auth';
 
   let isLoggedIn = $derived(!!$authStore.player);
-  import { buildTeams, POS_ABBR, POS_COLOR_CLASSES, sortPlayersByPosition, type DrawPlayer, type TeamResult, type Position } from '$lib/team-builder';
+  import { buildTeams, POS_ABBR, POS_COLOR_CLASSES, sortPlayersByPosition, type DrawPlayer, type DrawStrategy, type TeamResult, type Position } from '$lib/team-builder';
   import { seedWithIds, allianceSeedWithIds } from '$lib/draw-seed';
   import { shuffledNames } from '$lib/team-names';
 
@@ -28,6 +28,7 @@
   const _initial = loadPlayers();
   let players        = $state<DrawPlayer[]>(_initial);
   let playersPerTeam = $state(5);
+  let strategy       = $state<DrawStrategy>('balanced');
   let result         = $state<TeamResult | null>(null);
   let errors         = $state<string[]>([]);
   let warnings       = $state<string[]>([]);
@@ -83,7 +84,7 @@
 
   function sort() {
     if (!validate()) return;
-    result = buildTeams(activePlayers, playersPerTeam, numTeams, shuffledNames());
+    result = buildTeams(activePlayers, playersPerTeam, numTeams, shuffledNames(), strategy);
   }
 
   function generateSeed() {
@@ -324,6 +325,32 @@
                   + 1 GK = {teamSize} por time
                 </span>
               </div>
+            </div>
+
+            <!-- Estratégia do sorteio -->
+            <div>
+              <p class="text-xs text-white/60 mb-1">
+                {$t('draw.strategy_label')}
+              </p>
+              <div class="grid grid-cols-2 gap-1 bg-black/40 rounded-lg p-1">
+                <button
+                  type="button"
+                  onclick={() => strategy = 'balanced'}
+                  class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {strategy === 'balanced'
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/50 hover:text-white/80'}"
+                >{$t('draw.strategy_balanced')}</button>
+                <button
+                  type="button"
+                  onclick={() => strategy = 'simple'}
+                  class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {strategy === 'simple'
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/50 hover:text-white/80'}"
+                >{$t('draw.strategy_simple')}</button>
+              </div>
+              <p class="text-[11px] text-white/40 mt-1">
+                {strategy === 'balanced' ? $t('draw.strategy_balanced_desc') : $t('draw.strategy_simple_desc')}
+              </p>
             </div>
 
             <!-- Resumo do sorteio -->

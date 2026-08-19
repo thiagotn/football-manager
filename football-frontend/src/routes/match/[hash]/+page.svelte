@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { matches as matchesApi, votes as votesApi, teams as teamsApi, groups as groupsApi, matchStats, ApiError } from '$lib/api';
+  import { matches as matchesApi, votes as votesApi, teams as teamsApi, groups as groupsApi, matchStats, ApiError, type DrawStrategy } from '$lib/api';
   import type { MatchDetail, Attendance, VoteStatusResponse, VoteResultsResponse, TeamsResponse, WaitlistEntry, MatchPlayerStatsResponse } from '$lib/api';
   import { currentPlayer, isLoggedIn, isAdmin } from '$lib/stores/auth';
 
@@ -14,6 +14,7 @@
   import VoteForm from '$lib/components/VoteForm.svelte';
   import VoteResults from '$lib/components/VoteResults.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
+  import TeamDrawStrategyModal from '$lib/components/TeamDrawStrategyModal.svelte';
   import { relativeDate, playerDisplayName, nativeShare } from '$lib/utils.js';
   import { t, locale } from '$lib/i18n';
   import { POS_ABBR, POS_COLOR_CLASSES, type Position } from '$lib/team-builder';
@@ -174,12 +175,13 @@
       .finally(() => { teamsLoading = false; });
   });
 
-  async function generateTeams() {
+  async function generateTeams(strategy: DrawStrategy = 'balanced') {
     if (!match) return;
     generatingTeams = true;
     try {
-      const result = await teamsApi.generate(match.id);
+      const result = await teamsApi.generate(match.id, strategy);
       teamsData = result;
+      confirmTeamsOpen = false;
       toastSuccess($t('match.teams_generated'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'Erro ao montar times');
@@ -567,7 +569,7 @@
               </a>
             {:else}
               <button
-                onclick={() => generateTeams()}
+                onclick={() => confirmTeamsOpen = true}
                 disabled={generatingTeams || !match.players_per_team || match.confirmed_count < (match.players_per_team + 1) * 2}
                 class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-50">
                 <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">⚽ {$t('match.teams_short')}</p>
@@ -934,11 +936,10 @@
   />
 {/if}
 
-<ConfirmDialog
+<TeamDrawStrategyModal
   bind:open={confirmTeamsOpen}
-  message={$t('match.teams_confirm')}
-  confirmLabel={$t('match.teams_confirm_label')}
-  danger={false}
+  mode="build"
+  loading={generatingTeams}
   onConfirm={generateTeams}
 />
 

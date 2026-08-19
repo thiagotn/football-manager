@@ -88,6 +88,24 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 
 	teamBody := res.Body
 	assert.Contains(t, teamBody, "teams")
+
+	// Redraw with explicit strategies — body is optional and validated
+	res = apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, map[string]any{
+		"strategy": "simple",
+	})
+	assert.Equal(t, http.StatusCreated, res.Code)
+	assert.Contains(t, res.Body, "teams")
+
+	res = apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, map[string]any{
+		"strategy": "balanced",
+	})
+	assert.Equal(t, http.StatusCreated, res.Code)
+
+	// Unknown strategy is rejected
+	res = apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, map[string]any{
+		"strategy": "random",
+	})
+	assert.Equal(t, http.StatusUnprocessableEntity, res.Code)
 }
 
 func TestTeams_GetTeams_NoAuth(t *testing.T) {

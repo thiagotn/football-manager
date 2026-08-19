@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 
@@ -39,3 +41,21 @@ async def test_draw_teams_posts_to_correct_endpoint(mock_api):
     )
     await draw_teams("m1")
     assert mock_api.calls[0].request.method == "POST"
+
+
+@pytest.mark.asyncio
+async def test_draw_teams_sends_default_strategy(mock_api):
+    mock_api.post("/matches/m1/teams").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    await draw_teams("m1")
+    assert json.loads(mock_api.calls[0].request.content) == {"strategy": "balanced"}
+
+
+@pytest.mark.asyncio
+async def test_draw_teams_sends_simple_strategy(mock_api):
+    mock_api.post("/matches/m1/teams").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    await draw_teams("m1", strategy="simple")
+    assert json.loads(mock_api.calls[0].request.content) == {"strategy": "simple"}

@@ -109,6 +109,7 @@ def build_teams(
     confirmed: list[dict],
     players_per_team: int,
     team_slots: list[dict] | None = None,
+    strategy: str = "balanced",
 ) -> tuple[list[dict], list[dict]]:
     """
     Recebe lista de confirmados com player_id, skill_stars, position.
@@ -117,19 +118,26 @@ def build_teams(
     players_per_team = jogadores de LINHA por time (exclui goleiro).
     Tamanho total de cada time = players_per_team + 1 (linha + goleiro).
 
-    Algoritmo — distribuição por posição com sorteio em faixas de estrelas
-    seguida de otimização greedy:
+    strategy:
+    - "balanced" (default): distribuição por posição com sorteio em faixas
+      de estrelas seguida de otimização greedy.
+    - "simple": ignora a cota por posição — todos os jogadores de linha
+      formam um pool único distribuído em faixas de estrelas. Goleiros
+      seguem a mesma regra do balanced (1 por time).
+
+    Algoritmo:
     1. Separa jogadores por posição.
     2. Goleiros: sorteia aleatoriamente qual time recebe cada um (1 por time).
-    3. Para cada posição de linha (lat, zag, mei, ata):
+    3. [balanced apenas] Para cada posição de linha (lat, zag, mei, ata):
        - Ordena por estrelas desc.
        - Distribui em rodadas de n_times jogadores por vez ("faixas").
        - Dentro de cada faixa embaralha aleatoriamente antes de atribuir
          um jogador a cada time — jogadores de nível similar vão para times
          diferentes, mas qual time recebe qual é sorteado.
-    4. A soma de faixas por posição é limitada ao campo disponível no time
-       (para evitar times maiores que team_size).
+    4. [balanced apenas] A soma de faixas por posição é limitada ao campo
+       disponível no time (para evitar times maiores que team_size).
     5. Excedentes preenchem os slots restantes, distribuídos da mesma forma.
+       No "simple", todos os jogadores de linha entram por aqui.
     6. Jogadores além da capacidade total viram reservas.
     7. Fase de otimização: greedy swap entre times para minimizar a diferença
        de skill_total entre o time mais forte e o mais fraco.
@@ -183,30 +191,35 @@ def build_teams(
         times[team_idx].append(gk)
     overflow.extend(gks[n_times:])
 
-    # Passo 2: Calcula per_team por posição, limitado ao campo disponível
-    #
-    # A soma de todos os per_team não pode ultrapassar field_slots, senão os
-    # times ficam maiores que team_size. Reduz iterativamente a posição mais
-    # abundante até caber.
-    field_slots = team_size - 1
-    positions = ["lat", "zag", "mei", "ata"]
+    if strategy == "balanced":
+        # Passo 2: Calcula per_team por posição, limitado ao campo disponível
+        #
+        # A soma de todos os per_team não pode ultrapassar field_slots, senão os
+        # times ficam maiores que team_size. Reduz iterativamente a posição mais
+        # abundante até caber.
+        field_slots = team_size - 1
+        positions = ["lat", "zag", "mei", "ata"]
 
-    pos_per_team: dict[str, int] = {
-        pos: len(by_pos.get(pos, [])) // n_times
-        for pos in positions
-    }
+        pos_per_team: dict[str, int] = {
+            pos: len(by_pos.get(pos, [])) // n_times
+            for pos in positions
+        }
 
-    while sum(pos_per_team.values()) > field_slots:
-        max_pos = max(
-            (p for p in positions if pos_per_team[p] > 0),
-            key=lambda p: pos_per_team[p],
-        )
-        pos_per_team[max_pos] -= 1
+        while sum(pos_per_team.values()) > field_slots:
+            max_pos = max(
+                (p for p in positions if pos_per_team[p] > 0),
+                key=lambda p: pos_per_team[p],
+            )
+            pos_per_team[max_pos] -= 1
 
-    # Passo 3: Distribui cada posição por faixas embaralhadas
-    for pos in positions:
-        group = by_pos.get(pos, [])
-        assign_tiers(group, pos_per_team[pos])
+        # Passo 3: Distribui cada posição por faixas embaralhadas
+        for pos in positions:
+            group = by_pos.get(pos, [])
+            assign_tiers(group, pos_per_team[pos])
+    else:
+        # simple: jogadores de linha viram pool único; o passo 4 (overflow)
+        # já distribui por faixas de estrelas respeitando os slots restantes.
+        overflow.extend(p for grp in by_pos.values() for p in grp)
 
     # Passo 4: Overflow preenche slots restantes
     overflow.sort(key=lambda p: p["skill_stars"], reverse=True)

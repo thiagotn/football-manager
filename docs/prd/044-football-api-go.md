@@ -1100,6 +1100,16 @@ para paridade plena (atualizar conforme avança):
   paridade com a v1 (`group_stats_repo.py`): pontos de votação, flops e minutos jogados por
   jogador em partidas encerradas com votação encerrada, com `period=annual|monthly` e `month`
   (`db.GetGroupStats` + handler `groupStats`).
+- [x] **Estratégia de sorteio balanced/simple** (2026-08-19): `POST /matches/{id}/teams` aceita
+  body opcional `{"strategy": "balanced"|"simple"}` (default `balanced`, retrocompatível — sem
+  body ou `{}` continua funcionando; valor inválido → 422). `simple` remove a cota por posição
+  (jogadores de linha viram pool único distribuído por faixas de estrelas + greedy swap);
+  goleiros inalterados (1 por time). Espelhado em v1
+  (`football-api/app/services/team_builder.py` + `routers/teams.py`) e v2
+  (`football-api-go/internal/services/team_builder.go` + `handlers/teams.go`). MCP
+  (`draw_teams`) e frontend (modal `TeamDrawStrategyModal` + simulador) expõem a escolha.
+  Decisão: a estratégia usada **não é persistida** (sem coluna nova; o re-sorteio sempre
+  reabre o modal de escolha).
 - [ ] **Avatar — rate limit**: v1 limita uploads via tabela `avatar_upload_logs`; v2 ainda não.
 - [ ] **Avatar — response**: v1 retorna o `PlayerResponse` completo; v2 retorna só `{avatar_url}`.
 - [ ] **Documentação**: anotações `swaggo/swag` + `openapi.yaml` atualizado + Mintlify Cloud

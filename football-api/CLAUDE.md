@@ -69,7 +69,7 @@ A última migration criada é `049_pending_registration_br_short_numbers.sql`.
 | `push.py` | `send_push(db, player_id, title, body, url)` + `send_push_to_group_admins(db, group_id, *, title, body, url, exclude=None)` — fanout para coordenação cross-admin. |
 | `recurrence.py` | Geração de próxima partida recorrente |
 | `storage.py` | Upload/remoção de avatares no Supabase Storage |
-| `team_builder.py` | Algoritmo snake-draft de times equilibrados |
+| `team_builder.py` | Algoritmo snake-draft de times equilibrados. Duas estratégias: `balanced` (default — cota por posição + faixas de estrelas) e `simple` (sem cota por posição; só estrelas, goleiros 1 por time) |
 | `twilio_verify.py` | `send_otp(whatsapp)`, `check_otp(whatsapp, code)` — E.164 |
 | `vote_reminder.py` | `run_vote_reminder_job()` — cron a cada 5 min; envia push para confirmados-que-não-votaram quando faltam ≤ 30 min para fechar a votação. Idempotente via `matches.vote_reminder_sent_at`. |
 | `voting.py` | `voting_status(match)`, `voting_window(match)` — cálculo lazy |

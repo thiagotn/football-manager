@@ -86,6 +86,7 @@
 | `WaitlistModal.svelte` | Modal de candidatura à lista de espera |
 | `WaitlistPanel.svelte` | Painel admin para aprovar/rejeitar candidatos |
 | `MCPTokenCreateModal.svelte` | Modal dois passos: form de criação de token MCP + exibição única do token gerado. Props: `bind:open`, `onCreated`, `onClose` |
+| `TeamDrawStrategyModal.svelte` | Modal de escolha da estratégia de sorteio (`balanced`/`simple`) antes de montar/remontar times. Props: `bind:open`, `mode` (`'build'`/`'rebuild'`), `loading`, `onConfirm(strategy)` |
 
 ---
 
@@ -105,7 +106,7 @@
 
 | Arquivo | Uso |
 |---------|-----|
-| `team-builder.ts` | Algoritmo de sorteio de times (TypeScript puro, sem API). Tipos: `DrawPlayer`, `Team`, `TeamResult`. Constantes: `POS_ABBR`, `POS_COLOR_CLASSES`, `TEAM_COLORS`. |
+| `team-builder.ts` | Algoritmo de sorteio de times (TypeScript puro, sem API). Suporta estratégias `balanced` (default) e `simple` (sem cota por posição). Tipos: `DrawPlayer`, `DrawStrategy`, `Team`, `TeamResult`. Constantes: `POS_ABBR`, `POS_COLOR_CLASSES`, `TEAM_COLORS`. |
 | `draw-seed.ts` | 30 jogadores de seed para o simulador `/draw`. Exporta `seedWithIds()`. |
 | `team-names.ts` | Banco de ≥ 40 nomes de times estilo várzea. Exporta `TEAM_NAMES` e `shuffledNames()`. |
 

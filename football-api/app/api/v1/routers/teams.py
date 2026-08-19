@@ -9,7 +9,7 @@ from app.db.repositories.match_repo import MatchRepository
 from app.db.repositories.team_repo import TeamRepository
 from app.models.group import GroupMemberRole
 from app.models.player import PlayerRole
-from app.schemas.team import TeamItem, TeamPlayerItem, TeamsResponse
+from app.schemas.team import GenerateTeamsRequest, TeamItem, TeamPlayerItem, TeamsResponse
 from app.services.team_builder import build_teams
 
 router = APIRouter(tags=["teams"])
@@ -49,7 +49,12 @@ def _serialize_teams(teams_db, group_member_skills: dict[uuid.UUID, dict]) -> Te
 
 
 @router.post("/matches/{match_id}/teams", response_model=TeamsResponse, status_code=201)
-async def generate_teams(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
+async def generate_teams(
+    match_id: uuid.UUID,
+    db: DB,
+    current: CurrentPlayer,
+    body: GenerateTeamsRequest | None = None,
+):
     """Gera (ou regera) os times sorteados para a partida. Apenas admin do grupo."""
     m_repo = MatchRepository(db)
     match = await m_repo.get_with_attendances(match_id)
@@ -77,7 +82,10 @@ async def generate_teams(match_id: uuid.UUID, db: DB, current: CurrentPlayer):
 
     group = await g_repo.get(match.group_id)
     team_slots = group.team_slots if group else None
-    teams_data, reserves_data = build_teams(confirmed, match.players_per_team, team_slots=team_slots)
+    strategy = body.strategy if body else "balanced"
+    teams_data, reserves_data = build_teams(
+        confirmed, match.players_per_team, team_slots=team_slots, strategy=strategy
+    )
 
     # Sobrescreve times anteriores
     t_repo = TeamRepository(db)

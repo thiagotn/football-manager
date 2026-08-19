@@ -178,6 +178,116 @@ async def test_generate_teams_success_returns_201(admin_client, mocker):
     assert response.status_code == 201
 
 
+# ── POST /matches/{id}/teams — estratégia de sorteio ─────────────────────────
+
+
+def _mock_generate_success(mocker, match, confirmed):
+    """Mocks compartilhados para o caminho feliz do POST de times."""
+    teams_data = [
+        {"name": "Time 1", "color": "red", "position": 1, "players": confirmed[:5]},
+        {"name": "Time 2", "color": "blue", "position": 2, "players": confirmed[5:]},
+    ]
+    mocker.patch(
+        "app.api.v1.routers.teams.MatchRepository.get_with_attendances",
+        new=AsyncMock(return_value=match),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.GroupRepository.get_confirmed_players_with_skills",
+        new=AsyncMock(return_value=confirmed),
+    )
+    build_mock = mocker.patch(
+        "app.api.v1.routers.teams.build_teams",
+        return_value=(teams_data, []),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.delete_by_match",
+        new=AsyncMock(return_value=None),
+    )
+    created_team = MagicMock()
+    created_team.id = uuid4()
+    created_team.name = "Time 1"
+    created_team.color = "red"
+    created_team.position = 1
+    created_team.players = []
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.create_team",
+        new=AsyncMock(return_value=created_team),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.add_player",
+        new=AsyncMock(return_value=None),
+    )
+    mocker.patch(
+        "app.api.v1.routers.teams.TeamRepository.get_by_match",
+        new=AsyncMock(return_value=[created_team]),
+    )
+    return build_mock
+
+
+def _confirmed_10() -> list[dict]:
+    return [
+        {
+            "player_id": uuid4(),
+            "name": f"Jogador {i}",
+            "nickname": None,
+            "skill_stars": 3,
+            "position": "gk" if (i == 0 or i == 5) else "mei",
+        }
+        for i in range(10)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_generate_teams_simple_strategy_returns_201(admin_client, mocker):
+    """Body {"strategy": "simple"} é aceito e repassado ao builder."""
+    match = _make_match(players_per_team=4)
+    build_mock = _mock_generate_success(mocker, match, _confirmed_10())
+
+    response = await admin_client.post(
+        f"/api/v1/matches/{uuid4()}/teams", json={"strategy": "simple"}
+    )
+
+    assert response.status_code == 201
+    assert build_mock.call_args.kwargs["strategy"] == "simple"
+
+
+@pytest.mark.asyncio
+async def test_generate_teams_empty_body_defaults_to_balanced(admin_client, mocker):
+    """Body {} continua funcionando com estratégia default balanced."""
+    match = _make_match(players_per_team=4)
+    build_mock = _mock_generate_success(mocker, match, _confirmed_10())
+
+    response = await admin_client.post(f"/api/v1/matches/{uuid4()}/teams", json={})
+
+    assert response.status_code == 201
+    assert build_mock.call_args.kwargs["strategy"] == "balanced"
+
+
+@pytest.mark.asyncio
+async def test_generate_teams_no_body_defaults_to_balanced(admin_client, mocker):
+    """POST sem body algum (clientes antigos) continua funcionando."""
+    match = _make_match(players_per_team=4)
+    build_mock = _mock_generate_success(mocker, match, _confirmed_10())
+
+    response = await admin_client.post(f"/api/v1/matches/{uuid4()}/teams")
+
+    assert response.status_code == 201
+    assert build_mock.call_args.kwargs["strategy"] == "balanced"
+
+
+@pytest.mark.asyncio
+async def test_generate_teams_invalid_strategy_returns_422(admin_client, mocker):
+    """Estratégia desconhecida é rejeitada pela validação do schema."""
+    match = _make_match(players_per_team=4)
+    _mock_generate_success(mocker, match, _confirmed_10())
+
+    response = await admin_client.post(
+        f"/api/v1/matches/{uuid4()}/teams", json={"strategy": "aleatorio"}
+    )
+
+    assert response.status_code == 422
+
+
 # ── GET /matches/{id}/teams — happy path ─────────────────────────────────────
 
 

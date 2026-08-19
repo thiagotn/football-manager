@@ -109,7 +109,7 @@ football-api-go/
 │   │   ├── groups.go           # Grupos, membros, skill, lista de espera
 │   │   ├── matches.go          # Partidas, presenças, discover, stats
 │   │   ├── players.go          # Jogadores, avatar (Cloudflare R2)
-│   │   ├── teams.go            # Sorteio de times (snake-draft)
+│   │   ├── teams.go            # Sorteio de times (snake-draft; estratégias balanced/simple)
 │   │   ├── votes.go            # Votação pós-partida
 │   │   ├── finance.go          # Controle financeiro por grupo
 │   │   ├── invites.go          # Convites por link

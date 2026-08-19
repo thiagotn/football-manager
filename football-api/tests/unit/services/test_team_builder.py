@@ -386,3 +386,77 @@ def test_team_slots_name_only_no_color_uses_default_color():
     assert teams[0]["name"] == "Os Brabos"
     assert teams[0]["color"] in TEAM_COLORS
     assert teams[1]["name"] == "Guerreiros"
+
+
+# ── Estratégia "simple" ───────────────────────────────────────────────────────
+
+
+def test_simple_goalkeeper_one_per_team():
+    """simple: cada time continua com exatamente 1 goleiro."""
+    players = make_players(6, position="mei")
+    players[0]["position"] = "gk"
+    players[1]["position"] = "gk"
+    teams, _ = build_teams(players, players_per_team=2, strategy="simple")
+    for team in teams:
+        gks = [p for p in team["players"] if p["position"] == "gk"]
+        assert len(gks) == 1
+
+
+def test_simple_excess_goalkeeper_never_doubles_up():
+    """simple: 3 GKs para 2 times → nenhum time fica com 2 goleiros."""
+    players = make_players(8, position="mei")
+    players[0]["position"] = "gk"
+    players[1]["position"] = "gk"
+    players[2]["position"] = "gk"
+    teams, reserves = build_teams(players, players_per_team=3, strategy="simple")
+    for team in teams:
+        gks = [p for p in team["players"] if p["position"] == "gk"]
+        assert len(gks) <= 1
+    assert sum(len(t["players"]) for t in teams) + len(reserves) == 8
+
+
+def test_simple_team_sizes_and_conservation():
+    """simple: tamanhos de times e conservação de jogadores iguais ao balanced."""
+    players = (
+        make_players(3, position="gk")
+        + make_players(5, position="lat")
+        + make_players(11, position="zag")
+        + make_players(16, position="mei")
+        + make_players(4, position="ata")
+    )
+    teams, reserves = build_teams(players, players_per_team=9, strategy="simple")
+    assert len(teams) == 4
+    assert len(reserves) == 0
+    sizes = sorted(len(t["players"]) for t in teams)
+    assert sizes == [9, 10, 10, 10]
+
+
+def test_simple_ignores_position_quota():
+    """
+    simple: roster extremo (só atacantes de linha) distribui normalmente —
+    no balanced a cota limitaria por posição; no simple todos entram no pool.
+    """
+    players = make_players(2, position="gk") + make_players(6, position="ata")
+    teams, reserves = build_teams(players, players_per_team=3, strategy="simple")
+    assert len(teams) == 2
+    assert sum(len(t["players"]) for t in teams) + len(reserves) == 8
+    for team in teams:
+        assert len(team["players"]) == 4
+
+
+def test_simple_balances_skill_totals():
+    """simple: greedy swap mantém diferença de skill_total entre times ≤ 1 quando possível."""
+    players = [make_player(skill=s) for s in [5, 5, 4, 4, 3, 3, 2, 2]]
+    players[0]["position"] = "gk"
+    players[1]["position"] = "gk"
+    teams, _ = build_teams(players, players_per_team=3, strategy="simple")
+    totals = [sum(p["skill_stars"] for p in t["players"]) for t in teams]
+    assert max(totals) - min(totals) <= 1
+
+
+def test_default_strategy_is_balanced():
+    """Chamada sem strategy continua funcionando (default balanced)."""
+    players = make_players(8)
+    teams, reserves = build_teams(players, players_per_team=3)
+    assert len(teams) == 2
+    assert len(reserves) == 0

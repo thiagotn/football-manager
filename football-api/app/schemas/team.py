@@ -1,6 +1,13 @@
 import uuid
+from typing import Literal
 
 from pydantic import BaseModel
+
+DrawStrategy = Literal["balanced", "simple"]
+
+
+class GenerateTeamsRequest(BaseModel):
+    strategy: DrawStrategy = "balanced"
 
 
 class TeamPlayerItem(BaseModel):

@@ -156,7 +156,10 @@ func optimizeTeams(teams [][]db.PlayerForDraw) {
 // confirmed: slice of confirmed players with position and skill_stars.
 // playersPerTeam: field players per team (GK not counted).
 // teamSlots: optional custom name/color configuration from the group.
-func BuildTeams(confirmed []db.PlayerForDraw, playersPerTeam int, teamSlots []db.TeamSlot) ([]TeamResult, []db.PlayerForDraw, error) {
+// strategy: "balanced" (default — per-position quota + skill tiers) or
+// "simple" (no position quota; field players form a single skill-tiered pool.
+// Goalkeepers are handled the same way in both: one per team).
+func BuildTeams(confirmed []db.PlayerForDraw, playersPerTeam int, teamSlots []db.TeamSlot, strategy string) ([]TeamResult, []db.PlayerForDraw, error) {
 	teamSize := playersPerTeam + 1
 	nTeams := int(math.Ceil(float64(len(confirmed)) / float64(teamSize)))
 	if nTeams < 2 {
@@ -231,37 +234,45 @@ func BuildTeams(confirmed []db.PlayerForDraw, playersPerTeam int, teamSlots []db
 		teams[ti] = append(teams[ti], gk)
 	}
 
-	// Step 2: per-position allocation
-	fieldSlots := teamSize - 1
-	positions := []string{"lat", "zag", "mei", "ata"}
-	posPerTeam := make(map[string]int, len(positions))
-	for _, pos := range positions {
-		if g := byPos[pos]; len(g) > 0 {
-			posPerTeam[pos] = len(g) / nTeams
-		}
-	}
-	for {
-		total := 0
-		for _, v := range posPerTeam {
-			total += v
-		}
-		if total <= fieldSlots {
-			break
-		}
-		maxPos := ""
-		maxVal := 0
+	if strategy != "simple" {
+		// Step 2: per-position allocation
+		fieldSlots := teamSize - 1
+		positions := []string{"lat", "zag", "mei", "ata"}
+		posPerTeam := make(map[string]int, len(positions))
 		for _, pos := range positions {
-			if posPerTeam[pos] > maxVal {
-				maxVal = posPerTeam[pos]
-				maxPos = pos
+			if g := byPos[pos]; len(g) > 0 {
+				posPerTeam[pos] = len(g) / nTeams
 			}
 		}
-		posPerTeam[maxPos]--
-	}
+		for {
+			total := 0
+			for _, v := range posPerTeam {
+				total += v
+			}
+			if total <= fieldSlots {
+				break
+			}
+			maxPos := ""
+			maxVal := 0
+			for _, pos := range positions {
+				if posPerTeam[pos] > maxVal {
+					maxVal = posPerTeam[pos]
+					maxPos = pos
+				}
+			}
+			posPerTeam[maxPos]--
+		}
 
-	for _, pos := range positions {
-		if g := byPos[pos]; len(g) > 0 {
-			assignTiers(g, posPerTeam[pos])
+		for _, pos := range positions {
+			if g := byPos[pos]; len(g) > 0 {
+				assignTiers(g, posPerTeam[pos])
+			}
+		}
+	} else {
+		// simple: field players form a single pool; Step 3 (overflow fill)
+		// already distributes by skill tiers within the remaining slots.
+		for _, g := range byPos {
+			overflow = append(overflow, g...)
 		}
 	}
 

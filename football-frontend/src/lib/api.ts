@@ -646,9 +646,11 @@ export type TeamsResponse = {
   reserves: TeamPlayerItem[];
 };
 
+export type DrawStrategy = 'balanced' | 'simple';
+
 export const teams = {
-  generate: (matchId: string) =>
-    post<TeamsResponse>(`/matches/${matchId}/teams`),
+  generate: (matchId: string, strategy: DrawStrategy = 'balanced') =>
+    post<TeamsResponse>(`/matches/${matchId}/teams`, { strategy }),
   get: (matchId: string) =>
     get<TeamsResponse>(`/matches/${matchId}/teams`),
 };

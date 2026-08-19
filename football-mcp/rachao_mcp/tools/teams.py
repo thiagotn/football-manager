@@ -9,9 +9,14 @@ async def get_teams(match_id: str) -> list[dict]:
     return await api.get(f"/matches/{match_id}/teams")
 
 
-async def draw_teams(match_id: str) -> list[dict]:
-    """Sorteia times equilibrados para uma partida. Substitui sorteio anterior se existir."""
-    return await api.post(f"/matches/{match_id}/teams", json={})
+async def draw_teams(match_id: str, strategy: str = "balanced") -> list[dict]:
+    """Sorteia times para uma partida. Substitui sorteio anterior se existir.
+
+    strategy: 'balanced' (default — equilibra posições e estrelas) ou
+    'simple' (equilibra apenas estrelas, sem cota por posição; goleiros
+    continuam 1 por time).
+    """
+    return await api.post(f"/matches/{match_id}/teams", json={"strategy": strategy})
 
 
 READ_TOOLS: list[tuple] = [

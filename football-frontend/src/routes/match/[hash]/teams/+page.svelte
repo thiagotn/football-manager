@@ -2,12 +2,12 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { matches as matchesApi, teams as teamsApi, groups as groupsApi, ApiError } from '$lib/api';
-  import type { MatchDetail, TeamsResponse } from '$lib/api';
+  import type { DrawStrategy, MatchDetail, TeamsResponse } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
-  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import TeamDrawStrategyModal from '$lib/components/TeamDrawStrategyModal.svelte';
   import JoinCTABanner from '$lib/components/JoinCTABanner.svelte';
   import { Copy, RefreshCw, Shield } from 'lucide-svelte';
   import { t } from '$lib/i18n';
@@ -51,12 +51,13 @@
       .catch(() => { isGroupAdmin = false; });
   });
 
-  async function regenerateTeams() {
+  async function regenerateTeams(strategy: DrawStrategy = 'balanced') {
     if (!match) return;
     regenerating = true;
     try {
-      const result = await teamsApi.generate(match.id);
+      const result = await teamsApi.generate(match.id, strategy);
       teamsData = result;
+      confirmOpen = false;
       toastSuccess($t('teams.rebuilt_success'));
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : $t('teams.rebuild_error'));
@@ -263,10 +264,9 @@
 
 <JoinCTABanner />
 
-<ConfirmDialog
+<TeamDrawStrategyModal
   bind:open={confirmOpen}
-  message={$t('teams.rebuild_confirm')}
-  confirmLabel={$t('teams.rebuild_label')}
-  danger={false}
+  mode="rebuild"
+  loading={regenerating}
   onConfirm={regenerateTeams}
 />

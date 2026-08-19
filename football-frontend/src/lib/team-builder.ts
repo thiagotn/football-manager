@@ -98,6 +98,8 @@ function assignTiers<T extends { stars: number }>(
   return overflow;
 }
 
+export type DrawStrategy = 'balanced' | 'simple';
+
 /**
  * Builds balanced teams from a list of active players.
  *
@@ -111,12 +113,16 @@ function assignTiers<T extends { stars: number }>(
  *    team, preventing teams from exceeding teamSize.
  * 4. Overflow fills remaining slots using the same shuffled-tier approach.
  * 5. Players beyond total capacity become reserves.
+ *
+ * strategy 'simple' skips steps 2–3 (no position quota): field players form
+ * a single star-tiered pool distributed via step 4. GKs unchanged.
  */
 export function buildTeams(
   activePlayers: DrawPlayer[],
   playersPerTeam: number,
   nTeams: number,
   teamNames: string[],
+  strategy: DrawStrategy = 'balanced',
 ): TeamResult {
   if (nTeams === 0) return { teams: [], reserves: [] };
 
@@ -154,30 +160,37 @@ export function buildTeams(
   }
   overflow.push(...gks.slice(nTeams));
 
-  // Step 2: Compute perTeam for each position, capped to fit field slots
-  const fieldSlots = teamSize - 1;
   const fieldPositions = ['fullback', 'defender', 'midfielder', 'forward'] as const;
 
-  const perTeamMap: Record<string, number> = {};
-  for (const pos of fieldPositions) {
-    perTeamMap[pos] = Math.floor((byPos[pos as Position]?.length ?? 0) / nTeams);
-  }
+  if (strategy === 'balanced') {
+    // Step 2: Compute perTeam for each position, capped to fit field slots
+    const fieldSlots = teamSize - 1;
 
-  // Reduce the most abundant position until total fits within fieldSlots
-  let total = Object.values(perTeamMap).reduce((s, v) => s + v, 0);
-  while (total > fieldSlots) {
-    const maxPos = fieldPositions.reduce((a, b) =>
-      perTeamMap[a] >= perTeamMap[b] ? a : b
-    );
-    perTeamMap[maxPos]--;
-    total--;
-  }
+    const perTeamMap: Record<string, number> = {};
+    for (const pos of fieldPositions) {
+      perTeamMap[pos] = Math.floor((byPos[pos as Position]?.length ?? 0) / nTeams);
+    }
 
-  // Step 3: Distribute each position using shuffled tiers
-  for (const pos of fieldPositions) {
-    const group = byPos[pos as Position] ?? [];
-    const leftover = assignTiers(group, perTeamMap[pos], nTeams, teamArrays);
-    overflow.push(...leftover);
+    // Reduce the most abundant position until total fits within fieldSlots
+    let total = Object.values(perTeamMap).reduce((s, v) => s + v, 0);
+    while (total > fieldSlots) {
+      const maxPos = fieldPositions.reduce((a, b) =>
+        perTeamMap[a] >= perTeamMap[b] ? a : b
+      );
+      perTeamMap[maxPos]--;
+      total--;
+    }
+
+    // Step 3: Distribute each position using shuffled tiers
+    for (const pos of fieldPositions) {
+      const group = byPos[pos as Position] ?? [];
+      const leftover = assignTiers(group, perTeamMap[pos], nTeams, teamArrays);
+      overflow.push(...leftover);
+    }
+  } else {
+    // simple: field players form a single pool; Step 4 (overflow fill)
+    // already distributes by star tiers within the remaining slots.
+    overflow.push(...fieldPositions.flatMap(pos => byPos[pos as Position] ?? []));
   }
 
   // Step 4: Overflow fills remaining slots using shuffled tiers
