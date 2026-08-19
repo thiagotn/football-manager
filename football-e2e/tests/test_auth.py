@@ -13,7 +13,7 @@ def test_sessao_expirada_redireciona_e_exibe_banner(admin_page: Page):
     contextual de sessão expirada é exibido.
     """
     admin_page.route(
-        "**/api/v1/groups",
+        "**/api/v*/groups",
         lambda route: route.fulfill(
             status=401,
             content_type="application/json",
