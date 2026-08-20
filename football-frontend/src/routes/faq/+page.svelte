@@ -29,11 +29,13 @@
     'se-nao-confirmar-a-tempo',
     'como-instalar-android',
     'como-instalar-iphone',
+    'cadastro-temporario-como-resolver',
   ];
 
   const FAQ_STEPS: Record<string, number> = {
     'como-instalar-android': 4,
     'como-instalar-iphone': 4,
+    'cadastro-temporario-como-resolver': 5,
   };
 
   let faqs = $derived(
