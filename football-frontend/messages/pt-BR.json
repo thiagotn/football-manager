@@ -973,6 +973,8 @@
   "faq.q19.s3": "Entregue o link ao jogador: mostre o QR code, copie o link ou compartilhe direto pelo WhatsApp — ele vale por 7 dias e pode ser usado uma única vez",
   "faq.q19.s4": "O jogador abre o link, informa o número real dele e confirma o código de 6 dígitos recebido no WhatsApp",
   "faq.q19.s5": "Ele cria uma senha e pronto: o número é corrigido, o selo desaparece e ele já entra logado no app",
+  "faq.q20.q": "Como funciona o sorteio de times?",
+  "faq.q20.a": "Quando o admin do grupo monta os times, ele escolhe entre duas formas de sorteio. <strong>Balanceado</strong> (padrão): distribui os jogadores equilibrando as posições (defesa, meio e ataque) e as estrelas entre os times. <strong>Simplificado</strong>: ignora as posições de linha e equilibra apenas as estrelas. Nas duas opções cada time recebe exatamente um goleiro, jogadores de nível parecido caem em times diferentes por sorteio e quem excede a capacidade vira reserva — por isso o resultado muda a cada sorteio, mas os times saem sempre equilibrados.",
   "terms.title": "Termos de Uso",
   "terms.version": "Última atualização: março de 2026 · Versão: 1.1",
   "terms.back": "← rachao.app",

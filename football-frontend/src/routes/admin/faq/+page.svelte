@@ -75,6 +75,10 @@
       a: 'Não. Candidatos pendentes não recebem notificação quando o rachão é encerrado ou a data passa. A notificação de rejeição só é enviada se você manualmente rejeitar a candidatura. Portanto, se um candidato ficou na fila e o rachão encerrou sem aprovação, ele simplesmente não recebe mais retorno — recomendamos revisar a lista com antecedência.',
     },
     {
+      q: 'Como funciona o sorteio de times (Balanceado × Simplificado)?',
+      a: 'Ao montar ou remontar os times de uma partida, você escolhe a estratégia no modal de sorteio. Balanceado (padrão): distribui os jogadores equilibrando as posições (defesa, meio e ataque) e as estrelas entre os times. Simplificado: ignora as posições de linha e equilibra apenas as estrelas. Nos dois modos cada time recebe exatamente um goleiro (goleiros excedentes viram reserva) e o app roda uma otimização final para deixar a soma de estrelas o mais próxima possível entre os times. O sorteio exige jogadores confirmados suficientes para 2 times completos (jogadores de linha + goleiro por time) e pode ser refeito quantas vezes quiser — cada sorteio substitui o anterior.',
+    },
+    {
       q: 'Como o feed "Descobrir Rachões" pode ajudar meu grupo a crescer?',
       a: 'Quando seu grupo está configurado como público e há uma partida aberta com vagas, ele aparece automaticamente no feed "Descobrir Rachões" para todos os jogadores da plataforma que ainda não são membros do seu grupo. Eles podem se candidatar diretamente pelo feed, sem precisar de um link de convite. Quanto antes você revisar e aceitar candidatos, maior a chance de o grupo atrair novos membros orgânicos.',
     },

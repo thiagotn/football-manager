@@ -973,6 +973,8 @@
   "faq.q19.s3": "Deliver the link to the player: show the QR code, copy the link or share it directly via WhatsApp — it is valid for 7 days and can be used only once",
   "faq.q19.s4": "The player opens the link, enters their real number and confirms the 6-digit code received on WhatsApp",
   "faq.q19.s5": "They create a password and that's it: the number is fixed, the badge disappears and they are logged into the app right away",
+  "faq.q20.q": "How does the team draw work?",
+  "faq.q20.a": "When the group admin builds the teams, they choose between two draw modes. <strong>Balanced</strong> (default): distributes players balancing positions (defense, midfield and attack) and star ratings across teams. <strong>Simple</strong>: ignores field positions and balances star ratings only. In both modes each team gets exactly one goalkeeper, similarly rated players land on different teams at random, and anyone beyond capacity becomes a reserve — so the result changes on every draw, but the teams always come out even.",
   "terms.title": "Terms of Use",
   "terms.version": "Last updated: March 2026 · Version: 1.1",
   "terms.back": "← rachao.app",

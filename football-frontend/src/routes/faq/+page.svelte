@@ -30,6 +30,7 @@
     'como-instalar-android',
     'como-instalar-iphone',
     'cadastro-temporario-como-resolver',
+    'como-funciona-o-sorteio-de-times',
   ];
 
   const FAQ_STEPS: Record<string, number> = {

@@ -973,6 +973,8 @@
   "faq.q19.s3": "Entrega el enlace al jugador: muestra el código QR, copia el enlace o compártelo directamente por WhatsApp — es válido por 7 días y solo puede usarse una vez",
   "faq.q19.s4": "El jugador abre el enlace, ingresa su número real y confirma el código de 6 dígitos recibido en WhatsApp",
   "faq.q19.s5": "Crea una contraseña y listo: el número queda corregido, la insignia desaparece y entra directamente a la app",
+  "faq.q20.q": "¿Cómo funciona el sorteo de equipos?",
+  "faq.q20.a": "Cuando el admin del grupo arma los equipos, elige entre dos modos de sorteo. <strong>Equilibrado</strong> (predeterminado): distribuye a los jugadores equilibrando las posiciones (defensa, medio y ataque) y las estrellas entre los equipos. <strong>Simplificado</strong>: ignora las posiciones de campo y equilibra solo las estrellas. En ambos modos cada equipo recibe exactamente un portero, los jugadores de nivel similar caen en equipos distintos al azar y quien excede el cupo pasa a la reserva — por eso el resultado cambia en cada sorteo, pero los equipos siempre quedan parejos.",
   "terms.title": "Términos de Uso",
   "terms.version": "Última actualización: marzo de 2026 · Versión: 1.1",
   "terms.back": "← rachao.app",
