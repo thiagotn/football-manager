@@ -80,6 +80,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 021 | [timezone-por-grupo.md](021-timezone-por-grupo.md) | ✅ | Timezone configurável por grupo com indicação visual ao usuário |
 | 036 | [gols-e-assistencias.md](036-gols-e-assistencias.md) | ✅ | Registro de gols e assistências por partida — somente admin do grupo |
 | 037 | [cores-de-coletes.md](037-cores-de-coletes.md) | ✅ | Cores de coletes e nomes customizados por time no grupo — até 5 slots por grupo |
+| 052 | [videos-verticais.md](052-videos-verticais.md) | 🚧 | Vídeos curtos verticais por rachão (experimental, flag por conta) — presigned PUT no R2 + worker ffmpeg no homelab (ADR 0007) |
 
 ---
 

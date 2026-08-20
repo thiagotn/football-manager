@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -88,6 +89,72 @@ func (s *StorageService) UploadAvatar(ctx context.Context, playerID, token strin
 		return "", fmt.Errorf("storage upload failed: %w", err)
 	}
 	return s.publicBaseURL + "/" + key, nil
+}
+
+// PublicURL returns the public CDN URL for an object key.
+func (s *StorageService) PublicURL(key string) string {
+	return s.publicBaseURL + "/" + key
+}
+
+// PresignedPutURL generates a presigned PUT URL so the browser can upload
+// directly to R2 (bypassing the API server and the Cloudflare Tunnel 100MB cap).
+func (s *StorageService) PresignedPutURL(ctx context.Context, key string, expires time.Duration) (string, error) {
+	if !s.IsConfigured() {
+		return "", fmt.Errorf("storage not configured")
+	}
+	u, err := s.client.PresignedPutObject(ctx, s.bucket, key, expires)
+	if err != nil {
+		return "", fmt.Errorf("storage presign failed: %w", err)
+	}
+	return u.String(), nil
+}
+
+// StatObject returns the size of an object, or ErrNotFound-style error when missing.
+func (s *StorageService) StatObject(ctx context.Context, key string) (int64, error) {
+	if !s.IsConfigured() {
+		return 0, fmt.Errorf("storage not configured")
+	}
+	info, err := s.client.StatObject(ctx, s.bucket, key, minio.StatObjectOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("storage stat failed: %w", err)
+	}
+	return info.Size, nil
+}
+
+// DeleteObject removes an object by key. Best-effort: NoSuchKey is not an error.
+func (s *StorageService) DeleteObject(ctx context.Context, key string) error {
+	if !s.IsConfigured() || key == "" {
+		return nil
+	}
+	return s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{})
+}
+
+// UploadFile uploads a local file (worker: transcoded mp4 and poster) and
+// returns the public URL. Keys contain the immutable video ID, so the URL
+// never changes — safe for immutable caching.
+func (s *StorageService) UploadFile(ctx context.Context, key, contentType, localPath string) (string, error) {
+	if !s.IsConfigured() {
+		return "", fmt.Errorf("storage not configured")
+	}
+	_, err := s.client.FPutObject(ctx, s.bucket, key, localPath, minio.PutObjectOptions{
+		ContentType:  contentType,
+		CacheControl: "public, max-age=31536000, immutable",
+	})
+	if err != nil {
+		return "", fmt.Errorf("storage upload failed: %w", err)
+	}
+	return s.PublicURL(key), nil
+}
+
+// DownloadFile fetches an object into a local file (worker input).
+func (s *StorageService) DownloadFile(ctx context.Context, key, localPath string) error {
+	if !s.IsConfigured() {
+		return fmt.Errorf("storage not configured")
+	}
+	if err := s.client.FGetObject(ctx, s.bucket, key, localPath, minio.GetObjectOptions{}); err != nil {
+		return fmt.Errorf("storage download failed: %w", err)
+	}
+	return nil
 }
 
 // DeleteAvatarByURL removes an object from R2 using its public URL.

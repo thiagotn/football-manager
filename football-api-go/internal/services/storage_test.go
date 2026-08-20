@@ -112,3 +112,89 @@ func TestDeleteAvatarByURL_IgnoresForeignURL(t *testing.T) {
 		t.Errorf("expected no request to storage, got %s %s", f.method, f.path)
 	}
 }
+
+// ── Vídeos (PRD 052) ─────────────────────────────────────────────────────────
+
+func TestPresignedPutURL_ContainsKeyAndSignature(t *testing.T) {
+	f := &fakeS3{status: http.StatusOK}
+	svc, srv := newFakeStorage(t, f)
+	defer srv.Close()
+
+	url, err := svc.PresignedPutURL(context.Background(), "videos/original/m1/v1.mp4", 15*60*1e9)
+	if err != nil {
+		t.Fatalf("PresignedPutURL: %v", err)
+	}
+	if !strings.Contains(url, "/rachao-media/videos/original/m1/v1.mp4") {
+		t.Errorf("URL missing object key: %s", url)
+	}
+	if !strings.Contains(url, "X-Amz-Signature=") {
+		t.Errorf("URL missing SigV4 signature: %s", url)
+	}
+	// Presign é local — nenhuma request deve ter chegado ao servidor.
+	if f.method != "" {
+		t.Errorf("expected no request to storage, got %s %s", f.method, f.path)
+	}
+}
+
+func TestStatObject_ReturnsSize(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodHead {
+			t.Errorf("expected HEAD, got %s", r.Method)
+		}
+		w.Header().Set("Content-Length", "12345")
+		w.Header().Set("Last-Modified", "Wed, 20 Aug 2026 12:00:00 GMT")
+		w.Header().Set("ETag", `"fake"`)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	endpoint := strings.TrimPrefix(srv.URL, "http://")
+	svc, err := NewStorageServiceWithEndpoint(endpoint, false, "key", "secret", "rachao-media", "https://cdn.rachao.app")
+	if err != nil {
+		t.Fatalf("NewStorageServiceWithEndpoint: %v", err)
+	}
+
+	size, err := svc.StatObject(context.Background(), "videos/original/m1/v1.mp4")
+	if err != nil {
+		t.Fatalf("StatObject: %v", err)
+	}
+	if size != 12345 {
+		t.Errorf("expected size 12345, got %d", size)
+	}
+}
+
+func TestStatObject_MissingObjectErrors(t *testing.T) {
+	f := &fakeS3{status: http.StatusNotFound}
+	svc, srv := newFakeStorage(t, f)
+	defer srv.Close()
+
+	if _, err := svc.StatObject(context.Background(), "videos/original/m1/missing.mp4"); err == nil {
+		t.Fatal("expected error for missing object")
+	}
+}
+
+func TestDeleteObject_SendsDelete(t *testing.T) {
+	f := &fakeS3{status: http.StatusNoContent}
+	svc, srv := newFakeStorage(t, f)
+	defer srv.Close()
+
+	if err := svc.DeleteObject(context.Background(), "videos/m1/v1.mp4"); err != nil {
+		t.Fatalf("DeleteObject: %v", err)
+	}
+	if f.method != http.MethodDelete {
+		t.Errorf("expected DELETE, got %s", f.method)
+	}
+	if f.path != "/rachao-media/videos/m1/v1.mp4" {
+		t.Errorf("unexpected object path: %s", f.path)
+	}
+}
+
+func TestPublicURL(t *testing.T) {
+	f := &fakeS3{status: http.StatusOK}
+	svc, srv := newFakeStorage(t, f)
+	defer srv.Close()
+
+	got := svc.PublicURL("videos/m1/v1.mp4")
+	if got != "https://cdn.rachao.app/videos/m1/v1.mp4" {
+		t.Errorf("unexpected public URL: %s", got)
+	}
+}

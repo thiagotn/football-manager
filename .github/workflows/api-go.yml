@@ -107,6 +107,19 @@ jobs:
             ./football-api-go
           docker push "${IMAGE}:latest"
           docker push "${IMAGE}:${SHA}"
+      - name: Build & push media worker image
+        env:
+          SHA: ${{ github.sha }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          IMAGE_W="ghcr.io/${REPO_OWNER}/football-manager-media-worker"
+          docker build --target production \
+            -f football-api-go/Dockerfile.worker \
+            -t "${IMAGE_W}:latest" \
+            -t "${IMAGE_W}:${SHA}" \
+            ./football-api-go
+          docker push "${IMAGE_W}:latest"
+          docker push "${IMAGE_W}:${SHA}"
 
   notify:
     name: Notify Telegram

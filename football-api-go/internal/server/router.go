@@ -70,6 +70,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 	betaH := handlers.NewBetaHandler(pool)
 	adminH := handlers.NewAdminHandler(pool, stripeSvc, storageSvc)
 	chatH := handlers.NewChatHandler(pool, cfg.AnthropicAPIKey, cfg.LLMModel, cfg.ChatRateLimit)
+	videoH := handlers.NewVideoHandler(pool, storageSvc)
 
 	r := chi.NewRouter()
 
@@ -105,6 +106,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		r.Get("/matches/public/{hash}/player-stats", matchH.GetPublicMatchStats)
 		r.Get("/matches/public/{hash}/votes/results", voteH.GetPublicVoteResults)
 		r.Get("/matches/public/{hash}/votes/ballots", voteH.GetPublicVoteBallots)
+		r.With(optionalAuth).Get("/matches/public/{hash}/videos", videoH.ListPublicVideos)
 		r.Mount("/invites", inviteH.Routes(authMw))
 		r.Mount("/claims", claimH.Routes())
 		r.Get("/matches/{matchID}/teams", teamH.GetTeams)
@@ -142,6 +144,11 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 			r.Put("/matches/{hash}/player-stats", matchH.UpsertPlayerStats)
 			r.Post("/matches/{matchID}/teams", teamH.DrawTeams)
 
+			// Video routes (upload direto ao R2 via presigned PUT)
+			r.Post("/matches/{matchID}/videos", videoH.CreateUpload)
+			r.Post("/matches/{matchID}/videos/{videoID}/confirm", videoH.ConfirmUpload)
+			r.Delete("/videos/{videoID}", videoH.DeleteVideo)
+
 			// Vote routes
 			r.Get("/matches/{matchID}/votes/status", voteH.GetVoteStatus)
 			r.Post("/matches/{matchID}/votes", voteH.SubmitVote)
@@ -175,6 +182,8 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 			r.Mount("/admin", adminH.Routes())
 			r.Get("/admin/chat-users", chatH.ListChatUsers)
 			r.Patch("/admin/chat-users/{userID}", chatH.UpdateChatAccess)
+			r.Get("/admin/video-users", videoH.ListVideoUsers)
+			r.Patch("/admin/video-users/{userID}", videoH.UpdateVideoAccess)
 		})
 	})
 

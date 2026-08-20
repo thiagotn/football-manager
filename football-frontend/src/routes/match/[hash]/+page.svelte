@@ -531,7 +531,8 @@
       {#if (voteStatus && match.status === 'closed' && $isLoggedIn && !$isAdmin && mine?.status === 'confirmed' && !showVoteModal)
         || (voteStatus && match.status === 'closed' && ($isAdmin || (isGroupAdmin && mine?.status !== 'confirmed')))
         || ((teamsData && teamsData.teams.length > 0) || (isGroupAdmin && (match.status === 'open' || match.status === 'in_progress')))
-        || (isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed'))}
+        || (isGroupAdmin && (match.status === 'in_progress' || match.status === 'closed'))
+        || match.group_videos_enabled}
         <div class="flex gap-2 mb-3 items-stretch">
 
           <!-- Voting card (confirmed player) -->
@@ -582,6 +583,14 @@
             <a href="/match/{matchHash}/stats"
               class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
               <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">📊 {$t('match.stats_short')}</p>
+            </a>
+          {/if}
+
+          <!-- Videos card (feature flag por conta do admin do grupo) -->
+          {#if match.group_videos_enabled}
+            <a href="/match/{matchHash}/videos"
+              class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+              <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">🎬 {$t('match.videos_short')}</p>
             </a>
           {/if}
 

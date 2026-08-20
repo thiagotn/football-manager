@@ -10,6 +10,7 @@ on:
 env:
   API_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-api
   API_GO_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-api-go
+  MEDIA_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-media-worker
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-frontend
   MCP_IMAGE: ghcr.io/${{ github.repository_owner }}/football-manager-mcp
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -324,6 +325,19 @@ jobs:
             ${{ env.API_GO_IMAGE }}:${{ github.sha }}
           cache-from: type=gha,scope=api-go
           cache-to: type=gha,scope=api-go,mode=max
+
+      - name: Build & push — Media Worker
+        uses: docker/build-push-action@v7
+        with:
+          context: ./football-api-go
+          file: ./football-api-go/Dockerfile.worker
+          target: production
+          push: true
+          tags: |
+            ${{ env.MEDIA_WORKER_IMAGE }}:latest
+            ${{ env.MEDIA_WORKER_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha,scope=media-worker
+          cache-to: type=gha,scope=media-worker,mode=max
 
       - name: Build & push — Frontend
         uses: docker/build-push-action@v7

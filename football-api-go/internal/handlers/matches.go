@@ -29,6 +29,7 @@ type MatchStore interface {
 	GetAttendancesForMatch(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error)
 	GetMatchPlayerStats(ctx context.Context, matchID uuid.UUID) ([]db.MatchPlayerStat, error)
 	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	GroupVideosEnabled(ctx context.Context, groupID uuid.UUID) (bool, error)
 	NextMatchNumber(ctx context.Context, groupID uuid.UUID) (int, error)
 	CreateMatch(ctx context.Context, params db.CreateMatchParams) (*db.Match, error)
 	UpdateMatch(ctx context.Context, matchID uuid.UUID, params db.UpdateMatchParams) (*db.Match, error)
@@ -70,6 +71,9 @@ func (s *pgMatchStore) GetMatchPlayerStats(ctx context.Context, matchID uuid.UUI
 }
 func (s *pgMatchStore) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
 	return db.GetGroupMember(ctx, s.pool, groupID, playerID)
+}
+func (s *pgMatchStore) GroupVideosEnabled(ctx context.Context, groupID uuid.UUID) (bool, error) {
+	return db.GroupVideosEnabled(ctx, s.pool, groupID)
 }
 func (s *pgMatchStore) NextMatchNumber(ctx context.Context, groupID uuid.UUID) (int, error) {
 	return db.NextMatchNumber(ctx, s.pool, groupID)
@@ -193,6 +197,7 @@ type matchDetailResp struct {
 	GroupMonthlyAmount  *float64         `json:"group_monthly_amount"`
 	GroupIsPublic       bool             `json:"group_is_public"`
 	GroupVotingEnabled  bool             `json:"group_voting_enabled"`
+	GroupVideosEnabled  bool             `json:"group_videos_enabled"`
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -240,6 +245,7 @@ type matchGroupFields struct {
 	MonthlyAmount  *float64
 	IsPublic       bool
 	VotingEnabled  bool
+	VideosEnabled  bool
 }
 
 func groupFieldsFromName(name string) matchGroupFields {
@@ -259,6 +265,7 @@ func groupFieldsFromMatch(m *db.MatchWithGroupName) matchGroupFields {
 		MonthlyAmount:  m.GroupMonthlyAmount,
 		IsPublic:       m.GroupIsPublic,
 		VotingEnabled:  m.GroupVotingEnabled,
+		VideosEnabled:  m.GroupVideosEnabled,
 	}
 }
 
@@ -271,6 +278,7 @@ func buildMatchDetail(match *db.Match, atts []db.AttendanceWithPlayer, group mat
 		GroupMonthlyAmount:  group.MonthlyAmount,
 		GroupIsPublic:       group.IsPublic,
 		GroupVotingEnabled:  group.VotingEnabled,
+		GroupVideosEnabled:  group.VideosEnabled,
 		Attendances:         make([]attendanceResp, 0, len(atts)),
 	}
 	for _, a := range atts {
@@ -572,6 +580,9 @@ func (h *MatchHandler) getMatch(w http.ResponseWriter, r *http.Request) {
 		group.MonthlyAmount = g.MonthlyAmount
 		group.IsPublic = g.IsPublic
 		group.VotingEnabled = g.VotingEnabled
+	}
+	if enabled, err := h.Store.GroupVideosEnabled(r.Context(), match.GroupID); err == nil {
+		group.VideosEnabled = enabled
 	}
 
 	renderJSON(w, http.StatusOK, buildMatchDetail(match, atts, group))

@@ -145,6 +145,7 @@ type MatchWithGroupName struct {
 	GroupMonthlyAmount  *float64
 	GroupIsPublic       bool
 	GroupVotingEnabled  bool
+	GroupVideosEnabled  bool
 }
 
 // GetMatchByHashWithGroup fetches a match by hash AND the group's
@@ -158,7 +159,12 @@ func GetMatchByHashWithGroup(ctx context.Context, pool *pgxpool.Pool, hash strin
 		       g.per_match_amount::FLOAT8,
 		       g.monthly_amount::FLOAT8,
 		       g.is_public,
-		       g.voting_enabled
+		       g.voting_enabled,
+		       EXISTS (
+		           SELECT 1 FROM group_members gm
+		           JOIN players p ON p.id = gm.player_id
+		           WHERE gm.group_id = g.id AND gm.role = 'admin' AND p.videos_enabled
+		       ) AS videos_enabled
 		FROM matches m
 		JOIN groups g ON g.id = m.group_id
 		WHERE m.hash = $1`, hash)
@@ -176,6 +182,7 @@ func GetMatchByHashWithGroup(ctx context.Context, pool *pgxpool.Pool, hash strin
 		&m.GroupMonthlyAmount,
 		&m.GroupIsPublic,
 		&m.GroupVotingEnabled,
+		&m.GroupVideosEnabled,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {

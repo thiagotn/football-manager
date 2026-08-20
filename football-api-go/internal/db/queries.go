@@ -38,6 +38,7 @@ type Player struct {
 	ChatEnabled        bool       `json:"chat_enabled"`
 	ChatReqCount       int32      `json:"-"`
 	ChatReqWindow      *time.Time `json:"-"`
+	VideosEnabled      bool       `json:"videos_enabled"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
@@ -71,7 +72,7 @@ var ErrNotFound = pgx.ErrNoRows
 const PlayerSelectCols = `
 	id, name, nickname, whatsapp, password_hash,
 	role, active, must_change_password, pending_registration, avatar_url,
-	chat_enabled, chat_req_count, chat_req_window,
+	chat_enabled, chat_req_count, chat_req_window, videos_enabled,
 	created_at, updated_at`
 
 // ScanPlayer scans player fields from any pgx scan function (Row or Rows).
@@ -80,7 +81,7 @@ func ScanPlayer(scanFn func(dest ...any) error) (*Player, error) {
 	err := scanFn(
 		&p.ID, &p.Name, &p.Nickname, &p.WhatsApp, &p.PasswordHash,
 		&p.Role, &p.Active, &p.MustChangePassword, &p.PendingRegistration, &p.AvatarURL,
-		&p.ChatEnabled, &p.ChatReqCount, &p.ChatReqWindow,
+		&p.ChatEnabled, &p.ChatReqCount, &p.ChatReqWindow, &p.VideosEnabled,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -104,7 +105,7 @@ type CreatePlayerParams = CreatePlayerArgs
 const playerColumns = `
 	id, name, nickname, whatsapp, password_hash,
 	role, active, must_change_password, pending_registration, avatar_url,
-	chat_enabled, chat_req_count, chat_req_window,
+	chat_enabled, chat_req_count, chat_req_window, videos_enabled,
 	created_at, updated_at`
 
 // GetPlayerByWhatsApp fetches an active player by their WhatsApp number.

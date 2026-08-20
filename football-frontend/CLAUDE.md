@@ -24,6 +24,7 @@
 | `/match/[hash]` | Detalhe da partida (público + autenticado) |
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
+| `/match/[hash]/videos` | Feed de vídeos curtos verticais da partida (público; upload p/ confirmados+admins; gateado por `group_videos_enabled`) |
 | `/ranking` | Ranking geral da plataforma — top 10 melhores e decepções (público) |
 | `/simulator` | Simulador público de sorteio de times — sem login, sem backend, estado em localStorage |
 | `/draw` | Redirect 301 para `/simulator` (compatibilidade com URLs salvas) |
@@ -58,6 +59,7 @@
 | `/admin/reviews` | Avaliações do app |
 | `/admin/subscriptions` | Gestão de assinaturas |
 | `/admin/chat` | Gestão de acesso ao Assistente IA — habilitar/desabilitar por usuário |
+| `/admin/videos` | Feature flag de vídeos (experimental) — habilitar/desabilitar por conta (`videos_enabled`) |
 
 ---
 
@@ -94,7 +96,7 @@
 
 | Store | Responsabilidade |
 |-------|-----------------|
-| `auth.ts` | `authStore`, `isAdmin`, `currentPlayer`, `isChatEnabled` — estado de autenticação global |
+| `auth.ts` | `authStore`, `isAdmin`, `currentPlayer`, `isChatEnabled`, `isVideosEnabled` — estado de autenticação global |
 | `pwaInstall.ts` | Evento `beforeinstallprompt` para botão de instalação PWA |
 | `sessionExpired.ts` | Flag para exibir modal de sessão expirada |
 | `theme.ts` | Tema claro/escuro |
@@ -114,7 +116,7 @@
 
 ## Namespaces de `api.ts`
 
-`auth` · `players` (inclui `getPublicStats`) · `groups` (inclui `createClaimInvite`) · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `claims` · `ranking` · `mcpTokens` · `chat`
+`auth` · `players` (inclui `getPublicStats`) · `groups` (inclui `createClaimInvite`) · `matches` · `push` · `subscriptions` · `votes` · `reviews` · `admin` · `teams` · `finance` · `invites` · `claims` · `ranking` · `mcpTokens` · `chat` · `matchVideos` (upload presigned p/ R2 com progresso + admin toggle)
 
 ---
 

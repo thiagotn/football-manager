@@ -105,6 +105,7 @@ export type AuthTokenResponse = {
   must_change_password: boolean;
   avatar_url: string | null;
   chat_enabled?: boolean;
+  videos_enabled?: boolean;
 };
 
 export const auth = {
@@ -140,6 +141,7 @@ export type Player = {
   must_change_password: boolean;
   avatar_url: string | null;
   chat_enabled: boolean;
+  videos_enabled?: boolean;
   created_at: string; updated_at: string;
 };
 export type PlayerPublic = { id: string; name: string; nickname: string | null; role: string; avatar_url: string | null };
@@ -161,7 +163,7 @@ export type Match = {
   voting_status: 'not_open' | 'open' | 'closed';
 };
 export type Attendance = { id: string; player: PlayerPublic; status: 'pending' | 'confirmed' | 'declined'; updated_at: string; position: string | null; nickname: string | null };
-export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean; group_voting_enabled: boolean; group_timezone: string };
+export type MatchDetail = Match & { attendances: Attendance[]; confirmed_count: number; declined_count: number; pending_count: number; group_name: string; group_per_match_amount: number | null; group_monthly_amount: number | null; group_is_public: boolean; group_voting_enabled: boolean; group_videos_enabled: boolean; group_timezone: string };
 export type PlayerMatchItem = Match & { group_name: string; my_attendance: 'confirmed' | 'declined' | 'pending' | null; group_timezone: string };
 export type DiscoverMatch = Match & { group_name: string; confirmed_count: number; spots_left: number | null; group_timezone: string };
 
@@ -820,4 +822,63 @@ export const chat = {
   adminListUsers: () => get<ChatUsersResponse>('/admin/chat-users'),
   adminUpdateAccess: (userId: string, chat_enabled: boolean) =>
     patch<ChatUserItem>(`/admin/chat-users/${userId}`, { chat_enabled }),
+};
+
+// ── Videos ────────────────────────────────────────────────────
+export type MatchVideoStatus = 'pending' | 'uploaded' | 'processing' | 'ready' | 'failed';
+export type MatchVideoItem = {
+  id: string;
+  match_id: string;
+  status: MatchVideoStatus;
+  video_url: string | null;
+  poster_url: string | null;
+  duration_seconds: number | null;
+  created_at: string;
+  uploader?: { id: string; name: string; nickname: string | null; avatar_url: string | null };
+};
+export type MatchVideosResponse = {
+  videos: MatchVideoItem[];
+  count: number;
+  max_videos: number;
+  can_upload: boolean;
+  videos_enabled: boolean;
+};
+export type VideoUploadTicket = {
+  video_id: string;
+  upload_url: string;
+  expires_at: string;
+  max_size_bytes: number;
+};
+export type VideoUserItem = {
+  id: string; name: string; whatsapp: string; videos_enabled: boolean; created_at: string;
+};
+export type VideoUsersResponse = { users: VideoUserItem[]; total_enabled: number };
+
+export const matchVideos = {
+  listPublic: (hash: string) => get<MatchVideosResponse>(`/matches/public/${hash}/videos`),
+  createUpload: (matchId: string, data: { size_bytes: number; content_type: string }) =>
+    post<VideoUploadTicket>(`/matches/${matchId}/videos`, data),
+  confirm: (matchId: string, videoId: string) =>
+    post<MatchVideoItem>(`/matches/${matchId}/videos/${videoId}/confirm`, {}),
+  delete: (videoId: string) => del(`/videos/${videoId}`),
+  adminListUsers: () => get<VideoUsersResponse>('/admin/video-users'),
+  adminUpdateAccess: (userId: string, videos_enabled: boolean) =>
+    patch<VideoUserItem>(`/admin/video-users/${userId}`, { videos_enabled }),
+  // PUT direto no R2 via presigned URL — XHR para ter progresso de upload.
+  // Não enviar Authorization: a assinatura da URL é a autenticação.
+  uploadToR2: (uploadUrl: string, file: File, onProgress: (pct: number) => void) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () =>
+        xhr.status >= 200 && xhr.status < 300
+          ? resolve()
+          : reject(new ApiError(xhr.status, `upload failed: ${xhr.status}`));
+      xhr.onerror = () => reject(new ApiError(0, 'upload network error'));
+      xhr.send(file);
+    }),
 };
