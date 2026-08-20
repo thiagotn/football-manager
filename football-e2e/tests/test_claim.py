@@ -20,7 +20,7 @@ import pytest
 import requests
 from playwright.sync_api import Page, expect
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_V2_URL", "http://localhost:8001")
 OTP_BYPASS_CODE = os.getenv("OTP_BYPASS_CODE", "000000")
 
 
@@ -41,7 +41,7 @@ def claim_setup(admin_storage_state):
     headers = {"Authorization": f"Bearer {token}"}
 
     group = requests.post(
-        f"{API_URL}/api/v1/groups",
+        f"{API_URL}/api/v2/groups",
         json={"name": f"Grupo Claim E2E {uuid.uuid4().hex[:6]}"},
         headers=headers,
         timeout=10,
@@ -51,7 +51,7 @@ def claim_setup(admin_storage_state):
 
     placeholder = "+550000" + str(uuid.uuid4().int)[:7]
     member = requests.post(
-        f"{API_URL}/api/v1/groups/{group_id}/members/by-phone",
+        f"{API_URL}/api/v2/groups/{group_id}/members/by-phone",
         json={"whatsapp": placeholder, "name": "Jogador Pendente E2E"},
         headers=headers,
         timeout=10,
@@ -64,7 +64,7 @@ def claim_setup(admin_storage_state):
     player_id = player["id"]
 
     claim = requests.post(
-        f"{API_URL}/api/v1/groups/{group_id}/members/{player_id}/claim-invite",
+        f"{API_URL}/api/v2/groups/{group_id}/members/{player_id}/claim-invite",
         headers=headers,
         timeout=10,
     )
@@ -82,8 +82,8 @@ def claim_setup(admin_storage_state):
     }
 
     # Cleanup: remove grupo (cascade nos convites) e o player criado
-    requests.delete(f"{API_URL}/api/v1/groups/{group_id}", headers=headers, timeout=10)
-    requests.delete(f"{API_URL}/api/v1/players/{player_id}", headers=headers, timeout=10)
+    requests.delete(f"{API_URL}/api/v2/groups/{group_id}", headers=headers, timeout=10)
+    requests.delete(f"{API_URL}/api/v2/players/{player_id}", headers=headers, timeout=10)
 
 
 def test_fluxo_claim_completo(page: Page, claim_setup):
@@ -117,7 +117,7 @@ def test_fluxo_claim_completo(page: Page, claim_setup):
     # Flags limpas na API
     digits = "".join(c for c in real_number if c.isdigit())
     resp = requests.post(
-        f"{API_URL}/api/v1/auth/login",
+        f"{API_URL}/api/v2/auth/login",
         json={"whatsapp": f"+55{digits}", "password": "senhaNova123"},
         timeout=10,
     )
@@ -132,20 +132,20 @@ def test_link_de_claim_e_uso_unico(page: Page, claim_setup):
     # Completa o claim direto pela API (mais rápido que repetir a UI)
     real_number = "+551197" + str(uuid.uuid4().int)[:8]
     r = requests.post(
-        f"{API_URL}/api/v1/claims/{claim_token}/send-otp",
+        f"{API_URL}/api/v2/claims/{claim_token}/send-otp",
         json={"whatsapp": real_number},
         timeout=10,
     )
     assert r.status_code == 200, r.text
     r = requests.post(
-        f"{API_URL}/api/v1/claims/{claim_token}/verify-otp",
+        f"{API_URL}/api/v2/claims/{claim_token}/verify-otp",
         json={"whatsapp": real_number, "otp_code": OTP_BYPASS_CODE},
         timeout=10,
     )
     assert r.status_code == 200, r.text
     otp_token = r.json()["otp_token"]
     r = requests.post(
-        f"{API_URL}/api/v1/claims/{claim_token}/complete",
+        f"{API_URL}/api/v2/claims/{claim_token}/complete",
         json={"whatsapp": real_number, "otp_token": otp_token, "password": "senhaNova123"},
         timeout=10,
     )
