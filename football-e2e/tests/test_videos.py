@@ -59,7 +59,9 @@ READY_VIDEO = {
     "created_at": "2026-08-20T12:00:00Z",
     "uploader": {
         "id": "44444444-4444-4444-4444-444444444444",
-        "name": "Jogador E2E",
+        # Nome de uma palavra: o feed renderiza via playerDisplayName, que
+        # mostra apenas o primeiro nome.
+        "name": "JogadorE2E",
         "nickname": None,
         "avatar_url": None,
     },
@@ -145,7 +147,7 @@ def test_feed_renderiza_video_ready(anon_page: Page, base_url):
     video_el = anon_page.locator("video")
     expect(video_el).to_have_count(1)
     expect(video_el).to_have_attribute("poster", READY_VIDEO["poster_url"])
-    expect(anon_page.get_by_text("Jogador E2E")).to_be_visible()
+    expect(anon_page.get_by_text("JogadorE2E")).to_be_visible()
     expect(anon_page.get_by_text("1/10")).to_be_visible()
 
 
