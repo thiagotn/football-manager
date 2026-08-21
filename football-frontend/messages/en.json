@@ -1475,5 +1475,6 @@
   "admin.videos.toggle_disable": "Disable videos",
   "match.videos.too_large_image": "Image too large (max 25MB).",
   "match.videos.share": "Share",
-  "match.videos.share_text": "🎬 Check out the best moments of the {group} match!"
+  "match.videos.share_text": "🎬 Check out the best moments of the {group} match!",
+  "match.videos.tap_for_sound": "Tap to turn on sound"
 }

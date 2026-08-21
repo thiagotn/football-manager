@@ -1475,5 +1475,6 @@
   "admin.videos.toggle_disable": "Desabilitar vídeos",
   "match.videos.too_large_image": "Imagem muito grande (máx. 25MB).",
   "match.videos.share": "Compartilhar",
-  "match.videos.share_text": "🎬 Confira os melhores momentos do rachão {group}!"
+  "match.videos.share_text": "🎬 Confira os melhores momentos do rachão {group}!",
+  "match.videos.tap_for_sound": "Toque para ativar o som"
 }

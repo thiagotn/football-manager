@@ -23,7 +23,63 @@
   let data = $state<MatchVideosResponse | null>(null);
   let loading = $state(true);
   let isGroupAdmin = $state(false);
-  let muted = $state(true);
+
+  // ── Som ────────────────────────────────────────────────────────────────────
+  // Estratégia: tentar autoplay COM som (fluxo fluido; botões físicos de volume
+  // só controlam mídia não-muda). Se o navegador bloquear, cai para mudo e o
+  // PRIMEIRO toque/swipe no feed reativa o som — sem depender do ícone.
+  const soundPref = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('feed_sound') : null;
+  let wantSound = $state(soundPref !== 'off'); // escolha do usuário (persistida na sessão)
+  let muted = $state(soundPref === 'off');     // estado efetivo dos <video>
+  let autoMuted = $state(false);               // mudo por bloqueio do navegador, não por escolha
+  let soundHint = $state(false);
+  let lastAutoUnmuteAt = 0;
+  let visibleVideo: HTMLVideoElement | null = null;
+
+  function tryPlay(video: HTMLVideoElement) {
+    video.muted = muted;
+    video.play().catch(() => {
+      if (!muted) {
+        // Autoplay com som bloqueado — toca mudo e espera a primeira interação
+        muted = true;
+        autoMuted = true;
+        soundHint = true;
+        video.muted = true;
+        video.play().catch(() => {});
+      }
+    });
+  }
+
+  function playVisible() {
+    if (visibleVideo) tryPlay(visibleVideo);
+  }
+
+  function enableSound() {
+    muted = false;
+    autoMuted = false;
+    soundHint = false;
+    lastAutoUnmuteAt = Date.now();
+    playVisible();
+  }
+
+  // Qualquer interação (toque, swipe, tecla) conta como gesto para o navegador:
+  // se estamos mudos só por bloqueio, aproveita para religar o som.
+  function onFirstInteraction() {
+    if (autoMuted && wantSound) enableSound();
+  }
+
+  function toggleMute() {
+    if (muted) {
+      wantSound = true;
+      enableSound();
+    } else {
+      muted = true;
+      autoMuted = false;
+      soundHint = false;
+      wantSound = false;
+    }
+    try { sessionStorage.setItem('feed_sound', muted ? 'off' : 'on'); } catch { /* sessão privada */ }
+  }
 
   let fileInput = $state<HTMLInputElement | null>(null);
   let uploading = $state(false);
@@ -261,9 +317,11 @@
             if (entry.isIntersecting) {
               if (!video.src && video.dataset.src) video.src = video.dataset.src;
               if (entry.intersectionRatio >= 0.6) {
-                video.play().catch(() => {});
+                visibleVideo = video;
+                tryPlay(video);
               }
             } else {
+              if (visibleVideo === video) visibleVideo = null;
               video.pause();
             }
           }
@@ -278,6 +336,8 @@
   $effect(() => () => { observer?.disconnect(); });
 
   function togglePlay(e: Event) {
+    // O toque que acabou de religar o som não deve também pausar o vídeo
+    if (Date.now() - lastAutoUnmuteAt < 500) return;
     const video = e.currentTarget as HTMLVideoElement;
     if (video.paused) video.play().catch(() => {});
     else video.pause();
@@ -294,7 +354,8 @@
     <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
   </div>
 {:else if match && data}
-  <div class="fixed inset-0 z-50 bg-black">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="fixed inset-0 z-50 bg-black" onpointerdown={onFirstInteraction} ontouchend={onFirstInteraction}>
     <!-- Feed vertical fullscreen com snap (swipe up/down) -->
     <div class="h-full overflow-y-scroll snap-y snap-mandatory overscroll-contain" style="scrollbar-width: none;">
       {#if feedVideos.length === 0}
@@ -410,7 +471,7 @@
         <Share2 size={20} />
       </button>
       <button
-        onclick={() => muted = !muted}
+        onclick={toggleMute}
         class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white pointer-events-auto"
         aria-label={muted ? $t('match.videos.unmute') : $t('match.videos.mute')}>
         {#if muted}<VolumeX size={20} />{:else}<Volume2 size={20} />{/if}
@@ -430,6 +491,14 @@
       <div class="absolute inset-x-0 top-0 h-1 bg-white/20">
         <div class="h-full bg-primary-500 transition-all" style="width: {uploadPct}%"></div>
       </div>
+    {/if}
+
+    {#if soundHint}
+      <button
+        onclick={enableSound}
+        class="absolute bottom-28 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1.5">
+        <VolumeX size={14} /> {$t('match.videos.tap_for_sound')}
+      </button>
     {/if}
 
     <input
