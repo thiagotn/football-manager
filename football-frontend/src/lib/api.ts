@@ -834,8 +834,15 @@ export type MatchVideoItem = {
   poster_url: string | null;
   duration_seconds: number | null;
   created_at: string;
+  like_count: number;
+  liked_by_me: boolean;
   uploader?: { id: string; name: string; nickname: string | null; avatar_url: string | null };
 };
+export type VideoLiker = {
+  id: string; name: string; nickname: string | null; avatar_url: string | null; created_at: string;
+};
+export type VideoLikesResponse = { likers: VideoLiker[]; count: number };
+export type VideoLikeResult = { like_count: number; liked_by_me: boolean };
 export type MatchVideosResponse = {
   videos: MatchVideoItem[];
   count: number;
@@ -861,6 +868,9 @@ export const matchVideos = {
   confirm: (matchId: string, videoId: string) =>
     post<MatchVideoItem>(`/matches/${matchId}/videos/${videoId}/confirm`, {}),
   delete: (videoId: string) => del(`/videos/${videoId}`),
+  like: (videoId: string) => post<VideoLikeResult>(`/videos/${videoId}/like`, {}),
+  unlike: (videoId: string) => request<VideoLikeResult>(`/videos/${videoId}/like`, { method: 'DELETE' }),
+  listLikes: (videoId: string) => get<VideoLikesResponse>(`/videos/${videoId}/likes`),
   adminListUsers: () => get<VideoUsersResponse>('/admin/video-users'),
   adminUpdateAccess: (userId: string, videos_enabled: boolean) =>
     patch<VideoUserItem>(`/admin/video-users/${userId}`, { videos_enabled }),

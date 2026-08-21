@@ -1,14 +1,14 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { matches as matchesApi, matchVideos, groups as groupsApi, ApiError } from '$lib/api';
-  import type { MatchDetail, MatchVideosResponse, MatchVideoItem } from '$lib/api';
+  import type { MatchDetail, MatchVideosResponse, MatchVideoItem, VideoLiker } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
-  import PageBackground from '$lib/components/PageBackground.svelte';
-  import MatchBannerCard from '$lib/components/MatchBannerCard.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
-  import { Clapperboard, Plus, Trash2, Loader2 } from 'lucide-svelte';
+  import { ArrowLeft, Plus, Trash2, Loader2, Heart, Volume2, VolumeX } from 'lucide-svelte';
   import { t } from '$lib/i18n';
   import { playerDisplayName } from '$lib/utils';
 
@@ -21,6 +21,7 @@
   let data = $state<MatchVideosResponse | null>(null);
   let loading = $state(true);
   let isGroupAdmin = $state(false);
+  let muted = $state(true);
 
   let fileInput = $state<HTMLInputElement | null>(null);
   let uploading = $state(false);
@@ -28,9 +29,13 @@
 
   let confirmDeleteOpen = $state(false);
   let deleteTarget = $state<MatchVideoItem | null>(null);
-  let deleting = $state(false);
 
-  // Autoplay do vídeo visível (mudo) e pausa dos demais + src lazy
+  let likersOpen = $state(false);
+  let likersLoading = $state(false);
+  let likers = $state<VideoLiker[]>([]);
+  let likePending = $state<Record<string, boolean>>({});
+
+  // Autoplay do vídeo visível (mudo por padrão) + src lazy
   let observer: IntersectionObserver | null = null;
 
   async function refresh() {
@@ -100,7 +105,6 @@
       if (fileInput) fileInput.value = '';
       return;
     }
-    // Validação advisory de duração — se o metadata não carregar, deixa passar
     try {
       const dur = await videoDuration(file);
       if (isFinite(dur) && dur > MAX_DURATION_SECONDS) {
@@ -140,7 +144,6 @@
 
   async function doDelete() {
     if (!deleteTarget) return;
-    deleting = true;
     try {
       await matchVideos.delete(deleteTarget.id);
       toastSuccess($t('match.videos.deleted'));
@@ -148,7 +151,6 @@
     } catch {
       toastError($t('match.videos.delete_error'));
     } finally {
-      deleting = false;
       deleteTarget = null;
     }
   }
@@ -158,7 +160,58 @@
     return v.uploader?.id === $currentPlayer?.id || isGroupAdmin || $isAdmin;
   }
 
-  // IntersectionObserver: src lazy + autoplay mudo do item visível
+  async function toggleLike(v: MatchVideoItem) {
+    if (!$isLoggedIn) {
+      toastError($t('match.videos.login_to_like'));
+      return;
+    }
+    if (likePending[v.id] || !data) return;
+    likePending = { ...likePending, [v.id]: true };
+    const wasLiked = v.liked_by_me;
+    // Otimista
+    data = {
+      ...data,
+      videos: data.videos.map(item => item.id === v.id
+        ? { ...item, liked_by_me: !wasLiked, like_count: item.like_count + (wasLiked ? -1 : 1) }
+        : item),
+    };
+    try {
+      const res = wasLiked ? await matchVideos.unlike(v.id) : await matchVideos.like(v.id);
+      data = {
+        ...data,
+        videos: data.videos.map(item => item.id === v.id
+          ? { ...item, liked_by_me: res.liked_by_me, like_count: res.like_count }
+          : item),
+      };
+    } catch {
+      // Reverte
+      data = {
+        ...data,
+        videos: data.videos.map(item => item.id === v.id
+          ? { ...item, liked_by_me: wasLiked, like_count: item.like_count + (wasLiked ? 1 : -1) }
+          : item),
+      };
+      toastError($t('match.videos.like_error'));
+    } finally {
+      likePending = { ...likePending, [v.id]: false };
+    }
+  }
+
+  async function openLikers(v: MatchVideoItem) {
+    likersOpen = true;
+    likersLoading = true;
+    likers = [];
+    try {
+      const res = await matchVideos.listLikes(v.id);
+      likers = res.likers;
+    } catch {
+      toastError($t('match.videos.like_error'));
+    } finally {
+      likersLoading = false;
+    }
+  }
+
+  // IntersectionObserver: src lazy + autoplay do slide visível, pausa dos demais
   function observeVideo(el: HTMLVideoElement) {
     if (!observer) {
       observer = new IntersectionObserver(
@@ -184,135 +237,187 @@
 
   $effect(() => () => { observer?.disconnect(); });
 
-  let readyVideos = $derived((data?.videos ?? []).filter(v => v.status === 'ready'));
-  let inFlightVideos = $derived((data?.videos ?? []).filter(v => v.status !== 'ready'));
+  function togglePlay(e: Event) {
+    const video = e.currentTarget as HTMLVideoElement;
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  }
+
+  let feedVideos = $derived(data?.videos ?? []);
   let canUploadNow = $derived(!!data && data.can_upload && data.count < data.max_videos);
 </script>
 
 <svelte:head><title>{$t('match.videos.title')} — rachao.app</title></svelte:head>
 
-<PageBackground>
-  {#if loading}
-    <div class="flex items-center justify-center min-h-screen">
-      <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  {:else if match && data}
-    <main class="relative z-10 max-w-lg mx-auto px-4 py-6">
-      <MatchBannerCard {match} />
-
-      <div class="flex items-center justify-between mt-4 mb-3">
-        <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-          <Clapperboard size={16} class="text-primary-400" /> {$t('match.videos.title')}
-          <span class="text-white/50 font-normal">({data.count}/{data.max_videos})</span>
-        </h2>
-        {#if canUploadNow}
-          <button
-            onclick={() => fileInput?.click()}
-            disabled={uploading}
-            class="btn btn-primary btn-sm gap-1.5 disabled:opacity-60">
-            {#if uploading}
-              <Loader2 size={14} class="animate-spin" /> {uploadPct}%
-            {:else}
-              <Plus size={14} /> {$t('match.videos.upload')}
-            {/if}
-          </button>
-        {/if}
-      </div>
-
-      <input
-        bind:this={fileInput}
-        type="file"
-        accept="video/mp4,video/quicktime,video/webm,video/*"
-        capture="environment"
-        class="hidden"
-        onchange={onFileChosen} />
-
-      {#if uploading}
-        <div class="card p-3 mb-3">
-          <p class="text-xs text-gray-600 dark:text-gray-300 mb-2">{$t('match.videos.uploading')}</p>
-          <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div class="h-full bg-primary-500 rounded-full transition-all" style="width: {uploadPct}%"></div>
-          </div>
-        </div>
-      {/if}
-
-      <!-- Vídeos do próprio usuário ainda em processamento / com falha -->
-      {#each inFlightVideos as v (v.id)}
-        <div class="card p-3 mb-3 flex items-center gap-3">
-          {#if v.status === 'failed'}
-            <span class="text-lg">⚠️</span>
-            <p class="text-xs text-red-500 flex-1">{$t('match.videos.failed')}</p>
-          {:else}
-            <Loader2 size={16} class="animate-spin text-primary-500 shrink-0" />
-            <p class="text-xs text-gray-600 dark:text-gray-300 flex-1">{$t('match.videos.processing')}</p>
-          {/if}
-          {#if canDelete(v)}
-            <button onclick={() => askDelete(v)} class="btn btn-ghost btn-sm gap-1 text-red-500">
-              <Trash2 size={14} /> {$t('match.videos.delete')}
+{#if loading}
+  <div class="fixed inset-0 z-50 bg-black flex items-center justify-center">
+    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+{:else if match && data}
+  <div class="fixed inset-0 z-50 bg-black">
+    <!-- Feed vertical fullscreen com snap (swipe up/down) -->
+    <div class="h-full overflow-y-scroll snap-y snap-mandatory overscroll-contain" style="scrollbar-width: none;">
+      {#if feedVideos.length === 0}
+        <section class="relative h-full w-full snap-start flex flex-col items-center justify-center text-center px-8">
+          <p class="text-5xl mb-3">🎬</p>
+          <p class="text-white/90 font-medium">{$t('match.videos.empty')}</p>
+          {#if canUploadNow}
+            <p class="text-white/50 text-sm mt-1">{$t('match.videos.empty_cta')}</p>
+            <button
+              onclick={() => fileInput?.click()}
+              class="btn btn-primary mt-6 gap-1.5">
+              <Plus size={16} /> {$t('match.videos.upload')}
             </button>
           {/if}
-        </div>
-      {/each}
-
-      <!-- Feed vertical -->
-      {#if readyVideos.length === 0 && inFlightVideos.length === 0}
-        <div class="card p-8 text-center">
-          <p class="text-3xl mb-2">🎬</p>
-          <p class="text-sm text-gray-600 dark:text-gray-300">{$t('match.videos.empty')}</p>
-          {#if canUploadNow}
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{$t('match.videos.empty_cta')}</p>
-          {/if}
-        </div>
-      {:else}
-        <div class="snap-y snap-mandatory space-y-4">
-          {#each readyVideos as v (v.id)}
-            <div class="card overflow-hidden snap-start">
-              <div class="relative bg-black aspect-[9/16] max-h-[70dvh] w-full">
-                <!-- svelte-ignore a11y_media_has_caption -->
-                <video
-                  use:observeVideo
-                  data-src={v.video_url}
-                  poster={v.poster_url}
-                  playsinline
-                  muted
-                  loop
-                  controls
-                  preload="none"
-                  class="absolute inset-0 w-full h-full object-contain"></video>
-              </div>
-              <div class="px-3 py-2 flex items-center gap-2">
-                {#if v.uploader}
-                  <AvatarImage name={v.uploader.name} avatarUrl={v.uploader.avatar_url} size={24} />
-                  <span class="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate">
-                    {playerDisplayName(v.uploader.name, v.uploader.nickname)}
-                  </span>
-                {:else}
-                  <span class="flex-1"></span>
-                {/if}
-                {#if v.duration_seconds}
-                  <span class="text-[11px] text-gray-400">{Math.round(v.duration_seconds)}s</span>
-                {/if}
-                {#if canDelete(v)}
-                  <button onclick={() => askDelete(v)} class="btn btn-ghost btn-sm gap-1 text-red-500">
-                    <Trash2 size={14} /> {$t('match.videos.delete')}
-                  </button>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
+        </section>
       {/if}
-    </main>
-  {:else}
-    <main class="relative z-10 max-w-lg mx-auto px-4 py-16 text-center">
-      <p class="text-white/70">{$t('match.not_found_title')}</p>
-    </main>
-  {/if}
-</PageBackground>
 
-<ConfirmDialog
-  bind:open={confirmDeleteOpen}
-  message={$t('match.videos.confirm_delete')}
-  confirmLabel={$t('match.videos.delete')}
-  danger={true}
-  onConfirm={doDelete} />
+      {#each feedVideos as v (v.id)}
+        <section class="relative h-full w-full snap-start snap-always">
+          {#if v.status === 'ready'}
+            <!-- svelte-ignore a11y_media_has_caption -->
+            <video
+              use:observeVideo
+              data-src={v.video_url}
+              poster={v.poster_url}
+              playsinline
+              loop
+              {muted}
+              preload="none"
+              onclick={togglePlay}
+              class="absolute inset-0 w-full h-full object-contain"></video>
+          {:else}
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
+              {#if v.status === 'failed'}
+                <p class="text-4xl mb-3">⚠️</p>
+                <p class="text-red-400 text-sm">{$t('match.videos.failed')}</p>
+              {:else}
+                <Loader2 size={32} class="animate-spin text-primary-400 mb-3" />
+                <p class="text-white/70 text-sm">{$t('match.videos.processing')}</p>
+              {/if}
+            </div>
+          {/if}
+
+          <!-- Gradiente inferior + uploader -->
+          <div class="absolute inset-x-0 bottom-0 pb-6 pt-16 px-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
+            {#if v.uploader}
+              <div class="flex items-center gap-2">
+                <AvatarImage name={v.uploader.name} avatarUrl={v.uploader.avatar_url} size={32} />
+                <span class="text-white text-sm font-medium drop-shadow">
+                  {playerDisplayName(v.uploader.name, v.uploader.nickname)}
+                </span>
+                {#if v.duration_seconds}
+                  <span class="text-white/60 text-xs">· {Math.round(v.duration_seconds)}s</span>
+                {/if}
+              </div>
+            {/if}
+          </div>
+
+          <!-- Rail de ações (direita) -->
+          <div class="absolute right-3 bottom-24 flex flex-col items-center gap-5">
+            <div class="flex flex-col items-center">
+              <button
+                onclick={() => toggleLike(v)}
+                disabled={likePending[v.id]}
+                class="p-2 rounded-full bg-black/30 backdrop-blur-sm active:scale-90 transition-transform disabled:opacity-60"
+                aria-label={v.liked_by_me ? $t('match.videos.unlike') : $t('match.videos.like')}>
+                <Heart size={28} class={v.liked_by_me ? 'text-red-500 fill-red-500' : 'text-white'} />
+              </button>
+              <button
+                onclick={() => openLikers(v)}
+                class="text-white text-xs font-semibold mt-1 drop-shadow"
+                aria-label={$t('match.videos.likes_title')}>
+                {v.like_count}
+              </button>
+            </div>
+            {#if canDelete(v)}
+              <button
+                onclick={() => askDelete(v)}
+                class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white active:scale-90 transition-transform"
+                aria-label={$t('match.videos.delete')}>
+                <Trash2 size={22} />
+              </button>
+            {/if}
+          </div>
+        </section>
+      {/each}
+    </div>
+
+    <!-- Barra superior -->
+    <div class="absolute inset-x-0 top-0 pt-3 pb-8 px-3 bg-gradient-to-b from-black/70 to-transparent flex items-center gap-3 pointer-events-none">
+      <button
+        onclick={() => goto(`/match/${matchHash}`)}
+        class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white pointer-events-auto"
+        aria-label={$t('match.videos.back')}>
+        <ArrowLeft size={20} />
+      </button>
+      <div class="flex-1 min-w-0">
+        <p class="text-white text-sm font-semibold truncate drop-shadow">🎬 {$t('match.videos.title')}</p>
+        <p class="text-white/60 text-xs">{data.count}/{data.max_videos}</p>
+      </div>
+      <button
+        onclick={() => muted = !muted}
+        class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white pointer-events-auto"
+        aria-label={muted ? $t('match.videos.unmute') : $t('match.videos.mute')}>
+        {#if muted}<VolumeX size={20} />{:else}<Volume2 size={20} />{/if}
+      </button>
+      {#if canUploadNow}
+        <button
+          onclick={() => fileInput?.click()}
+          disabled={uploading}
+          class="p-2 rounded-full bg-primary-600 text-white pointer-events-auto disabled:opacity-60"
+          aria-label={$t('match.videos.upload')}>
+          {#if uploading}<Loader2 size={20} class="animate-spin" />{:else}<Plus size={20} />{/if}
+        </button>
+      {/if}
+    </div>
+
+    {#if uploading}
+      <div class="absolute inset-x-0 top-0 h-1 bg-white/20">
+        <div class="h-full bg-primary-500 transition-all" style="width: {uploadPct}%"></div>
+      </div>
+    {/if}
+
+    <input
+      bind:this={fileInput}
+      type="file"
+      accept="video/mp4,video/quicktime,video/webm,video/*"
+      class="hidden"
+      onchange={onFileChosen} />
+
+    <ConfirmDialog
+      bind:open={confirmDeleteOpen}
+      message={$t('match.videos.confirm_delete')}
+      confirmLabel={$t('match.videos.delete')}
+      danger={true}
+      onConfirm={doDelete} />
+
+    <Modal bind:open={likersOpen} title={$t('match.videos.likes_title')}>
+      {#if likersLoading}
+        <div class="flex justify-center py-6">
+          <div class="w-6 h-6 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      {:else if likers.length === 0}
+        <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{$t('match.videos.no_likes')}</p>
+      {:else}
+        <ul class="space-y-3">
+          {#each likers as liker (liker.id)}
+            <li class="flex items-center gap-3">
+              <AvatarImage name={liker.name} avatarUrl={liker.avatar_url} size={32} />
+              <span class="text-sm text-gray-800 dark:text-gray-100">
+                {playerDisplayName(liker.name, liker.nickname)}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </Modal>
+  </div>
+{:else}
+  <div class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center px-8 text-center">
+    <p class="text-white/70">{$t('match.not_found_title')}</p>
+    <button onclick={() => goto(`/match/${matchHash}`)} class="btn btn-primary mt-4">
+      {$t('match.videos.back')}
+    </button>
+  </div>
+{/if}

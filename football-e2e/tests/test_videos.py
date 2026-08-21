@@ -57,6 +57,8 @@ READY_VIDEO = {
     "poster_url": "https://cdn.rachao.app/videos/fake/ready.webp",
     "duration_seconds": 42.5,
     "created_at": "2026-08-20T12:00:00Z",
+    "like_count": 2,
+    "liked_by_me": False,
     "uploader": {
         "id": "44444444-4444-4444-4444-444444444444",
         # Nome de uma palavra: o feed renderiza via playerDisplayName, que
@@ -65,6 +67,19 @@ READY_VIDEO = {
         "nickname": None,
         "avatar_url": None,
     },
+}
+
+LIKERS = {
+    "likers": [
+        {
+            "id": "55555555-5555-5555-5555-555555555555",
+            "name": "CurtidorE2E",
+            "nickname": None,
+            "avatar_url": None,
+            "created_at": "2026-08-20T12:30:00Z",
+        }
+    ],
+    "count": 1,
 }
 
 
@@ -173,7 +188,51 @@ def test_feed_botao_upload_para_autorizado(admin_page: Page, base_url):
     _mock_videos(admin_page, [], can_upload=True)
     admin_page.goto(f"{base_url}/match/{FAKE_HASH}/videos")
     admin_page.wait_for_load_state("networkidle")
-    expect(admin_page.get_by_role("button", name="Enviar vídeo")).to_be_visible()
+    # Estado vazio + can_upload: botão na barra superior E no CTA do slide vazio
+    expect(admin_page.get_by_role("button", name="Enviar vídeo").first).to_be_visible()
+
+
+# ── Curtidas ─────────────────────────────────────────────────────────────────
+
+
+def test_like_incrementa_contador(admin_page: Page, base_url):
+    _mock_match(admin_page, videos_enabled=True)
+    _mock_videos(admin_page, [READY_VIDEO])
+    admin_page.route(
+        f"**/videos/{READY_VIDEO['id']}/like",
+        lambda route: _fulfill_json(route, {"like_count": 3, "liked_by_me": True}),
+    )
+    admin_page.goto(f"{base_url}/match/{FAKE_HASH}/videos")
+    admin_page.wait_for_load_state("networkidle")
+
+    expect(admin_page.get_by_text("2", exact=True)).to_be_visible()  # contador inicial
+    admin_page.get_by_role("button", name="Curtir").click()
+    expect(admin_page.get_by_text("3", exact=True)).to_be_visible()  # otimista + resposta
+    expect(admin_page.get_by_role("button", name="Remover curtida")).to_be_visible()
+
+
+def test_curtidas_exibe_quem_curtiu(anon_page: Page, base_url):
+    _mock_match(anon_page, videos_enabled=True)
+    _mock_videos(anon_page, [READY_VIDEO])
+    anon_page.route(
+        f"**/videos/{READY_VIDEO['id']}/likes",
+        lambda route: _fulfill_json(route, LIKERS),
+    )
+    anon_page.goto(f"{base_url}/match/{FAKE_HASH}/videos")
+    anon_page.wait_for_load_state("networkidle")
+
+    anon_page.get_by_role("button", name="Curtidas").click()
+    expect(anon_page.get_by_text("CurtidorE2E")).to_be_visible()
+
+
+def test_like_anonimo_pede_login(anon_page: Page, base_url):
+    _mock_match(anon_page, videos_enabled=True)
+    _mock_videos(anon_page, [READY_VIDEO])
+    anon_page.goto(f"{base_url}/match/{FAKE_HASH}/videos")
+    anon_page.wait_for_load_state("networkidle")
+
+    anon_page.get_by_role("button", name="Curtir").click()
+    expect(anon_page.get_by_text("Entre na sua conta para curtir.")).to_be_visible()
 
 
 # ── Admin /admin/videos (real, sem mock) ─────────────────────────────────────

@@ -35,13 +35,17 @@ type VideoStore interface {
 	GetPlayerAttendanceStatus(ctx context.Context, matchID, playerID uuid.UUID) (string, error)
 	CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, originalKey string) (*db.MatchVideo, error)
 	GetMatchVideoByID(ctx context.Context, id uuid.UUID) (*db.MatchVideo, error)
-	ListMatchVideos(ctx context.Context, matchID uuid.UUID) ([]db.MatchVideoWithUploader, error)
+	ListMatchVideos(ctx context.Context, matchID uuid.UUID, viewer *uuid.UUID) ([]db.MatchVideoWithUploader, error)
 	CountMatchVideos(ctx context.Context, matchID uuid.UUID) (int, error)
 	MarkVideoUploaded(ctx context.Context, id uuid.UUID, sizeBytes int64) error
 	DeleteMatchVideo(ctx context.Context, id uuid.UUID) error
 	ListVideoUsers(ctx context.Context) ([]db.VideoUser, error)
 	UpdatePlayerVideosEnabled(ctx context.Context, playerID uuid.UUID, enabled bool) error
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (*db.Player, error)
+	LikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error
+	UnlikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error
+	CountVideoLikes(ctx context.Context, videoID uuid.UUID) (int, error)
+	ListVideoLikers(ctx context.Context, videoID uuid.UUID) ([]db.VideoLiker, error)
 }
 
 type pgVideoStore struct {
@@ -69,8 +73,8 @@ func (s *pgVideoStore) CreateMatchVideo(ctx context.Context, id, matchID, upload
 func (s *pgVideoStore) GetMatchVideoByID(ctx context.Context, id uuid.UUID) (*db.MatchVideo, error) {
 	return db.GetMatchVideoByID(ctx, s.pool, id)
 }
-func (s *pgVideoStore) ListMatchVideos(ctx context.Context, matchID uuid.UUID) ([]db.MatchVideoWithUploader, error) {
-	return db.ListMatchVideos(ctx, s.pool, matchID)
+func (s *pgVideoStore) ListMatchVideos(ctx context.Context, matchID uuid.UUID, viewer *uuid.UUID) ([]db.MatchVideoWithUploader, error) {
+	return db.ListMatchVideos(ctx, s.pool, matchID, viewer)
 }
 func (s *pgVideoStore) CountMatchVideos(ctx context.Context, matchID uuid.UUID) (int, error) {
 	return db.CountMatchVideos(ctx, s.pool, matchID)
@@ -89,6 +93,18 @@ func (s *pgVideoStore) UpdatePlayerVideosEnabled(ctx context.Context, playerID u
 }
 func (s *pgVideoStore) GetPlayerByID(ctx context.Context, id uuid.UUID) (*db.Player, error) {
 	return db.GetPlayerByID(ctx, s.pool, id)
+}
+func (s *pgVideoStore) LikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error {
+	return db.LikeMatchVideo(ctx, s.pool, videoID, playerID)
+}
+func (s *pgVideoStore) UnlikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error {
+	return db.UnlikeMatchVideo(ctx, s.pool, videoID, playerID)
+}
+func (s *pgVideoStore) CountVideoLikes(ctx context.Context, videoID uuid.UUID) (int, error) {
+	return db.CountVideoLikes(ctx, s.pool, videoID)
+}
+func (s *pgVideoStore) ListVideoLikers(ctx context.Context, videoID uuid.UUID) ([]db.VideoLiker, error) {
+	return db.ListVideoLikers(ctx, s.pool, videoID)
 }
 
 type VideoHandler struct {
@@ -137,6 +153,8 @@ type videoResp struct {
 	PosterURL       *string            `json:"poster_url"`
 	DurationSeconds *float64           `json:"duration_seconds"`
 	CreatedAt       time.Time          `json:"created_at"`
+	LikeCount       int                `json:"like_count"`
+	LikedByMe       bool               `json:"liked_by_me"`
 	Uploader        *videoUploaderResp `json:"uploader,omitempty"`
 }
 
@@ -161,6 +179,8 @@ func buildVideoResp(v *db.MatchVideo) videoResp {
 
 func buildVideoWithUploaderResp(v db.MatchVideoWithUploader) videoResp {
 	resp := buildVideoResp(&v.MatchVideo)
+	resp.LikeCount = v.LikeCount
+	resp.LikedByMe = v.LikedByMe
 	resp.Uploader = &videoUploaderResp{
 		ID:        v.UploadedBy,
 		Name:      v.UploaderName,
@@ -342,7 +362,11 @@ func (h *VideoHandler) ListPublicVideos(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	all, err := h.Store.ListMatchVideos(ctx, match.ID)
+	var viewer *uuid.UUID
+	if player != nil {
+		viewer = &player.ID
+	}
+	all, err := h.Store.ListMatchVideos(ctx, match.ID, viewer)
 	if err != nil {
 		renderError(w, err)
 		return
@@ -411,6 +435,74 @@ func (h *VideoHandler) DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	noContent(w)
+}
+
+// ── Likes ────────────────────────────────────────────────────────────────────
+
+func (h *VideoHandler) likeTarget(r *http.Request) (*db.MatchVideo, error) {
+	videoID, err := uuid.Parse(chi.URLParam(r, "videoID"))
+	if err != nil {
+		return nil, apierror.NotFound("video not found")
+	}
+	return h.Store.GetMatchVideoByID(r.Context(), videoID)
+}
+
+// LikeVideo handles POST /videos/{videoID}/like (auth, idempotent).
+func (h *VideoHandler) LikeVideo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	player := middleware.PlayerFromCtx(ctx)
+	video, err := h.likeTarget(r)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	if err := h.Store.LikeMatchVideo(ctx, video.ID, player.ID); err != nil {
+		renderError(w, err)
+		return
+	}
+	count, err := h.Store.CountVideoLikes(ctx, video.ID)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	renderJSON(w, http.StatusOK, map[string]any{"like_count": count, "liked_by_me": true})
+}
+
+// UnlikeVideo handles DELETE /videos/{videoID}/like (auth, idempotent).
+func (h *VideoHandler) UnlikeVideo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	player := middleware.PlayerFromCtx(ctx)
+	video, err := h.likeTarget(r)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	if err := h.Store.UnlikeMatchVideo(ctx, video.ID, player.ID); err != nil {
+		renderError(w, err)
+		return
+	}
+	count, err := h.Store.CountVideoLikes(ctx, video.ID)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	renderJSON(w, http.StatusOK, map[string]any{"like_count": count, "liked_by_me": false})
+}
+
+// ListVideoLikes handles GET /videos/{videoID}/likes (public — a página do
+// rachão é pública, então quem curtiu também é).
+func (h *VideoHandler) ListVideoLikes(w http.ResponseWriter, r *http.Request) {
+	video, err := h.likeTarget(r)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	likers, err := h.Store.ListVideoLikers(r.Context(), video.ID)
+	if err != nil {
+		renderError(w, err)
+		return
+	}
+	renderJSON(w, http.StatusOK, map[string]any{"likers": likers, "count": len(likers)})
 }
 
 // ── Admin (feature flag) ─────────────────────────────────────────────────────

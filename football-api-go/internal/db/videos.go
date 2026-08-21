@@ -35,12 +35,15 @@ type MatchVideo struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-// MatchVideoWithUploader is a video row joined with the uploader's public info.
+// MatchVideoWithUploader is a video row joined with the uploader's public info
+// and like aggregates for the requesting viewer.
 type MatchVideoWithUploader struct {
 	MatchVideo
 	UploaderName      string  `json:"uploader_name"`
 	UploaderNickname  *string `json:"uploader_nickname"`
 	UploaderAvatarURL *string `json:"uploader_avatar_url"`
+	LikeCount         int     `json:"like_count"`
+	LikedByMe         bool    `json:"liked_by_me"`
 }
 
 const matchVideoCols = `
@@ -85,14 +88,20 @@ func GetMatchVideoByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*
 	return scanMatchVideo(row.Scan)
 }
 
-// ListMatchVideos returns all videos for a match (newest first) joined with uploader info.
-func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) ([]MatchVideoWithUploader, error) {
+// ListMatchVideos returns all videos for a match (newest first) joined with
+// uploader info and like aggregates. viewer may be nil (anonymous): liked_by_me
+// comes back false.
+func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID, viewer *uuid.UUID) ([]MatchVideoWithUploader, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT `+matchVideoCols+`, p.name, p.nickname, p.avatar_url
+		SELECT `+matchVideoCols+`, p.name, p.nickname, p.avatar_url,
+		       (SELECT COUNT(*) FROM match_video_likes l WHERE l.video_id = v.id)::int AS like_count,
+		       ($2::uuid IS NOT NULL AND EXISTS (
+		           SELECT 1 FROM match_video_likes l WHERE l.video_id = v.id AND l.player_id = $2::uuid
+		       )) AS liked_by_me
 		FROM match_videos v
 		JOIN players p ON p.id = v.uploaded_by
 		WHERE v.match_id = $1
-		ORDER BY v.created_at DESC`, matchID)
+		ORDER BY v.created_at DESC`, matchID, viewer)
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +114,71 @@ func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID)
 			&v.VideoURL, &v.PosterURL, &v.DurationSeconds, &v.SizeBytes,
 			&v.Error, &v.Attempts, &v.CreatedAt, &v.UpdatedAt,
 			&v.UploaderName, &v.UploaderNickname, &v.UploaderAvatarURL,
+			&v.LikeCount, &v.LikedByMe,
 		)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, v)
+	}
+	return result, rows.Err()
+}
+
+// ── Likes ────────────────────────────────────────────────────────────────────
+
+// VideoLiker is a player who liked a video.
+type VideoLiker struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Nickname  *string   `json:"nickname"`
+	AvatarURL *string   `json:"avatar_url"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// LikeMatchVideo records a like (idempotent).
+func LikeMatchVideo(ctx context.Context, pool *pgxpool.Pool, videoID, playerID uuid.UUID) error {
+	_, err := pool.Exec(ctx, `
+		INSERT INTO match_video_likes (video_id, player_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING`, videoID, playerID)
+	return err
+}
+
+// UnlikeMatchVideo removes a like (idempotent).
+func UnlikeMatchVideo(ctx context.Context, pool *pgxpool.Pool, videoID, playerID uuid.UUID) error {
+	_, err := pool.Exec(ctx,
+		`DELETE FROM match_video_likes WHERE video_id = $1 AND player_id = $2`,
+		videoID, playerID)
+	return err
+}
+
+// CountVideoLikes returns the number of likes on a video.
+func CountVideoLikes(ctx context.Context, pool *pgxpool.Pool, videoID uuid.UUID) (int, error) {
+	var count int
+	err := pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM match_video_likes WHERE video_id = $1`, videoID).Scan(&count)
+	return count, err
+}
+
+// ListVideoLikers returns who liked a video (most recent first).
+func ListVideoLikers(ctx context.Context, pool *pgxpool.Pool, videoID uuid.UUID) ([]VideoLiker, error) {
+	rows, err := pool.Query(ctx, `
+		SELECT p.id, p.name, p.nickname, p.avatar_url, l.created_at
+		FROM match_video_likes l
+		JOIN players p ON p.id = l.player_id
+		WHERE l.video_id = $1
+		ORDER BY l.created_at DESC`, videoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]VideoLiker, 0)
+	for rows.Next() {
+		var lk VideoLiker
+		if err := rows.Scan(&lk.ID, &lk.Name, &lk.Nickname, &lk.AvatarURL, &lk.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, lk)
 	}
 	return result, rows.Err()
 }

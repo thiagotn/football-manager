@@ -107,6 +107,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		r.Get("/matches/public/{hash}/votes/results", voteH.GetPublicVoteResults)
 		r.Get("/matches/public/{hash}/votes/ballots", voteH.GetPublicVoteBallots)
 		r.With(optionalAuth).Get("/matches/public/{hash}/videos", videoH.ListPublicVideos)
+		r.Get("/videos/{videoID}/likes", videoH.ListVideoLikes)
 		r.Mount("/invites", inviteH.Routes(authMw))
 		r.Mount("/claims", claimH.Routes())
 		r.Get("/matches/{matchID}/teams", teamH.GetTeams)
@@ -148,6 +149,8 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 			r.Post("/matches/{matchID}/videos", videoH.CreateUpload)
 			r.Post("/matches/{matchID}/videos/{videoID}/confirm", videoH.ConfirmUpload)
 			r.Delete("/videos/{videoID}", videoH.DeleteVideo)
+			r.Post("/videos/{videoID}/like", videoH.LikeVideo)
+			r.Delete("/videos/{videoID}/like", videoH.UnlikeVideo)
 
 			// Vote routes
 			r.Get("/matches/{matchID}/votes/status", voteH.GetVoteStatus)

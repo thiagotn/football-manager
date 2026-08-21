@@ -35,6 +35,34 @@ type mockVideoStore struct {
 	deletedVideo    bool
 	updatedEnabled  *bool
 	updatedPlayerID uuid.UUID
+	listViewer      *uuid.UUID
+	likes           map[uuid.UUID]map[uuid.UUID]bool // videoID → playerID → liked
+	likers          []db.VideoLiker
+}
+
+func (m *mockVideoStore) ensureLikes(videoID uuid.UUID) map[uuid.UUID]bool {
+	if m.likes == nil {
+		m.likes = map[uuid.UUID]map[uuid.UUID]bool{}
+	}
+	if m.likes[videoID] == nil {
+		m.likes[videoID] = map[uuid.UUID]bool{}
+	}
+	return m.likes[videoID]
+}
+
+func (m *mockVideoStore) LikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error {
+	m.ensureLikes(videoID)[playerID] = true
+	return nil
+}
+func (m *mockVideoStore) UnlikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error {
+	delete(m.ensureLikes(videoID), playerID)
+	return nil
+}
+func (m *mockVideoStore) CountVideoLikes(ctx context.Context, videoID uuid.UUID) (int, error) {
+	return len(m.ensureLikes(videoID)), nil
+}
+func (m *mockVideoStore) ListVideoLikers(ctx context.Context, videoID uuid.UUID) ([]db.VideoLiker, error) {
+	return m.likers, nil
 }
 
 func (m *mockVideoStore) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
@@ -74,7 +102,8 @@ func (m *mockVideoStore) GetMatchVideoByID(ctx context.Context, id uuid.UUID) (*
 	}
 	return m.video, nil
 }
-func (m *mockVideoStore) ListMatchVideos(ctx context.Context, matchID uuid.UUID) ([]db.MatchVideoWithUploader, error) {
+func (m *mockVideoStore) ListMatchVideos(ctx context.Context, matchID uuid.UUID, viewer *uuid.UUID) ([]db.MatchVideoWithUploader, error) {
+	m.listViewer = viewer
 	return m.videoList, nil
 }
 func (m *mockVideoStore) CountMatchVideos(ctx context.Context, matchID uuid.UUID) (int, error) {
@@ -155,6 +184,9 @@ func videoRouter(player *db.Player, store handlers.VideoStore, storage *services
 	r.Delete("/videos/{videoID}", h.DeleteVideo)
 	r.Get("/admin/video-users", h.ListVideoUsers)
 	r.Patch("/admin/video-users/{userID}", h.UpdateVideoAccess)
+	r.Post("/videos/{videoID}/like", h.LikeVideo)
+	r.Delete("/videos/{videoID}/like", h.UnlikeVideo)
+	r.Get("/videos/{videoID}/likes", h.ListVideoLikes)
 	return r
 }
 
@@ -419,6 +451,80 @@ func TestDeleteVideo_ByGroupAdmin(t *testing.T) {
 
 	w := doRequest(r, "DELETE", "/videos/"+video.ID.String(), "")
 	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+// ── Likes ────────────────────────────────────────────────────────────────────
+
+func TestLikeVideo_ThenUnlike(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	player := fakePlayer()
+	match := testMatch()
+	video := &db.MatchVideo{ID: uuid.New(), MatchID: match.ID, UploadedBy: uuid.New(), Status: db.VideoStatusReady}
+	store := &mockVideoStore{match: match, video: video}
+	r := videoRouter(player, store, storage)
+
+	w := postJSON(r, "/videos/"+video.ID.String()+"/like", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"like_count":1`)
+	assert.Contains(t, w.Body.String(), `"liked_by_me":true`)
+
+	// Idempotente: curtir de novo não duplica
+	w = postJSON(r, "/videos/"+video.ID.String()+"/like", "")
+	assert.Contains(t, w.Body.String(), `"like_count":1`)
+
+	w = doRequest(r, "DELETE", "/videos/"+video.ID.String()+"/like", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"like_count":0`)
+	assert.Contains(t, w.Body.String(), `"liked_by_me":false`)
+}
+
+func TestLikeVideo_NotFound(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	store := &mockVideoStore{}
+	r := videoRouter(fakePlayer(), store, storage)
+
+	w := postJSON(r, "/videos/"+uuid.New().String()+"/like", "")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestListVideoLikes_PublicListsLikers(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	match := testMatch()
+	video := &db.MatchVideo{ID: uuid.New(), MatchID: match.ID, UploadedBy: uuid.New(), Status: db.VideoStatusReady}
+	store := &mockVideoStore{
+		match: match, video: video,
+		likers: []db.VideoLiker{{ID: uuid.New(), Name: "Curtidor"}},
+	}
+	r := videoRouter(nil, store, storage)
+
+	w := doRequest(r, "GET", "/videos/"+video.ID.String()+"/likes", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Curtidor")
+	assert.Contains(t, w.Body.String(), `"count":1`)
+}
+
+func TestListPublicVideos_IncludesLikeAggregates(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	player := fakePlayer()
+	match := testMatch()
+	ready := db.MatchVideoWithUploader{
+		MatchVideo: db.MatchVideo{ID: uuid.New(), MatchID: match.ID, UploadedBy: uuid.New(), Status: db.VideoStatusReady},
+		LikeCount:  3, LikedByMe: true,
+	}
+	store := &mockVideoStore{match: match, videosEnabled: true, videoList: []db.MatchVideoWithUploader{ready}}
+	r := videoRouter(player, store, storage)
+
+	w := doRequest(r, "GET", "/matches/public/"+match.Hash+"/videos", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"like_count":3`)
+	assert.Contains(t, w.Body.String(), `"liked_by_me":true`)
+	// viewer autenticado é repassado à listagem
+	assert.NotNil(t, store.listViewer)
+	assert.Equal(t, player.ID, *store.listViewer)
 }
 
 // ── Admin toggle ─────────────────────────────────────────────────────────────

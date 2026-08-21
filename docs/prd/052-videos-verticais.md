@@ -17,7 +17,8 @@ pública do rachão (como times e resultados) — vitrine do rachão e do app.
 | Flag | Por conta (`videos_enabled`), semântica "dono do grupo": habilita nos grupos onde a conta é admin. Grupo com 2+ admins habilita se **qualquer** um tiver a flag. Flag off = kill switch (esconde vídeos já publicados). |
 | Quem sobe | Membros com presença **confirmada** na partida + admins do grupo + super admin |
 | Quem exclui | Autor (o próprio vídeo), admin do grupo e super admin (qualquer vídeo) |
-| Visibilidade | Pública na página do rachão (`/match/[hash]/videos`) |
+| Visibilidade | Pública na página do rachão (`/match/[hash]/videos`) — feed fullscreen estilo TikTok (snap vertical, autoplay mudo, swipe) |
+| Curtidas | Qualquer usuário logado curte (idempotente); lista de quem curtiu é pública (migration 051, `match_video_likes`) |
 | Limites | 10 vídeos/partida (fixo, `VIDEO_LIMIT_REACHED`), 150MB original, ≤ 65s (ffprobe é a autoridade; client valida advisory) |
 
 ## Arquitetura
@@ -44,7 +45,7 @@ Browser ─(6) GET /api/v2/matches/public/{hash}/videos ► feed público via cd
 | Área | Item |
 |---|---|
 | Migration | `050_match_videos.sql` — tabela `match_videos` + `players.videos_enabled` |
-| API v2 | `POST /matches/{id}/videos` · `POST /matches/{id}/videos/{vid}/confirm` · `GET /matches/public/{hash}/videos` (OptionalAuth) · `DELETE /videos/{vid}` · `GET/PATCH /admin/video-users` · `group_videos_enabled` no payload do match |
+| API v2 | `POST /matches/{id}/videos` · `POST /matches/{id}/videos/{vid}/confirm` · `GET /matches/public/{hash}/videos` (OptionalAuth; `like_count`/`liked_by_me`) · `DELETE /videos/{vid}` · `POST/DELETE /videos/{vid}/like` · `GET /videos/{vid}/likes` (público) · `GET/PATCH /admin/video-users` · `group_videos_enabled` no payload do match |
 | Worker | `cmd/worker` + `internal/worker` (+ `Dockerfile.worker`) |
 | Frontend | `/match/[hash]/videos` (feed vertical, upload com progresso XHR, polling de status) · card 🎬 na página da partida · `/admin/videos` (toggle por conta) · namespace `matchVideos` |
 | Homelab | `helm/apps/rachao/deployment-worker.yml` + imagem no kustomization (ADR 0007) |
