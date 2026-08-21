@@ -38,6 +38,7 @@ type MatchVideo struct {
 	SizeBytes       *int64    `json:"size_bytes"`
 	Error           *string   `json:"-"`
 	Attempts        int       `json:"-"`
+	ViewCount       int       `json:"view_count"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
@@ -56,14 +57,14 @@ type MatchVideoWithUploader struct {
 const matchVideoCols = `
 	v.id, v.match_id, v.uploaded_by, v.status, v.media_type, v.original_key,
 	v.video_url, v.poster_url, v.duration_seconds, v.size_bytes,
-	v.error, v.attempts, v.created_at, v.updated_at`
+	v.error, v.attempts, v.view_count, v.created_at, v.updated_at`
 
 func scanMatchVideo(scanFn func(dest ...any) error) (*MatchVideo, error) {
 	var v MatchVideo
 	err := scanFn(
 		&v.ID, &v.MatchID, &v.UploadedBy, &v.Status, &v.MediaType, &v.OriginalKey,
 		&v.VideoURL, &v.PosterURL, &v.DurationSeconds, &v.SizeBytes,
-		&v.Error, &v.Attempts, &v.CreatedAt, &v.UpdatedAt,
+		&v.Error, &v.Attempts, &v.ViewCount, &v.CreatedAt, &v.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -87,7 +88,7 @@ func CreateMatchVideo(ctx context.Context, pool *pgxpool.Pool, id, matchID, uplo
 const matchVideoColsBare = `
 	id, match_id, uploaded_by, status, media_type, original_key,
 	video_url, poster_url, duration_seconds, size_bytes,
-	error, attempts, created_at, updated_at`
+	error, attempts, view_count, created_at, updated_at`
 
 // GetMatchVideoByID fetches a video row by ID.
 func GetMatchVideoByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*MatchVideo, error) {
@@ -120,7 +121,7 @@ func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID,
 		err := rows.Scan(
 			&v.ID, &v.MatchID, &v.UploadedBy, &v.Status, &v.MediaType, &v.OriginalKey,
 			&v.VideoURL, &v.PosterURL, &v.DurationSeconds, &v.SizeBytes,
-			&v.Error, &v.Attempts, &v.CreatedAt, &v.UpdatedAt,
+			&v.Error, &v.Attempts, &v.ViewCount, &v.CreatedAt, &v.UpdatedAt,
 			&v.UploaderName, &v.UploaderNickname, &v.UploaderAvatarURL,
 			&v.LikeCount, &v.LikedByMe,
 		)
@@ -130,6 +131,15 @@ func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID,
 		result = append(result, v)
 	}
 	return result, rows.Err()
+}
+
+// IncrementVideoView bumps the view counter of a ready media item.
+// Best-effort: incrementing a missing/unready row affects 0 rows, no error.
+func IncrementVideoView(ctx context.Context, pool *pgxpool.Pool, videoID uuid.UUID) error {
+	_, err := pool.Exec(ctx, `
+		UPDATE match_videos SET view_count = view_count + 1
+		WHERE id = $1 AND status = 'ready'`, videoID)
+	return err
 }
 
 // ── Likes ────────────────────────────────────────────────────────────────────

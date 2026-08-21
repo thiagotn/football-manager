@@ -51,6 +51,7 @@ type VideoStore interface {
 	ListVideoUsers(ctx context.Context) ([]db.VideoUser, error)
 	UpdatePlayerVideosEnabled(ctx context.Context, playerID uuid.UUID, enabled bool) error
 	GetPlayerByID(ctx context.Context, id uuid.UUID) (*db.Player, error)
+	IncrementVideoView(ctx context.Context, videoID uuid.UUID) error
 	LikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error
 	UnlikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error
 	CountVideoLikes(ctx context.Context, videoID uuid.UUID) (int, error)
@@ -102,6 +103,9 @@ func (s *pgVideoStore) UpdatePlayerVideosEnabled(ctx context.Context, playerID u
 }
 func (s *pgVideoStore) GetPlayerByID(ctx context.Context, id uuid.UUID) (*db.Player, error) {
 	return db.GetPlayerByID(ctx, s.pool, id)
+}
+func (s *pgVideoStore) IncrementVideoView(ctx context.Context, videoID uuid.UUID) error {
+	return db.IncrementVideoView(ctx, s.pool, videoID)
 }
 func (s *pgVideoStore) LikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error {
 	return db.LikeMatchVideo(ctx, s.pool, videoID, playerID)
@@ -163,6 +167,7 @@ type videoResp struct {
 	PosterURL       *string            `json:"poster_url"`
 	DurationSeconds *float64           `json:"duration_seconds"`
 	CreatedAt       time.Time          `json:"created_at"`
+	ViewCount       int                `json:"view_count"`
 	LikeCount       int                `json:"like_count"`
 	LikedByMe       bool               `json:"liked_by_me"`
 	Uploader        *videoUploaderResp `json:"uploader,omitempty"`
@@ -185,6 +190,7 @@ func buildVideoResp(v *db.MatchVideo) videoResp {
 		PosterURL:       v.PosterURL,
 		DurationSeconds: v.DurationSeconds,
 		CreatedAt:       v.CreatedAt,
+		ViewCount:       v.ViewCount,
 	}
 }
 
@@ -455,6 +461,21 @@ func (h *VideoHandler) DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		_ = h.storage.DeleteObject(ctx, prefix+".jpg")
 	}
 	if err := h.Store.DeleteMatchVideo(ctx, videoID); err != nil {
+		renderError(w, err)
+		return
+	}
+	noContent(w)
+}
+
+// RegisterView handles POST /videos/{videoID}/view (public, fire-and-forget):
+// bumps the view counter. O front deduplica por sessão; aqui é best-effort.
+func (h *VideoHandler) RegisterView(w http.ResponseWriter, r *http.Request) {
+	videoID, err := uuid.Parse(chi.URLParam(r, "videoID"))
+	if err != nil {
+		renderError(w, apierror.NotFound("video not found"))
+		return
+	}
+	if err := h.Store.IncrementVideoView(r.Context(), videoID); err != nil {
 		renderError(w, err)
 		return
 	}

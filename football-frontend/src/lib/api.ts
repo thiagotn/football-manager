@@ -836,6 +836,7 @@ export type MatchVideoItem = {
   poster_url: string | null;
   duration_seconds: number | null;
   created_at: string;
+  view_count: number;
   like_count: number;
   liked_by_me: boolean;
   uploader?: { id: string; name: string; nickname: string | null; avatar_url: string | null };
@@ -871,6 +872,7 @@ export const matchVideos = {
   confirm: (matchId: string, videoId: string) =>
     post<MatchVideoItem>(`/matches/${matchId}/videos/${videoId}/confirm`, {}),
   delete: (videoId: string) => del(`/videos/${videoId}`),
+  registerView: (videoId: string) => post<void>(`/videos/${videoId}/view`, {}),
   like: (videoId: string) => post<VideoLikeResult>(`/videos/${videoId}/like`, {}),
   unlike: (videoId: string) => request<VideoLikeResult>(`/videos/${videoId}/like`, { method: 'DELETE' }),
   listLikes: (videoId: string) => get<VideoLikesResponse>(`/videos/${videoId}/likes`),

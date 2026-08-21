@@ -8,9 +8,9 @@
 
 ## Próxima migration
 
-A última migration criada é `052_match_media_type.sql`.
+A última migration criada é `053_match_video_views.sql`.
 
-**A próxima deve ser numerada `053_`.**
+**A próxima deve ser numerada `054_`.**
 
 > Sempre verificar com `ls migrations/` antes de criar uma nova, para não pular nem duplicar números.
 

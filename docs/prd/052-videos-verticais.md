@@ -20,6 +20,8 @@ pública do rachão (como times e resultados) — vitrine do rachão e do app.
 | Visibilidade | Pública em `/match/[hash]/feed` (redirect de `/videos`) — feed fullscreen estilo TikTok (snap vertical, autoplay mudo, swipe); deep link `?item=<id>`; compartilhar via Web Share/WhatsApp |
 | Curtidas | Qualquer usuário logado curte (idempotente); lista de quem curtiu é pública (migration 051, `match_video_likes`) |
 | Fotos | Mesmo feed aceita imagens (JPG/PNG/WebP, ≤25MB; migration 052 `media_type`); worker corrige EXIF + redimensiona ≤1080×1920 + JPEG; URL final em `poster_url` (`video_url` nulo) |
+| Views | Contador por item (migration 053 `view_count`; `POST /videos/{id}/view` público, dedupe por visita no front); exibido no rail do feed |
+| Progresso | Linha estilo TikTok no rodapé do slide: vídeo acompanha a reprodução, foto tem timer de 6s; ao completar, dica animada de swipe se houver próximo item |
 | Limites | 10 vídeos/partida (fixo, `VIDEO_LIMIT_REACHED`), 150MB original, ≤ 65s (ffprobe é a autoridade; client valida advisory) |
 
 ## Arquitetura

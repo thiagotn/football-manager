@@ -108,6 +108,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool) http.Handler {
 		r.Get("/matches/public/{hash}/votes/ballots", voteH.GetPublicVoteBallots)
 		r.With(optionalAuth).Get("/matches/public/{hash}/videos", videoH.ListPublicVideos)
 		r.Get("/videos/{videoID}/likes", videoH.ListVideoLikes)
+		r.Post("/videos/{videoID}/view", videoH.RegisterView)
 		r.Mount("/invites", inviteH.Routes(authMw))
 		r.Mount("/claims", claimH.Routes())
 		r.Get("/matches/{matchID}/teams", teamH.GetTeams)

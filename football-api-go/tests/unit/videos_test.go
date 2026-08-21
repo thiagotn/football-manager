@@ -38,6 +38,7 @@ type mockVideoStore struct {
 	listViewer      *uuid.UUID
 	likes           map[uuid.UUID]map[uuid.UUID]bool // videoID → playerID → liked
 	likers          []db.VideoLiker
+	viewIncrements  int
 }
 
 func (m *mockVideoStore) ensureLikes(videoID uuid.UUID) map[uuid.UUID]bool {
@@ -50,6 +51,10 @@ func (m *mockVideoStore) ensureLikes(videoID uuid.UUID) map[uuid.UUID]bool {
 	return m.likes[videoID]
 }
 
+func (m *mockVideoStore) IncrementVideoView(ctx context.Context, videoID uuid.UUID) error {
+	m.viewIncrements++
+	return nil
+}
 func (m *mockVideoStore) LikeMatchVideo(ctx context.Context, videoID, playerID uuid.UUID) error {
 	m.ensureLikes(videoID)[playerID] = true
 	return nil
@@ -187,6 +192,7 @@ func videoRouter(player *db.Player, store handlers.VideoStore, storage *services
 	r.Post("/videos/{videoID}/like", h.LikeVideo)
 	r.Delete("/videos/{videoID}/like", h.UnlikeVideo)
 	r.Get("/videos/{videoID}/likes", h.ListVideoLikes)
+	r.Post("/videos/{videoID}/view", h.RegisterView)
 	return r
 }
 
@@ -551,6 +557,45 @@ func TestListPublicVideos_IncludesLikeAggregates(t *testing.T) {
 	// viewer autenticado é repassado à listagem
 	assert.NotNil(t, store.listViewer)
 	assert.Equal(t, player.ID, *store.listViewer)
+}
+
+// ── Views ────────────────────────────────────────────────────────────────────
+
+func TestRegisterView_Increments(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	store := &mockVideoStore{}
+	r := videoRouter(nil, store, storage) // público, sem auth
+
+	w := postJSON(r, "/videos/"+uuid.New().String()+"/view", "")
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Equal(t, 1, store.viewIncrements)
+}
+
+func TestRegisterView_BadID404(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	store := &mockVideoStore{}
+	r := videoRouter(nil, store, storage)
+
+	w := postJSON(r, "/videos/not-a-uuid/view", "")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, 0, store.viewIncrements)
+}
+
+func TestListPublicVideos_IncludesViewCount(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	match := testMatch()
+	ready := db.MatchVideoWithUploader{
+		MatchVideo: db.MatchVideo{ID: uuid.New(), MatchID: match.ID, UploadedBy: uuid.New(), Status: db.VideoStatusReady, ViewCount: 42},
+	}
+	store := &mockVideoStore{match: match, videosEnabled: true, videoList: []db.MatchVideoWithUploader{ready}}
+	r := videoRouter(nil, store, storage)
+
+	w := doRequest(r, "GET", "/matches/public/"+match.Hash+"/videos", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"view_count":42`)
 }
 
 // ── Admin toggle ─────────────────────────────────────────────────────────────

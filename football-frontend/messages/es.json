@@ -1476,5 +1476,6 @@
   "match.videos.too_large_image": "Imagen demasiado grande (máx. 25MB).",
   "match.videos.share": "Compartir",
   "match.videos.share_text": "🎬 ¡Mira los mejores momentos del partido {group}!",
-  "match.videos.tap_for_sound": "Toca para activar el sonido"
+  "match.videos.tap_for_sound": "Toca para activar el sonido",
+  "match.videos.swipe_next": "Desliza hacia arriba"
 }

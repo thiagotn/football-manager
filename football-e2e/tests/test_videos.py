@@ -58,6 +58,7 @@ READY_VIDEO = {
     "poster_url": "https://cdn.rachao.app/videos/fake/ready.webp",
     "duration_seconds": 42.5,
     "created_at": "2026-08-20T12:00:00Z",
+    "view_count": 7,
     "like_count": 2,
     "liked_by_me": False,
     "uploader": {
@@ -79,6 +80,7 @@ READY_IMAGE = {
     "poster_url": "https://cdn.rachao.app/videos/fake/photo.jpg",
     "duration_seconds": None,
     "created_at": "2026-08-20T12:10:00Z",
+    "view_count": 0,
     "like_count": 0,
     "liked_by_me": False,
     "uploader": {
@@ -141,6 +143,8 @@ def _mock_videos(page: Page, videos, videos_enabled=True, can_upload=False):
         f"**/matches/public/{FAKE_HASH}/videos",
         lambda route: _fulfill_json(route, payload),
     )
+    # registro de view (fire-and-forget do front)
+    page.route("**/videos/*/view", lambda route: route.fulfill(status=204))
 
 
 @pytest.fixture
@@ -230,6 +234,17 @@ def test_redirect_videos_para_feed(anon_page: Page, base_url):
     anon_page.goto(f"{base_url}/match/{FAKE_HASH}/videos")
     anon_page.wait_for_load_state("networkidle")
     expect(anon_page).to_have_url(f"{base_url}/match/{FAKE_HASH}/feed")
+
+
+def test_feed_exibe_views_e_progresso(anon_page: Page, base_url):
+    _mock_match(anon_page, videos_enabled=True)
+    _mock_videos(anon_page, [READY_VIDEO])
+    anon_page.goto(f"{base_url}/match/{FAKE_HASH}/feed")
+    anon_page.wait_for_load_state("networkidle")
+
+    expect(anon_page.get_by_text("7", exact=True)).to_be_visible()  # view_count da fixture
+    # Linha de progresso do item ativo presente no rodapé do slide
+    expect(anon_page.locator("section .absolute.bottom-0.inset-x-0")).to_have_count(1)
 
 
 def test_feed_botao_compartilhar_visivel(anon_page: Page, base_url):

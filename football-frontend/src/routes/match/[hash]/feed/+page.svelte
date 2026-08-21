@@ -8,7 +8,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
-  import { ArrowLeft, Plus, Trash2, Loader2, Heart, Volume2, VolumeX, Share2 } from 'lucide-svelte';
+  import { ArrowLeft, Plus, Trash2, Loader2, Heart, Volume2, VolumeX, Share2, Eye, ChevronUp } from 'lucide-svelte';
   import { t } from '$lib/i18n';
   import { playerDisplayName, nativeShare } from '$lib/utils';
   import { tick } from 'svelte';
@@ -307,6 +307,78 @@
     }
   }
 
+  // ── Slide ativo: progresso (estilo TikTok), views e dica de swipe ─────────
+  const IMAGE_DURATION_MS = 6000; // tempo de exibição de uma foto
+  let activeId = $state<string | null>(null);
+  let progress = $state(0);        // 0..1 do item ativo
+  let completedOnce = $state(false);
+  const viewed = new Set<string>(); // dedupe de views nesta visita
+  let imageTimer: ReturnType<typeof setInterval> | null = null;
+  let slideObserver: IntersectionObserver | null = null;
+
+  function stopImageTimer() {
+    if (imageTimer) { clearInterval(imageTimer); imageTimer = null; }
+  }
+
+  function startImageTimer() {
+    stopImageTimer();
+    imageTimer = setInterval(() => {
+      progress = Math.min(1, progress + 50 / IMAGE_DURATION_MS);
+      if (progress >= 1) { completedOnce = true; stopImageTimer(); }
+    }, 50);
+  }
+
+  function setActive(id: string) {
+    if (activeId === id) return;
+    activeId = id;
+    progress = 0;
+    completedOnce = false;
+    stopImageTimer();
+    const item = (data?.videos ?? []).find(x => x.id === id);
+    if (!item || item.status !== 'ready') return;
+    if (!viewed.has(id)) {
+      viewed.add(id);
+      matchVideos.registerView(id).catch(() => {});
+    }
+    if (item.media_type === 'image') startImageTimer();
+  }
+
+  function observeSlide(el: HTMLElement, id: string) {
+    if (!slideObserver) {
+      slideObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.intersectionRatio >= 0.6) {
+              const slideId = (entry.target as HTMLElement).dataset.itemId;
+              if (slideId) setActive(slideId);
+            }
+          }
+        },
+        { threshold: [0.6] }
+      );
+    }
+    el.dataset.itemId = id;
+    slideObserver.observe(el);
+    return { destroy: () => slideObserver?.unobserve(el) };
+  }
+
+  function onVideoTime(e: Event, id: string) {
+    if (id !== activeId) return;
+    const video = e.currentTarget as HTMLVideoElement;
+    if (!video.duration || !isFinite(video.duration)) return;
+    const p = video.currentTime / video.duration;
+    // Loop reiniciou (currentTime voltou ao começo) → já assistiu inteiro
+    if (p < progress - 0.5 || p >= 0.97) completedOnce = true;
+    progress = p;
+  }
+
+  function isLastItem(id: string): boolean {
+    const list = data?.videos ?? [];
+    return list.length === 0 || list[list.length - 1].id === id;
+  }
+
+  $effect(() => () => { slideObserver?.disconnect(); stopImageTimer(); });
+
   // IntersectionObserver: src lazy + autoplay do slide visível, pausa dos demais
   function observeVideo(el: HTMLVideoElement) {
     if (!observer) {
@@ -374,7 +446,7 @@
       {/if}
 
       {#each feedVideos as v (v.id)}
-        <section id="feed-item-{v.id}" class="relative h-full w-full snap-start snap-always">
+        <section id="feed-item-{v.id}" use:observeSlide={v.id} class="relative h-full w-full snap-start snap-always">
           {#if v.status === 'ready' && v.media_type === 'image'}
             <img
               src={v.poster_url}
@@ -392,6 +464,7 @@
               {muted}
               preload="none"
               onclick={togglePlay}
+              ontimeupdate={(e) => onVideoTime(e, v.id)}
               class="absolute inset-0 w-full h-full object-contain"></video>
           {:else}
             <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
@@ -424,6 +497,12 @@
 
           <!-- Rail de ações (direita) -->
           <div class="absolute right-3 bottom-24 flex flex-col items-center gap-5">
+            {#if v.status === 'ready'}
+              <div class="flex flex-col items-center pointer-events-none" aria-hidden="true">
+                <div class="p-2"><Eye size={26} class="text-white drop-shadow" /></div>
+                <span class="text-white text-xs font-semibold drop-shadow -mt-1">{v.view_count}</span>
+              </div>
+            {/if}
             <div class="flex flex-col items-center">
               <button
                 onclick={() => toggleLike(v)}
@@ -448,6 +527,22 @@
               </button>
             {/if}
           </div>
+
+          {#if activeId === v.id && v.status === 'ready'}
+            <!-- Dica de swipe após completar o item (se houver próximo) -->
+            {#if completedOnce && !isLastItem(v.id)}
+              <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/90 pointer-events-none animate-bounce drop-shadow">
+                <ChevronUp size={24} />
+                <span class="text-xs font-medium">{$t('match.videos.swipe_next')}</span>
+              </div>
+            {/if}
+            <!-- Linha de progresso (vídeo acompanha a reprodução; foto tem timer) -->
+            <div class="absolute bottom-0 inset-x-0 h-1 bg-white/20 z-10">
+              <div
+                class="h-full bg-white/90 transition-[width] duration-200 ease-linear"
+                style="width: {Math.round(progress * 1000) / 10}%"></div>
+            </div>
+          {/if}
         </section>
       {/each}
     </div>
