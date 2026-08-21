@@ -28,8 +28,8 @@ type ListingMatch struct {
 
 // ClassificationResult armazena os dois campos derivados por partida.
 type ClassificationResult struct {
-	IsCurrent     bool
-	VotingStatus  VotingStatus
+	IsCurrent    bool
+	VotingStatus VotingStatus
 }
 
 // ClassifyMatches recebe a lista completa de partidas DE UM MESMO GRUPO e

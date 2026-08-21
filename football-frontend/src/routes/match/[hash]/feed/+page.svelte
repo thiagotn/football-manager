@@ -8,13 +8,15 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
-  import { ArrowLeft, Plus, Trash2, Loader2, Heart, Volume2, VolumeX } from 'lucide-svelte';
+  import { ArrowLeft, Plus, Trash2, Loader2, Heart, Volume2, VolumeX, Share2 } from 'lucide-svelte';
   import { t } from '$lib/i18n';
-  import { playerDisplayName } from '$lib/utils';
+  import { playerDisplayName, nativeShare } from '$lib/utils';
+  import { tick } from 'svelte';
 
   const matchHash = $page.params.hash ?? '';
 
-  const MAX_SIZE_BYTES = 150 * 1024 * 1024;
+  const MAX_VIDEO_BYTES = 150 * 1024 * 1024;
+  const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
   const MAX_DURATION_SECONDS = 61; // margem sobre 60s; o worker (ffprobe) é a autoridade
 
   let match = $state<MatchDetail | null>(null);
@@ -69,6 +71,7 @@
         if (cancelled) return;
         match = m;
         data = v;
+        await scrollToDeepLinkedItem();
       } catch {
         if (!cancelled) { match = null; data = null; }
       }
@@ -76,6 +79,24 @@
     })();
     return () => { cancelled = true; };
   });
+
+  // Deep link ?item=<id>: posiciona o feed no item compartilhado
+  async function scrollToDeepLinkedItem() {
+    const itemId = $page.url.searchParams.get('item');
+    if (!itemId) return;
+    await tick();
+    document.getElementById(`feed-item-${itemId}`)?.scrollIntoView({ behavior: 'instant', block: 'start' });
+  }
+
+  async function shareFeed() {
+    if (!match) return;
+    const url = `${window.location.origin}/match/${matchHash}/feed`;
+    await nativeShare({
+      title: $t('match.videos.title'),
+      text: $t('match.videos.share_text').replace('{group}', match.group_name),
+      url,
+    });
+  }
 
   $effect(() => {
     const player = $currentPlayer;
@@ -116,19 +137,22 @@
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file || !match) return;
 
-    if (file.size > MAX_SIZE_BYTES) {
-      toastError($t('match.videos.too_large'));
+    const isImage = file.type.startsWith('image/');
+    if (file.size > (isImage ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) {
+      toastError($t(isImage ? 'match.videos.too_large_image' : 'match.videos.too_large'));
       if (fileInput) fileInput.value = '';
       return;
     }
-    try {
-      const dur = await videoDuration(file);
-      if (isFinite(dur) && dur > MAX_DURATION_SECONDS) {
-        toastError($t('match.videos.too_long'));
-        if (fileInput) fileInput.value = '';
-        return;
-      }
-    } catch { /* worker valida via ffprobe */ }
+    if (!isImage) {
+      try {
+        const dur = await videoDuration(file);
+        if (isFinite(dur) && dur > MAX_DURATION_SECONDS) {
+          toastError($t('match.videos.too_long'));
+          if (fileInput) fileInput.value = '';
+          return;
+        }
+      } catch { /* worker valida via ffprobe */ }
+    }
 
     uploading = true;
     uploadPct = 0;
@@ -289,8 +313,14 @@
       {/if}
 
       {#each feedVideos as v (v.id)}
-        <section class="relative h-full w-full snap-start snap-always">
-          {#if v.status === 'ready'}
+        <section id="feed-item-{v.id}" class="relative h-full w-full snap-start snap-always">
+          {#if v.status === 'ready' && v.media_type === 'image'}
+            <img
+              src={v.poster_url}
+              alt=""
+              loading="lazy"
+              class="absolute inset-0 w-full h-full object-contain" />
+          {:else if v.status === 'ready'}
             <!-- svelte-ignore a11y_media_has_caption -->
             <video
               use:observeVideo
@@ -322,7 +352,9 @@
                 <span class="text-white text-sm font-medium drop-shadow">
                   {playerDisplayName(v.uploader.name, v.uploader.nickname)}
                 </span>
-                {#if v.duration_seconds}
+                {#if v.media_type === 'image'}
+                  <span class="text-white/60 text-xs">· 📷</span>
+                {:else if v.duration_seconds}
                   <span class="text-white/60 text-xs">· {Math.round(v.duration_seconds)}s</span>
                 {/if}
               </div>
@@ -372,6 +404,12 @@
         <p class="text-white/60 text-xs">{data.count}/{data.max_videos}</p>
       </div>
       <button
+        onclick={shareFeed}
+        class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white pointer-events-auto"
+        aria-label={$t('match.videos.share')}>
+        <Share2 size={20} />
+      </button>
+      <button
         onclick={() => muted = !muted}
         class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white pointer-events-auto"
         aria-label={muted ? $t('match.videos.unmute') : $t('match.videos.mute')}>
@@ -397,7 +435,7 @@
     <input
       bind:this={fileInput}
       type="file"
-      accept="video/mp4,video/quicktime,video/webm,video/*"
+      accept="video/mp4,video/quicktime,video/webm,video/*,image/jpeg,image/png,image/webp"
       class="hidden"
       onchange={onFileChosen} />
 

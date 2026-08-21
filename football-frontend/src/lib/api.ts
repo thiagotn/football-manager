@@ -826,10 +826,12 @@ export const chat = {
 
 // ── Videos ────────────────────────────────────────────────────
 export type MatchVideoStatus = 'pending' | 'uploaded' | 'processing' | 'ready' | 'failed';
+export type MatchMediaType = 'video' | 'image';
 export type MatchVideoItem = {
   id: string;
   match_id: string;
   status: MatchVideoStatus;
+  media_type: MatchMediaType;
   video_url: string | null;
   poster_url: string | null;
   duration_seconds: number | null;
@@ -852,6 +854,7 @@ export type MatchVideosResponse = {
 };
 export type VideoUploadTicket = {
   video_id: string;
+  media_type: MatchMediaType;
   upload_url: string;
   expires_at: string;
   max_size_bytes: number;

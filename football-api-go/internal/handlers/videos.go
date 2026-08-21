@@ -16,15 +16,24 @@ import (
 )
 
 const (
-	maxVideoOriginalBytes = 150 << 20 // 150 MB original enviado pelo browser
+	maxVideoOriginalBytes = 150 << 20 // 150 MB de vídeo original enviado pelo browser
+	maxImageOriginalBytes = 25 << 20  // 25 MB de foto original
 	maxVideosPerMatch     = 10
 	videoPresignExpiry    = 15 * time.Minute
 )
 
-var allowedVideoContentTypes = map[string]bool{
-	"video/mp4":       true,
-	"video/quicktime": true, // iPhone (.mov, geralmente HEVC — o worker transcodifica)
-	"video/webm":      true,
+// Extensão da key do original por content-type (o ffmpeg/decoder farejam o
+// conteúdo; a extensão é só organização do bucket).
+var allowedVideoContentTypes = map[string]string{
+	"video/mp4":       ".mp4",
+	"video/quicktime": ".mp4", // iPhone (.mov, geralmente HEVC — o worker transcodifica)
+	"video/webm":      ".mp4",
+}
+
+var allowedImageContentTypes = map[string]string{
+	"image/jpeg": ".jpg", // iOS converte HEIC→JPEG em uploads web
+	"image/png":  ".png",
+	"image/webp": ".webp",
 }
 
 type VideoStore interface {
@@ -33,7 +42,7 @@ type VideoStore interface {
 	GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
 	GroupVideosEnabled(ctx context.Context, groupID uuid.UUID) (bool, error)
 	GetPlayerAttendanceStatus(ctx context.Context, matchID, playerID uuid.UUID) (string, error)
-	CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, originalKey string) (*db.MatchVideo, error)
+	CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, mediaType, originalKey string) (*db.MatchVideo, error)
 	GetMatchVideoByID(ctx context.Context, id uuid.UUID) (*db.MatchVideo, error)
 	ListMatchVideos(ctx context.Context, matchID uuid.UUID, viewer *uuid.UUID) ([]db.MatchVideoWithUploader, error)
 	CountMatchVideos(ctx context.Context, matchID uuid.UUID) (int, error)
@@ -67,8 +76,8 @@ func (s *pgVideoStore) GroupVideosEnabled(ctx context.Context, groupID uuid.UUID
 func (s *pgVideoStore) GetPlayerAttendanceStatus(ctx context.Context, matchID, playerID uuid.UUID) (string, error) {
 	return db.GetPlayerAttendanceStatus(ctx, s.pool, matchID, playerID)
 }
-func (s *pgVideoStore) CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, originalKey string) (*db.MatchVideo, error) {
-	return db.CreateMatchVideo(ctx, s.pool, id, matchID, uploadedBy, originalKey)
+func (s *pgVideoStore) CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, mediaType, originalKey string) (*db.MatchVideo, error) {
+	return db.CreateMatchVideo(ctx, s.pool, id, matchID, uploadedBy, mediaType, originalKey)
 }
 func (s *pgVideoStore) GetMatchVideoByID(ctx context.Context, id uuid.UUID) (*db.MatchVideo, error) {
 	return db.GetMatchVideoByID(ctx, s.pool, id)
@@ -141,14 +150,15 @@ func (h *VideoHandler) canUploadMatchVideo(ctx context.Context, player *db.Playe
 	return err == nil && status == "confirmed"
 }
 
-func videoOriginalKey(matchID, videoID uuid.UUID) string {
-	return "videos/original/" + matchID.String() + "/" + videoID.String() + ".mp4"
+func videoOriginalKey(matchID, videoID uuid.UUID, ext string) string {
+	return "videos/original/" + matchID.String() + "/" + videoID.String() + ext
 }
 
 type videoResp struct {
 	ID              uuid.UUID          `json:"id"`
 	MatchID         uuid.UUID          `json:"match_id"`
 	Status          string             `json:"status"`
+	MediaType       string             `json:"media_type"`
 	VideoURL        *string            `json:"video_url"`
 	PosterURL       *string            `json:"poster_url"`
 	DurationSeconds *float64           `json:"duration_seconds"`
@@ -170,6 +180,7 @@ func buildVideoResp(v *db.MatchVideo) videoResp {
 		ID:              v.ID,
 		MatchID:         v.MatchID,
 		Status:          v.Status,
+		MediaType:       v.MediaType,
 		VideoURL:        v.VideoURL,
 		PosterURL:       v.PosterURL,
 		DurationSeconds: v.DurationSeconds,
@@ -237,12 +248,23 @@ func (h *VideoHandler) CreateUpload(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err)
 		return
 	}
-	if !allowedVideoContentTypes[req.ContentType] {
-		renderError(w, apierror.Unprocessable("unsupported video type. Use MP4, MOV or WebM"))
+	var mediaType, ext string
+	var maxBytes int64
+	switch {
+	case allowedVideoContentTypes[req.ContentType] != "":
+		mediaType, ext, maxBytes = db.MediaTypeVideo, allowedVideoContentTypes[req.ContentType], maxVideoOriginalBytes
+	case allowedImageContentTypes[req.ContentType] != "":
+		mediaType, ext, maxBytes = db.MediaTypeImage, allowedImageContentTypes[req.ContentType], maxImageOriginalBytes
+	default:
+		renderError(w, apierror.Unprocessable("unsupported media type. Use MP4, MOV, WebM, JPG, PNG or WebP"))
 		return
 	}
-	if req.SizeBytes <= 0 || req.SizeBytes > maxVideoOriginalBytes {
-		renderError(w, apierror.Unprocessable("video too large (max 150MB)"))
+	if req.SizeBytes <= 0 || req.SizeBytes > maxBytes {
+		if mediaType == db.MediaTypeImage {
+			renderError(w, apierror.Unprocessable("image too large (max 25MB)"))
+		} else {
+			renderError(w, apierror.Unprocessable("video too large (max 150MB)"))
+		}
 		return
 	}
 
@@ -257,22 +279,23 @@ func (h *VideoHandler) CreateUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	videoID := uuid.New()
-	key := videoOriginalKey(matchID, videoID)
+	key := videoOriginalKey(matchID, videoID, ext)
 	uploadURL, err := h.storage.PresignedPutURL(ctx, key, videoPresignExpiry)
 	if err != nil {
 		renderError(w, apierror.Internal("could not create upload URL"))
 		return
 	}
-	if _, err := h.Store.CreateMatchVideo(ctx, videoID, matchID, player.ID, key); err != nil {
+	if _, err := h.Store.CreateMatchVideo(ctx, videoID, matchID, player.ID, mediaType, key); err != nil {
 		renderError(w, err)
 		return
 	}
 
 	renderJSON(w, http.StatusCreated, map[string]any{
 		"video_id":       videoID,
+		"media_type":     mediaType,
 		"upload_url":     uploadURL,
 		"expires_at":     time.Now().UTC().Add(videoPresignExpiry),
-		"max_size_bytes": int64(maxVideoOriginalBytes),
+		"max_size_bytes": maxBytes,
 	})
 }
 
@@ -429,6 +452,7 @@ func (h *VideoHandler) DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		prefix := "videos/" + video.MatchID.String() + "/" + video.ID.String()
 		_ = h.storage.DeleteObject(ctx, prefix+".mp4")
 		_ = h.storage.DeleteObject(ctx, prefix+".webp")
+		_ = h.storage.DeleteObject(ctx, prefix+".jpg")
 	}
 	if err := h.Store.DeleteMatchVideo(ctx, videoID); err != nil {
 		renderError(w, err)

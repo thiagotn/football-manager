@@ -46,4 +46,3 @@ func TestGetTeams_InvalidMatchID(t *testing.T) {
 		assert.Equal(t, "match not found", respBody["detail"])
 	}
 }
-

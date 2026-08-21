@@ -586,9 +586,9 @@
             </a>
           {/if}
 
-          <!-- Videos card (feature flag por conta do admin do grupo) -->
+          <!-- Feed card (feature flag por conta do admin do grupo) -->
           {#if match.group_videos_enabled}
-            <a href="/match/{matchHash}/videos"
+            <a href="/match/{matchHash}/feed"
               class="card flex-1 flex items-center justify-center p-3 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
               <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 text-center">🎬 {$t('match.videos_short')}</p>
             </a>

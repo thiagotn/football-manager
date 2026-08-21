@@ -496,10 +496,10 @@ func TestVote_GetPendingVotes_NoAuth(t *testing.T) {
 // ── Webhooks Handler ──────────────────────────────────────────────────────────
 
 type mockWebhookStore struct {
-	isWebhookEventProcessedFn func(ctx context.Context, eventID string) (bool, error)
-	markWebhookEventProcessedFn func(ctx context.Context, eventID, eventType string) error
+	isWebhookEventProcessedFn          func(ctx context.Context, eventID string) (bool, error)
+	markWebhookEventProcessedFn        func(ctx context.Context, eventID, eventType string) error
 	getSubscriptionByGatewayCustomerFn func(ctx context.Context, customerID string) (*db.PlayerSubscription, error)
-	updateSubscriptionFn func(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error)
+	updateSubscriptionFn               func(ctx context.Context, playerID uuid.UUID, params db.UpdateSubscriptionParams) (*db.PlayerSubscription, error)
 }
 
 func (m *mockWebhookStore) IsWebhookEventProcessed(ctx context.Context, eventID string) (bool, error) {

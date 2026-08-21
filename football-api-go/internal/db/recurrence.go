@@ -107,8 +107,8 @@ func CreateAttendances(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUI
 // according to Brazil time (UTC-3). Returns total number of rows transitioned.
 //
 // Mirrors v1's MatchRepository.close_past_matches (4 transitions in one call):
-//   1. OPEN/IN_PROGRESS → CLOSED when match_date is before today
-//   2. IN_PROGRESS → CLOSED when match_date is today AND end_time has passed
+//  1. OPEN/IN_PROGRESS → CLOSED when match_date is before today
+//  2. IN_PROGRESS → CLOSED when match_date is today AND end_time has passed
 //
 // Note: the OPEN → IN_PROGRESS transition for today's matches that already
 // started is handled separately by GetInProgressCandidates +

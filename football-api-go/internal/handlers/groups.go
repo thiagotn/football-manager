@@ -22,7 +22,6 @@ import (
 	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
-
 type GroupStore interface {
 	GetGroupsByPlayer(ctx context.Context, playerID uuid.UUID, isAdmin bool) ([]db.Group, error)
 	GetGroupByID(ctx context.Context, groupID uuid.UUID) (*db.Group, error)
@@ -175,9 +174,9 @@ func (s *pgGroupStore) GetGroupAdminIDs(ctx context.Context, groupID uuid.UUID) 
 
 type GroupHandler struct {
 	Store GroupStore
-	pool  *pgxpool.Pool          // raw pool for cross-domain calls (push fanout)
-	push  services.PushService   // injected push service (no-op stub today)
-	cfg   *config.Config         // optional; nil in tests (defaults apply)
+	pool  *pgxpool.Pool        // raw pool for cross-domain calls (push fanout)
+	push  services.PushService // injected push service (no-op stub today)
+	cfg   *config.Config       // optional; nil in tests (defaults apply)
 }
 
 func NewGroupHandler(pool *pgxpool.Pool, cfg *config.Config) *GroupHandler {

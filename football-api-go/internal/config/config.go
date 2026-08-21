@@ -19,10 +19,10 @@ type Config struct {
 	DatabaseURL string `envconfig:"DATABASE_URL" required:"true"`
 
 	// JWT & Security
-	SecretKey                   string `envconfig:"SECRET_KEY" required:"true"`
-	AccessTokenExpireMinutes    int    `envconfig:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
-	InviteTokenExpireMinutes    int    `envconfig:"INVITE_TOKEN_EXPIRE_MINUTES" default:"30"`
-	ClaimTokenExpireDays        int    `envconfig:"CLAIM_TOKEN_EXPIRE_DAYS" default:"7"`
+	SecretKey                string `envconfig:"SECRET_KEY" required:"true"`
+	AccessTokenExpireMinutes int    `envconfig:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
+	InviteTokenExpireMinutes int    `envconfig:"INVITE_TOKEN_EXPIRE_MINUTES" default:"30"`
+	ClaimTokenExpireDays     int    `envconfig:"CLAIM_TOKEN_EXPIRE_DAYS" default:"7"`
 
 	// OTP
 	OTPBypassCode    string `envconfig:"OTP_BYPASS_CODE"`

@@ -24,7 +24,8 @@
 | `/match/[hash]` | Detalhe da partida (público + autenticado) |
 | `/match/[hash]/teams` | Sorteio de times (público) |
 | `/match/[hash]/results` | Resultado da votação com pódio (público) |
-| `/match/[hash]/videos` | Feed fullscreen estilo TikTok de vídeos verticais (público; snap vertical + autoplay mudo; curtidas com lista de quem curtiu; upload p/ confirmados+admins; gateado por `group_videos_enabled`) |
+| `/match/[hash]/feed` | Feed fullscreen estilo TikTok de vídeos e fotos verticais (público; snap vertical + autoplay mudo; curtidas com lista de quem curtiu; compartilhar via `nativeShare`; deep link `?item=<id>`; upload p/ confirmados+admins; gateado por `group_videos_enabled`) |
+| `/match/[hash]/videos` | Redirect 301 para `/match/[hash]/feed` (compatibilidade) |
 | `/ranking` | Ranking geral da plataforma — top 10 melhores e decepções (público) |
 | `/simulator` | Simulador público de sorteio de times — sem login, sem backend, estado em localStorage |
 | `/draw` | Redirect 301 para `/simulator` (compatibilidade com URLs salvas) |

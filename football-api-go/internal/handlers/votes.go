@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"context"
 	"github.com/thiagotn/football-manager/football-api-go/internal/apierror"
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
 	"github.com/thiagotn/football-manager/football-api-go/internal/middleware"
 	"github.com/thiagotn/football-manager/football-api-go/internal/services"
-	"context"
 )
 
 var brtLoc *time.Location

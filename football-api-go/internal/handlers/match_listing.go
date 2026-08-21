@@ -59,4 +59,3 @@ func enrichOneMatch(m *db.Match) matchResponse {
 		VotingStatus: res.VotingStatus,
 	}
 }
-

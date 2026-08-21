@@ -17,8 +17,9 @@ pública do rachão (como times e resultados) — vitrine do rachão e do app.
 | Flag | Por conta (`videos_enabled`), semântica "dono do grupo": habilita nos grupos onde a conta é admin. Grupo com 2+ admins habilita se **qualquer** um tiver a flag. Flag off = kill switch (esconde vídeos já publicados). |
 | Quem sobe | Membros com presença **confirmada** na partida + admins do grupo + super admin |
 | Quem exclui | Autor (o próprio vídeo), admin do grupo e super admin (qualquer vídeo) |
-| Visibilidade | Pública na página do rachão (`/match/[hash]/videos`) — feed fullscreen estilo TikTok (snap vertical, autoplay mudo, swipe) |
+| Visibilidade | Pública em `/match/[hash]/feed` (redirect de `/videos`) — feed fullscreen estilo TikTok (snap vertical, autoplay mudo, swipe); deep link `?item=<id>`; compartilhar via Web Share/WhatsApp |
 | Curtidas | Qualquer usuário logado curte (idempotente); lista de quem curtiu é pública (migration 051, `match_video_likes`) |
+| Fotos | Mesmo feed aceita imagens (JPG/PNG/WebP, ≤25MB; migration 052 `media_type`); worker corrige EXIF + redimensiona ≤1080×1920 + JPEG; URL final em `poster_url` (`video_url` nulo) |
 | Limites | 10 vídeos/partida (fixo, `VIDEO_LIMIT_REACHED`), 150MB original, ≤ 65s (ffprobe é a autoridade; client valida advisory) |
 
 ## Arquitetura

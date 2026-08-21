@@ -18,9 +18,8 @@ func TestLoad_WithRequiredEnvVars(t *testing.T) {
 	assert.Equal(t, "postgres://localhost/test", cfg.DatabaseURL)
 	assert.Equal(t, "test-secret-key", cfg.SecretKey)
 	assert.Equal(t, "development", cfg.AppEnv) // default
-	assert.Equal(t, 8080, cfg.Port)             // default
+	assert.Equal(t, 8080, cfg.Port)            // default
 }
-
 
 func TestIsProd(t *testing.T) {
 	cfg := &config.Config{AppEnv: "production"}

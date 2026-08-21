@@ -252,21 +252,21 @@ func TestBuildMemberResponse_NonAdminHidesFields(t *testing.T) {
 
 	member := db.GroupMemberWithPlayer{
 		GroupMember: db.GroupMember{
-			ID:        memberID,
-			GroupID:   groupID,
-			PlayerID:  playerID,
-			Role:      db.GroupMemberRoleMember,
+			ID:         memberID,
+			GroupID:    groupID,
+			PlayerID:   playerID,
+			Role:       db.GroupMemberRoleMember,
 			SkillStars: 5,
-			Position:  "ata",
-			Nickname:  &nickname,
-			CreatedAt: now,
-			UpdatedAt: now,
+			Position:   "ata",
+			Nickname:   &nickname,
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		},
-		PlayerName:     "John",
-		PlayerNickname: &playerNickname,
-		PlayerRole:     db.PlayerRolePlayer,
+		PlayerName:      "John",
+		PlayerNickname:  &playerNickname,
+		PlayerRole:      db.PlayerRolePlayer,
 		PlayerAvatarURL: &avatarURL,
-		PlayerWhatsApp: "+5511999990000",
+		PlayerWhatsApp:  "+5511999990000",
 	}
 
 	resp := buildMemberResponse(member, false)
@@ -274,9 +274,9 @@ func TestBuildMemberResponse_NonAdminHidesFields(t *testing.T) {
 	assert.Equal(t, memberID, resp.ID)
 	assert.Equal(t, playerID, resp.Player.ID)
 	assert.Equal(t, "John", resp.Player.Name)
-	assert.Nil(t, resp.Player.WhatsApp)    // Hidden
-	assert.Nil(t, resp.SkillStars)         // Hidden
-	assert.Nil(t, resp.Position)           // Hidden
+	assert.Nil(t, resp.Player.WhatsApp) // Hidden
+	assert.Nil(t, resp.SkillStars)      // Hidden
+	assert.Nil(t, resp.Position)        // Hidden
 	assert.Equal(t, &nickname, resp.Nickname)
 }
 
@@ -292,21 +292,21 @@ func TestBuildMemberResponse_AdminSeesAllFields(t *testing.T) {
 
 	member := db.GroupMemberWithPlayer{
 		GroupMember: db.GroupMember{
-			ID:        memberID,
-			GroupID:   groupID,
-			PlayerID:  playerID,
-			Role:      db.GroupMemberRoleMember,
+			ID:         memberID,
+			GroupID:    groupID,
+			PlayerID:   playerID,
+			Role:       db.GroupMemberRoleMember,
 			SkillStars: 5,
-			Position:  "ata",
-			Nickname:  &nickname,
-			CreatedAt: now,
-			UpdatedAt: now,
+			Position:   "ata",
+			Nickname:   &nickname,
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		},
-		PlayerName:     "John",
-		PlayerNickname: &playerNickname,
-		PlayerRole:     db.PlayerRolePlayer,
+		PlayerName:      "John",
+		PlayerNickname:  &playerNickname,
+		PlayerRole:      db.PlayerRolePlayer,
 		PlayerAvatarURL: &avatarURL,
-		PlayerWhatsApp: "+5511999990000",
+		PlayerWhatsApp:  "+5511999990000",
 	}
 
 	resp := buildMemberResponse(member, true)

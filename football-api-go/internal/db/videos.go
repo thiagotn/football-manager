@@ -18,12 +18,19 @@ const (
 	VideoStatusFailed     = "failed"
 )
 
+// Media types accepted in the feed.
+const (
+	MediaTypeVideo = "video"
+	MediaTypeImage = "image"
+)
+
 // MatchVideo mirrors the match_videos table.
 type MatchVideo struct {
 	ID              uuid.UUID `json:"id"`
 	MatchID         uuid.UUID `json:"match_id"`
 	UploadedBy      uuid.UUID `json:"uploaded_by"`
 	Status          string    `json:"status"`
+	MediaType       string    `json:"media_type"`
 	OriginalKey     string    `json:"-"`
 	VideoURL        *string   `json:"video_url"`
 	PosterURL       *string   `json:"poster_url"`
@@ -47,14 +54,14 @@ type MatchVideoWithUploader struct {
 }
 
 const matchVideoCols = `
-	v.id, v.match_id, v.uploaded_by, v.status, v.original_key,
+	v.id, v.match_id, v.uploaded_by, v.status, v.media_type, v.original_key,
 	v.video_url, v.poster_url, v.duration_seconds, v.size_bytes,
 	v.error, v.attempts, v.created_at, v.updated_at`
 
 func scanMatchVideo(scanFn func(dest ...any) error) (*MatchVideo, error) {
 	var v MatchVideo
 	err := scanFn(
-		&v.ID, &v.MatchID, &v.UploadedBy, &v.Status, &v.OriginalKey,
+		&v.ID, &v.MatchID, &v.UploadedBy, &v.Status, &v.MediaType, &v.OriginalKey,
 		&v.VideoURL, &v.PosterURL, &v.DurationSeconds, &v.SizeBytes,
 		&v.Error, &v.Attempts, &v.CreatedAt, &v.UpdatedAt,
 	)
@@ -67,18 +74,18 @@ func scanMatchVideo(scanFn func(dest ...any) error) (*MatchVideo, error) {
 	return &v, nil
 }
 
-// CreateMatchVideo inserts a pending video row and returns it.
-func CreateMatchVideo(ctx context.Context, pool *pgxpool.Pool, id, matchID, uploadedBy uuid.UUID, originalKey string) (*MatchVideo, error) {
+// CreateMatchVideo inserts a pending media row and returns it.
+func CreateMatchVideo(ctx context.Context, pool *pgxpool.Pool, id, matchID, uploadedBy uuid.UUID, mediaType, originalKey string) (*MatchVideo, error) {
 	row := pool.QueryRow(ctx, `
-		INSERT INTO match_videos (id, match_id, uploaded_by, original_key)
-		VALUES ($1, $2, $3, $4)
-		RETURNING `+matchVideoColsBare, id, matchID, uploadedBy, originalKey)
+		INSERT INTO match_videos (id, match_id, uploaded_by, media_type, original_key)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING `+matchVideoColsBare, id, matchID, uploadedBy, mediaType, originalKey)
 	return scanMatchVideo(row.Scan)
 }
 
 // matchVideoColsBare is matchVideoCols without the "v." qualifier (for INSERT ... RETURNING).
 const matchVideoColsBare = `
-	id, match_id, uploaded_by, status, original_key,
+	id, match_id, uploaded_by, status, media_type, original_key,
 	video_url, poster_url, duration_seconds, size_bytes,
 	error, attempts, created_at, updated_at`
 
@@ -93,7 +100,8 @@ func GetMatchVideoByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*
 // comes back false.
 func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID, viewer *uuid.UUID) ([]MatchVideoWithUploader, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT `+matchVideoCols+`, p.name, p.nickname, p.avatar_url,
+		SELECT `+matchVideoCols+`,
+		       p.name, p.nickname, p.avatar_url,
 		       (SELECT COUNT(*) FROM match_video_likes l WHERE l.video_id = v.id)::int AS like_count,
 		       ($2::uuid IS NOT NULL AND EXISTS (
 		           SELECT 1 FROM match_video_likes l WHERE l.video_id = v.id AND l.player_id = $2::uuid
@@ -110,7 +118,7 @@ func ListMatchVideos(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID,
 	for rows.Next() {
 		var v MatchVideoWithUploader
 		err := rows.Scan(
-			&v.ID, &v.MatchID, &v.UploadedBy, &v.Status, &v.OriginalKey,
+			&v.ID, &v.MatchID, &v.UploadedBy, &v.Status, &v.MediaType, &v.OriginalKey,
 			&v.VideoURL, &v.PosterURL, &v.DurationSeconds, &v.SizeBytes,
 			&v.Error, &v.Attempts, &v.CreatedAt, &v.UpdatedAt,
 			&v.UploaderName, &v.UploaderNickname, &v.UploaderAvatarURL,
@@ -313,9 +321,10 @@ func ClaimNextVideoJob(ctx context.Context, pool *pgxpool.Pool) (*MatchVideo, er
 	return scanMatchVideo(row.Scan)
 }
 
-// MarkVideoReady finalizes a processed video. Returns ErrNotFound when the row
-// no longer exists (deleted mid-processing) so the caller can clean up artifacts.
-func MarkVideoReady(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, videoURL, posterURL string, durationSeconds float64, sizeBytes int64) error {
+// MarkVideoReady finalizes a processed media item. videoURL and duration are
+// nil for images. Returns ErrNotFound when the row no longer exists (deleted
+// mid-processing) so the caller can clean up artifacts.
+func MarkVideoReady(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, videoURL *string, posterURL string, durationSeconds *float64, sizeBytes int64) error {
 	tag, err := pool.Exec(ctx, `
 		UPDATE match_videos
 		SET status = 'ready', video_url = $2, poster_url = $3,

@@ -92,8 +92,8 @@ func (m *mockVideoStore) GetPlayerAttendanceStatus(ctx context.Context, matchID,
 	}
 	return m.attendance, nil
 }
-func (m *mockVideoStore) CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, originalKey string) (*db.MatchVideo, error) {
-	m.created = &db.MatchVideo{ID: id, MatchID: matchID, UploadedBy: uploadedBy, Status: db.VideoStatusPending, OriginalKey: originalKey}
+func (m *mockVideoStore) CreateMatchVideo(ctx context.Context, id, matchID, uploadedBy uuid.UUID, mediaType, originalKey string) (*db.MatchVideo, error) {
+	m.created = &db.MatchVideo{ID: id, MatchID: matchID, UploadedBy: uploadedBy, Status: db.VideoStatusPending, MediaType: mediaType, OriginalKey: originalKey}
 	return m.created, nil
 }
 func (m *mockVideoStore) GetMatchVideoByID(ctx context.Context, id uuid.UUID) (*db.MatchVideo, error) {
@@ -275,7 +275,7 @@ func TestCreateVideoUpload_BadContentType(t *testing.T) {
 
 	w := postJSON(r, "/matches/"+store.match.ID.String()+"/videos", `{"size_bytes":1000,"content_type":"image/gif"}`)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
-	assert.Contains(t, w.Body.String(), "unsupported video type")
+	assert.Contains(t, w.Body.String(), "unsupported media type")
 }
 
 func TestCreateVideoUpload_MatchNotFound(t *testing.T) {
@@ -294,6 +294,32 @@ func TestCreateVideoUpload_StorageNotConfigured(t *testing.T) {
 
 	w := postJSON(r, "/matches/"+store.match.ID.String()+"/videos", `{"size_bytes":1000,"content_type":"video/mp4"}`)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestCreateImageUpload_AcceptedWithImageLimits(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	store := &mockVideoStore{match: testMatch(), videosEnabled: true, attendance: "confirmed"}
+	r := videoRouter(fakePlayer(), store, storage)
+
+	w := postJSON(r, "/matches/"+store.match.ID.String()+"/videos", `{"size_bytes":1000,"content_type":"image/jpeg"}`)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Contains(t, w.Body.String(), `"media_type":"image"`)
+	assert.NotNil(t, store.created)
+	assert.Equal(t, db.MediaTypeImage, store.created.MediaType)
+	assert.Contains(t, store.created.OriginalKey, ".jpg")
+}
+
+func TestCreateImageUpload_TooLargeUsesImageLimit(t *testing.T) {
+	storage, srv := fakeVideoStorage(t, 100)
+	defer srv.Close()
+	store := &mockVideoStore{match: testMatch(), videosEnabled: true, attendance: "confirmed"}
+	r := videoRouter(fakePlayer(), store, storage)
+
+	// 30MB: aceito como vídeo, mas acima do limite de 25MB para imagem
+	w := postJSON(r, "/matches/"+store.match.ID.String()+"/videos", `{"size_bytes":31457280,"content_type":"image/png"}`)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	assert.Contains(t, w.Body.String(), "image too large")
 }
 
 // ── ConfirmUpload ────────────────────────────────────────────────────────────

@@ -656,18 +656,18 @@ func TestGroups_AddMember_FreePlanMemberLimit(t *testing.T) {
 
 // Mock store for business logic tests
 type mockGroupStoreForBusiness struct {
-	getGroupMemberFn                func(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
-	getPlayerPlanFn                 func(ctx context.Context, playerID uuid.UUID) (string, error)
-	countGroupMembersFn             func(ctx context.Context, groupID uuid.UUID) (int, error)
-	countGroupAdminCountFn          func(ctx context.Context, playerID uuid.UUID) (int, error)
-	addGroupMemberFn                func(ctx context.Context, groupID, playerID uuid.UUID, role db.GroupMemberRole) (*db.GroupMember, error)
-	updateGroupMemberFn             func(ctx context.Context, groupID, playerID uuid.UUID, p db.UpdateGroupMemberParams) (*db.GroupMember, error)
-	getOpenMatchesForGroupFn        func(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
-	ensurePlayerSubscriptionFn      func(ctx context.Context, playerID uuid.UUID) error
-	ensureMemberInCurrentPeriodFn   func(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
-	getPlayerByIDFn                 func(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
-	setAttendanceFn                 func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
-	getGroupStatsFn                 func(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error)
+	getGroupMemberFn              func(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error)
+	getPlayerPlanFn               func(ctx context.Context, playerID uuid.UUID) (string, error)
+	countGroupMembersFn           func(ctx context.Context, groupID uuid.UUID) (int, error)
+	countGroupAdminCountFn        func(ctx context.Context, playerID uuid.UUID) (int, error)
+	addGroupMemberFn              func(ctx context.Context, groupID, playerID uuid.UUID, role db.GroupMemberRole) (*db.GroupMember, error)
+	updateGroupMemberFn           func(ctx context.Context, groupID, playerID uuid.UUID, p db.UpdateGroupMemberParams) (*db.GroupMember, error)
+	getOpenMatchesForGroupFn      func(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	ensurePlayerSubscriptionFn    func(ctx context.Context, playerID uuid.UUID) error
+	ensureMemberInCurrentPeriodFn func(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
+	getPlayerByIDFn               func(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	setAttendanceFn               func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	getGroupStatsFn               func(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error)
 }
 
 func (m *mockGroupStoreForBusiness) GetGroupMember(ctx context.Context, groupID, playerID uuid.UUID) (*db.GroupMember, error) {
@@ -831,12 +831,12 @@ func (m *mockGroupStoreForBusiness) GetGroupAdminIDs(ctx context.Context, groupI
 
 // Mock store for Matches business logic tests
 type mockMatchStoreForBusiness struct {
-	getMatchByIDFn              func(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
-	getMatchByHashFn            func(ctx context.Context, hash string) (*db.Match, error)
-	setAttendanceFn             func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
-	getAttendancesForMatchFn    func(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error)
-	countAttendancesFn          func(ctx context.Context, matchID uuid.UUID, status string) (int, error)
-	deleteMatchFn               func(ctx context.Context, matchID uuid.UUID) error
+	getMatchByIDFn           func(ctx context.Context, matchID uuid.UUID) (*db.Match, error)
+	getMatchByHashFn         func(ctx context.Context, hash string) (*db.Match, error)
+	setAttendanceFn          func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
+	getAttendancesForMatchFn func(ctx context.Context, matchID uuid.UUID) ([]db.AttendanceWithPlayer, error)
+	countAttendancesFn       func(ctx context.Context, matchID uuid.UUID, status string) (int, error)
+	deleteMatchFn            func(ctx context.Context, matchID uuid.UUID) error
 }
 
 func (m *mockMatchStoreForBusiness) GetMatchByID(ctx context.Context, matchID uuid.UUID) (*db.Match, error) {
@@ -987,9 +987,9 @@ func TestGroups_PlanValidation_MemberCountAgainstFreeLimit(t *testing.T) {
 	const basicLimit = 100
 
 	tests := []struct {
-		name     string
-		plan     string
-		count    int
+		name       string
+		plan       string
+		count      int
 		shouldFail bool
 	}{
 		{"free at limit", "free", freeLimit, true},
@@ -1024,10 +1024,10 @@ func TestGroups_PlanValidation_MemberCountAgainstFreeLimit(t *testing.T) {
 func TestSubscription_BillingCycleValidation(t *testing.T) {
 	// Validate billing cycle enum values
 	validCycles := map[string]bool{
-		"monthly":  true,
-		"yearly":   true,
-		"invalid":  false,
-		"":         false,
+		"monthly":   true,
+		"yearly":    true,
+		"invalid":   false,
+		"":          false,
 		"quarterly": false,
 	}
 
@@ -1157,4 +1157,3 @@ func TestMatches_NoAttendanceAfterDeletion(t *testing.T) {
 	attendances, _ := mockStore.GetAttendancesForMatch(context.Background(), matchID)
 	assert.Empty(t, attendances, "no attendance after match deletion")
 }
-

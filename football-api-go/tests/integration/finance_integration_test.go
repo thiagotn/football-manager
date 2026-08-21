@@ -25,7 +25,7 @@ func TestFinance_GetPeriods_AsMember(t *testing.T) {
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
 		"player_id": player.ID,
-		"role": "member",
+		"role":      "member",
 	})
 
 	// GET /api/v2/groups/{id}/finance/periods as member
@@ -72,7 +72,7 @@ func TestFinance_GetPeriod_Existing(t *testing.T) {
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
 		"player_id": player.ID,
-		"role": "member",
+		"role":      "member",
 	})
 
 	// GET /api/v2/groups/{id}/finance/periods/{year}/{month}
@@ -99,7 +99,7 @@ func TestFinance_GetPeriod_InvalidMonth(t *testing.T) {
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
 		"player_id": player.ID,
-		"role": "member",
+		"role":      "member",
 	})
 
 	// GET with invalid month
@@ -125,7 +125,7 @@ func TestFinance_UpdatePayment_AsAdmin(t *testing.T) {
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
 		"player_id": player.ID,
-		"role": "member",
+		"role":      "member",
 	})
 
 	// Try to update a payment (payment ID is typically a UUID)
@@ -154,7 +154,7 @@ func TestFinance_UpdatePayment_NonAdmin(t *testing.T) {
 	// Add player to group
 	apiCall(t, srv, http.MethodPost, "/api/v2/groups/"+groupID+"/members", admin.Token, map[string]any{
 		"player_id": player.ID,
-		"role": "member",
+		"role":      "member",
 	})
 
 	// Regular member tries to update payment

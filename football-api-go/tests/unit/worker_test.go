@@ -1,8 +1,11 @@
 package unit_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -79,11 +82,15 @@ func (s *fakeWorkerStore) ClaimNextVideoJob(ctx context.Context) (*db.MatchVideo
 	j.Status = db.VideoStatusProcessing
 	return j, nil
 }
-func (s *fakeWorkerStore) MarkVideoReady(ctx context.Context, id uuid.UUID, videoURL, posterURL string, durationSeconds float64, sizeBytes int64) error {
+func (s *fakeWorkerStore) MarkVideoReady(ctx context.Context, id uuid.UUID, videoURL *string, posterURL string, durationSeconds *float64, sizeBytes int64) error {
 	if s.readyErr != nil {
 		return s.readyErr
 	}
-	s.ready[id] = videoURL
+	if videoURL != nil {
+		s.ready[id] = *videoURL
+	} else {
+		s.ready[id] = posterURL
+	}
 	return nil
 }
 func (s *fakeWorkerStore) MarkVideoFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
@@ -100,10 +107,11 @@ func (s *fakeWorkerStore) DeleteStalePendingVideos(ctx context.Context, olderTha
 }
 
 type fakeWorkerStorage struct {
-	downloaded []string
-	uploaded   map[string]string // key → contentType
-	deleted    []string
-	downErr    error
+	downloaded  []string
+	uploaded    map[string]string // key → contentType
+	deleted     []string
+	downErr     error
+	fileContent []byte // conteúdo gravado pelo DownloadFile (default "fake-input")
 }
 
 func newFakeWorkerStorage() *fakeWorkerStorage {
@@ -115,7 +123,11 @@ func (s *fakeWorkerStorage) DownloadFile(ctx context.Context, key, localPath str
 		return s.downErr
 	}
 	s.downloaded = append(s.downloaded, key)
-	return os.WriteFile(localPath, []byte("fake-input"), 0o644)
+	content := s.fileContent
+	if content == nil {
+		content = []byte("fake-input")
+	}
+	return os.WriteFile(localPath, content, 0o644)
 }
 func (s *fakeWorkerStorage) UploadFile(ctx context.Context, key, contentType, localPath string) (string, error) {
 	s.uploaded[key] = contentType
@@ -269,6 +281,54 @@ func TestWorker_DeletedMidProcessingCleansArtifacts(t *testing.T) {
 	assert.Contains(t, storage.deleted, job.OriginalKey)
 	assert.Empty(t, store.failed)
 	assert.Empty(t, store.requeued)
+}
+
+func TestWorker_ImagePipelineReady(t *testing.T) {
+	store := newFakeWorkerStore()
+	job := testJob(0)
+	job.MediaType = db.MediaTypeImage
+	job.OriginalKey = "videos/original/m/v.jpg"
+	store.jobs = []*db.MatchVideo{job}
+	storage := newFakeWorkerStorage()
+	// DownloadFile do fake grava "fake-input" — precisa ser uma imagem real
+	// para o ProcessFeedImageJPEG; gera um PNG 1x1 válido no download.
+	storage.fileContent = tinyPNG(t)
+	tc := &fakeTranscoder{} // não deve ser chamado para imagem
+	w := newTestWorker(t, store, storage, tc)
+
+	assert.True(t, w.ProcessNext(context.Background()))
+
+	assert.Contains(t, store.ready, job.ID)
+	key := "videos/" + job.MatchID.String() + "/" + job.ID.String() + ".jpg"
+	assert.Equal(t, "image/jpeg", storage.uploaded[key])
+	assert.Contains(t, storage.deleted, job.OriginalKey)
+	assert.Empty(t, store.failed)
+}
+
+func TestWorker_ImageInvalidFailsPermanently(t *testing.T) {
+	store := newFakeWorkerStore()
+	job := testJob(0)
+	job.MediaType = db.MediaTypeImage
+	store.jobs = []*db.MatchVideo{job}
+	storage := newFakeWorkerStorage() // conteúdo "fake-input" não é imagem válida
+	w := newTestWorker(t, store, storage, &fakeTranscoder{})
+
+	w.ProcessNext(context.Background())
+
+	assert.Contains(t, store.failed, job.ID)
+	assert.Contains(t, store.failed[job.ID], "invalid image")
+	assert.Empty(t, store.requeued)
+}
+
+// tinyPNG devolve um PNG 1×1 válido.
+func tinyPNG(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
 }
 
 func TestWorker_CleanupStalePendingDeletesOriginals(t *testing.T) {

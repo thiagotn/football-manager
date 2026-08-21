@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/thiagotn/football-manager/football-api-go/internal/db"
+	"github.com/thiagotn/football-manager/football-api-go/internal/services"
 )
 
 const (
@@ -44,7 +45,7 @@ var (
 // Store is the queue interface the worker drives (mockable in tests).
 type Store interface {
 	ClaimNextVideoJob(ctx context.Context) (*db.MatchVideo, error)
-	MarkVideoReady(ctx context.Context, id uuid.UUID, videoURL, posterURL string, durationSeconds float64, sizeBytes int64) error
+	MarkVideoReady(ctx context.Context, id uuid.UUID, videoURL *string, posterURL string, durationSeconds *float64, sizeBytes int64) error
 	MarkVideoFailed(ctx context.Context, id uuid.UUID, errMsg string) error
 	RequeueVideoJob(ctx context.Context, id uuid.UUID) error
 	DeleteStalePendingVideos(ctx context.Context, olderThan time.Duration) ([]db.MatchVideo, error)
@@ -62,7 +63,7 @@ type pgStore struct{ pool *pgxpool.Pool }
 func (s *pgStore) ClaimNextVideoJob(ctx context.Context) (*db.MatchVideo, error) {
 	return db.ClaimNextVideoJob(ctx, s.pool)
 }
-func (s *pgStore) MarkVideoReady(ctx context.Context, id uuid.UUID, videoURL, posterURL string, durationSeconds float64, sizeBytes int64) error {
+func (s *pgStore) MarkVideoReady(ctx context.Context, id uuid.UUID, videoURL *string, posterURL string, durationSeconds *float64, sizeBytes int64) error {
 	return db.MarkVideoReady(ctx, s.pool, id, videoURL, posterURL, durationSeconds, sizeBytes)
 }
 func (s *pgStore) MarkVideoFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
@@ -178,7 +179,7 @@ func (w *Worker) ProcessNext(ctx context.Context) bool {
 	return true
 }
 
-// process runs the full pipeline for one claimed video.
+// process runs the full pipeline for one claimed media item.
 func (w *Worker) process(ctx context.Context, video *db.MatchVideo) error {
 	dir := filepath.Join(w.WorkDir, video.ID.String())
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -192,6 +193,10 @@ func (w *Worker) process(ctx context.Context, video *db.MatchVideo) error {
 
 	if err := w.Storage.DownloadFile(ctx, video.OriginalKey, inPath); err != nil {
 		return fmt.Errorf("download original: %w", err)
+	}
+
+	if video.MediaType == db.MediaTypeImage {
+		return w.processImage(ctx, video, inPath)
 	}
 
 	probe, err := w.Transcoder.Probe(ctx, inPath)
@@ -227,7 +232,8 @@ func (w *Worker) process(ctx context.Context, video *db.MatchVideo) error {
 		return fmt.Errorf("upload poster: %w", err)
 	}
 
-	if err := w.Store.MarkVideoReady(ctx, video.ID, videoURL, posterURL, probe.DurationSeconds, outInfo.Size()); err != nil {
+	duration := probe.DurationSeconds
+	if err := w.Store.MarkVideoReady(ctx, video.ID, &videoURL, posterURL, &duration, outInfo.Size()); err != nil {
 		if errors.Is(err, db.ErrNotFound) {
 			// Vídeo excluído durante o processamento: remove os artefatos órfãos.
 			_ = w.Storage.DeleteObject(ctx, keyPrefix+".mp4")
@@ -239,6 +245,40 @@ func (w *Worker) process(ctx context.Context, video *db.MatchVideo) error {
 	}
 
 	// Original cumpriu o papel — remove do bucket (best-effort).
+	_ = w.Storage.DeleteObject(ctx, video.OriginalKey)
+	return nil
+}
+
+// processImage converts a feed photo: EXIF auto-orientation + downscale to fit
+// 1080×1920 + JPEG. The image URL goes in poster_url (video_url stays NULL).
+func (w *Worker) processImage(ctx context.Context, video *db.MatchVideo, inPath string) error {
+	raw, err := os.ReadFile(inPath)
+	if err != nil {
+		return fmt.Errorf("read original: %w", err)
+	}
+	processed, err := services.ProcessFeedImageJPEG(raw)
+	if err != nil {
+		return &permanentError{msg: fmt.Sprintf("invalid image file: %v", err)}
+	}
+	outPath := filepath.Join(filepath.Dir(inPath), "out.jpg")
+	if err := os.WriteFile(outPath, processed, 0o644); err != nil {
+		return fmt.Errorf("write output: %w", err)
+	}
+
+	key := "videos/" + video.MatchID.String() + "/" + video.ID.String() + ".jpg"
+	imageURL, err := w.Storage.UploadFile(ctx, key, "image/jpeg", outPath)
+	if err != nil {
+		return fmt.Errorf("upload image: %w", err)
+	}
+
+	if err := w.Store.MarkVideoReady(ctx, video.ID, nil, imageURL, nil, int64(len(processed))); err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			_ = w.Storage.DeleteObject(ctx, key)
+			_ = w.Storage.DeleteObject(ctx, video.OriginalKey)
+			return nil
+		}
+		return fmt.Errorf("mark ready: %w", err)
+	}
 	_ = w.Storage.DeleteObject(ctx, video.OriginalKey)
 	return nil
 }

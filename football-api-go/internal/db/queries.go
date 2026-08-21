@@ -25,22 +25,22 @@ const (
 
 // Player mirrors the players table.
 type Player struct {
-	ID                 uuid.UUID  `json:"id"`
-	Name               string     `json:"name"`
-	Nickname           *string    `json:"nickname"`
-	WhatsApp           string     `json:"whatsapp"`
-	PasswordHash       string     `json:"-"`
+	ID                  uuid.UUID  `json:"id"`
+	Name                string     `json:"name"`
+	Nickname            *string    `json:"nickname"`
+	WhatsApp            string     `json:"whatsapp"`
+	PasswordHash        string     `json:"-"`
 	Role                PlayerRole `json:"role"`
 	Active              bool       `json:"active"`
 	MustChangePassword  bool       `json:"must_change_password"`
 	PendingRegistration bool       `json:"pending_registration"`
 	AvatarURL           *string    `json:"avatar_url"`
-	ChatEnabled        bool       `json:"chat_enabled"`
-	ChatReqCount       int32      `json:"-"`
-	ChatReqWindow      *time.Time `json:"-"`
-	VideosEnabled      bool       `json:"videos_enabled"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
+	ChatEnabled         bool       `json:"chat_enabled"`
+	ChatReqCount        int32      `json:"-"`
+	ChatReqWindow       *time.Time `json:"-"`
+	VideosEnabled       bool       `json:"videos_enabled"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
 // RefreshToken mirrors the refresh_tokens table.

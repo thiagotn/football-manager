@@ -190,11 +190,11 @@ func TestBillingCycle_InvalidValues(t *testing.T) {
 func TestPosition_ValidValues(t *testing.T) {
 	// Valid player positions
 	validPositions := map[string]bool{
-		"gk":     true, // Goalkeeper
-		"def":    true, // Defender
-		"mid":    true, // Midfielder
-		"fwd":    true, // Forward
-		"any":    true, // Any position
+		"gk":  true, // Goalkeeper
+		"def": true, // Defender
+		"mid": true, // Midfielder
+		"fwd": true, // Forward
+		"any": true, // Any position
 	}
 
 	assert.Equal(t, 5, len(validPositions))
@@ -313,8 +313,8 @@ func TestPhone_WhatsAppFormat(t *testing.T) {
 func TestPaymentStatus_ValidValues(t *testing.T) {
 	// Valid payment statuses
 	validStatuses := map[string]bool{
-		"pending": true,
-		"paid":    true,
+		"pending":  true,
+		"paid":     true,
 		"refunded": true,
 	}
 

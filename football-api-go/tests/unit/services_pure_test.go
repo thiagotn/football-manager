@@ -595,4 +595,3 @@ func TestGenerateMatchHash(t *testing.T) {
 		}
 	})
 }
-

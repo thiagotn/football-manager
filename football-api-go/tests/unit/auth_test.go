@@ -447,5 +447,3 @@ func TestChangePassword_MissingFields(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
-
-

@@ -21,7 +21,7 @@ import (
 // ── PushService mock counting recipient IDs ─────────────────────────────────
 
 type recordingPush struct {
-	mu        sync.Mutex
+	mu         sync.Mutex
 	recipients []uuid.UUID
 }
 

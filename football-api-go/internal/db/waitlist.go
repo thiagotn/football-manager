@@ -11,16 +11,16 @@ import (
 
 // WaitlistEntry mirrors the match_waitlist table (migration 027).
 type WaitlistEntry struct {
-	ID            uuid.UUID  `json:"id"`
-	MatchID       uuid.UUID  `json:"match_id"`
-	PlayerID      uuid.UUID  `json:"player_id"`
-	Intro         *string    `json:"intro"`
-	Status        string     `json:"status"` // pending | accepted | rejected
-	ReviewedBy    *uuid.UUID `json:"-"`
-	ReviewedAt    *time.Time `json:"-"`
-	CreatedAt     time.Time  `json:"created_at"`
-	PlayerName    string     `json:"player_name"`
-	PlayerNick    *string    `json:"player_nickname"`
+	ID         uuid.UUID  `json:"id"`
+	MatchID    uuid.UUID  `json:"match_id"`
+	PlayerID   uuid.UUID  `json:"player_id"`
+	Intro      *string    `json:"intro"`
+	Status     string     `json:"status"` // pending | accepted | rejected
+	ReviewedBy *uuid.UUID `json:"-"`
+	ReviewedAt *time.Time `json:"-"`
+	CreatedAt  time.Time  `json:"created_at"`
+	PlayerName string     `json:"player_name"`
+	PlayerNick *string    `json:"player_nickname"`
 }
 
 // CreateWaitlistEntryParams collects the inputs for inserting a new entry.

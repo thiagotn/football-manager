@@ -11,13 +11,13 @@ import (
 )
 
 type AppReview struct {
-	ID        uuid.UUID `json:"id"`
-	PlayerID  uuid.UUID `json:"player_id"`
+	ID         uuid.UUID `json:"id"`
+	PlayerID   uuid.UUID `json:"player_id"`
 	PlayerName string    `json:"player_name"`
-	Rating    int       `json:"rating"`
-	Comment   *string   `json:"comment"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Rating     int       `json:"rating"`
+	Comment    *string   `json:"comment"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type DistributionEntry struct {
@@ -26,8 +26,8 @@ type DistributionEntry struct {
 }
 
 type ReviewSummary struct {
-	Average      float64                   `json:"average"`
-	Total        int                       `json:"total"`
+	Average      float64                      `json:"average"`
+	Total        int                          `json:"total"`
 	Distribution map[string]DistributionEntry `json:"distribution"` // "1"-"5" -> {count, percent}
 }
 
