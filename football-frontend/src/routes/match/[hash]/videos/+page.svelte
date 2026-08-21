@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
+  import { goto, afterNavigate } from '$app/navigation';
   import { matches as matchesApi, matchVideos, groups as groupsApi, ApiError } from '$lib/api';
   import type { MatchDetail, MatchVideosResponse, MatchVideoItem, VideoLiker } from '$lib/api';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
@@ -34,6 +34,22 @@
   let likersLoading = $state(false);
   let likers = $state<VideoLiker[]>([]);
   let likePending = $state<Record<string, boolean>>({});
+
+  // Voltar sem empilhar entrada no histórico: se chegamos aqui navegando
+  // dentro do app, history.back() (senão o botão voltar do browser fica
+  // quicando entre a partida e o feed); em deep-link, replaceState.
+  let cameFromApp = false;
+  afterNavigate(({ from }) => {
+    if (from?.url) cameFromApp = true;
+  });
+
+  function goBack() {
+    if (cameFromApp) {
+      history.back();
+    } else {
+      goto(`/match/${matchHash}`, { replaceState: true });
+    }
+  }
 
   // Autoplay do vídeo visível (mudo por padrão) + src lazy
   let observer: IntersectionObserver | null = null;
@@ -346,7 +362,7 @@
     <!-- Barra superior -->
     <div class="absolute inset-x-0 top-0 pt-3 pb-8 px-3 bg-gradient-to-b from-black/70 to-transparent flex items-center gap-3 pointer-events-none">
       <button
-        onclick={() => goto(`/match/${matchHash}`)}
+        onclick={goBack}
         class="p-2 rounded-full bg-black/30 backdrop-blur-sm text-white pointer-events-auto"
         aria-label={$t('match.videos.back')}>
         <ArrowLeft size={20} />
@@ -416,7 +432,7 @@
 {:else}
   <div class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center px-8 text-center">
     <p class="text-white/70">{$t('match.not_found_title')}</p>
-    <button onclick={() => goto(`/match/${matchHash}`)} class="btn btn-primary mt-4">
+    <button onclick={goBack} class="btn btn-primary mt-4">
       {$t('match.videos.back')}
     </button>
   </div>
