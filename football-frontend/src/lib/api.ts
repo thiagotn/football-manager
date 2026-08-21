@@ -324,7 +324,7 @@ export const matches = {
   list: (groupId: string) => get<Match[]>(`/groups/${groupId}/matches`),
   get: (groupId: string, matchId: string) => get<MatchDetail>(`/groups/${groupId}/matches/${matchId}`),
   getByHash: (hash: string) => get<MatchDetail>(`/matches/public/${hash}`),
-  create: (groupId: string, data: { match_date: string; start_time: string; location: string; notes?: string }) =>
+  create: (groupId: string, data: { match_date: string; start_time: string; location: string; end_time?: string | null; address?: string | null; court_type?: string | null; players_per_team?: number | null; max_players?: number | null; notes?: string | null }) =>
     post<Match>(`/groups/${groupId}/matches`, data),
   update: (groupId: string, matchId: string, data: Partial<{ match_date: string; start_time: string; end_time: string | null; location: string; address: string | null; court_type: string | null; players_per_team: number | null; max_players: number | null; notes: string | null; status: string }>) =>
     patch<Match>(`/groups/${groupId}/matches/${matchId}`, data),

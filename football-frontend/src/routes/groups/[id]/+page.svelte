@@ -452,7 +452,19 @@
   async function createMatch() {
     saving = true;
     try {
-      const m = await matchesApi.create(groupId, matchForm);
+      // Campos numéricos/opcionais do form são strings — a API v2 (Go) não faz
+      // coerção como a v1 fazia; converter igual ao saveEditMatch.
+      const m = await matchesApi.create(groupId, {
+        match_date: matchForm.match_date,
+        start_time: matchForm.start_time,
+        end_time: matchForm.end_time || null,
+        location: matchForm.location,
+        address: matchForm.address || null,
+        court_type: matchForm.court_type || null,
+        players_per_team: matchForm.players_per_team ? parseInt(matchForm.players_per_team) : null,
+        max_players: matchForm.max_players ? parseInt(matchForm.max_players) : null,
+        notes: matchForm.notes || null,
+      });
       matchList = [m, ...matchList];
       showMatch = false;
       matchForm = { match_date: '', start_time: '20:30', end_time: '', location: '', address: '', court_type: '', players_per_team: '', max_players: '', notes: '' };
