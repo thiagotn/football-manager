@@ -244,7 +244,9 @@ def test_feed_exibe_views_e_progresso(anon_page: Page, base_url):
 
     expect(anon_page.get_by_text("7", exact=True)).to_be_visible()  # view_count da fixture
     # Linha de progresso do item ativo presente no rodapé do slide
-    expect(anon_page.locator("section .absolute.bottom-0.inset-x-0")).to_have_count(1)
+    # (h-1 é exclusivo da barra de progresso; o gradiente do rodapé compartilha
+    # .absolute.bottom-0.inset-x-0, então o seletor precisa ser este)
+    expect(anon_page.locator("section div.h-1")).to_have_count(1)
 
 
 def test_feed_botao_compartilhar_visivel(anon_page: Page, base_url):
