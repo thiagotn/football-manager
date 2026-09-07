@@ -68,7 +68,8 @@
 
 | Componente | Uso |
 |------------|-----|
-| `AvatarImage.svelte` | Avatar do jogador: foto ou iniciais com cor determinística. Props: `name`, `avatarUrl?`, `updatedAt?`, `size?` (default 40), `class?` |
+| `AvatarImage.svelte` | Avatar do jogador: foto ou iniciais com cor determinística. Props: `name`, `avatarUrl?`, `updatedAt?`, `size?` (default 40), `class?`, `onclick?`, `clickLabel?`. Com `onclick` e foto carregada vira `<button>` (iniciais nunca são clicáveis) |
+| `AvatarLightbox.svelte` | Overlay fullscreen (`z-[70]`) com a foto do jogador ampliada (`min(85vw, 384px)` — avatar é 256px no storage). Fecha por X, backdrop ou Escape. Props: `bind:open`, `src`, `name`, `updatedAt?`. Usado nos modais de detalhe (`/groups/[id]`, `/admin/players`) e em `/profile` |
 | `ConfirmDialog.svelte` | Confirmações destrutivas — bottom sheet mobile / modal desktop. Props: `bind:open`, `message`, `confirmLabel`, `danger`, `onConfirm` |
 | `MatchBannerCard.svelte` | Banner do card de partida (campo + logo + dados). Props: `match`, `isGroupAdmin?`, `togglingStatus?`, `onToggleOpen?`, `onAskClose?`. Aceita `children` (slot) para conteúdo extra dentro do card (ex: scoreboard). Usado em `/match/[hash]` e `/match/[hash]/teams`. |
 | `DatePicker.svelte` | Seletor de data |

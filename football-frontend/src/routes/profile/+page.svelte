@@ -10,6 +10,7 @@
   import type { Position } from '$lib/team-builder';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
+  import AvatarLightbox from '$lib/components/AvatarLightbox.svelte';
   import { t } from '$lib/i18n';
 
   // Plan
@@ -38,6 +39,7 @@
 
   // Avatar
   let avatarUploading = $state(false);
+  let avatarLightboxOpen = $state(false);
   let avatarRemoving = $state(false);
   let avatarFileInput: HTMLInputElement | undefined = $state();
 
@@ -356,6 +358,8 @@
             avatarUrl={$currentPlayer?.avatar_url}
             updatedAt={$currentPlayer?.updated_at}
             size={64}
+            onclick={() => (avatarLightboxOpen = true)}
+            clickLabel={$t('aria.view_photo')}
           />
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap gap-2 mb-2">
@@ -726,3 +730,10 @@
   </div><!-- /grid -->
 </main>
 </PageBackground>
+
+<AvatarLightbox
+  bind:open={avatarLightboxOpen}
+  src={$currentPlayer?.avatar_url}
+  name={$currentPlayer?.name ?? ''}
+  updatedAt={$currentPlayer?.updated_at}
+/>

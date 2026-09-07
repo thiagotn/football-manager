@@ -8,6 +8,8 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
+  import AvatarLightbox from '$lib/components/AvatarLightbox.svelte';
+  import { t } from '$lib/i18n';
   import { Users, Search, Eye, Pencil, KeyRound, Trash2, Copy, EyeOff, ChevronLeft, ChevronRight, ImageOff } from 'lucide-svelte';
   import { playerDisplayName } from '$lib/utils.js';
 
@@ -23,6 +25,7 @@
   // Detail modal
   let selected = $state<AdminPlayerItem | null>(null);
   let showDetail = $state(false);
+  let avatarLightboxOpen = $state(false);
 
   // Edit modal
   let showEdit = $state(false);
@@ -295,7 +298,13 @@
 
       <!-- Avatar -->
       <div class="flex items-center gap-3">
-        <AvatarImage name={selected.name} avatarUrl={selected.avatar_url} size={52} />
+        <AvatarImage
+          name={selected.name}
+          avatarUrl={selected.avatar_url}
+          size={52}
+          onclick={() => (avatarLightboxOpen = true)}
+          clickLabel={$t('aria.view_photo')}
+        />
         <div>
           <p class="font-semibold text-gray-900 dark:text-gray-100">{playerDisplayName(selected.name, selected.nickname)}</p>
           <p class="text-xs text-gray-400">{selected.name}</p>
@@ -370,6 +379,10 @@
     </div>
   {/if}
 </Modal>
+
+{#if selected}
+  <AvatarLightbox bind:open={avatarLightboxOpen} src={selected.avatar_url} name={selected.name} />
+{/if}
 
 <!-- Edit modal -->
 <Modal bind:open={showEdit} title="Editar — {selected?.name ?? ''}">

@@ -8,6 +8,9 @@
    *   updatedAt  — timestamp usado como cache-buster quando a foto muda (optional)
    *   size       — tamanho em px (default 40)
    *   class      — classes adicionais para o contêiner
+   *   onclick    — se informado E houver foto carregada, o avatar vira <button>
+   *                (ex: abrir AvatarLightbox). Iniciais nunca são clicáveis.
+   *   clickLabel — aria-label do botão (passar já traduzido pelo caller)
    */
   interface Props {
     name: string;
@@ -15,9 +18,11 @@
     updatedAt?: string | null;
     size?: number;
     class?: string;
+    onclick?: () => void;
+    clickLabel?: string;
   }
 
-  const { name, avatarUrl, updatedAt, size = 40, class: extraClass = '' }: Props = $props();
+  const { name, avatarUrl, updatedAt, size = 40, class: extraClass = '', onclick, clickLabel }: Props = $props();
 
   const COLORS = [
     '#e53e3e', '#3b82f6', '#f59e0b', '#22c55e',
@@ -59,10 +64,17 @@
     imageLoaded = false;
     imageError = false;
   });
+
+  // só é clicável quando existe foto exibível (iniciais não abrem nada)
+  const clickable = $derived(!!onclick && !!imgSrc && !imageError);
 </script>
 
-<div
-  class="relative shrink-0 rounded-full overflow-hidden flex items-center justify-center select-none {extraClass}"
+<svelte:element
+  this={clickable ? 'button' : 'div'}
+  type={clickable ? 'button' : undefined}
+  aria-label={clickable ? clickLabel : undefined}
+  onclick={clickable ? onclick : undefined}
+  class="relative shrink-0 rounded-full overflow-hidden flex items-center justify-center select-none {clickable ? 'cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2' : ''} {extraClass}"
   style="width: {size}px; height: {size}px; background-color: {bg};"
 >
   {#if imgSrc && !imageError}
@@ -90,7 +102,7 @@
       style="font-size: {fontSize}px;"
     >{text}</span>
   {/if}
-</div>
+</svelte:element>
 
 <style>
   @keyframes shimmer {

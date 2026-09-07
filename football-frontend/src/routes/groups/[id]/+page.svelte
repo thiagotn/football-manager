@@ -16,6 +16,7 @@
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
+  import AvatarLightbox from '$lib/components/AvatarLightbox.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import { POS_ABBR, POS_COLOR_CLASSES } from '$lib/team-builder';
   import type { Position } from '$lib/team-builder';
@@ -234,6 +235,7 @@
   let skillSaving = $state(false);
   let selectedMember = $state<GroupMember | null>(null);
   let showMemberDetail = $state(false);
+  let memberAvatarLightboxOpen = $state(false);
 
   const today = new Date().toISOString().slice(0, 10);
   function matchSortKey(m: { match_date: string; start_time: string }) {
@@ -1384,7 +1386,13 @@
 
       <!-- Avatar + nome -->
       <div class="flex items-center gap-3">
-        <AvatarImage name={selectedMember.player.name} avatarUrl={selectedMember.player.avatar_url} size={52} />
+        <AvatarImage
+          name={selectedMember.player.name}
+          avatarUrl={selectedMember.player.avatar_url}
+          size={52}
+          onclick={() => (memberAvatarLightboxOpen = true)}
+          clickLabel={$t('aria.view_photo')}
+        />
         <div>
           <p class="font-semibold text-gray-900 dark:text-gray-100">
             {playerDisplayName(selectedMember.player.name, selectedMember.group_nickname ?? selectedMember.player.nickname)}
@@ -1479,6 +1487,10 @@
     </div>
   {/if}
 </Modal>
+
+{#if selectedMember}
+  <AvatarLightbox bind:open={memberAvatarLightboxOpen} src={selectedMember.player.avatar_url} name={selectedMember.player.name} />
+{/if}
 
 <!-- Member edit bottom sheet -->
 {#if roleEditMember}

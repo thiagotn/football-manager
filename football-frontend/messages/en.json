@@ -35,6 +35,7 @@
   "aria.theme": "Toggle theme",
   "aria.close_menu": "Close menu",
   "aria.lang": "Language",
+  "aria.view_photo": "View larger photo",
   "login.page_title": "Login — rachao.app",
   "login.subtitle": "Group and match management",
   "login.session_expired": "Your session has expired. Please log in again.",
