@@ -397,6 +397,8 @@
   "group.detail_goalkeeper": "Portero",
   "group.detail_line": "Campo",
   "group.detail_skill": "Habilidad",
+  "group.detail_actions": "Acciones",
+  "group.detail_no_group_nickname": "Sin apodo en este grupo.",
   "group.edit_skill": "Editar habilidad",
   "group.make_president": "Hacer Presidente",
   "group.remove_president": "Quitar presidencia",

@@ -10,16 +10,17 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import DatePicker from '$lib/components/DatePicker.svelte';
   import TimePicker from '$lib/components/TimePicker.svelte';
-  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X } from 'lucide-svelte';
+  import { Plus, Calendar, Users, Link, Trash2, Clock, MapPin, Copy, UserPlus, ChevronRight, ShieldCheck, ShieldOff, Pencil, Wallet, CheckCircle2, Circle, Globe, Lock, X, User } from 'lucide-svelte';
   import { BIB_COLOR_PALETTE } from '$lib/team-names';
   import type { TeamSlot } from '$lib/api';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import StarRating from '$lib/components/StarRating.svelte';
   import AvatarImage from '$lib/components/AvatarImage.svelte';
   import AvatarLightbox from '$lib/components/AvatarLightbox.svelte';
+  import PlayerCrestCard from '$lib/components/PlayerCrestCard.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import { POS_ABBR, POS_COLOR_CLASSES } from '$lib/team-builder';
-  import type { Position } from '$lib/team-builder';
+  import { API_TO_POS } from '$lib/positions';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import WaitlistPanel from '$lib/components/WaitlistPanel.svelte';
   import AddMemberModal from '$lib/components/AddMemberModal.svelte';
@@ -236,6 +237,12 @@
   let selectedMember = $state<GroupMember | null>(null);
   let showMemberDetail = $state(false);
   let memberAvatarLightboxOpen = $state(false);
+  // Botões de ação do modal de detalhes (handoff card-escudo, Componente B3)
+  const detailBtn = 'w-full inline-flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500';
+  const detailBtnNeutral = 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50 dark:bg-slate-800 dark:border-white/10 dark:text-slate-100 dark:hover:border-white/25 dark:hover:bg-slate-800/70';
+  const detailBtnGold = 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 dark:bg-gold-400/10 dark:border-gold-400/40 dark:text-gold-400 dark:hover:bg-gold-400/15';
+  const detailBtnDanger = 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/15';
+  const detailBtnOrange = 'bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100 dark:bg-orange-500/10 dark:border-orange-500/40 dark:text-orange-400 dark:hover:bg-orange-500/15';
 
   const today = new Date().toISOString().slice(0, 10);
   function matchSortKey(m: { match_date: string; start_time: string }) {
@@ -991,7 +998,7 @@
                     <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{$t('group.role_president')}</span>
                   {/if}
                   {#if m.position}
-                    {@const pos = ({gk:'goalkeeper',zag:'defender',lat:'fullback',mei:'midfielder',ata:'forward'} as Record<string,Position>)[m.position]}
+                    {@const pos = API_TO_POS[m.position]}
                     {#if pos}
                       <span class="inline-flex items-center px-1 py-px rounded text-[10px] font-bold {POS_COLOR_CLASSES[pos]}">{POS_ABBR[pos]}</span>
                     {/if}
@@ -1379,109 +1386,103 @@
 
 <AddMemberModal bind:open={showAddMemberByPhone} {groupId} onAdded={onMemberAdded} />
 
-<!-- Member detail modal -->
-<Modal bind:open={showMemberDetail} title={$t('group.member_detail_modal')}>
+<!-- Member detail modal — card-escudo (handoff design_handoff_player_crest_card) -->
+<Modal
+  bind:open={showMemberDetail}
+  title={$t('group.member_detail_modal')}
+  size="wide"
+  layout="centered"
+>
+  {#snippet titleIcon()}
+    <span class="inline-flex w-7 h-7 rounded-lg bg-rachao-500/15 border border-rachao-500/30 items-center justify-center shrink-0">
+      <User size={14} strokeWidth={2.2} class="text-rachao-300" />
+    </span>
+  {/snippet}
+
   {#if selectedMember}
-    <div class="space-y-4">
+    <div class="grid gap-6 sm:gap-8 md:grid-cols-[300px_1fr] md:items-center justify-items-center">
 
-      <!-- Avatar + nome -->
-      <div class="flex items-center gap-3">
-        <AvatarImage
-          name={selectedMember.player.name}
-          avatarUrl={selectedMember.player.avatar_url}
-          size={52}
-          onclick={() => (memberAvatarLightboxOpen = true)}
-          clickLabel={$t('aria.view_photo')}
-        />
-        <div>
-          <p class="font-semibold text-gray-900 dark:text-gray-100">
-            {playerDisplayName(selectedMember.player.name, selectedMember.group_nickname ?? selectedMember.player.nickname)}
-          </p>
-          <p class="text-xs text-gray-400">{selectedMember.player.name}</p>
-        </div>
-      </div>
+      <!-- Componente A: escudo -->
+      <PlayerCrestCard
+        name={selectedMember.player.name}
+        nickname={selectedMember.player.nickname}
+        avatarUrl={selectedMember.player.avatar_url}
+        position={selectedMember.position}
+        skillStars={selectedMember.skill_stars}
+        onPhotoClick={() => (memberAvatarLightboxOpen = true)}
+        photoLabel={$t('aria.view_photo')}
+      />
 
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_name')}</p>
-          <p class="font-medium">{selectedMember.player.name}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">{$t('groups.member_group_nickname')}</p>
-          <p class="font-medium">{selectedMember.group_nickname || '—'}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">{$t('groups.member_global_nickname')}</p>
-          <p class="font-medium">{selectedMember.player.nickname || '—'}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_role')}</p>
-          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold {selectedMember.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}">
+      <!-- Componente B: função + ações -->
+      <div class="w-full max-w-[340px] md:max-w-none flex flex-col gap-2.5">
+
+        <!-- B1. Função no grupo -->
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-[.1em] {selectedMember.role === 'admin'
+            ? 'bg-amber-50 border-amber-300 text-amber-700 dark:bg-gold-400/10 dark:border-gold-400/40 dark:text-gold-400'
+            : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-slate-800 dark:border-white/15 dark:text-slate-200'}">
+            <User size={11} strokeWidth={2.6} />
             {selectedMember.role === 'admin' ? $t('group.detail_role_president') : $t('group.detail_role_member')}
           </span>
+          <span class="text-[12px] lowercase text-gray-500 dark:text-slate-400">{$t('group.detail_role')}</span>
         </div>
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">{$t('group.detail_position')}</p>
-          {#if selectedMember.position}
-            {@const pos = ({gk:'goalkeeper',zag:'defender',lat:'fullback',mei:'midfielder',ata:'forward'} as Record<string,Position>)[selectedMember.position]}
-            {#if pos}
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold {POS_COLOR_CLASSES[pos]}">
-                {POS_ABBR[pos]} — {$t(('position.' + selectedMember.position) as any)}
-              </span>
-            {/if}
-          {:else}
-            <span class="text-sm text-gray-400">—</span>
-          {/if}
-        </div>
-        {#if selectedMember.skill_stars != null}
-          <div class="col-span-2">
-            <p class="text-xs text-gray-400 mb-1">{$t('group.detail_skill')}</p>
-            <StarRating rating={selectedMember.skill_stars} readonly size={18} />
-          </div>
-        {/if}
-      </div>
 
-      {#if selectedMember.player.pending_registration}
-        <div class="alert-info text-xs">{$t('group.claim_pending_hint')}</div>
-      {/if}
+        <!-- B2. Label -->
+        <p class="text-[11px] font-semibold uppercase tracking-[.14em] text-gray-500 dark:text-slate-400 mt-2">{$t('group.detail_actions')}</p>
 
-      <div class="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-2">
+        <!-- B3. Botões -->
         {#if selectedMember.player.pending_registration}
           <button
+            type="button"
             onclick={() => generateClaimLink(selectedMember!.player.id, selectedMember!.player.name)}
-            class="btn-sm btn-ghost flex items-center gap-1 border border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400">
-            <Link size={14} /> {$t('group.claim_link_btn')}
+            class="{detailBtn} {detailBtnOrange}">
+            <Link size={15} strokeWidth={2.1} /> {$t('group.claim_link_btn')}
           </button>
         {/if}
         <button
+          type="button"
           onclick={() => {
             roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.group_nickname ?? '' };
             showMemberDetail = false;
           }}
-          class="btn-sm btn-ghost flex items-center gap-1 border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400">
-          <Pencil size={14} /> {$t('group.edit_skill')}
+          class="{detailBtn} {detailBtnNeutral}">
+          <Pencil size={15} strokeWidth={2.1} /> {$t('group.edit_skill')}
         </button>
         {#if selectedMember.player.id !== $currentPlayer?.id}
           <button
+            type="button"
             onclick={() => {
               toggleRole(selectedMember!.player.id, selectedMember!.role, selectedMember!.player.name);
               showMemberDetail = false;
             }}
-            class="btn-sm btn-ghost flex items-center gap-1 border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400">
+            class="{detailBtn} {detailBtnGold}">
             {#if selectedMember.role === 'admin'}
-              <ShieldOff size={14} /> {$t('group.remove_president')}
+              <ShieldOff size={15} strokeWidth={2.1} /> {$t('group.remove_president')}
             {:else}
-              <ShieldCheck size={14} /> {$t('group.make_president')}
+              <ShieldCheck size={15} strokeWidth={2.1} /> {$t('group.make_president')}
             {/if}
           </button>
           <button
+            type="button"
             onclick={() => {
               removeMember(selectedMember!.player.id, selectedMember!.player.name);
               showMemberDetail = false;
             }}
-            class="btn-sm btn-ghost flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400">
-            <Trash2 size={14} /> {$t('group.remove_from_group')}
+            class="{detailBtn} {detailBtnDanger}">
+            <Trash2 size={15} strokeWidth={2.1} /> {$t('group.remove_from_group')}
           </button>
+        {/if}
+
+        <!-- B4. Apelido no grupo -->
+        <p class="text-[12px] text-gray-500 dark:text-slate-400 mt-1">
+          {#if selectedMember.group_nickname}
+            {$t('groups.member_group_nickname')}: <span class="font-semibold text-gray-900 dark:text-slate-100">{selectedMember.group_nickname}</span>
+          {:else}
+            {$t('group.detail_no_group_nickname')}
+          {/if}
+        </p>
+        {#if selectedMember.player.pending_registration}
+          <p class="text-[12px] text-gray-500 dark:text-slate-400">{$t('group.claim_pending_hint')}</p>
         {/if}
       </div>
     </div>

@@ -74,7 +74,8 @@
 | `MatchBannerCard.svelte` | Banner do card de partida (campo + logo + dados). Props: `match`, `isGroupAdmin?`, `togglingStatus?`, `onToggleOpen?`, `onAskClose?`. Aceita `children` (slot) para conteúdo extra dentro do card (ex: scoreboard). Usado em `/match/[hash]` e `/match/[hash]/teams`. |
 | `DatePicker.svelte` | Seletor de data |
 | `LanguageSwitcher.svelte` | Seletor de idioma (pt-BR / en / es) |
-| `Modal.svelte` | Modal genérico |
+| `Modal.svelte` | Modal genérico. Props: `bind:open`, `title`, `size?` (`md`\|`wide` 860px), `layout?` (`sheet` default: bottom sheet mobile / `centered`: sempre centralizado, raio 24px), `closeOnEscape?` (passar `false` enquanto um overlay filho como `AvatarLightbox` estiver aberto), `titleIcon?` (snippet), `onClose?`. A11y: `role=dialog`, `aria-modal`, `aria-labelledby`, Esc fecha, focus trap, foco volta à origem |
+| `PlayerCrestCard.svelte` | Card-escudo 300×360 do jogador (handoff `design_handoff_player_crest_card`): estrelas, foto no anel dourado (clicável → lightbox), apelido, nome, posição. Sempre escuro. Props: `name`, `nickname?`, `avatarUrl?`, `updatedAt?`, `position?` (código API), `skillStars?`, `onPhotoClick?`, `photoLabel?`. Usado no modal "Detalhes do Jogador" em `/groups/[id]` |
 | `Navbar.svelte` | Barra de navegação principal |
 | `PageBackground.svelte` | Wrapper obrigatório de fundo para todas as páginas |
 | `PhoneInput.svelte` | Input de telefone com seletor de país (26 países) e validação E.164. Usar em todos os formulários com número WhatsApp |
@@ -112,6 +113,7 @@
 |---------|-----|
 | `team-builder.ts` | Algoritmo de sorteio de times (TypeScript puro, sem API). Suporta estratégias `balanced` (default) e `simple` (sem cota por posição). Tipos: `DrawPlayer`, `DrawStrategy`, `Team`, `TeamResult`. Constantes: `POS_ABBR`, `POS_COLOR_CLASSES`, `TEAM_COLORS`. |
 | `draw-seed.ts` | 30 jogadores de seed para o simulador `/draw`. Exporta `seedWithIds()`. |
+| `positions.ts` | Mapas `API_TO_POS` (gk/zag/lat/mei/ata → `Position`), `POS_TO_API` e `POS_I18N_KEY`. Usar em vez de mapas inline. |
 | `team-names.ts` | Banco de ≥ 40 nomes de times estilo várzea. Exporta `TEAM_NAMES` e `shuffledNames()`. |
 
 ---

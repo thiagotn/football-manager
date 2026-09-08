@@ -40,3 +40,13 @@ class GroupPage:
 
     def sort_by_recent_pill(self):
         return self.page.get_by_role("button", name=re.compile(r"Mais recentes"))
+
+    # --- modal "Detalhes do Jogador" (card-escudo) ---
+    def member_details_button(self):
+        return self.page.get_by_role("button", name="Detalhes").first
+
+    def member_detail_modal(self):
+        return self.page.get_by_role("dialog")
+
+    def player_crest(self):
+        return self.page.get_by_test_id("player-crest")

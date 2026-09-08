@@ -397,6 +397,8 @@
   "group.detail_goalkeeper": "Goalkeeper",
   "group.detail_line": "Outfield",
   "group.detail_skill": "Skill",
+  "group.detail_actions": "Actions",
+  "group.detail_no_group_nickname": "No nickname in this group.",
   "group.edit_skill": "Edit skill",
   "group.make_president": "Make President",
   "group.remove_president": "Remove presidency",

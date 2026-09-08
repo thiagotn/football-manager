@@ -36,15 +36,18 @@
     open = false;
   }
 
+  // Fase de captura + stopImmediatePropagation: o Esc fecha só o lightbox,
+  // sem chegar ao listener do Modal que estiver aberto por baixo.
   function handleKeydown(e: KeyboardEvent) {
     if (open && e.key === 'Escape') {
-      e.stopPropagation();
+      e.preventDefault();
+      e.stopImmediatePropagation();
       close();
     }
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydowncapture={handleKeydown} />
 
 {#if open && imgSrc}
   <div class="fixed inset-0 z-[70] flex items-center justify-center p-4" data-testid="avatar-lightbox">

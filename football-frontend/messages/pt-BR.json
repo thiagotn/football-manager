@@ -397,6 +397,8 @@
   "group.detail_goalkeeper": "Goleiro",
   "group.detail_line": "Linha",
   "group.detail_skill": "Habilidade",
+  "group.detail_actions": "Ações",
+  "group.detail_no_group_nickname": "Sem apelido neste grupo.",
   "group.edit_skill": "Editar habilidade",
   "group.make_president": "Tornar Presidente",
   "group.remove_president": "Remover presidência",

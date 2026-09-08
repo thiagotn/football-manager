@@ -115,3 +115,27 @@ def test_aba_ultimos_nao_exibe_botao_novo_rachao(first_group_page):
         pytest.skip("Grupo sem partidas passadas — aba Últimos não é exibida")
     gp.tab_past()
     expect(gp.new_match_button()).not_to_be_visible()
+
+
+def test_modal_detalhes_jogador_escudo(first_group_page):
+    """Modal 'Detalhes do Jogador' no formato card-escudo: abre, mostra o escudo
+    e as ações, fecha com Esc e devolve o foco ao botão de origem."""
+    page, gp = first_group_page
+    gp.tab_members()
+    btn = gp.member_details_button()
+    if btn.count() == 0:
+        pytest.skip("Grupo sem membros no ambiente de teste")
+
+    btn.click()
+    modal = gp.member_detail_modal()
+    expect(modal).to_be_visible()
+    expect(modal.get_by_role("heading", name="Detalhes do Jogador")).to_be_visible()
+    expect(gp.player_crest()).to_be_visible()
+    expect(modal.get_by_role("button", name="Editar habilidade")).to_be_visible()
+    # Tab fica preso dentro do modal
+    page.keyboard.press("Tab")
+    assert page.evaluate("document.activeElement.closest('[role=dialog]') !== null")
+
+    page.keyboard.press("Escape")
+    expect(modal).to_have_count(0)
+    expect(btn).to_be_focused()
