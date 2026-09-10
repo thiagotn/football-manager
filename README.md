@@ -8,7 +8,6 @@
   <a href="https://github.com/thiagotn/football-manager/actions/workflows/api-go.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/api-go.yml/badge.svg?event=workflow_dispatch" alt="Build & Test API Go" /></a>
   <a href="https://codecov.io/gh/thiagotn/football-manager"><img src="https://codecov.io/gh/thiagotn/football-manager/graph/badge.svg?flag=api-go" alt="codecov api-go" /></a>
   <a href="https://github.com/thiagotn/football-manager/actions/workflows/build-twa.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/build-twa.yml/badge.svg?event=workflow_dispatch" alt="Build & Deploy TWA Android" /></a>
-  <a href="https://github.com/thiagotn/football-manager/actions/workflows/deploy-monitoring.yml"><img src="https://github.com/thiagotn/football-manager/actions/workflows/deploy-monitoring.yml/badge.svg?event=workflow_dispatch" alt="Deploy Monitoring Stack" /></a>
 </p>
 
 <p align="center">PWA para gerenciamento de grupos de futebol.</p>
@@ -290,8 +289,7 @@ docker compose build --no-cache          # Rebuild forçado sem cache
 football-manager/
 ├── .github/
 │   └── workflows/
-│       ├── main.yml                # CI/CD: testes unitários → E2E → build → deploy (unificado)
-│       └── deploy-monitoring.yml   # Deploy da stack de monitoramento (disparo manual)
+│       └── main.yml                # CI/CD: testes unitários → E2E → build → deploy (unificado)
 ├── scripts/
 │   └── setup-vps.sh                # Prepara o VPS Ubuntu 24.04 para receber o deploy
 ├── football-api/                   # Backend v1 (FastAPI)
@@ -439,7 +437,7 @@ ACME_EMAIL=seu@email.com        # para notificações de certificado SSL
 
 Acesse **Settings → Secrets and variables → Actions** no repositório e crie:
 
-#### Acesso ao VPS (`main.yml` + `deploy-monitoring.yml`)
+#### Acesso ao VPS (`main.yml`)
 
 | Secret | Descrição |
 |--------|-----------|
@@ -514,14 +512,16 @@ Injetados como variáveis de build públicas (`PUBLIC_*`):
 |--------|-----------|
 | `CODECOV_TOKEN` | Token para upload de cobertura de testes no Codecov |
 
-#### Monitoramento (`deploy-monitoring.yml`)
+#### Telegram (notificações dos workflows)
 
 | Secret | Descrição |
 |--------|-----------|
-| `GRAFANA_ADMIN_USER` | Usuário admin do Grafana (padrão: `admin`) |
-| `GRAFANA_ADMIN_PASSWORD` | Senha admin do Grafana |
-| `TELEGRAM_BOT_TOKEN` | Token do bot Telegram para alertas |
-| `TELEGRAM_CHAT_ID` | Chat ID do Telegram que recebe os alertas |
+| `TELEGRAM_BOT_TOKEN` | Token do bot Telegram (job `notify` de `main.yml`, `api-go.yml`, `build-twa.yml`) |
+| `TELEGRAM_CHAT_ID` | Chat ID do Telegram que recebe as notificações |
+
+> O antigo workflow `deploy-monitoring.yml` (Grafana/Prometheus/Uptime Kuma via SSH no VPS) foi removido
+> em 2026-09-10: a observabilidade vive no homelab, versionada em `helm/observability/` do repo
+> `homelab` e sincronizada pelo Argo CD. Os secrets `GRAFANA_ADMIN_*` deixaram de ser usados aqui.
 
 #### Android / TWA (`build-twa.yml`)
 
@@ -595,12 +595,17 @@ Run workflow (manual)
 
 ### Monitoramento
 
+A stack roda no **homelab** (k3s, ns `observability`, GitOps pelo Argo CD — repo `homelab`). As UIs são
+**mesh-only**: só acessíveis pela malha Headscale (`tailscale up --login-server https://vpn.thiagotn.com`).
+A única superfície pública é a status page.
+
 | Serviço | URL | Auth | Descrição |
 |---------|-----|------|-----------|
-| Grafana | https://grafana.rachao.app | Login nativo | Dashboards de métricas |
-| Prometheus | https://prometheus.rachao.app | Basic Auth (`admin` / ver `traefik-dynamic.yml`) | Banco de métricas |
-| Uptime Kuma | https://uptime.rachao.app | Login nativo | Monitoramento de uptime |
-| Status page | https://status.rachao.app | Pública | Redirect para `/status/rachao` no Uptime Kuma |
+| Status page | https://status.rachao.app | Pública | Status page do Uptime Kuma (ADR 0009) |
+| Grafana | http://grafana.mesh.internal | Login nativo | Dashboards de métricas e logs |
+| Prometheus | http://prometheus.mesh.internal:9090 | — (mesh) | Banco de métricas |
+| Alertmanager | http://alertmanager.mesh.internal:9093 | — (mesh) | Roteamento de alertas → Telegram |
+| Uptime Kuma | http://uptime.mesh.internal | Login nativo | Monitoramento de uptime |
 
 ---
 

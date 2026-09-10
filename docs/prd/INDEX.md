@@ -107,7 +107,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 |---|-----|--------|-------|
 | 002 | [push-notifications.md](002-push-notifications.md) | 🚧 | Infraestrutura (Web Push) implementada. Integração com eventos de negócio pendente |
 | 013 | [minhas-estatisticas.md](013-minhas-estatisticas.md) | ✅ | Estatísticas por jogador |
-| 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas configurados |
+| 018 | [observabilidade.md](018-observabilidade.md) | ✅ | Grafana + Prometheus + Uptime Kuma + bot Telegram + alertas. Entregue no VPS; desde 2026-07 roda no homelab, com as UIs mesh-only e só `status.rachao.app` público |
 | 022 | [migracao-uuid-v7.md](022-migracao-uuid-v7.md) | 📋 | Migração de UUID v4 → v7 nas PKs |
 | 028 | [instalacao-pwa-android.md](028-instalacao-pwa-android.md) | 📋 | Revisão do fluxo de instalação PWA no Android |
 | 029 | [ranking-geral.md](029-ranking-geral.md) | ✅ | Ranking geral da plataforma (top e flop) |

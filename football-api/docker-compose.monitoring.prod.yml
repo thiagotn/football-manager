@@ -1,3 +1,7 @@
+# ⚠️ LEGADO — stack de monitoramento do VPS (76.13.161.72), mantida só até o desprovisionamento
+# do VPS (Fase 6 da ADR 0002 do repo `homelab`). A observabilidade de produção roda no homelab
+# (k3s, ns `observability`, GitOps pelo Argo CD); os hostnames citados abaixo não valem mais.
+# O workflow que fazia deploy deste arquivo (`deploy-monitoring.yml`) foi removido em 2026-09-10.
 name: football-monitoring
 
 # ─────────────────────────────────────────────────────────────────────────────

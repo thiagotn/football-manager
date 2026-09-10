@@ -1,6 +1,10 @@
 # PRD — Observabilidade (rachao.app)
 
-**Status:** ✅ Implementado — Março 2026
+**Status:** ✅ Implementado — Março 2026 · **infra superada pela migração ao homelab (2026-07/09)**
+**Onde vive hoje:** stack no k3s do homelab (`helm/observability/` do repo `homelab`, GitOps via Argo CD),
+com as UIs **mesh-only** (`grafana.mesh.internal`, `prometheus.mesh.internal`, `uptime.mesh.internal`).
+Os hostnames públicos citados abaixo (`grafana`/`uptime`/`prometheus.rachao.app`) são do VPS legado e
+**não valem mais**; a única superfície pública é `https://status.rachao.app` (ADR 0009 do repo `homelab`).
 **Data:** 2026-03-17
 **Atualizado:** 2026-03-18
 **Contexto:** VPS único (Hostinger KVM1, 1 vCPU, 4 GB RAM, 50 GB disco, Ubuntu 24.04 LTS), Docker Compose + Traefik.

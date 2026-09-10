@@ -1,3 +1,9 @@
+# Config dinâmica do Traefik do VPS legado (76.13.161.72) — LEGADO.
+# A produção roda no homelab (k3s) desde o cutover de 2026-07-22; lá quem roteia são os
+# Ingresses em helm/apps/rachao/ do repo `homelab`, atrás do Cloudflare Tunnel.
+# Os routers de monitoramento (grafana/uptime/prometheus/status) foram removidos em 2026-09-10:
+# o `status` fazia 301 para uptime.rachao.app, que já não resolvia — a status page agora é
+# servida pelo Uptime Kuma do homelab em https://status.rachao.app (ADR 0009 do repo homelab).
 http:
 
   routers:
@@ -33,37 +39,6 @@ http:
         certResolver: letsencrypt
       service: mcp
 
-    # ── Monitoramento ────────────────────────────────────────────
-    grafana:
-      rule: "Host(`grafana.rachao.app`)"
-      entrypoints: [websecure]
-      tls:
-        certResolver: letsencrypt
-      service: grafana
-
-    uptime:
-      rule: "Host(`uptime.rachao.app`)"
-      entrypoints: [websecure]
-      tls:
-        certResolver: letsencrypt
-      service: uptime-kuma
-
-    prometheus:
-      rule: "Host(`prometheus.rachao.app`)"
-      entrypoints: [websecure]
-      tls:
-        certResolver: letsencrypt
-      middlewares: [monitoring-auth]
-      service: prometheus
-
-    status:
-      rule: "Host(`status.rachao.app`)"
-      entrypoints: [websecure]
-      tls:
-        certResolver: letsencrypt
-      middlewares: [status-redirect]
-      service: uptime-kuma
-
   services:
     api:
       loadBalancer:
@@ -82,39 +57,9 @@ http:
         responseForwarding:
           flushInterval: "100ms"
 
-    # ── Monitoramento ────────────────────────────────────────────
-    grafana:
-      loadBalancer:
-        servers:
-          - url: "http://football-monitoring-grafana:3000"
-
-    uptime-kuma:
-      loadBalancer:
-        servers:
-          - url: "http://football-monitoring-uptime-kuma:3001"
-
-    prometheus:
-      loadBalancer:
-        servers:
-          - url: "http://football-monitoring-prometheus:9090"
-
   middlewares:
     www-redirect:
       redirectRegex:
         regex: "^https://www\\.rachao\\.app(.*)"
         replacement: "https://rachao.app${1}"
         permanent: true
-
-    status-redirect:
-      redirectRegex:
-        regex: ".*"
-        replacement: "https://uptime.rachao.app/status/rachao"
-        permanent: true
-
-    # Basic Auth para o Prometheus
-    # Senha padrão: monitoring123 — troque no VPS com: htpasswd -nb admin NOVA_SENHA
-    # e atualize diretamente em /opt/football-manager/traefik-dynamic.yml (sem precisar de redeploy)
-    monitoring-auth:
-      basicAuth:
-        users:
-          - "admin:$apr1$S3knzfXa$Ywo4.8EjgPz5ukMgKw1Ht/"

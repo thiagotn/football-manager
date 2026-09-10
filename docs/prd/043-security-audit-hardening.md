@@ -8,7 +8,7 @@
 
 ## TODOs
 
-- [ ] **Ingestão de logs no Grafana Loki** — os logs de auditoria (S-05) já saem em JSON estruturado em produção. Revisar como configurar o Promtail (ou Alloy) para coletar o stdout do container da API e enviar ao Loki já existente em `grafana.rachao.app`. Criar dashboard/alerta para eventos `WARNING` (`auth_login_failed`, `auth_login_rate_limited`, `admin_player_deleted`, `group_member_removed`).
+- [ ] **Ingestão de logs no Grafana Loki** — os logs de auditoria (S-05) já saem em JSON estruturado em produção. Revisar como configurar o Promtail (ou Alloy) para coletar o stdout do container da API e enviar ao Loki já existente no homelab (`grafana.mesh.internal`, ns `observability`). Criar dashboard/alerta para eventos `WARNING` (`auth_login_failed`, `auth_login_rate_limited`, `admin_player_deleted`, `group_member_removed`).
 
 ---
 
