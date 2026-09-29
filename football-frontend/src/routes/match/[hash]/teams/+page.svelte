@@ -2,7 +2,8 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { matches as matchesApi, teams as teamsApi, groups as groupsApi, ApiError } from '$lib/api';
-  import type { DrawStrategy, MatchDetail, TeamsResponse } from '$lib/api';
+  import type { DrawStrategy, MatchDetail, TeamPlayerItem, TeamsResponse } from '$lib/api';
+  import { showsPosition } from '$lib/team-display';
   import { currentPlayer, isAdmin, isLoggedIn } from '$lib/stores/auth';
   import { toastSuccess, toastError } from '$lib/stores/toast';
   import PageBackground from '$lib/components/PageBackground.svelte';
@@ -67,7 +68,18 @@
   }
 
   const POS_SORT: Record<string, number> = { gk: 0, lat: 1, zag: 2, mei: 3, ata: 4 };
-  function sortedPlayers<T extends { position?: string | null }>(players: T[]): T[] {
+
+  function sortedPlayers(players: TeamPlayerItem[], strategy: DrawStrategy): TeamPlayerItem[] {
+    // No sorteio simplificado o badge de posição some, mas ordenar por posição
+    // ainda agruparia os jogadores por posição e deixaria o padrão inferível.
+    // Aí só o goleiro vem primeiro e o resto sai em ordem alfabética.
+    if (strategy === 'simple') {
+      return [...players].sort((a, b) => {
+        const gk = Number(b.position === 'gk') - Number(a.position === 'gk');
+        if (gk !== 0) return gk;
+        return playerDisplayName(a.name, a.nickname).localeCompare(playerDisplayName(b.name, b.nickname));
+      });
+    }
     return [...players].sort((a, b) => (POS_SORT[a.position ?? ''] ?? 9) - (POS_SORT[b.position ?? ''] ?? 9));
   }
 
@@ -194,7 +206,7 @@
       <!-- Teams grid — 2 colunas sempre -->
       <div class="grid grid-cols-2 gap-2 mb-3">
         {#each teamsData.teams as team}
-          <div class="card overflow-hidden" style="border-left: 3px solid {team.color ?? '#6b7280'}; border-top: 2px solid {team.color ?? '#6b7280'}40;">
+          <div class="card overflow-hidden" data-testid="team-card" style="border-left: 3px solid {team.color ?? '#6b7280'}; border-top: 2px solid {team.color ?? '#6b7280'}40;">
             <!-- Team header -->
             <div class="px-2 py-1.5 flex items-center gap-1.5"
               style="background-color: {team.color ?? '#374151'}1a; border-bottom: 2px solid {team.color ?? '#6b7280'};">
@@ -206,16 +218,16 @@
             </div>
             <!-- Players -->
             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-              {#each sortedPlayers(team.players) as p}
-                <li class="px-2 py-1 flex items-center gap-1">
+              {#each sortedPlayers(team.players, teamsData.strategy) as p}
+                <li class="px-2 py-1 flex items-center gap-1" data-testid="team-player">
                   <span class="flex-1 text-xs text-gray-800 dark:text-gray-200 truncate">{playerDisplayName(p.name, p.nickname)}</span>
-                  {#if p.position}
+                  {#if p.position && showsPosition(teamsData.strategy, p.position === 'gk')}
                     <span class="text-[9px] px-1 leading-tight rounded font-bold shrink-0
                       {p.position === 'gk' ? 'bg-amber-400/20 text-amber-300' :
                        p.position === 'zag' ? 'bg-blue-400/20 text-blue-300' :
                        p.position === 'lat' ? 'bg-cyan-400/20 text-cyan-300' :
                        p.position === 'mei' ? 'bg-emerald-400/20 text-emerald-300' :
-                       'bg-red-400/20 text-red-300'}">{p.position.toUpperCase()}</span>
+                       'bg-red-400/20 text-red-300'}" data-testid="position-badge">{p.position.toUpperCase()}</span>
                   {/if}
                 </li>
               {/each}

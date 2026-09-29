@@ -82,24 +82,39 @@ func TestTeams_DrawTeams_Success(t *testing.T) {
 		})
 	}
 
-	// Draw teams — handler returns 201
+	// Draw teams — handler returns 201. Omitting the body defaults to balanced.
 	res := apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, nil)
 	assert.Equal(t, http.StatusCreated, res.Code)
 
 	teamBody := res.Body
 	assert.Contains(t, teamBody, "teams")
+	assert.Equal(t, "balanced", teamBody["strategy"])
 
-	// Redraw with explicit strategies — body is optional and validated
+	// Redraw with explicit strategies — body is optional and validated.
+	// The strategy must be echoed back AND survive a later GET: the teams UI
+	// hides field positions when it is "simple", so a draw that forgets its
+	// own strategy would render as if it had been balanced.
 	res = apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, map[string]any{
 		"strategy": "simple",
 	})
 	assert.Equal(t, http.StatusCreated, res.Code)
 	assert.Contains(t, res.Body, "teams")
+	assert.Equal(t, "simple", res.Body["strategy"])
+
+	res = apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+matchID+"/teams", admin.Token, nil)
+	assert.Equal(t, http.StatusOK, res.Code)
+	assert.Equal(t, "simple", res.Body["strategy"])
 
 	res = apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, map[string]any{
 		"strategy": "balanced",
 	})
 	assert.Equal(t, http.StatusCreated, res.Code)
+	assert.Equal(t, "balanced", res.Body["strategy"])
+
+	// Redrawing back to balanced must also be visible to later readers.
+	res = apiCall(t, srv, http.MethodGet, "/api/v2/matches/"+matchID+"/teams", admin.Token, nil)
+	assert.Equal(t, http.StatusOK, res.Code)
+	assert.Equal(t, "balanced", res.Body["strategy"])
 
 	// Unknown strategy is rejected
 	res = apiCall(t, srv, http.MethodPost, "/api/v2/matches/"+matchID+"/teams", admin.Token, map[string]any{

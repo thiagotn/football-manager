@@ -114,6 +114,7 @@
 | `team-builder.ts` | Algoritmo de sorteio de times (TypeScript puro, sem API). Suporta estratégias `balanced` (default) e `simple` (sem cota por posição). Tipos: `DrawPlayer`, `DrawStrategy`, `Team`, `TeamResult`. Constantes: `POS_ABBR`, `POS_COLOR_CLASSES`, `TEAM_COLORS`. |
 | `draw-seed.ts` | 30 jogadores de seed para o simulador `/draw`. Exporta `seedWithIds()`. |
 | `positions.ts` | Mapas `API_TO_POS` (gk/zag/lat/mei/ata → `Position`), `POS_TO_API` e `POS_I18N_KEY`. Usar em vez de mapas inline. |
+| `team-display.ts` | Regras de exibição do resultado do sorteio: `showsPosition(strategy, isGoalkeeper)` e `showsPlayerStars(strategy)`. No modo `simple` a posição de linha e a estrela por jogador somem (o goleiro mantém a posição; o total de estrelas do time é mantido). Usado pela página de times e pelo simulador. |
 | `team-names.ts` | Banco de ≥ 40 nomes de times estilo várzea. Exporta `TEAM_NAMES` e `shuffledNames()`. |
 
 ---

@@ -10,12 +10,15 @@ import (
 
 // MatchTeam is a team record in a match.
 type MatchTeam struct {
-	ID        uuid.UUID `json:"id"`
-	MatchID   uuid.UUID `json:"match_id"`
-	Name      string    `json:"name"`
-	Color     *string   `json:"color"`
-	Position  int       `json:"position"`
-	CreatedAt time.Time `json:"created_at"`
+	ID       uuid.UUID `json:"id"`
+	MatchID  uuid.UUID `json:"match_id"`
+	Name     string    `json:"name"`
+	Color    *string   `json:"color"`
+	Position int       `json:"position"`
+	// DrawStrategy is the strategy used in the draw that produced this team
+	// ("balanced" or "simple"). Rewritten on every draw along with the rows.
+	DrawStrategy string    `json:"draw_strategy"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // MatchTeamPlayer is a player assigned to a team.
@@ -81,14 +84,14 @@ func DeleteTeamsByMatch(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UU
 	return err
 }
 
-func CreateTeam(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID, name string, color *string, position int) (*MatchTeam, error) {
+func CreateTeam(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID, name string, color *string, position int, drawStrategy string) (*MatchTeam, error) {
 	var t MatchTeam
 	err := pool.QueryRow(ctx, `
-		INSERT INTO match_teams (match_id, name, color, position)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, match_id, name, color, position, created_at`,
-		matchID, name, color, position).
-		Scan(&t.ID, &t.MatchID, &t.Name, &t.Color, &t.Position, &t.CreatedAt)
+		INSERT INTO match_teams (match_id, name, color, position, draw_strategy)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, match_id, name, color, position, draw_strategy, created_at`,
+		matchID, name, color, position, drawStrategy).
+		Scan(&t.ID, &t.MatchID, &t.Name, &t.Color, &t.Position, &t.DrawStrategy, &t.CreatedAt)
 	return &t, err
 }
 
@@ -104,7 +107,7 @@ func AddPlayerToTeam(ctx context.Context, pool *pgxpool.Pool, teamID, playerID u
 func GetTeamsForMatch(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID) ([]MatchTeamWithPlayers, error) {
 	// Fetch teams
 	teamRows, err := pool.Query(ctx, `
-		SELECT id, match_id, name, color, position, created_at
+		SELECT id, match_id, name, color, position, draw_strategy, created_at
 		FROM match_teams
 		WHERE match_id = $1
 		ORDER BY position`, matchID)
@@ -116,7 +119,7 @@ func GetTeamsForMatch(ctx context.Context, pool *pgxpool.Pool, matchID uuid.UUID
 	var teams []MatchTeamWithPlayers
 	for teamRows.Next() {
 		var t MatchTeamWithPlayers
-		if err := teamRows.Scan(&t.ID, &t.MatchID, &t.Name, &t.Color, &t.Position, &t.CreatedAt); err != nil {
+		if err := teamRows.Scan(&t.ID, &t.MatchID, &t.Name, &t.Color, &t.Position, &t.DrawStrategy, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 		t.Players = []MatchTeamPlayer{}

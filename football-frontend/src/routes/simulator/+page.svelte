@@ -10,6 +10,7 @@
 
   let isLoggedIn = $derived(!!$authStore.player);
   import { buildTeams, POS_ABBR, POS_COLOR_CLASSES, sortPlayersByPosition, type DrawPlayer, type DrawStrategy, type TeamResult, type Position } from '$lib/team-builder';
+  import { showsPosition, showsPlayerStars } from '$lib/team-display';
   import { seedWithIds, allianceSeedWithIds } from '$lib/draw-seed';
   import { shuffledNames } from '$lib/team-names';
 
@@ -30,6 +31,9 @@
   let playersPerTeam = $state(5);
   let strategy       = $state<DrawStrategy>('balanced');
   let result         = $state<TeamResult | null>(null);
+  // Estratégia do resultado EM TELA. Separada de `strategy` (valor do seletor)
+  // para que mexer no seletor sem re-sortear não mude o que já foi sorteado.
+  let resultStrategy = $state<DrawStrategy>('balanced');
   let errors         = $state<string[]>([]);
   let warnings       = $state<string[]>([]);
   let resetOpen      = $state(false);
@@ -85,6 +89,18 @@
   function sort() {
     if (!validate()) return;
     result = buildTeams(activePlayers, playersPerTeam, numTeams, shuffledNames(), strategy);
+    resultStrategy = strategy;
+  }
+
+  // No modo simplificado, ordenar por posição agruparia os jogadores por
+  // posição e deixaria o padrão inferível mesmo sem o badge: só o goleiro vem
+  // primeiro e o resto sai em ordem alfabética.
+  function rosterOrder<T extends { position: Position; name: string; nickname: string }>(players: T[]): T[] {
+    if (resultStrategy !== 'simple') return sortPlayersByPosition(players);
+    return [...players].sort((a, b) => {
+      const gk = Number(b.position === 'goalkeeper') - Number(a.position === 'goalkeeper');
+      return gk !== 0 ? gk : displayName(a).localeCompare(displayName(b));
+    });
   }
 
   function generateSeed() {
@@ -451,18 +467,22 @@
 
               <!-- Lista de jogadores -->
               <div class="divide-y divide-white/[0.06]">
-                {#each sortPlayersByPosition(team.players) as p}
+                {#each rosterOrder(team.players) as p}
                   <div class="flex items-center gap-2 px-4 py-2">
-                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0
-                                 {POS_COLOR_CLASSES[p.position as Position]}">
-                      {POS_ABBR[p.position as Position]}
-                    </span>
+                    {#if showsPosition(resultStrategy, p.position === 'goalkeeper')}
+                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0
+                                   {POS_COLOR_CLASSES[p.position as Position]}">
+                        {POS_ABBR[p.position as Position]}
+                      </span>
+                    {/if}
                     <span class="flex-1 min-w-0 text-sm text-white truncate">
                       {displayName(p)}
                     </span>
-                    <span class="text-amber-400 text-xs flex-shrink-0 tracking-tight">
-                      {starChars(p.stars)}
-                    </span>
+                    {#if showsPlayerStars(resultStrategy)}
+                      <span class="text-amber-400 text-xs flex-shrink-0 tracking-tight">
+                        {starChars(p.stars)}
+                      </span>
+                    {/if}
                   </div>
                 {/each}
               </div>
@@ -490,12 +510,16 @@
             <div class="flex flex-wrap gap-2">
               {#each result.reserves as p}
                 <div class="flex items-center gap-1.5 bg-white/15 rounded-lg px-3 py-1.5">
-                  <span class="text-[10px] font-bold px-1 py-0.5 rounded
-                               {POS_COLOR_CLASSES[p.position as Position]}">
-                    {POS_ABBR[p.position as Position]}
-                  </span>
+                  {#if showsPosition(resultStrategy, p.position === 'goalkeeper')}
+                    <span class="text-[10px] font-bold px-1 py-0.5 rounded
+                                 {POS_COLOR_CLASSES[p.position as Position]}">
+                      {POS_ABBR[p.position as Position]}
+                    </span>
+                  {/if}
                   <span class="text-sm text-white">{displayName(p)}</span>
-                  <span class="text-amber-400 text-xs">{starChars(p.stars)}</span>
+                  {#if showsPlayerStars(resultStrategy)}
+                    <span class="text-amber-400 text-xs">{starChars(p.stars)}</span>
+                  {/if}
                 </div>
               {/each}
             </div>

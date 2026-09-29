@@ -43,6 +43,9 @@ type teamResp struct {
 type teamsResp struct {
 	Teams    []teamResp       `json:"teams"`
 	Reserves []teamPlayerResp `json:"reserves"`
+	// Strategy used in the draw ("balanced" or "simple"). The teams UI hides
+	// field positions when it is "simple", since that mode ignores them.
+	Strategy string `json:"strategy"`
 }
 
 // ── Request types ─────────────────────────────────────────────────────────────
@@ -137,11 +140,12 @@ func (h *teamHandler) DrawTeams(w http.ResponseWriter, r *http.Request) {
 	resp := teamsResp{
 		Teams:    make([]teamResp, 0, len(teamResults)),
 		Reserves: make([]teamPlayerResp, 0, len(reserves)),
+		Strategy: strategy,
 	}
 
 	for _, tr := range teamResults {
 		color := tr.Color
-		team, err := db.CreateTeam(r.Context(), h.pool, matchID, tr.Name, &color, tr.Position)
+		team, err := db.CreateTeam(r.Context(), h.pool, matchID, tr.Name, &color, tr.Position, strategy)
 		if err != nil {
 			renderError(w, err)
 			return
@@ -165,7 +169,7 @@ func (h *teamHandler) DrawTeams(w http.ResponseWriter, r *http.Request) {
 
 	// Persist reserves as a virtual team with position=0
 	if len(reserves) > 0 {
-		reserveTeam, _ := db.CreateTeam(r.Context(), h.pool, matchID, "Reservas", nil, 0)
+		reserveTeam, _ := db.CreateTeam(r.Context(), h.pool, matchID, "Reservas", nil, 0, strategy)
 		if reserveTeam != nil {
 			for _, p := range reserves {
 				_ = db.AddPlayerToTeam(r.Context(), h.pool, reserveTeam.ID, p.PlayerID, true)
@@ -199,9 +203,17 @@ func (h *teamHandler) GetTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Every row of a given draw carries the same strategy; fall back to
+	// "balanced" when the match has no teams yet.
+	strategy := "balanced"
+	if len(teams) > 0 && teams[0].DrawStrategy != "" {
+		strategy = teams[0].DrawStrategy
+	}
+
 	resp := teamsResp{
 		Teams:    make([]teamResp, 0),
 		Reserves: make([]teamPlayerResp, 0),
+		Strategy: strategy,
 	}
 
 	for _, t := range teams {

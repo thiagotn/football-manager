@@ -1108,8 +1108,18 @@ para paridade plena (atualizar conforme avança):
   (`football-api/app/services/team_builder.py` + `routers/teams.py`) e v2
   (`football-api-go/internal/services/team_builder.go` + `handlers/teams.go`). MCP
   (`draw_teams`) e frontend (modal `TeamDrawStrategyModal` + simulador) expõem a escolha.
-  Decisão: a estratégia usada **não é persistida** (sem coluna nova; o re-sorteio sempre
-  reabre o modal de escolha).
+  Decisão original: a estratégia usada **não era persistida** (sem coluna nova; o re-sorteio
+  sempre reabre o modal de escolha).
+- [x] **Estratégia de sorteio — persistência** (2026-09-29): a decisão acima foi **revertida**.
+  Como no modo `simple` as posições de linha são ignoradas de propósito, exibi-las faz o
+  resultado parecer desequilibrado; a tela de times passou a escondê-las (exceto goleiro), e
+  para isso precisa saber a estratégia ao renderizar um sorteio **já existente** — o que era
+  impossível sem persistir. Migration `054_match_teams_draw_strategy.sql` adiciona
+  `match_teams.draw_strategy VARCHAR(16) NOT NULL DEFAULT 'balanced'` (CHECK em
+  `balanced|simple`); o `DEFAULT` faz o backfill dos sorteios antigos, que seguem exibindo as
+  posições. Fica em `match_teams` porque o sorteio já apaga e recria essas linhas a cada
+  execução, então o valor nunca fica obsoleto. `POST` e `GET /matches/{id}/teams` passaram a
+  devolver `"strategy"` no corpo. Só na v2 (Go) — a v1 Python está descontinuada.
 - [ ] **Avatar — rate limit**: v1 limita uploads via tabela `avatar_upload_logs`; v2 ainda não.
 - [ ] **Avatar — response**: v1 retorna o `PlayerResponse` completo; v2 retorna só `{avatar_url}`.
 - [ ] **Documentação**: anotações `swaggo/swag` + `openapi.yaml` atualizado + Mintlify Cloud

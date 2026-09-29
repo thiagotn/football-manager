@@ -643,12 +643,15 @@ export type TeamItem = {
   players: TeamPlayerItem[];
 };
 
+export type DrawStrategy = 'balanced' | 'simple';
+
 export type TeamsResponse = {
   teams: TeamItem[];
   reserves: TeamPlayerItem[];
+  /** Estratégia usada no sorteio; o modo 'simple' esconde as posições na tela de times. */
+  strategy: DrawStrategy;
 };
 
-export type DrawStrategy = 'balanced' | 'simple';
 
 export const teams = {
   generate: (matchId: string, strategy: DrawStrategy = 'balanced') =>

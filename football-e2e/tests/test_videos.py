@@ -127,7 +127,9 @@ def _mock_match(page: Page, videos_enabled: bool):
     )
     page.route(
         "**/matches/*/teams",
-        lambda route: _fulfill_json(route, {"teams": [], "reserves": []}),
+        lambda route: _fulfill_json(
+            route, {"teams": [], "reserves": [], "strategy": "balanced"}
+        ),
     )
 
 
