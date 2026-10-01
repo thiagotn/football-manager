@@ -38,9 +38,12 @@
     UNDO_LIMIT,
     allUp,
     autoFinishStep,
+    applyDrop,
+    canDrop,
     cloneGame,
     dateKey,
     deal,
+    draggableCards,
     drawFromStock,
     findHint,
     flipExposed,
@@ -51,6 +54,7 @@
     winStars,
     type Card,
     type DrawMode,
+    type DropTarget,
     type Game,
     type HintTarget,
     type MoveSource,
@@ -109,6 +113,7 @@
       clearInterval(tick);
       clearTimeout(shakeTimer);
       clearTimeout(hintTimer);
+      clearTimeout(returnTimer);
       stopAutoFinish();
     };
   });
@@ -371,13 +376,17 @@
     return originX + i * (cardW + GAP);
   }
 
+  /** Origem de um movimento — a mesma descrição serve ao toque e ao arraste. */
+  type Origin = { src: MoveSource; col: number; idx: number };
+
   type Slot = {
     key: string;
     card: Card;
     x: number;
     y: number;
     faceUp: boolean;
-    action: (() => void) | null;
+    /** `null` em cartas não interativas (viradas para baixo, cartas de baixo da pilha). */
+    origin: Origin | null;
   };
 
   type Placeholder = {
@@ -431,8 +440,12 @@
     return out;
   });
 
-  let slots = $derived.by<Slot[]>(() => {
-    if (!game) return [];
+  /**
+   * Posição de cada carta na mesa e, junto, o `y` em que a próxima carta de
+   * cada coluna cairia — usado para desenhar o realce do alvo do arraste.
+   */
+  let layout = $derived.by<{ slots: Slot[]; dropY: number[] }>(() => {
+    if (!game) return { slots: [], dropY: [] };
     const g = game;
     const out: Slot[] = [];
 
@@ -440,11 +453,18 @@
     g.found.forEach((pile, suit) => {
       const x = colX(3 + suit);
       if (pile.length > 1) {
-        out.push({ key: `fb${suit}`, card: pile[pile.length - 2], x, y: topY, faceUp: true, action: null });
+        out.push({ key: `fb${suit}`, card: pile[pile.length - 2], x, y: topY, faceUp: true, origin: null });
       }
       if (pile.length) {
         const card = pile[pile.length - 1];
-        out.push({ key: String(card.id), card, x, y: topY, faceUp: true, action: () => onTap('f', suit) });
+        out.push({
+          key: String(card.id),
+          card,
+          x,
+          y: topY,
+          faceUp: true,
+          origin: { src: 'f', col: suit, idx: pile.length - 1 },
+        });
       }
     });
 
@@ -458,13 +478,14 @@
         x: colX(1) + i * s(15),
         y: topY,
         faceUp: true,
-        action: isTop ? () => onTap('w') : null,
+        origin: isTop ? { src: 'w', col: 0, idx: 0 } : null,
       });
     });
 
     // Tableau: cartas viradas para baixo avançam 10px, viradas para cima 24px,
     // comprimindo quando a coluna não cabe na altura disponível.
     const avail = mesaH - s(10) - tabTop - cardH;
+    const dropY: number[] = [];
     g.tableau.forEach((col, ci) => {
       const downs = col.filter((c) => !c.up).length;
       const ups = col.length - downs;
@@ -478,14 +499,175 @@
           x: colX(ci),
           y,
           faceUp: card.up,
-          action: card.up ? () => onTap('t', ci, i) : null,
+          origin: card.up ? { src: 't', col: ci, idx: i } : null,
         });
         y += card.up ? upStep : s(10);
       });
+      dropY.push(y);
     });
 
-    return out;
+    return { slots: out, dropY };
   });
+
+  let slots = $derived(layout.slots);
+
+  // ── Arraste ───────────────────────────────────────────────────────────────
+  // Pointer Events cobrem mouse e toque no mesmo caminho. O toque continua
+  // valendo: só vira arraste depois de DRAG_THRESHOLD px, e o clique que o
+  // navegador dispara ao fim de um arraste é descartado por `draggedJustNow`.
+
+  /** Distância (px) a partir da qual o gesto deixa de ser toque e vira arraste. */
+  const DRAG_THRESHOLD = 6;
+  /** Duração (ms) da volta animada quando se solta fora de um alvo válido. */
+  const DRAG_RETURN_MS = 160;
+
+  type Drag = {
+    origin: Origin;
+    cards: Card[];
+    /** Canto superior esquerdo da pilha arrastada, relativo à mesa. */
+    x: number;
+    y: number;
+    /** Onde o gesto pegou a carta, para ela não "pular" sob o dedo. */
+    grabX: number;
+    grabY: number;
+    /** Posição de origem, para a volta animada. */
+    homeX: number;
+    homeY: number;
+    step: number;
+    returning: boolean;
+  };
+
+  let drag = $state<Drag | null>(null);
+  let dropTarget = $state<DropTarget | null>(null);
+  let pending: { id: number; x: number; y: number; slot: Slot } | null = null;
+  let draggedJustNow = false;
+  let returnTimer: ReturnType<typeof setTimeout> | undefined;
+  let mesaEl = $state<HTMLDivElement | undefined>();
+
+  let draggingIds = $derived(new Set(drag ? drag.cards.map((c) => c.id) : []));
+
+  function mesaPoint(clientX: number, clientY: number): { x: number; y: number } {
+    const r = mesaEl!.getBoundingClientRect();
+    return { x: clientX - r.left, y: clientY - r.top };
+  }
+
+  /** Em qual pilha cai o ponto — sem validar a jogada ainda. */
+  function hitZone(x: number, y: number): DropTarget | null {
+    if (y < tabTop - cardH * 0.4) {
+      for (let suit = 0; suit < 4; suit++) {
+        const fx = colX(3 + suit);
+        if (x >= fx - GAP && x <= fx + cardW + GAP) return { kind: 'f', suit: suit as 0 | 1 | 2 | 3 };
+      }
+      return null;
+    }
+    for (let col = 0; col < 7; col++) {
+      const cx = colX(col);
+      if (x >= cx - GAP && x <= cx + cardW + GAP) return { kind: 't', col };
+    }
+    return null;
+  }
+
+  function endDrag() {
+    drag = null;
+    dropTarget = null;
+    pending = null;
+  }
+
+  function onCardPointerDown(e: PointerEvent, slot: Slot) {
+    draggedJustNow = false;
+    if (drag?.returning) {
+      clearTimeout(returnTimer);
+      endDrag();
+    }
+    if (!game || game.won || autoRunning || !slot.origin) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (!draggableCards(game, slot.origin.src, slot.origin.col, slot.origin.idx)) return;
+    pending = { id: e.pointerId, x: e.clientX, y: e.clientY, slot };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onCardPointerMove(e: PointerEvent) {
+    if (!pending || e.pointerId !== pending.id || !game) return;
+
+    if (!drag) {
+      if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) < DRAG_THRESHOLD) return;
+      const { origin } = pending.slot;
+      const cards = draggableCards(game, origin!.src, origin!.col, origin!.idx);
+      if (!cards) {
+        pending = null;
+        return;
+      }
+      // A pegada vem do ponto em que o dedo encostou, não de onde o arraste
+      // começou — senão a carta pula o limiar no primeiro quadro.
+      const grab = mesaPoint(pending.x, pending.y);
+      // A sequência arrastada mantém o mesmo espaçamento que tinha na coluna.
+      const next = slots.find((sl) => sl.card.id === cards[1]?.id);
+      drag = {
+        origin: origin!,
+        cards,
+        x: pending.slot.x,
+        y: pending.slot.y,
+        grabX: grab.x - pending.slot.x,
+        grabY: grab.y - pending.slot.y,
+        homeX: pending.slot.x,
+        homeY: pending.slot.y,
+        step: next ? next.y - pending.slot.y : s(24),
+        returning: false,
+      };
+      hintIds = [];
+      shakeId = null;
+    }
+
+    const p = mesaPoint(e.clientX, e.clientY);
+    drag.x = p.x - drag.grabX;
+    drag.y = p.y - drag.grabY;
+    const zone = hitZone(drag.x + cardW / 2, drag.y + cardH / 2);
+    const { src, col, idx } = drag.origin;
+    dropTarget = zone && canDrop(game, src, col, idx, zone) ? zone : null;
+    e.preventDefault();
+  }
+
+  function onCardPointerUp(e: PointerEvent) {
+    if (!pending || e.pointerId !== pending.id) return;
+    const el = e.currentTarget as HTMLElement;
+    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+
+    const d = drag;
+    const target = dropTarget;
+    pending = null;
+    if (!d) return; // não passou do limiar: é um toque, o onclick resolve
+
+    draggedJustNow = true;
+    if (target) {
+      const { src, col, idx } = d.origin;
+      endDrag();
+      commit((g) => applyDrop(g, src, col, idx, target));
+      return;
+    }
+    // Sem alvo válido: a carta volta animada para onde estava.
+    d.returning = true;
+    d.x = d.homeX;
+    d.y = d.homeY;
+    dropTarget = null;
+    clearTimeout(returnTimer);
+    returnTimer = setTimeout(endDrag, DRAG_RETURN_MS);
+  }
+
+  function onCardPointerCancel(e: PointerEvent) {
+    if (pending && e.pointerId !== pending.id) return;
+    clearTimeout(returnTimer);
+    endDrag();
+  }
+
+  /** Clique numa carta: move por toque, exceto logo depois de um arraste. */
+  function onCardClick(slot: Slot) {
+    if (draggedJustNow) {
+      draggedJustNow = false;
+      return;
+    }
+    if (!slot.origin) return;
+    onTap(slot.origin.src, slot.origin.col, slot.origin.idx);
+  }
 
   let suitLabels = $derived([
     $t('paciencia.suit_spades'),
@@ -597,6 +779,7 @@
       style="background:repeating-linear-gradient(180deg,#168641 0 {s(58)}px,#13793b {s(58)}px {s(116)}px)"
       bind:clientWidth={mesaW}
       bind:clientHeight={mesaH}
+      bind:this={mesaEl}
     >
       <!-- Linhas do campo -->
       <div
@@ -664,16 +847,33 @@
         {/if}
       </button>
 
+      <!-- Realce do alvo válido do arraste -->
+      {#if dropTarget}
+        <div
+          class="pointer-events-none absolute border-2 border-gold-400 bg-gold-400/15"
+          style="
+            left:{dropTarget.kind === 'f' ? colX(3 + dropTarget.suit) : colX(dropTarget.col)}px;
+            top:{dropTarget.kind === 'f' ? topY : layout.dropY[dropTarget.col]}px;
+            width:{cardW}px;height:{cardH}px;border-radius:{s(6)}px"
+        ></div>
+      {/if}
+
       <!-- Cartas -->
       {#each slots as slot (slot.key)}
-        {#if slot.action}
+        {@const dragging = draggingIds.has(slot.card.id)}
+        {#if slot.origin}
           <button
             type="button"
-            onclick={slot.action}
+            onclick={() => onCardClick(slot)}
+            onpointerdown={(e) => onCardPointerDown(e, slot)}
+            onpointermove={onCardPointerMove}
+            onpointerup={onCardPointerUp}
+            onpointercancel={onCardPointerCancel}
             aria-label={cardLabel(slot.card)}
-            class="absolute transition-[top,left,transform] duration-150"
+            class="absolute touch-none transition-[top,left,transform] duration-150"
             style="
               left:{slot.x}px;top:{slot.y}px;width:{cardW}px;height:{cardH}px;
+              visibility:{dragging ? 'hidden' : 'visible'};
               transform:{shaking(slot.card)
               ? 'translateX(4px) rotate(3deg)'
               : hinted(slot.card)
@@ -685,7 +885,9 @@
         {:else}
           <div
             class="absolute transition-[top,left] duration-150"
-            style="left:{slot.x}px;top:{slot.y}px;width:{cardW}px;height:{cardH}px"
+            style="left:{slot.x}px;top:{slot.y}px;width:{cardW}px;height:{cardH}px;visibility:{dragging
+              ? 'hidden'
+              : 'visible'}"
           >
             {#if slot.faceUp}
               {@render cardFace(slot.card)}
@@ -695,6 +897,25 @@
           </div>
         {/if}
       {/each}
+
+      <!-- Pilha sendo arrastada (segue o ponteiro; só anima na volta) -->
+      {#if drag}
+        <div
+          class="pointer-events-none absolute z-20"
+          style="
+            left:{drag.x}px;top:{drag.y}px;width:{cardW}px;
+            {drag.returning ? `transition:left ${DRAG_RETURN_MS}ms,top ${DRAG_RETURN_MS}ms;` : ''}"
+        >
+          {#each drag.cards as card, i (card.id)}
+            <div
+              class="absolute drop-shadow-[0_10px_18px_rgba(0,0,0,.45)]"
+              style="left:0;top:{i * drag.step}px;width:{cardW}px;height:{cardH}px"
+            >
+              {@render cardFace(card)}
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <!-- ── Barra de ações ───────────────────────────────────────────────── -->

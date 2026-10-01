@@ -44,6 +44,9 @@ export type MoveSource = 'w' | 'f' | 't';
 /** Alvo de uma dica — id de carta ou o monte. */
 export type HintTarget = number | 'stock';
 
+/** Destino de um arraste: uma fundação ou uma coluna do tableau. */
+export type DropTarget = { kind: 'f'; suit: Suit } | { kind: 't'; col: number };
+
 export const SUITS = ['♠︎', '♥︎', '♦︎', '♣︎'] as const;
 export const RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'] as const;
 
@@ -256,6 +259,83 @@ export function resolveTap(
   }
 
   return { moved: false, cardId: c0.id };
+}
+
+/**
+ * Cartas que saem de uma origem, de cima para baixo — o que o arraste leva
+ * junto. Do descarte e das fundações sai só a carta do topo; do tableau sai a
+ * sequência a partir de `idx`. `null` quando não há nada arrastável ali.
+ */
+export function draggableCards(g: Game, src: MoveSource, col = 0, idx = 0): Card[] | null {
+  if (src === 'w') return g.waste.length ? [g.waste[g.waste.length - 1]] : null;
+  if (src === 'f') {
+    const f = g.found[col];
+    return f.length ? [f[f.length - 1]] : null;
+  }
+  const colArr = g.tableau[col];
+  if (!colArr?.[idx]?.up) return null;
+  return colArr.slice(idx);
+}
+
+/**
+ * O destino aceita o que está sendo arrastado?
+ *
+ * Diferente do toque, aqui o destino é escolhido pelo jogador — então só
+ * valem as regras do Klondike, sem heurística de prioridade.
+ */
+export function canDrop(
+  g: Game,
+  src: MoveSource,
+  col: number,
+  idx: number,
+  target: DropTarget
+): boolean {
+  const cards = draggableCards(g, src, col, idx);
+  if (!cards?.length) return false;
+  const c0 = cards[0];
+
+  if (target.kind === 'f') {
+    // Fundação recebe uma carta de cada vez, e só do próprio naipe.
+    if (cards.length > 1) return false;
+    if (src === 'f' && col === target.suit) return false;
+    return c0.s === target.suit && fitsFoundation(g, c0);
+  }
+
+  if (src === 't' && col === target.col) return false;
+  const tc = g.tableau[target.col];
+  const top = tc[tc.length - 1];
+  // Um rei que já está na base de uma coluna não ganha nada indo para outra vazia.
+  if (!top && src === 't' && idx === 0) return false;
+  return fitsTableau(top, c0);
+}
+
+/**
+ * Executa o movimento de um arraste. Mutação in-place; devolve `false` (sem
+ * tocar no jogo) quando o destino não aceita as cartas.
+ */
+export function applyDrop(
+  g: Game,
+  src: MoveSource,
+  col: number,
+  idx: number,
+  target: DropTarget
+): boolean {
+  if (!canDrop(g, src, col, idx, target)) return false;
+  const cards = draggableCards(g, src, col, idx)!;
+
+  if (src === 'w') g.waste.pop();
+  else if (src === 'f') g.found[col].pop();
+  else g.tableau[col].splice(idx);
+
+  if (target.kind === 'f') {
+    g.found[target.suit].push(cards[0]);
+    g.score += 10;
+  } else {
+    g.tableau[target.col].push(...cards);
+    g.score += src === 'w' ? 5 : src === 'f' ? -15 : 0;
+  }
+  g.moves++;
+  return true;
 }
 
 /**
