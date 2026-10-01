@@ -114,7 +114,9 @@
     if (pathname === '/review')   return '/';
     if (pathname === '/plans')    return '/';
     if (pathname === '/simulator') return '/';
-    if (pathname === '/tetris')    return '/';
+    if (pathname === '/tetris')    return '/games';
+    if (pathname === '/paciencia') return '/games';
+    if (pathname === '/games')     return '/';
     if (pathname === '/chat')      return '/';
     if (pathname.startsWith('/account/')) return '/profile';
     if (pathname === '/faq')      return '/';
@@ -129,6 +131,10 @@
   }
 
   let backHref = $derived(getBackHref($page.url.pathname));
+
+  // "Passatempo" fica ativo em qualquer uma das telas de jogo
+  const GAME_ROUTES = ['/games', '/paciencia', '/tetris'];
+  let gamesActive = $derived(GAME_ROUTES.includes($page.url.pathname));
 
   // Está na seção Explorar? (para highlight do botão desktop)
   let exploreActive = $derived(
@@ -299,10 +305,10 @@
           <Star size={15} /> {$t('nav.review')}
         </a>
       {/if}
-      <a href="/tetris" onclick={() => showAccountDropdown = false}
+      <a href="/games" onclick={() => showAccountDropdown = false}
         class="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-colors border-t border-primary-700/50
-          {$page.url.pathname === '/tetris' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-        <Gamepad2 size={15} /> {$t('nav.tetris')}
+          {gamesActive ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+        <Gamepad2 size={15} /> {$t('nav.games')}
       </a>
     </div>
   {/if}
@@ -417,10 +423,10 @@
               <Star size={18} /> {$t('nav.review')}
             </a>
           {/if}
-          <a href="/tetris" onclick={closeMenu}
+          <a href="/games" onclick={closeMenu}
             class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-              {$page.url.pathname === '/tetris' ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
-            <Gamepad2 size={18} /> {$t('nav.tetris')}
+              {gamesActive ? 'bg-primary-900 text-white' : 'text-primary-100 hover:bg-primary-700'}">
+            <Gamepad2 size={18} /> {$t('nav.games')}
           </a>
           <button
             onclick={() => showLangModal = true}

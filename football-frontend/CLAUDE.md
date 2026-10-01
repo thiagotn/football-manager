@@ -31,6 +31,9 @@
 | `/draw` | Redirect 301 para `/simulator` (compatibilidade com URLs salvas) |
 | `/discover` | Rachões públicos abertos com filtros (público + autenticado) |
 | `/players/[id]` | Perfil público do jogador com Rachão Score |
+| `/games` | Seletor de passatempo — cards de Paciência e Tetris 3D (handoff `design_handoff_paciencia_games`) |
+| `/paciencia` | Paciência Klondike em tela cheia (`fixed inset-0 z-50`, sem Navbar). Abas internas: Início · Diário · Campanha · Ajustes. Sem backend: regras em `$lib/paciencia/engine.ts`, estado em `localStorage` (`rachao_paciencia`) |
+| `/tetris` | Tetris 3D em iframe (`static/tetris-game/`). O botão ESC volta para `/games` |
 
 ### Autenticadas
 | Rota | Descrição |
@@ -75,6 +78,7 @@
 | `DatePicker.svelte` | Seletor de data |
 | `LanguageSwitcher.svelte` | Seletor de idioma (pt-BR / en / es) |
 | `Modal.svelte` | Modal genérico. Props: `bind:open`, `title`, `size?` (`md`\|`wide` 860px), `layout?` (`sheet` default: bottom sheet mobile / `centered`: sempre centralizado, raio 24px), `closeOnEscape?` (passar `false` enquanto um overlay filho como `AvatarLightbox` estiver aberto), `titleIcon?` (snippet), `onClose?`. A11y: `role=dialog`, `aria-modal`, `aria-labelledby`, Esc fecha, focus trap, foco volta à origem |
+| `CrestShell.svelte` | Moldura do escudo 300×360 (clip-path, borda dourada de 3px, campo verde com brilho e textura). Recebe o conteúdo por `children`. Usado por `PlayerCrestCard` e pela tela de vitória da Paciência |
 | `PlayerCrestCard.svelte` | Card-escudo 300×360 do jogador (handoff `design_handoff_player_crest_card`): estrelas, foto no anel dourado (clicável → lightbox), apelido, nome, posição. Sempre escuro. Props: `name`, `nickname?`, `avatarUrl?`, `updatedAt?`, `position?` (código API), `skillStars?`, `onPhotoClick?`, `photoLabel?`. Usado no modal "Detalhes do Jogador" em `/groups/[id]` |
 | `Navbar.svelte` | Barra de navegação principal |
 | `PageBackground.svelte` | Wrapper obrigatório de fundo para todas as páginas |
@@ -116,6 +120,9 @@
 | `positions.ts` | Mapas `API_TO_POS` (gk/zag/lat/mei/ata → `Position`), `POS_TO_API` e `POS_I18N_KEY`. Usar em vez de mapas inline. |
 | `team-display.ts` | Regras de exibição do resultado do sorteio: `showsPosition(strategy, isGoalkeeper)` e `showsPlayerStars(strategy)`. No modo `simple` a posição de linha e a estrela por jogador somem (o goleiro mantém a posição; o total de estrelas do time é mantido). Usado pela página de times e pelo simulador. |
 | `team-names.ts` | Banco de ≥ 40 nomes de times estilo várzea. Exporta `TEAM_NAMES` e `shuffledNames()`. |
+| `paciencia/engine.ts` | Regras puras do Klondike: `deal` (com seed determinística do desafio diário), `resolveTap`, `drawFromStock`, `findHint`, `autoFinishStep`, `fitsFoundation`/`fitsTableau`, `fmtTime`, `dateKey`, `winStars`. Sem DOM nem storage. |
+| `paciencia/storage.ts` | Persistência em `localStorage` (chave `rachao_paciencia`): partida atual, histórico (60 itens), desafios diários e ajustes. |
+| `paciencia/backs.ts` | Os 4 versos de carta (`escudo`, `dourado`, `gramado`, `noturno`) usados em Ajustes › "Uniforme das cartas". |
 
 ---
 

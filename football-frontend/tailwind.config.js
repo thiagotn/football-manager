@@ -7,6 +7,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         cond: ['"Barlow Condensed"', 'Inter', 'sans-serif'],
+        bebas: ['"Bebas Neue"', 'Inter', 'sans-serif'],
       },
       colors: {
         // Paletas do card-escudo (handoff design_handoff_player_crest_card).
