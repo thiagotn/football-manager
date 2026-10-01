@@ -31,7 +31,8 @@ twilio = "^9.0.0"
 # transitivas. Sem isso, o pip-audit no main.yml falha.
 aiohttp = ">=3.14.2"   # transitiva (pywebpush, twilio) — PYSEC-2026-{3546,3547}
 idna = ">=3.15"        # transitiva (httpx, requests) — CVE-2026-45409
-pyjwt = ">=2.13.0"     # transitiva (python-jose) — PYSEC-2026-{175,177,178,179}
+pyjwt = ">=2.15.0"     # transitiva (python-jose) — PYSEC-2026-{175,177,178,179,4140-4152}
+urllib3 = ">=2.8.0"    # transitiva (requests, twilio, stripe) — PYSEC-2026-{4175,4176,4177}
 cryptography = ">=50.0.0"  # transitiva (python-jose) — PYSEC-2026-{3552,3553,3554}
 prometheus-fastapi-instrumentator = "^8.0.0"  # 8.x libera starlette>=1.0.0 (fix de PYSEC-2026-161)
 prometheus-client = "^0.25.0"  # uso direto em app/core/job_metrics.py (antes só transitiva)
