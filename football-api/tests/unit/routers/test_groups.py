@@ -589,6 +589,121 @@ async def test_update_member_skill_stars_returns_200(api_client, mocker):
     assert response.status_code == 200
 
 
+# ── PATCH /groups/{id}/members/{player_id} — nome de cadastro pendente ───────
+
+
+def _make_pending_member(group_id, player_id, *, pending: bool = True):
+    """Membro de grupo cujo jogador tem (ou não) cadastro pendente."""
+    from datetime import datetime
+    from app.models.group import GroupMemberRole
+
+    player = MagicMock()
+    player.id = player_id
+    player.name = "Jogadr"
+    player.nickname = None
+    player.avatar_url = None
+    player.role = PlayerRole.PLAYER
+    player.whatsapp = "+5511999990099"
+    player.pending_registration = pending
+
+    member = MagicMock()
+    member.id = uuid4()
+    member.group_id = group_id
+    member.player_id = player_id
+    member.role = GroupMemberRole.MEMBER
+    member.skill_stars = 3
+    member.position = "mei"
+    member.nickname = None
+    member.created_at = datetime(2026, 1, 1)
+    member.player = player
+    return member, player
+
+
+@pytest.mark.asyncio
+async def test_update_member_name_pending_registration_returns_200(api_client, mocker):
+    """Admin do grupo pode corrigir o nome de quem ainda está com cadastro pendente."""
+    from app.models.group import GroupMemberRole
+
+    group_id = uuid4()
+    player_id = uuid4()
+    member, player = _make_pending_member(group_id, player_id)
+
+    caller = MagicMock()
+    caller.role = GroupMemberRole.ADMIN
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(side_effect=[caller, member]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/members/{player_id}",
+        json={"name": "  Jogador Certo  "},
+    )
+
+    assert response.status_code == 200
+    assert player.name == "Jogador Certo"
+
+
+@pytest.mark.asyncio
+async def test_update_member_name_already_claimed_returns_409(api_client, mocker):
+    """Jogador que já assumiu a conta não pode ter o nome alterado pelo admin do grupo."""
+    from app.models.group import GroupMemberRole
+
+    group_id = uuid4()
+    player_id = uuid4()
+    member, player = _make_pending_member(group_id, player_id, pending=False)
+
+    caller = MagicMock()
+    caller.role = GroupMemberRole.ADMIN
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(side_effect=[caller, member]),
+    )
+    mocker.patch(
+        "app.api.v1.routers.groups.PlayerRepository.get",
+        new=AsyncMock(return_value=player),
+    )
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/members/{player_id}",
+        json={"name": "Outro Nome"},
+    )
+
+    assert response.status_code == 409
+    assert player.name == "Jogadr"
+
+
+@pytest.mark.asyncio
+async def test_update_member_name_non_admin_returns_403(api_client, player_user, mocker):
+    """Membro comum não pode alterar o nome de ninguém — nem o próprio por esta rota."""
+    from app.models.group import GroupMemberRole
+
+    group_id = uuid4()
+
+    caller = MagicMock()
+    caller.role = GroupMemberRole.MEMBER
+
+    mocker.patch(
+        "app.api.v1.routers.groups.GroupRepository.get_member",
+        new=AsyncMock(return_value=caller),
+    )
+    p_get = AsyncMock()
+    mocker.patch("app.api.v1.routers.groups.PlayerRepository.get", new=p_get)
+
+    response = await api_client.patch(
+        f"/api/v1/groups/{group_id}/members/{player_user.id}",
+        json={"name": "Nome Novo"},
+    )
+
+    assert response.status_code == 403
+    p_get.assert_not_awaited()
+
 # ── PATCH /groups/{id}/members/me — self-service position ────────────────────
 
 

@@ -230,7 +230,7 @@
     const dir = nameSortDir === 'desc' ? -1 : 1;
     return [...baseMembers].sort((a, b) => dir * playerDisplayName(a.player.name, a.group_nickname ?? a.player.nickname).localeCompare(playerDisplayName(b.player.name, b.group_nickname ?? b.player.nickname), 'pt-BR', { sensitivity: 'base' }));
   });
-  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string } | null>(null);
+  let roleEditMember = $state<{ id: string; name: string; role: string; skill_stars: number; position: string; nickname: string; pending: boolean } | null>(null);
   let selfEditNickname = $state('');
   let selfEditOpen = $state(false);
   let skillSaving = $state(false);
@@ -535,12 +535,16 @@
     });
   }
 
-  async function saveSkill(playerId: string, skill_stars: number, position: string, nickname: string) {
+  async function saveSkill(playerId: string, skill_stars: number, position: string, nickname: string, name?: string) {
     skillSaving = true;
     try {
-      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, position, nickname: nickname.trim() || null });
+      // name só vai no payload para jogador com cadastro pendente (backend recusa os demais)
+      await groupsApi.updateMemberSkill(groupId, playerId, { skill_stars, position, nickname: nickname.trim() || null, ...(name ? { name } : {}) });
       group = await groupsApi.get(groupId);
-    } catch (e) { toastError(e instanceof ApiError ? e.message : 'Erro ao salvar'); }
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Erro ao salvar';
+      toastError(msg === 'PLAYER_NOT_PENDING' ? $t('group.edit_name_not_pending_error') : msg);
+    }
     skillSaving = false;
   }
 
@@ -1442,7 +1446,7 @@
         <button
           type="button"
           onclick={() => {
-            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.group_nickname ?? '' };
+            roleEditMember = { id: selectedMember!.player.id, name: selectedMember!.player.name, role: selectedMember!.role, skill_stars: selectedMember!.skill_stars ?? 2, position: selectedMember!.position ?? 'mei', nickname: selectedMember!.group_nickname ?? '', pending: !!selectedMember!.player.pending_registration };
             showMemberDetail = false;
           }}
           class="{detailBtn} {detailBtnNeutral}">
@@ -1498,7 +1502,22 @@
   <button class="fixed inset-0 z-40 bg-black/40" onclick={() => roleEditMember = null} aria-label={$t('aria.close')} />
   <div class="fixed z-50 bottom-0 inset-x-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 pointer-events-none">
     <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-6 pointer-events-auto space-y-5">
-      <p class="text-gray-800 dark:text-gray-200 font-semibold text-center text-base">{roleEditMember.name}</p>
+      {#if roleEditMember.pending}
+        <!-- Nome real: editável só enquanto o cadastro estiver pendente -->
+        <div>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{$t('group.detail_name')}</p>
+          <input
+            class="input w-full text-sm"
+            type="text"
+            bind:value={roleEditMember.name}
+            placeholder={$t('groups.add_manual.name_placeholder')}
+            maxlength="100"
+          />
+          <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">{$t('group.edit_name_pending_hint')}</p>
+        </div>
+      {:else}
+        <p class="text-gray-800 dark:text-gray-200 font-semibold text-center text-base">{roleEditMember.name}</p>
+      {/if}
 
       <!-- Nickname -->
       <div>
@@ -1536,7 +1555,9 @@
         class="btn btn-primary w-full justify-center"
         disabled={skillSaving}
         onclick={async () => {
-          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.position, roleEditMember!.nickname);
+          const newName = roleEditMember!.name.trim();
+          if (roleEditMember!.pending && newName.length < 2) { toastError($t('group.edit_name_too_short')); return; }
+          await saveSkill(roleEditMember!.id, roleEditMember!.skill_stars, roleEditMember!.position, roleEditMember!.nickname, roleEditMember!.pending ? newName : undefined);
           roleEditMember = null;
         }}>
         {skillSaving ? $t('group.saving') : $t('group.save_skill')}

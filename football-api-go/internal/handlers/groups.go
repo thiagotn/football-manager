@@ -44,6 +44,7 @@ type GroupStore interface {
 	GetPlayerByWhatsApp(ctx context.Context, whatsapp string) (*db.Player, error)
 	CreatePlayer(ctx context.Context, args db.CreatePlayerArgs) (*db.Player, error)
 	UpdatePlayerMustChangePassword(ctx context.Context, id uuid.UUID, val bool) error
+	UpdatePlayerName(ctx context.Context, playerID uuid.UUID, name string) error
 	CreateClaimInvite(ctx context.Context, groupID, targetPlayerID, createdByID uuid.UUID, token string, expiresAt time.Time) (*db.Invite, error)
 	GetOpenMatchesForGroup(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error
@@ -144,6 +145,9 @@ func (s *pgGroupStore) EnsureMemberInCurrentPeriod(ctx context.Context, groupID,
 }
 func (s *pgGroupStore) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*db.Player, error) {
 	return db.GetPlayerByID(ctx, s.pool, playerID)
+}
+func (s *pgGroupStore) UpdatePlayerName(ctx context.Context, playerID uuid.UUID, name string) error {
+	return db.UpdatePlayerName(ctx, s.pool, playerID, name)
 }
 func (s *pgGroupStore) CountAttendances(ctx context.Context, matchID uuid.UUID, status string) (int, error) {
 	return db.CountAttendances(ctx, s.pool, matchID, status)
@@ -258,6 +262,8 @@ type updateMemberReq struct {
 	SkillStars *int                `json:"skill_stars"`
 	Position   *string             `json:"position"`
 	Nickname   *string             `json:"nickname"`
+	// Name só é aceito para jogador com cadastro pendente (ver updateMember)
+	Name *string `json:"name"`
 }
 
 type selfPositionReq struct {
@@ -811,11 +817,36 @@ func (h *GroupHandler) updateMember(w http.ResponseWriter, r *http.Request) {
 		req.Role = nil
 		req.SkillStars = nil
 		req.Position = nil
+		req.Name = nil
 	}
 
 	if req.Position != nil && !positionRe.MatchString(*req.Position) {
 		renderError(w, apierror.Unprocessable("invalid position"))
 		return
+	}
+
+	// Nome é dado global do jogador: admin do grupo só pode corrigi-lo enquanto
+	// o cadastro estiver pendente (ninguém assumiu a conta ainda).
+	if req.Name != nil {
+		name := strings.TrimSpace(*req.Name)
+		if len([]rune(name)) < 2 || len([]rune(name)) > 100 {
+			renderError(w, apierror.Unprocessable("invalid name"))
+			return
+		}
+		target, err := h.Store.GetPlayerByID(r.Context(), targetID)
+		if err != nil {
+			renderError(w, apierror.NotFound("player not found"))
+			return
+		}
+		if !target.PendingRegistration {
+			renderError(w, apierror.Conflict("PLAYER_NOT_PENDING"))
+			return
+		}
+		if err := h.Store.UpdatePlayerName(r.Context(), targetID, name); err != nil {
+			renderError(w, err)
+			return
+		}
+		slog.Info("pending member name changed", "group_id", groupID, "player_id", targetID, "actor_id", player.ID)
 	}
 
 	m, err := h.Store.UpdateGroupMember(r.Context(), groupID, targetID, db.UpdateGroupMemberParams{

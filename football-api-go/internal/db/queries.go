@@ -654,6 +654,12 @@ func UpdatePlayerProfile(ctx context.Context, pool *pgxpool.Pool, playerID uuid.
 	return err
 }
 
+// UpdatePlayerName sets only the player's name (correção de cadastro pendente pelo admin do grupo).
+func UpdatePlayerName(ctx context.Context, pool *pgxpool.Pool, playerID uuid.UUID, name string) error {
+	_, err := pool.Exec(ctx, `UPDATE players SET name=$1 WHERE id=$2`, name, playerID)
+	return err
+}
+
 // ListPlayersActive returns active players
 func ListPlayersActive(ctx context.Context, pool *pgxpool.Pool, limit, offset int, activeOnly bool) ([]*Player, error) {
 	query := `SELECT ` + PlayerSelectCols + ` FROM players WHERE role = 'player'`
