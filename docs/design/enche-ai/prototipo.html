@@ -1,0 +1,901 @@
+<title>Enche Aí!</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: o jogo em formato de celular à esquerda (fixo no desktop) e a especificação de design à direita; empilha no mobile.
+   Mundo visual: lanchonete de bairro à noite — parede de azulejo azul, balcão de madeira, comanda de papel, mostarda como destaque. */
+:root {
+  --ink: #0f1622;
+  --ink-2: #172233;
+  --ink-3: #22314a;
+  --wood: #3b2519;
+  --wood-2: #1f130c;
+  --mustard: #ffc93c;
+  --mustard-ink: #3a2a00;
+  --ketchup: #e8473b;
+  --paper: #fbf4e4;
+  --paper-ink: #3b2a20;
+  --paper-muted: #8a7563;
+  --glass: rgba(228, 238, 255, .78);
+  --fg: #eef2f8;
+  --muted: #9fb0c6;
+  --line: rgba(205, 222, 245, .14);
+  --display: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  --body: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--ink); color: var(--fg); }
+body {
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 56px;
+}
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--mustard); outline-offset: 2px; }
+
+.page-top {
+  max-width: 1180px; margin: 0 auto 22px;
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px;
+}
+.page-top .brand { font-family: var(--display); font-size: 22px; letter-spacing: .01em; color: var(--mustard); }
+.page-top .meta { color: var(--muted); font-size: 13px; }
+.page-top code { font-family: var(--mono); font-size: 12px; color: var(--fg); background: var(--ink-3); padding: 1px 6px; border-radius: 4px; }
+
+.layout {
+  max-width: 1180px; margin: 0 auto;
+  display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 48px; align-items: start;
+}
+.play-col { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 920px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .play-col { position: static; max-width: 430px; width: 100%; margin: 0 auto; }
+}
+
+/* ───────────── Dispositivo / jogo ───────────── */
+.device {
+  position: relative; overflow: hidden;
+  border-radius: 30px; border: 1px solid var(--line);
+  background: var(--wood-2);
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,.7), inset 0 0 0 6px rgba(0,0,0,.25);
+  display: flex; flex-direction: column;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+@media (max-width: 480px) { .device { border-radius: 20px; } }
+
+.scene {
+  position: relative; padding: 14px 14px 34px;
+  background-color: #183a69;
+  background-image:
+    linear-gradient(180deg, rgba(15,22,34,.15) 0%, rgba(15,22,34,.55) 70%, rgba(31,19,12,1) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' fill='%23183a69'/%3E%3Cpath d='M22 7C25 16 28 19 37 22C28 25 25 28 22 37C19 28 16 25 7 22C16 19 19 16 22 7Z' fill='%232f68ad'/%3E%3Ccircle cx='22' cy='22' r='3.5' fill='%23d4e3f6' fill-opacity='.6'/%3E%3Cg fill='%232f68ad'%3E%3Ccircle cx='0' cy='0' r='7'/%3E%3Ccircle cx='44' cy='0' r='7'/%3E%3Ccircle cx='0' cy='44' r='7'/%3E%3Ccircle cx='44' cy='44' r='7'/%3E%3C/g%3E%3Crect x='.5' y='.5' width='43' height='43' fill='none' stroke='%23d4e3f6' stroke-opacity='.16'/%3E%3C/svg%3E");
+  background-size: auto, 44px 44px;
+}
+.hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.hud-btn, .round-btn {
+  position: relative; display: grid; place-items: center;
+  border: 0; border-radius: 14px; height: 48px;
+  background: rgba(214, 228, 248, .2);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.25), 0 4px 10px rgba(0,0,0,.25);
+  backdrop-filter: blur(3px);
+  transition: transform .12s, background .12s;
+}
+.hud-btn:hover, .round-btn:hover { background: rgba(214, 228, 248, .3); }
+.hud-btn:active, .round-btn:active { transform: translateY(2px); }
+.hud-btn[disabled], .round-btn[disabled] { opacity: .4; cursor: default; }
+.hud-btn svg, .round-btn svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.count {
+  position: absolute; top: -6px; right: -4px;
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: var(--mustard); color: var(--mustard-ink);
+  font-size: 12px; font-weight: 800; line-height: 20px; text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px #183a69;
+}
+.title-row { margin-top: 16px; display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 8px; }
+.round-btn { width: 52px; height: 52px; border-radius: 50%; }
+.round-btn.daily { background: var(--ketchup); }
+.round-btn.daily:hover { background: #f05a4f; }
+.title { text-align: center; line-height: 1; }
+.title .world { display: block; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--mustard); margin-bottom: 4px; }
+.title h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 36px; letter-spacing: .02em; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
+
+.comanda {
+  position: relative; z-index: 2;
+  margin: -22px 18px 0; padding: 10px 14px 16px;
+  background: var(--paper); color: var(--paper-ink);
+  transform: rotate(-.8deg);
+  box-shadow: 0 8px 18px rgba(0,0,0,.35);
+  -webkit-mask: radial-gradient(6px at 50% calc(100% + 1px), transparent 98%, #000) 0 0 / 12px 100%;
+          mask: radial-gradient(6px at 50% calc(100% + 1px), transparent 98%, #000) 0 0 / 12px 100%;
+  -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
+}
+.comanda-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--paper-muted); border-bottom: 1px dashed rgba(59,42,32,.3); padding-bottom: 5px; margin-bottom: 7px; font-variant-numeric: tabular-nums; }
+.comanda ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.comanda li { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.comanda li svg { width: 14px; height: 14px; flex: none; }
+.comanda li.done { color: var(--paper-muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+.comanda li .tick { color: #2f8a3e; font-weight: 800; }
+
+.board {
+  position: relative; flex: 1; min-height: 360px;
+  padding: 30px 12px 20px;
+  display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 22px 8px;
+  background:
+    radial-gradient(70% 45% at 50% 0%, rgba(255, 214, 150, .14), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, var(--wood), var(--wood-2));
+}
+.board.wide { max-width: none; }
+.vessel {
+  position: relative; border: 0; padding: 0; background: none;
+  width: clamp(42px, 11.5vw, 56px); flex: none;
+  transition: transform .18s cubic-bezier(.3,.7,.4,1);
+}
+.board-row { display: contents; }
+.vessel svg { display: block; width: 100%; height: auto; overflow: visible; }
+.vessel.lifted { transform: translateY(-18px); }
+.vessel.hint { filter: drop-shadow(0 0 8px var(--mustard)) drop-shadow(0 0 2px var(--mustard)); }
+.vessel.shake { animation: shake .32s; }
+.vessel.pop svg { animation: pop .45s cubic-bezier(.3,1.6,.5,1); }
+.vessel::after { /* sombra no balcão */
+  content: ""; position: absolute; left: 12%; right: 12%; bottom: -5px; height: 8px; border-radius: 50%;
+  background: rgba(0,0,0,.45); filter: blur(3px); z-index: -1;
+}
+.grow { transform-box: fill-box; transform-origin: 50% 100%; animation: grow .42s ease-out both; }
+.steam path { animation: steam 2.4s ease-in-out infinite; }
+.steam path:nth-child(2) { animation-delay: .5s; }
+.steam path:nth-child(3) { animation-delay: 1s; }
+.topping { animation: fadein .35s ease-out both; }
+.no-pat .pat { display: none; }
+
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@keyframes steam { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: .85; } 100% { opacity: 0; transform: translateY(-10px); } }
+@keyframes fadein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.stream {
+  position: absolute; width: 7px; border-radius: 4px; pointer-events: none; z-index: 6;
+  transform-origin: 50% 0; transform: scaleY(0);
+}
+
+.status {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 10px 18px 14px; background: var(--wood-2);
+  font-size: 13px; color: #d9c3ae; font-variant-numeric: tabular-nums;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.status b { color: #fff; }
+.stars { color: var(--mustard); letter-spacing: .1em; }
+.stars .off { color: rgba(255,255,255,.2); }
+
+.toast {
+  position: absolute; left: 50%; bottom: 58px; transform: translateX(-50%);
+  max-width: calc(100% - 40px); width: max-content;
+  background: var(--paper); color: var(--paper-ink); font-weight: 700; font-size: 14px;
+  padding: 8px 14px; border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,.4); z-index: 8;
+  text-align: center; animation: fadein .2s ease-out;
+}
+
+.overlay {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(10, 14, 22, .72); backdrop-filter: blur(3px);
+  display: grid; place-items: center; padding: 20px;
+}
+.card {
+  width: 100%; max-width: 340px; background: var(--paper); color: var(--paper-ink);
+  border-radius: 18px; padding: 22px 20px 20px; text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,.5); animation: fadein .3s ease-out;
+}
+.card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1.05; color: var(--paper-ink); text-wrap: balance; }
+.card .big-stars { font-size: 38px; letter-spacing: .12em; color: #f2a900; margin: 6px 0 2px; }
+.card .big-stars .off { color: rgba(59,42,32,.18); }
+.card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 18px; }
+.card dt { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--paper-muted); }
+.card dd { margin: 0; font-family: var(--display); font-size: 24px; font-variant-numeric: tabular-nums; }
+.card p { margin: 6px 0 0; color: var(--paper-muted); font-size: 14px; }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; height: 48px; border: 0; border-radius: 12px; font-weight: 800; font-size: 16px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.18);
+}
+.btn.primary { background: var(--mustard); color: var(--mustard-ink); }
+.btn.ghost { background: transparent; color: var(--paper-ink); box-shadow: inset 0 0 0 2px rgba(59,42,32,.2); }
+.btn + .btn { margin-top: 8px; }
+
+.home-card { max-width: 360px; text-align: left; padding: 20px; }
+.home-card .logo { font-family: var(--display); font-size: 44px; line-height: .95; color: var(--ketchup); text-align: center; margin: 0 0 2px; }
+.home-card .tag { text-align: center; color: var(--paper-muted); font-size: 13px; margin: 0 0 14px; }
+.home-card h4 { margin: 16px 0 6px; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--paper-muted); }
+.menu-list { display: grid; gap: 6px; }
+.menu-item {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px;
+  width: 100%; border: 0; border-radius: 10px; padding: 6px 10px; text-align: left;
+  background: rgba(59,42,32,.07); color: var(--paper-ink);
+}
+.menu-item:hover { background: rgba(59,42,32,.13); }
+.menu-item svg { width: 26px; height: 50px; }
+.menu-item b { display: block; font-size: 15px; }
+.menu-item small { color: var(--paper-muted); font-size: 12px; }
+.menu-item .range { font-size: 12px; font-weight: 800; color: var(--paper-muted); font-variant-numeric: tabular-nums; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 2px; font-weight: 700; font-size: 14px; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--ketchup); }
+
+.proto-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  padding: 10px 12px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 13px;
+}
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--ink-2); color: var(--fg); font-weight: 800; }
+.stepper output { min-width: 44px; text-align: center; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; }
+
+/* ───────────── Especificação ───────────── */
+.spec { min-width: 0; display: flex; flex-direction: column; gap: 44px; }
+.spec h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(48px, 7vw, 76px); line-height: .9; color: var(--mustard); letter-spacing: .01em; }
+.spec h1 span { color: var(--ketchup); }
+.lede { margin: 14px 0 0; font-size: 18px; line-height: 1.5; max-width: 60ch; color: var(--fg); text-wrap: pretty; }
+.spec h2 { margin: 0 0 14px; font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: .01em; color: #fff; text-wrap: balance; }
+.spec p { max-width: 65ch; color: var(--muted); margin: 0 0 10px; }
+.spec p strong, .spec li strong { color: var(--fg); }
+.diffs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 18px 28px; }
+.diffs li { color: var(--muted); }
+.diffs li strong { display: block; font-size: 16px; margin-bottom: 2px; }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.swatch { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; background: var(--ink-2); min-width: 0; }
+.swatch svg { width: 40px; height: 40px; flex: none; border-radius: 9px; }
+.swatch b { display: block; font-size: 14px; line-height: 1.2; }
+.swatch small { color: var(--muted); font-size: 12px; }
+.swatch div { min-width: 0; }
+
+.worlds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.world-card { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 14px; }
+.world-card svg { width: 44px; height: 96px; }
+.world-card b { display: block; font-size: 16px; }
+.world-card small { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.world-card .dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+.world-card .dots span { width: 10px; height: 10px; border-radius: 50%; }
+
+.rules { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.rules dt { font-weight: 800; color: var(--fg); }
+.rules dd { margin: 0; color: var(--muted); }
+@media (max-width: 520px) { .rules { grid-template-columns: 1fr; gap: 2px; } .rules dd { margin-bottom: 10px; } }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 800; background: var(--ink-2); }
+td:first-child { font-weight: 800; white-space: nowrap; }
+td { color: var(--muted); }
+td code, p code, li code { font-family: var(--mono); font-size: 12.5px; color: var(--fg); background: var(--ink-3); padding: 1px 5px; border-radius: 4px; }
+pre { margin: 0; overflow-x: auto; padding: 16px 18px; border-radius: 14px; background: var(--ink-2); border: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; line-height: 1.6; color: #cdd8e8; }
+pre .c { color: #7f93ad; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+</style>
+
+<!-- Definições compartilhadas: texturas dos sabores e áreas internas dos recipientes -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="p-graos" width="16" height="14" patternUnits="userSpaceOnUse"><ellipse cx="4" cy="4" rx="2.6" ry="1.6" transform="rotate(-30 4 4)" fill="rgba(255,226,190,.32)"/><ellipse cx="12" cy="11" rx="2.6" ry="1.6" transform="rotate(25 12 11)" fill="rgba(255,226,190,.32)"/></pattern>
+    <pattern id="p-liso" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="none"/></pattern>
+    <pattern id="p-polpa" width="14" height="12" patternUnits="userSpaceOnUse"><path d="M2 3h5M9 9h4" stroke="rgba(255,244,214,.55)" stroke-width="1.6" stroke-linecap="round"/></pattern>
+    <pattern id="p-granola" width="14" height="14" patternUnits="userSpaceOnUse"><rect x="2" y="3" width="3.4" height="2.2" rx=".6" transform="rotate(20 3.7 4.1)" fill="rgba(255,214,150,.45)"/><rect x="9" y="9" width="3" height="2" rx=".6" transform="rotate(-25 10.5 10)" fill="rgba(255,214,150,.45)"/></pattern>
+    <pattern id="p-rodelas" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="2.8" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.2"/><circle cx="13" cy="13" r="2" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.1"/></pattern>
+    <pattern id="p-sementes" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M3 2.5l1 2-1 .6-1-.6z" fill="rgba(255,240,170,.9)"/><path d="M9 8.5l1 2-1 .6-1-.6z" fill="rgba(255,240,170,.9)"/></pattern>
+    <pattern id="p-caroco" width="14" height="14" patternUnits="userSpaceOnUse"><ellipse cx="4" cy="4" rx="1.4" ry="2.2" fill="rgba(25,6,8,.7)"/><ellipse cx="11" cy="11" rx="1.4" ry="2.2" fill="rgba(25,6,8,.7)"/></pattern>
+    <pattern id="p-ondas" width="20" height="10" patternUnits="userSpaceOnUse"><path d="M0 5q5-4 10 0t10 0" fill="none" stroke="rgba(255,236,214,.3)" stroke-width="1.4"/></pattern>
+    <pattern id="p-folhas" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M-2 12L12 -2" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/></pattern>
+    <pattern id="p-bolhas" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="2.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.1"/><circle cx="13" cy="12" r="1.6" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1"/><circle cx="7" cy="15" r="1" fill="rgba(255,255,255,.5)"/></pattern>
+    <pattern id="p-pintas" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.5" fill="rgba(48,24,0,.6)"/><circle cx="8" cy="8" r="1.5" fill="rgba(48,24,0,.6)"/></pattern>
+    <pattern id="p-gelo" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M4 1.5l2.5 2.5L4 6.5 1.5 4z" fill="rgba(255,255,255,.55)"/><path d="M11 8.5l2 2-2 2-2-2z" fill="rgba(255,255,255,.4)"/></pattern>
+    <clipPath id="clip-caneca"><path d="M13 73H73V194Q73 209 58 209H28Q13 209 13 194Z"/></clipPath>
+    <clipPath id="clip-americano"><path d="M16.5 37H83.5L77.6 207H22.4Z"/></clipPath>
+    <clipPath id="clip-long"><path d="M23 33H77V197Q77 209 65 209H35Q23 209 23 197Z"/></clipPath>
+    <clipPath id="clip-taca"><path d="M11 33H89C89 103 70 137 50 142C30 137 11 103 11 33Z"/></clipPath>
+    <clipPath id="clip-dot"><circle cx="8" cy="8" r="7"/></clipPath>
+  </defs>
+</svg>
+
+<div class="page-top">
+  <span class="brand">Enche Aí!</span>
+  <span class="meta">Protótipo jogável · jogo PWA para <code>games.thiagotn.com</code> · stack do <code>rachao.app/games</code></span>
+</div>
+
+<div class="layout">
+  <div class="play-col">
+    <div class="device" id="device">
+      <header class="scene">
+        <div class="hud">
+          <button class="hud-btn" id="btn-home" aria-label="Início" title="Início">
+            <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9v12h13V9"/><path d="M10 21v-6h4v6"/></svg>
+          </button>
+          <button class="hud-btn" id="btn-restart" aria-label="Recomeçar pedido" title="Recomeçar">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>
+          </button>
+          <button class="hud-btn" id="btn-undo" aria-label="Desfazer jogada" title="Desfazer">
+            <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+            <span class="count" id="undo-count">3</span>
+          </button>
+          <button class="hud-btn" id="btn-extra" aria-label="Copo extra" title="Copo extra">
+            <svg viewBox="0 0 24 24"><path d="M9 4h10l-1.4 16.5a1.5 1.5 0 0 1-1.5 1.5h-4.2a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M2.5 9h5M5 6.5v5"/></svg>
+            <span class="count" id="extra-count">1</span>
+          </button>
+        </div>
+        <div class="title-row">
+          <button class="round-btn daily" id="btn-daily" aria-label="Pedido do dia" title="Pedido do dia">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="m12 12.6.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z" fill="#fff" stroke-width="1"/></svg>
+          </button>
+          <div class="title">
+            <span class="world" id="world-name">Sorveteria</span>
+            <h2 id="level-title">Pedido 31</h2>
+          </div>
+          <button class="round-btn" id="btn-hint" aria-label="Dica" title="Dica">
+            <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.6V16h6v-.1c0-.6.3-1.2.8-1.6A6.5 6.5 0 0 0 12 2.5z"/></svg>
+            <span class="count" id="hint-count">3</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="comanda" aria-label="Comanda do pedido">
+        <div class="comanda-head"><span>Comanda</span><span id="comanda-count">0/9 prontos</span></div>
+        <ul id="comanda-list"></ul>
+      </section>
+
+      <section class="board" id="board" aria-label="Recipientes no balcão"></section>
+
+      <footer class="status">
+        <span>Jogadas <b id="moves">0</b></span>
+        <span class="stars" id="live-stars" aria-label="Estrelas possíveis">★★★</span>
+        <span>Tempo <b id="timer">0:00</b></span>
+      </footer>
+
+      <div class="stream" id="stream"></div>
+      <div class="toast" id="toast" role="status" hidden></div>
+
+      <div class="overlay" id="win" hidden>
+        <div class="card" role="dialog" aria-labelledby="win-title">
+          <h3 id="win-title">Pedido entregue!</h3>
+          <div class="big-stars" id="win-stars">★★★</div>
+          <p id="win-sub">Sem ajuda. Capricho de chef.</p>
+          <dl>
+            <div><dt>Jogadas</dt><dd id="win-moves">0</dd></div>
+            <div><dt>Tempo</dt><dd id="win-time">0:00</dd></div>
+            <div><dt>Ajudas</dt><dd id="win-aids">0</dd></div>
+          </dl>
+          <button class="btn primary" id="btn-next">Próximo pedido</button>
+          <button class="btn ghost" id="btn-replay">Jogar de novo</button>
+        </div>
+      </div>
+
+      <div class="overlay" id="home" hidden>
+        <div class="card home-card" role="dialog" aria-label="Início">
+          <p class="logo">Enche Aí!</p>
+          <p class="tag">Separe os sabores. Um por copo.</p>
+          <button class="btn primary" id="btn-continue">Continuar · Pedido 31</button>
+          <button class="btn ghost" id="btn-home-daily">Pedido do dia</button>
+          <h4>Cardápios</h4>
+          <div class="menu-list" id="menu-list"></div>
+          <h4>Ajustes</h4>
+          <label class="toggle" for="opt-pat">Texturas nos sabores (daltonismo) <input type="checkbox" id="opt-pat" checked></label>
+          <label class="toggle" for="opt-vib">Vibrar ao completar um copo <input type="checkbox" id="opt-vib" checked></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="proto-bar">
+      <span>Toque num recipiente e depois no destino.</span>
+      <span class="stepper" aria-label="Escolher pedido">
+        <button id="lvl-down" aria-label="Pedido anterior">−</button>
+        <output id="lvl-out">31</output>
+        <button id="lvl-up" aria-label="Próximo pedido">+</button>
+      </span>
+    </div>
+  </div>
+
+  <article class="spec">
+    <section>
+      <h1>Enche <span>Aí!</span></h1>
+      <p class="lede">Puzzle de ordenação com tema de lanchonete. Cada recipiente chega com camadas misturadas de café, sucos, açaí e milkshake; o jogador despeja de um para outro até cada copo ter um sabor só. Roda offline como PWA, no mesmo molde da Paciência e do Tetris do rachao.app.</p>
+    </section>
+
+    <section>
+      <h2>O que muda em relação à referência</h2>
+      <ul class="diffs">
+        <li><strong>O recipiente muda com o cardápio</strong>Caneca de vidro na padaria, copo americano na lanchonete, copo long na casa de sucos, taça na sorveteria. A regra é a mesma: 4 camadas por recipiente.</li>
+        <li><strong>Sabor tem cor e textura</strong>Grãos no café, polpa na laranja, bolhas no refri de uva, caroços na melancia. Dá para jogar sem distinguir cores; a textura pode ser desligada nos ajustes.</li>
+        <li><strong>Copo pronto ganha finalização</strong>Bebida quente solta vapor, suco ganha canudo e rodela, milkshake ganha chantilly e cereja. É a recompensa visual de cada passo.</li>
+        <li><strong>A comanda é o objetivo</strong>O papel no topo lista os sabores da fase e risca cada um quando o copo fica pronto. Mostra o progresso sem número abstrato.</li>
+        <li><strong>Pedido do dia</strong>Mesma fase para todos, gerada pela data (seed FNV-1a), como o desafio diário da Paciência.</li>
+        <li><strong>Ajuda limitada, sem anúncio</strong>Por pedido: 3 desfazer, 1 copo extra e 3 dicas. Cada tipo de ajuda usado custa uma estrela.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Sabores</h2>
+      <p>12 sabores, cada um com cor e textura própria. As fases usam de 3 a 9 sabores; cada cardápio define a ordem em que eles entram.</p>
+      <div class="swatches" id="swatches"></div>
+    </section>
+
+    <section>
+      <h2>Cardápios</h2>
+      <p>Cada cardápio agrupa 10 pedidos e troca o recipiente e os sabores iniciais. Depois do pedido 40 o ciclo recomeça, com mais sabores.</p>
+      <div class="worlds" id="worlds"></div>
+    </section>
+
+    <section>
+      <h2>Regras</h2>
+      <dl class="rules">
+        <dt>Despejar</dt><dd>Só sobre o mesmo sabor ou num recipiente vazio. Vai a sequência inteira do topo, até onde couber.</dd>
+        <dt>Copo pronto</dt><dd>4 camadas do mesmo sabor. Fica travado e risca o sabor na comanda.</dd>
+        <dt>Vitória</dt><dd>Todos os recipientes prontos ou vazios.</dd>
+        <dt>Estrelas</dt><dd>3 sem ajuda; perde 1 por tipo de ajuda usada (desfazer, copo extra, dica). Mínimo 1.</dd>
+        <dt>Fases</dt><dd>Geradas por seed e validadas por um solver antes de aparecer. Nenhuma fase sem solução chega ao jogador.</dd>
+        <dt>Sem saída</dt><dd>Quando não há jogada possível, o jogo avisa e sugere desfazer ou pedir o copo extra.</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h2>Stack de publicação</h2>
+      <p>Mesmo padrão dos jogos de <code>/games</code>: lógica pura em TypeScript, estado em <code>localStorage</code>, sem backend. A diferença é o destino: um app próprio em <code>games.thiagotn.com</code>, com um manifesto por jogo para que cada um seja instalável sozinho.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Camada</th><th>Escolha</th><th>Por quê</th></tr></thead>
+          <tbody>
+            <tr><td>Framework</td><td>SvelteKit 2 + Svelte 5 + TypeScript + Tailwind</td><td>Igual ao <code>football-frontend</code>; Paciência e Tetris migram sem reescrita.</td></tr>
+            <tr><td>Build</td><td><code>adapter-static</code>, <code>prerender = true</code>, <code>ssr = false</code> nos jogos</td><td>Só arquivos estáticos; nada de servidor Node para manter.</td></tr>
+            <tr><td>Lógica</td><td><code>$lib/enche-ai/engine.ts</code></td><td>Regras, gerador seedado e solver sem DOM, como <code>$lib/paciencia/engine.ts</code>. Testável com Vitest.</td></tr>
+            <tr><td>Estado</td><td><code>$lib/enche-ai/storage.ts</code>, chave <code>games_enche_ai</code></td><td>Pedido atual, progresso por cardápio, recordes e ajustes. Try/catch em toda leitura e escrita.</td></tr>
+            <tr><td>PWA</td><td><code>vite-plugin-pwa</code> (<code>injectManifest</code>) + Workbox precache</td><td>Mesmo plugin do rachao.app. Funciona offline depois da primeira visita.</td></tr>
+            <tr><td>Instalação</td><td><code>/enche-ai/manifest.webmanifest</code> com <code>id</code>, <code>scope</code> e <code>start_url</code> em <code>/enche-ai/</code></td><td>Cada jogo vira um app instalável próprio, com ícone e nome; o hub <code>/</code> tem o seu.</td></tr>
+            <tr><td>Hospedagem</td><td>Cloudflare Pages, domínio <code>games.thiagotn.com</code></td><td>CDN com borda em São Paulo, deploy por push, preview por branch.</td></tr>
+            <tr><td>rachao.app</td><td>Card em <code>/games</code> apontando para <code>games.thiagotn.com/enche-ai/</code></td><td>Mesma vitrine de hoje; o jogo deixa de pesar no bundle do app.</td></tr>
+            <tr><td>Testes</td><td>Vitest no engine + Playwright em <code>football-e2e</code></td><td>Solver garante fases resolvíveis; E2E cobre jogada, vitória e persistência.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Estrutura sugerida</h2>
+<pre>games/                         <span class="c"># novo app, irmão de football-frontend</span>
+  src/
+    lib/
+      enche-ai/
+        engine.ts              <span class="c"># regras, gerador seedado, solver</span>
+        storage.ts             <span class="c"># localStorage games_enche_ai</span>
+        content.ts             <span class="c"># sabores, recipientes, cardápios</span>
+        Vessel.svelte          <span class="c"># SVG do recipiente + camadas + finalização</span>
+      paciencia/               <span class="c"># migrado de football-frontend</span>
+    routes/
+      +page.svelte             <span class="c"># hub de jogos</span>
+      enche-ai/+page.svelte    <span class="c"># tela do jogo (fixed inset-0)</span>
+      enche-ai/+page.ts        <span class="c"># ssr=false, prerender=true</span>
+    service-worker.ts
+  static/
+    enche-ai/manifest.webmanifest
+    enche-ai/icon-192.png · icon-512.png · maskable-512.png
+  messages/ pt-BR.json · en.json · es.json
+  svelte.config.js             <span class="c"># adapter-static</span>
+  vite.config.ts               <span class="c"># sveltekit() + VitePWA()</span></pre>
+    </section>
+  </article>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ───────── Conteúdo ─────────
+  const ING = {
+    cafe:       { name: 'Café',         color: '#3a1f14', pat: 'graos',    tex: 'grãos',     top: 'vapor' },
+    leite:      { name: 'Leite',        color: '#f1ebdf', pat: 'liso',     tex: 'liso',      top: 'vapor' },
+    chocolate:  { name: 'Chocolate',    color: '#8b5a3a', pat: 'ondas',    tex: 'ondas',     top: 'vapor' },
+    laranja:    { name: 'Laranja',      color: '#f7941d', pat: 'polpa',    tex: 'polpa',     top: 'canudo' },
+    limao:      { name: 'Limonada',     color: '#9bd13a', pat: 'rodelas',  tex: 'rodelas',   top: 'canudo' },
+    melancia:   { name: 'Melancia',     color: '#e02a3c', pat: 'caroco',   tex: 'caroços',   top: 'canudo' },
+    maracuja:   { name: 'Maracujá',     color: '#ffd23f', pat: 'pintas',   tex: 'sementes',  top: 'canudo' },
+    menta:      { name: 'Menta',        color: '#22b8a0', pat: 'folhas',   tex: 'listras',   top: 'canudo' },
+    morango:    { name: 'Morango',      color: '#f37aa6', pat: 'sementes', tex: 'pontinhos', top: 'chantilly' },
+    acai:       { name: 'Açaí',         color: '#4b1a55', pat: 'granola',  tex: 'granola',   top: 'chantilly' },
+    uva:        { name: 'Refri de uva', color: '#7a4fd6', pat: 'bolhas',   tex: 'bolhas',    top: 'canudo' },
+    raspadinha: { name: 'Raspadinha',   color: '#2e7cf0', pat: 'gelo',     tex: 'gelo',      top: 'chantilly' },
+  };
+
+  const VESSELS = {
+    caneca: {
+      id: 'caneca', name: 'Caneca de vidro', mouth: 70, top: 88, bottom: 209, cx: 43,
+      outline: 'M10 70H76V196Q76 212 60 212H26Q10 212 10 196Z',
+      extra: '<path d="M76 100C99 100 99 170 76 170" fill="none" stroke="var(--glass)" stroke-width="7" stroke-linecap="round"/>',
+    },
+    americano: {
+      id: 'americano', name: 'Copo americano', mouth: 34, top: 54, bottom: 207, cx: 50,
+      outline: 'M13 34H87L80.5 206Q80 212 74 212H26Q20 212 19.5 206Z',
+      extra: (() => {
+        let s = '<path d="M15.6 62H84.4" stroke="rgba(228,238,255,.35)" stroke-width="1.6"/>';
+        for (let k = 0; k < 8; k++) {
+          const xt = 16.5 + (k + 0.5) * (67.6 / 8), xb = 22.4 + (k + 0.5) * (55.2 / 8);
+          s += `<path d="M${xt.toFixed(1)} 64L${xb.toFixed(1)} 205" stroke="rgba(228,238,255,.16)" stroke-width="1.4"/>`;
+        }
+        return s;
+      })(),
+    },
+    long: {
+      id: 'long', name: 'Copo long', mouth: 30, top: 46, bottom: 209, cx: 50,
+      outline: 'M20 30H80V198Q80 212 66 212H34Q20 212 20 198Z',
+      extra: '',
+    },
+    taca: {
+      id: 'taca', name: 'Taça', mouth: 30, top: 42, bottom: 141, cx: 50,
+      outline: 'M8 30H92C92 104 72 140 56 146V186C56 194 74 196 80 206Q80 211 75 211H25Q20 211 20 206C26 196 44 194 44 186V146C28 140 8 104 8 30Z',
+      extra: '',
+    },
+  };
+
+  const WORLDS = [
+    { id: 'padaria',    name: 'Padaria',        vessel: 'caneca',    from: 1,  desc: 'Café da manhã no balcão.',
+      order: ['cafe', 'leite', 'chocolate', 'laranja', 'morango', 'maracuja', 'limao', 'acai', 'melancia'] },
+    { id: 'lanchonete', name: 'Lanchonete',     vessel: 'americano', from: 11, desc: 'Copo americano e refri.',
+      order: ['uva', 'laranja', 'cafe', 'limao', 'melancia', 'leite', 'raspadinha', 'chocolate', 'menta'] },
+    { id: 'sucos',      name: 'Casa de Sucos',  vessel: 'long',      from: 21, desc: 'Fruta batida na hora.',
+      order: ['laranja', 'melancia', 'maracuja', 'limao', 'acai', 'menta', 'morango', 'uva', 'raspadinha'] },
+    { id: 'sorveteria', name: 'Sorveteria',     vessel: 'taca',      from: 31, desc: 'Milkshake e açaí na taça.',
+      order: ['morango', 'acai', 'raspadinha', 'chocolate', 'leite', 'maracuja', 'menta', 'uva', 'cafe'] },
+  ];
+
+  const CAP = 4;
+  const AIDS = { undo: 3, extra: 1, hint: 3 };
+
+  // ───────── Engine (puro) ─────────
+  const topOf = (t) => t[t.length - 1];
+  function runLen(t) { if (!t.length) return 0; const c = topOf(t); let n = 0; for (let i = t.length - 1; i >= 0 && t[i] === c; i--) n++; return n; }
+  const isDone = (t) => t.length === CAP && runLen(t) === CAP;
+  const isWon = (T) => T.every((t) => !t.length || isDone(t));
+  function canPour(T, a, b) {
+    if (a === b) return false;
+    const A = T[a], B = T[b];
+    if (!A.length || B.length >= CAP || isDone(A)) return false;
+    return !B.length || topOf(B) === topOf(A);
+  }
+  function pour(T, a, b) { const A = T[a], B = T[b]; const k = Math.min(runLen(A), CAP - B.length); for (let i = 0; i < k; i++) B.push(A.pop()); return k; }
+  const keyOf = (T) => T.map((t) => t.join(',')).sort().join('|');
+  function hasMove(T) { for (let a = 0; a < T.length; a++) for (let b = 0; b < T.length; b++) if (canPour(T, a, b)) return true; return false; }
+
+  function solve(T0, limit = 30000) {
+    const seen = new Set(); const path = []; let nodes = 0;
+    function moves(T) {
+      const out = [];
+      for (let a = 0; a < T.length; a++) {
+        const A = T[a]; if (!A.length || isDone(A)) continue;
+        const uniform = runLen(A) === A.length; let emptyTried = false;
+        for (let b = 0; b < T.length; b++) {
+          if (!canPour(T, a, b)) continue;
+          if (!T[b].length) { if (uniform || emptyTried) continue; emptyTried = true; out.push([a, b, 1]); }
+          else out.push([a, b, CAP - T[b].length >= runLen(A) ? -1 : 0]);
+        }
+      }
+      return out.sort((x, y) => x[2] - y[2]);
+    }
+    function dfs(T) {
+      if (isWon(T)) return true;
+      if (++nodes > limit) return false;
+      const k = keyOf(T); if (seen.has(k)) return false; seen.add(k);
+      for (const [a, b] of moves(T)) {
+        const C = T.map((t) => t.slice()); pour(C, a, b); path.push([a, b]);
+        if (dfs(C)) return true;
+        path.pop(); if (nodes > limit) return false;
+      }
+      return false;
+    }
+    return dfs(T0.map((t) => t.slice())) ? path.slice() : null;
+  }
+
+  function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function fnv1a(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  function generate(seed, colors) {
+    const rnd = mulberry32(seed); let T = null;
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const pool = []; colors.forEach((c) => { for (let i = 0; i < CAP; i++) pool.push(c); });
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      T = []; for (let i = 0; i < colors.length; i++) T.push(pool.slice(i * CAP, (i + 1) * CAP));
+      T.push([], []);
+      if (T.some((t) => runLen(t) >= 3)) continue;
+      if (solve(T)) return T;
+    }
+    return T;
+  }
+
+  const worldFor = (L) => WORLDS[Math.floor((L - 1) / 10) % WORLDS.length];
+  const colorsFor = (L) => Math.min(9, 3 + Math.floor((L - 1) / 4));
+  const dateKey = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const fmtTime = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+
+  // ───────── SVG ─────────
+  function vesselSVG(V, t, opts = {}) {
+    const h = (V.bottom - V.top) / CAP;
+    let liquid = '', grown = '';
+    t.forEach((id, i) => {
+      const ing = ING[id]; const y = (V.bottom - (i + 1) * h - 0.4).toFixed(2); const hh = (h + 0.8).toFixed(2);
+      const r = `<rect x="0" y="${y}" width="100" height="${hh}" fill="${ing.color}"/><rect class="pat" x="0" y="${y}" width="100" height="${hh}" fill="url(#p-${ing.pat})"/>`;
+      if (opts.growFrom != null && i >= opts.growFrom) grown += r; else liquid += r;
+    });
+    if (grown) liquid += `<g class="grow">${grown}</g>`;
+    if (t.length) liquid += `<rect x="0" y="${(V.bottom - t.length * h - 0.4).toFixed(2)}" width="100" height="2.2" fill="rgba(255,255,255,.3)"/>`;
+    const done = isDone(t);
+    let topping = '';
+    if (done && !opts.noTopping) topping = toppingSVG(V, ING[t[0]]);
+    const glare = `<path d="M${V.cx - 26} ${V.mouth + 14}V${Math.min(V.bottom - 20, V.mouth + 90)}" stroke="rgba(255,255,255,.22)" stroke-width="5" stroke-linecap="round" fill="none" clip-path="url(#clip-${V.id})"/>`;
+    return `<svg viewBox="0 -34 100 250" aria-hidden="true">
+      <path d="${V.outline}" fill="rgba(200,220,255,.07)"/>
+      ${done && ING[t[0]].top === 'canudo' ? strawSVG(V) : ''}
+      <g clip-path="url(#clip-${V.id})">${liquid}</g>
+      ${glare}
+      <path d="${V.outline}" fill="none" stroke="var(--glass)" stroke-width="3.5" stroke-linejoin="round"/>
+      ${V.extra}
+      ${topping}
+    </svg>`;
+  }
+  function strawSVG(V) {
+    const x1 = V.cx + 8, y1 = V.top + 26, x2 = V.cx + 24, y2 = V.mouth - 30;
+    return `<g class="topping"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e8473b" stroke-width="7" stroke-dasharray="5 6"/></g>`;
+  }
+  function toppingSVG(V, ing) {
+    const m = V.mouth, cx = V.cx;
+    if (ing.top === 'vapor') {
+      return `<g class="steam" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="3.2" stroke-linecap="round">
+        <path d="M${cx - 13} ${m - 6}q-6 -7 0 -13t0 -13"/><path d="M${cx} ${m - 8}q-6 -7 0 -13t0 -13"/><path d="M${cx + 13} ${m - 6}q-6 -7 0 -13t0 -13"/></g>`;
+    }
+    if (ing.top === 'canudo') {
+      const sx = cx - 30, sy = m + 2;
+      return `<g class="topping"><circle cx="${sx}" cy="${sy}" r="11" fill="#fff"/><circle cx="${sx}" cy="${sy}" r="8.5" fill="${ing.color}"/><path d="M${sx} ${sy}l0 -8.5M${sx} ${sy}l7.4 4.2M${sx} ${sy}l-7.4 4.2" stroke="rgba(255,255,255,.7)" stroke-width="1.2"/></g>`;
+    }
+    return `<g class="topping"><g fill="#fff8ef" stroke="rgba(120,90,70,.25)" stroke-width="1">
+      <circle cx="${cx - 22}" cy="${m - 2}" r="11"/><circle cx="${cx + 22}" cy="${m - 2}" r="11"/><circle cx="${cx}" cy="${m - 8}" r="14"/>
+      <circle cx="${cx - 10}" cy="${m - 17}" r="9"/><circle cx="${cx + 10}" cy="${m - 17}" r="9"/></g>
+      <path d="M${cx + 2} ${m - 30}q4 -10 12 -12" stroke="#3f6b2a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="${cx + 2}" cy="${m - 27}" r="6.5" fill="#d7263d"/><circle cx="${cx}" cy="${m - 29}" r="1.8" fill="rgba(255,255,255,.7)"/></g>`;
+  }
+  function dotSVG(id) {
+    const ing = ING[id];
+    return `<svg viewBox="0 0 16 16" aria-hidden="true"><g clip-path="url(#clip-dot)"><rect width="16" height="16" fill="${ing.color}"/><rect class="pat" width="16" height="16" fill="url(#p-${ing.pat})"/></g><circle cx="8" cy="8" r="7" fill="none" stroke="rgba(0,0,0,.25)"/></svg>`;
+  }
+
+  // ───────── Estado + UI ─────────
+  const $ = (id) => document.getElementById(id);
+  const device = $('device'), board = $('board');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let S = null; let els = []; let timerId = null; let toastId = null;
+
+  function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem('enche_ai_proto') || '{}')[k]; const o = JSON.parse(localStorage.getItem('enche_ai_proto') || '{}'); o[k] = v; localStorage.setItem('enche_ai_proto', JSON.stringify(o)); } catch { return undefined; } }
+
+  function newGame(level, daily = false, keep = null) {
+    const world = daily ? WORLDS[new Date().getDay() % WORLDS.length] : worldFor(level);
+    const n = daily ? 7 : colorsFor(level);
+    const colors = world.order.slice(0, n);
+    const seed = daily ? fnv1a('enche-ai-diario-' + dateKey(new Date())) : fnv1a('enche-ai-' + level);
+    const tubes = keep?.tubes ?? generate(seed, colors);
+    S = {
+      level, daily, world, colors, tubes,
+      history: [], moves: keep?.moves ?? 0, elapsed: keep?.elapsed ?? 0,
+      left: { ...AIDS, ...(keep?.left ?? {}) }, used: { undo: false, extra: false, hint: false, ...(keep?.used ?? {}) },
+      sel: null, busy: false, won: false,
+    };
+    if (!daily) store('level', level);
+    $('lvl-out').value = level; $('lvl-out').textContent = level;
+    hide('win'); hide('home');
+    buildBoard(); renderHUD(); startTimer();
+  }
+
+  function buildBoard() {
+    board.innerHTML = ''; els = [];
+    S.tubes.forEach((t, i) => {
+      const b = document.createElement('button');
+      b.className = 'vessel'; b.type = 'button';
+      b.addEventListener('click', () => onTap(i));
+      board.appendChild(b); els.push(b); renderVessel(i);
+    });
+  }
+  function renderVessel(i, opts) {
+    const t = S.tubes[i], V = VESSELS[S.world.vessel];
+    els[i].innerHTML = vesselSVG(V, t, opts);
+    const label = t.length ? t.slice().reverse().map((id) => ING[id].name).join(', ') : 'vazio';
+    els[i].setAttribute('aria-label', `${V.name} ${i + 1}: ${isDone(t) ? 'pronto, ' : ''}${label}`);
+  }
+  function stars() { return Math.max(1, 3 - Object.values(S.used).filter(Boolean).length); }
+  const starStr = (n) => '★'.repeat(n) + `<span class="off">${'★'.repeat(3 - n)}</span>`;
+
+  function renderHUD() {
+    $('world-name').textContent = S.daily ? 'Pedido do dia · ' + S.world.name : S.world.name;
+    $('level-title').textContent = S.daily ? new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '') : 'Pedido ' + S.level;
+    $('undo-count').textContent = S.left.undo; $('btn-undo').disabled = !S.left.undo || !S.history.length;
+    $('extra-count').textContent = S.left.extra; $('btn-extra').disabled = !S.left.extra;
+    $('hint-count').textContent = S.left.hint; $('btn-hint').disabled = !S.left.hint;
+    $('moves').textContent = S.moves;
+    $('live-stars').innerHTML = starStr(stars());
+    const done = new Set(S.tubes.filter(isDone).map((t) => t[0]));
+    $('comanda-count').textContent = `${done.size}/${S.colors.length} prontos`;
+    $('comanda-list').innerHTML = S.colors.map((id) => `<li class="${done.has(id) ? 'done' : ''}">${dotSVG(id)}${ING[id].name}${done.has(id) ? ' <span class="tick">✓</span>' : ''}</li>`).join('');
+    $('btn-continue').textContent = 'Continuar · ' + (S.daily ? 'Pedido do dia' : 'Pedido ' + S.level);
+  }
+
+  function startTimer() {
+    clearInterval(timerId);
+    $('timer').textContent = fmtTime(S.elapsed);
+    timerId = setInterval(() => { if (!S.won && document.visibilityState === 'visible' && $('home').hidden) { S.elapsed++; $('timer').textContent = fmtTime(S.elapsed); } }, 1000);
+  }
+
+  function toast(msg, ms = 2200) {
+    const el = $('toast'); el.textContent = msg; el.hidden = false;
+    clearTimeout(toastId); toastId = setTimeout(() => { el.hidden = true; }, ms);
+  }
+  const show = (id) => { $(id).hidden = false; };
+  const hide = (id) => { $(id).hidden = true; };
+
+  function select(i) { if (S.sel != null) els[S.sel].classList.remove('lifted'); S.sel = i; if (i != null) els[i].classList.add('lifted'); }
+  function shake(i) { els[i].classList.remove('shake'); void els[i].offsetWidth; els[i].classList.add('shake'); }
+
+  function onTap(i) {
+    if (S.busy || S.won) return;
+    const t = S.tubes[i];
+    if (S.sel == null) {
+      if (!t.length || isDone(t)) { shake(i); return; }
+      select(i); return;
+    }
+    if (S.sel === i) { select(null); return; }
+    if (canPour(S.tubes, S.sel, i)) { doPour(S.sel, i); return; }
+    if (t.length && !isDone(t)) { select(i); return; }
+    shake(i); select(null);
+  }
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+
+  async function doPour(a, b) {
+    S.busy = true;
+    const ing = ING[topOf(S.tubes[a])];
+    S.history.push(S.tubes.map((t) => t.slice()));
+    const before = S.tubes[b].length;
+    const wasDone = isDone(S.tubes[b]);
+    const ea = els[a], eb = els[b];
+    const V = VESSELS[S.world.vessel];
+
+    if (!reduced && ea.animate) {
+      const dr = device.getBoundingClientRect();
+      const ra = ea.getBoundingClientRect(), rb = eb.getBoundingClientRect();
+      const lift = ea.classList.contains('lifted') ? -18 : 0;
+      const H = ra.height, unit = H / 250; // viewBox tem 250 de altura (de -34 a 216)
+      const acx = ra.left + ra.width / 2, acy = ra.top - lift + H / 2;
+      const tcx = rb.left + rb.width / 2, tMouth = rb.top + (V.mouth + 34) * unit;
+      const dir = tcx >= acx ? 1 : -1, theta = 72 * Math.PI / 180;
+      const half = (V.mouth + 34) * unit - H / 2; // distância (negativa) do centro até a boca
+      const mx = -half * Math.sin(theta) * dir, my = half * Math.cos(theta);
+      const dx = tcx - (acx + mx) - dir * 4, dy = (tMouth - 14) - (acy + my);
+      ea.style.zIndex = 7;
+      const go = ea.animate(
+        [{ transform: `translateY(${lift}px)` }, { transform: `translate(${dx}px, ${dy}px) rotate(${dir * 72}deg)` }],
+        { duration: 300, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+      await go.finished;
+
+      const k = pour(S.tubes, a, b);
+      const surface = rb.top + (V.bottom - (before + k) * ((V.bottom - V.top) / CAP) + 34) * unit;
+      const st = $('stream');
+      st.style.background = ing.color;
+      st.style.left = (tcx - dr.left - 3.5) + 'px';
+      st.style.top = (tMouth - 14 - dr.top) + 'px';
+      st.style.height = Math.max(10, surface - tMouth + 14) + 'px';
+      st.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: 120, fill: 'forwards' });
+      renderVessel(a); renderVessel(b, { growFrom: before, noTopping: true });
+      await wait(440);
+      st.animate([{ transform: 'scaleY(1)', transformOrigin: '50% 100%' }, { transform: 'scaleY(0)', transformOrigin: '50% 100%' }], { duration: 120, fill: 'forwards' });
+      const back = ea.animate(
+        [{ transform: `translate(${dx}px, ${dy}px) rotate(${dir * 72}deg)` }, { transform: 'translate(0,0)' }],
+        { duration: 260, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+      ea.classList.remove('lifted');
+      await back.finished;
+      go.cancel(); back.cancel(); ea.style.zIndex = '';
+    } else {
+      pour(S.tubes, a, b);
+      ea.classList.remove('lifted');
+      renderVessel(a); renderVessel(b);
+    }
+    S.sel = null; S.moves++;
+
+    if (!wasDone && isDone(S.tubes[b])) {
+      renderVessel(b); eb.classList.remove('pop'); void eb.offsetWidth; eb.classList.add('pop');
+      toast(`${ING[S.tubes[b][0]].name} pronto!`, 1400);
+      if ($('opt-vib').checked) { try { navigator.vibrate?.(30); } catch {} }
+    } else renderVessel(b);
+    renderHUD();
+    S.busy = false;
+
+    if (isWon(S.tubes)) { S.won = true; setTimeout(showWin, reduced ? 0 : 650); }
+    else if (!hasMove(S.tubes)) toast(S.left.extra ? 'Sem jogada possível. Desfaça ou peça o copo extra.' : 'Sem jogada possível. Desfaça ou recomece.', 3200);
+  }
+
+  function showWin() {
+    const n = stars(), aids = (AIDS.undo - S.left.undo) + (AIDS.extra - S.left.extra) + (AIDS.hint - S.left.hint);
+    $('win-title').textContent = S.daily ? 'Pedido do dia entregue!' : 'Pedido entregue!';
+    $('win-stars').innerHTML = starStr(n);
+    $('win-sub').textContent = n === 3 ? 'Sem ajuda nenhuma. Capricho de chef.' : n === 2 ? 'Quase perfeito. Tente sem ajuda para a terceira estrela.' : 'Entregue! Dá para fazer com menos ajuda.';
+    $('win-moves').textContent = S.moves; $('win-time').textContent = fmtTime(S.elapsed); $('win-aids').textContent = aids;
+    $('btn-next').textContent = S.daily ? 'Voltar aos pedidos' : 'Próximo pedido';
+    show('win');
+  }
+
+  // ───────── Ações ─────────
+  $('btn-undo').addEventListener('click', () => {
+    if (S.busy || !S.history.length || !S.left.undo) return;
+    S.tubes = S.history.pop(); S.left.undo--; S.used.undo = true; S.moves++;
+    select(null); buildBoard(); renderHUD();
+  });
+  $('btn-extra').addEventListener('click', () => {
+    if (S.busy || !S.left.extra) return;
+    S.tubes.push([]); S.left.extra--; S.used.extra = true;
+    S.history = S.history.map((h) => [...h, []]);
+    select(null); buildBoard(); renderHUD(); toast('Mais um copo no balcão.');
+  });
+  $('btn-hint').addEventListener('click', () => {
+    if (S.busy || !S.left.hint) return;
+    const path = solve(S.tubes, 40000);
+    if (!path) { toast(S.left.extra ? 'Daqui não tem saída. Desfaça ou peça o copo extra.' : 'Daqui não tem saída. Desfaça ou recomece.', 3000); return; }
+    if (!path.length) return;
+    S.left.hint--; S.used.hint = true; renderHUD();
+    const [a, b] = path[0];
+    select(null);
+    [a, b].forEach((i) => els[i].classList.add('hint'));
+    toast('Despeje do copo que brilha primeiro.', 1800);
+    setTimeout(() => els.forEach((e) => e.classList.remove('hint')), 1800);
+  });
+  $('btn-restart').addEventListener('click', () => { if (!S.busy) newGame(S.level, S.daily); });
+  $('btn-daily').addEventListener('click', () => { if (!S.busy) { newGame(S.level, true); toast('Mesmo pedido para todo mundo hoje.'); } });
+  $('btn-home').addEventListener('click', () => { if (!S.busy) { select(null); show('home'); } });
+  $('btn-continue').addEventListener('click', () => hide('home'));
+  $('btn-home-daily').addEventListener('click', () => newGame(S.level, true));
+  $('btn-next').addEventListener('click', () => newGame(S.daily ? (store('level') || 1) : S.level + 1));
+  $('btn-replay').addEventListener('click', () => newGame(S.level, S.daily));
+  $('lvl-down').addEventListener('click', () => { if (!S.busy) newGame(Math.max(1, S.level - 1)); });
+  $('lvl-up').addEventListener('click', () => { if (!S.busy) newGame(Math.min(99, S.level + 1)); });
+  $('opt-pat').addEventListener('change', (e) => { document.body.classList.toggle('no-pat', !e.target.checked); store('patterns', e.target.checked); });
+  $('home').addEventListener('click', (e) => { if (e.target.id === 'home') hide('home'); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { hide('home'); select(null); }
+    if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey)) $('btn-undo').click();
+  });
+
+  // ───────── Conteúdo estático gerado ─────────
+  function miniVessel(vid, fill) {
+    const V = VESSELS[vid];
+    return vesselSVG(V, fill, {}).replace('<svg ', '<svg ');
+  }
+  $('menu-list').innerHTML = WORLDS.map((w) => `<button class="menu-item" data-from="${w.from}">${miniVessel(w.vessel, w.order.slice(0, 3).reverse().concat([w.order[0]]).slice(0, 3))}<span><b>${w.name}</b><small>${VESSELS[w.vessel].name}</small></span><span class="range">${w.from}–${w.from + 9}</span></button>`).join('');
+  document.querySelectorAll('.menu-item').forEach((b) => b.addEventListener('click', () => newGame(Number(b.dataset.from))));
+
+  $('swatches').innerHTML = Object.entries(ING).map(([id, ing]) => `
+    <div class="swatch"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="${ing.color}"/><rect class="pat" width="40" height="40" fill="url(#p-${ing.pat})"/></svg>
+    <div><b>${ing.name}</b><small>${ing.tex} · ${ing.top}</small></div></div>`).join('');
+
+  $('worlds').innerHTML = WORLDS.map((w) => `
+    <div class="world-card">${miniVessel(w.vessel, [w.order[0], w.order[0], w.order[0], w.order[0]])}
+      <div><b>${w.name}</b><small>${VESSELS[w.vessel].name} · pedidos ${w.from}–${w.from + 9}</small><small>${w.desc}</small>
+      <div class="dots">${w.order.map((id) => `<span style="background:${ING[id].color}" title="${ING[id].name}"></span>`).join('')}</div></div></div>`).join('');
+
+  // ───────── Boot ─────────
+  function start(data) {
+    if (store('patterns') === false) { $('opt-pat').checked = false; document.body.classList.add('no-pat'); }
+    if (data && data.level) newGame(data.level, data.daily, data);
+    else newGame(Number(store('level')) || 31);
+  }
+  window.claude?.hot?.snapshot?.(() => S && !S.won ? { level: S.level, daily: S.daily, tubes: S.tubes, moves: S.moves, elapsed: S.elapsed, left: S.left, used: S.used } : {});
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>

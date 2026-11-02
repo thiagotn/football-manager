@@ -126,6 +126,14 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 ---
 
+## Passatempo (jogos)
+
+| # | PRD | Status | Notas |
+|---|-----|--------|-------|
+| 053 | [jogo-enche-ai.md](053-jogo-enche-ai.md) | 📋 | Puzzle de ordenar sabores com tema de lanchonete; PWA própria em `games.thiagotn.com` (SvelteKit + adapter-static + vite-plugin-pwa, manifesto por jogo). Protótipo em `docs/design/enche-ai/prototipo.html` |
+
+---
+
 ## Marketing e Legal
 
 | # | PRD | Status | Notas |
