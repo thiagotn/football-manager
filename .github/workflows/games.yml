@@ -1,0 +1,63 @@
+name: CI Games (games.thiagotn.com)
+
+# App estático dos jogos (`games/`). O deploy é feito pelo Cloudflare Pages
+# (integração Git); este workflow só garante que tipos, testes e build passam.
+on:
+  push:
+    paths:
+      - "games/**"
+      - "football-e2e/tests/test_enche_ai.py"
+      - ".github/workflows/games.yml"
+  pull_request:
+    paths:
+      - "games/**"
+      - "football-e2e/tests/test_enche_ai.py"
+      - ".github/workflows/games.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  games:
+    name: Check, unit, build & E2E
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: games
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: games/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Unit tests (engine + solver)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install E2E deps
+        working-directory: football-e2e
+        run: |
+          pip install pytest pytest-playwright python-dotenv requests
+          playwright install --with-deps chromium
+
+      - name: E2E
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          npx --yes wait-on http://localhost:4173/ --timeout 30000
+          cd ../football-e2e
+          GAMES_BASE_URL=http://localhost:4173 pytest tests/test_enche_ai.py -v --tb=short

@@ -1,6 +1,7 @@
 # PRD 053 — Enche Aí! (puzzle de ordenar sabores, PWA em games.thiagotn.com)
 
-- **Status:** 📋 Proposto (2026-11-02)
+- **Status:** 🚧 Implementado em `games/`, aguardando deploy (2026-11-02)
+- **Código:** [`games/`](../../games/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Protótipo jogável + especificação visual:** [`docs/design/enche-ai/prototipo.html`](../design/enche-ai/prototipo.html) (HTML único, abre direto no navegador)
 - **Referência de stack:** Paciência (`/paciencia`, `$lib/paciencia/*`) e Tetris 3D (`/tetris`) do `football-frontend`
 
@@ -52,7 +53,7 @@ mas como **app próprio** publicado em `games.thiagotn.com`.
 | Conteúdo | `src/lib/enche-ai/content.ts` — sabores, recipientes (paths SVG), cardápios |
 | Estado | `src/lib/enche-ai/storage.ts` — chave `games_enche_ai`: pedido atual, progresso/estrelas por pedido, recordes do pedido do dia, ajustes. Try/catch em toda leitura/escrita (mesmo padrão de `$lib/paciencia/storage.ts`) |
 | Componentes | `Vessel.svelte` (SVG do recipiente), `Comanda.svelte`, `WinDialog.svelte` |
-| PWA | `vite-plugin-pwa` com `strategies: 'injectManifest'` + `service-worker.ts` (Workbox precache), como no rachao.app |
+| PWA | Service worker **nativo do SvelteKit** (`$service-worker`: precache do build + cache-first). Escolhido no lugar do `vite-plugin-pwa`/Workbox do rachao.app porque, com manifesto por jogo em `static/`, o plugin não agrega nada e só adicionaria dependências |
 | Instalação por jogo | Um `manifest.webmanifest` por jogo em `static/<jogo>/` com `id`, `scope` e `start_url` = `/<jogo>/`, linkado no `<svelte:head>` da rota. O hub `/` tem o manifesto próprio. Um único SW na raiz cobre todos |
 | i18n | `messages/{pt-BR,en,es}.json`, chaves `enche_ai.*` (mesmo fluxo do CLAUDE.md raiz) |
 | Hospedagem | Cloudflare Pages, domínio `games.thiagotn.com`; preview por branch |
@@ -80,7 +81,7 @@ games/                         # novo app, irmão de football-frontend
     enche-ai/icon-192.png · icon-512.png · maskable-512.png
   messages/ pt-BR.json · en.json · es.json
   svelte.config.js             # adapter-static
-  vite.config.ts               # sveltekit() + VitePWA()
+  vite.config.ts               # sveltekit() + vitest
 ```
 
 ### Exemplo de manifesto por jogo
@@ -110,8 +111,15 @@ games/                         # novo app, irmão de football-frontend
 - Sons (previstos para v2, com botão de mudo).
 - Monetização / anúncios.
 
-## Questões em aberto
+## Decisões tomadas (2026-11-02)
 
-1. `games/` como pasta nova neste monorepo ou repositório separado? (Recomendação: pasta neste repo, para reaproveitar `football-e2e` e o fluxo de i18n.)
-2. Migrar Paciência e Tetris para `games.thiagotn.com` já na v1 ou só o Enche Aí!?
-3. Nome final do jogo (alternativas: "Copo Cheio", "Balcão").
+1. `games/` é pasta neste monorepo (reaproveita `football-e2e` e o fluxo de i18n).
+2. Só o Enche Aí! na v1; Paciência e Tetris continuam em `rachao.app/games` (o hub linka para lá).
+3. Nome mantido: **Enche Aí!** (en: *Fill It Up!*, es: *¡Llénalo!*).
+4. Ícone provisório gerado de `games/scripts/icons/*.svg`.
+5. Card no `rachao.app/games` só depois do deploy de `games.thiagotn.com`.
+
+## Pendências
+
+- Criar projeto no Cloudflare Pages + DNS de `games.thiagotn.com` (passos em `games/README.md`).
+- Card do Enche Aí! em `football-frontend/src/routes/games/+page.svelte` apontando para `https://games.thiagotn.com/enche-ai/`.

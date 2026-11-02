@@ -4,9 +4,10 @@
 - **Backend**: FastAPI + SQLAlchemy 2 async + PostgreSQL (asyncpg)
 - **Frontend**: SvelteKit 2 + Svelte 5 + Tailwind CSS
 - **Testes E2E**: Playwright + pytest (`football-e2e/`)
+- **Jogos (games.thiagotn.com)**: app estático separado em `games/` (SvelteKit + adapter-static, PWA por jogo) — ver `games/CLAUDE.md`
 
 > **Estado corrente do código** (rotas, routers, próxima migration, componentes disponíveis):
-> consulte `football-api/CLAUDE.md` e `football-frontend/CLAUDE.md` antes de implementar qualquer feature.
+> consulte `football-api/CLAUDE.md` e `football-frontend/CLAUDE.md` (e `games/CLAUDE.md` para jogos) antes de implementar qualquer feature.
 
 ---
 
