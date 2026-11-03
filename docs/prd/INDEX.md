@@ -130,7 +130,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 053 | [jogo-enche-ai.md](053-jogo-enche-ai.md) | 🚧 | Puzzle de ordenar sabores com tema de lanchonete; app `games/` (SvelteKit + adapter-static + SW nativo, manifesto por jogo) para `games.thiagotn.com`. Implementado; falta deploy no Cloudflare Pages e card no `/games` |
+| 053 | [jogo-enche-ai.md](053-jogo-enche-ai.md) | 🚧 | Puzzle de ordenar sabores com tema de lanchonete; app `games/` (SvelteKit + adapter-static + SW nativo, manifesto por jogo) para `games.thiagotn.com`. Implementado, com card no `/games` do rachao.app; falta o deploy no Cloudflare Pages |
 
 ---
 

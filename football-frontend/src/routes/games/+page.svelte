@@ -2,12 +2,16 @@
   /**
    * /games — seletor de passatempo (handoff design_handoff_paciencia_games).
    *
-   * Página intermediária entre a Navbar (Conta › Passatempo) e os dois jogos.
-   * A arte de cada card é desenhada em CSS, sem imagem: gramado listrado com o
-   * leque de cartas na Paciência, poço neon no Tetris.
+   * Página intermediária entre a Navbar (Conta › Passatempo) e os jogos.
+   * A arte de cada card é desenhada em CSS/SVG, sem imagem: gramado listrado
+   * com o leque de cartas na Paciência, poço neon no Tetris, balcão de
+   * lanchonete com os copos no Enche Aí!.
+   *
+   * O Enche Aí! mora em games.thiagotn.com (app `games/`, PRD 053), então o
+   * card é um link externo.
    */
   import '@fontsource/bebas-neue/400.css';
-  import { ArrowRight, Gamepad2 } from 'lucide-svelte';
+  import { ArrowRight, ArrowUpRight, Gamepad2 } from 'lucide-svelte';
   import PageBackground from '$lib/components/PageBackground.svelte';
   import { t } from '$lib/i18n';
 
@@ -37,6 +41,43 @@
     { kind: 'face' as const, left: -12, bottom: 6, rotate: 6, rank: 'K', suit: '♥︎', red: true, gold: false },
     { kind: 'face' as const, left: 26, bottom: 0, rotate: 17, rank: 'Q', suit: '♦︎', red: true, gold: true },
   ];
+
+  /**
+   * Arte do Enche Aí!: três copos americanos no balcão, dois prontos e um
+   * misturado. Geometria e cores copiadas de `games/src/lib/enche-ai`
+   * (`VESSELS.americano` e `FLAVORS`) — é só desenho, sem lógica de jogo.
+   */
+  const GLASS = {
+    outline: 'M13 34H87L80.5 206Q80 212 74 212H26Q20 212 19.5 206Z',
+    clip: 'M16.5 37H83.5L77.6 207H22.4Z',
+    top: 54,
+    bottom: 207,
+  };
+  const LAYER_H = (GLASS.bottom - GLASS.top) / 4;
+
+  /** Facetas verticais do copo americano. */
+  const FACETS = Array.from({ length: 8 }, (_, k) => ({
+    xt: (16.5 + (k + 0.5) * (67.6 / 8)).toFixed(1),
+    xb: (22.4 + (k + 0.5) * (55.2 / 8)).toFixed(1),
+  }));
+
+  const FLAVOR_COLORS: Record<string, string> = {
+    laranja: '#f7941d',
+    uva: '#7a4fd6',
+    limao: '#9bd13a',
+    melancia: '#e02a3c',
+    cafe: '#3a1f14',
+    morango: '#f37aa6',
+  };
+
+  const GLASSES: { layers: string[]; topping: 'straw' | 'cream' | null; lift: number }[] = [
+    { layers: ['laranja', 'laranja', 'laranja', 'laranja'], topping: 'straw', lift: 0 },
+    { layers: ['uva', 'limao', 'melancia', 'cafe'], topping: null, lift: -6 },
+    { layers: ['morango', 'morango', 'morango', 'morango'], topping: 'cream', lift: 0 },
+  ];
+
+  /** y da camada `i` (de baixo para cima), como no `Vessel.svelte` do jogo. */
+  const layerY = (i: number) => GLASS.bottom - (i + 1) * LAYER_H - 0.4;
 </script>
 
 <svelte:head>
@@ -55,6 +96,106 @@
     </div>
 
     <div class="games-grid grid gap-4">
+      <!-- Enche Aí! — jogo externo, em games.thiagotn.com -->
+      <a
+        href="https://games.thiagotn.com/enche-ai/"
+        target="_blank"
+        rel="noopener"
+        class="group flex flex-col overflow-hidden rounded-xl border border-gray-700 bg-gray-800 transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-[#ffc93c]"
+      >
+        <div class="enche-art relative h-[168px] overflow-hidden">
+          <div class="absolute inset-x-0 bottom-0 flex items-end justify-center gap-3 pb-3">
+            {#each GLASSES as glass, gi (gi)}
+              <svg
+                viewBox="0 -34 100 250"
+                aria-hidden="true"
+                class="block h-auto w-[52px] overflow-visible"
+                style="transform:translateY({glass.lift}px)"
+              >
+                <defs>
+                  <clipPath id="enche-clip-{gi}"><path d={GLASS.clip} /></clipPath>
+                </defs>
+
+                <path d={GLASS.outline} fill="rgba(200,220,255,.07)" />
+
+                {#if glass.topping === 'straw'}
+                  <line x1="58" y1="80" x2="74" y2="4" stroke="#fff" stroke-width="7" stroke-linecap="round" />
+                  <line x1="58" y1="80" x2="74" y2="4" stroke="#e8473b" stroke-width="7" stroke-dasharray="5 6" />
+                {/if}
+
+                <g clip-path="url(#enche-clip-{gi})">
+                  {#each glass.layers as flavor, i (i)}
+                    <rect
+                      x="0"
+                      y={layerY(i)}
+                      width="100"
+                      height={LAYER_H + 0.8}
+                      fill={FLAVOR_COLORS[flavor]}
+                    />
+                  {/each}
+                  <rect x="0" y={layerY(glass.layers.length - 1)} width="100" height="2.2" fill="rgba(255,255,255,.3)" />
+                  <path d="M24 48V124" stroke="rgba(255,255,255,.22)" stroke-width="5" stroke-linecap="round" fill="none" />
+                </g>
+
+                <path d={GLASS.outline} fill="none" stroke="rgba(228,238,255,.78)" stroke-width="3.5" stroke-linejoin="round" />
+                <path d="M15.6 62H84.4" fill="none" stroke="rgba(228,238,255,.35)" stroke-width="1.6" stroke-linecap="round" />
+                {#each FACETS as f, i (i)}
+                  <path d="M{f.xt} 64L{f.xb} 205" fill="none" stroke="rgba(228,238,255,.16)" stroke-width="1.4" stroke-linecap="round" />
+                {/each}
+
+                {#if glass.topping === 'straw'}
+                  <circle cx="20" cy="36" r="11" fill="#fff" />
+                  <circle cx="20" cy="36" r="8.5" fill={FLAVOR_COLORS[glass.layers[0]]} />
+                  <path
+                    d="M20 36l0 -8.5M20 36l7.4 4.2M20 36l-7.4 4.2"
+                    stroke="rgba(255,255,255,.7)"
+                    stroke-width="1.2"
+                  />
+                {:else if glass.topping === 'cream'}
+                  <g fill="#fff8ef" stroke="rgba(120,90,70,.25)" stroke-width="1">
+                    <circle cx="28" cy="32" r="11" />
+                    <circle cx="72" cy="32" r="11" />
+                    <circle cx="50" cy="26" r="14" />
+                    <circle cx="40" cy="17" r="9" />
+                    <circle cx="60" cy="17" r="9" />
+                  </g>
+                  <path d="M52 4q4 -10 12 -12" fill="none" stroke="#3f6b2a" stroke-width="2" stroke-linecap="round" />
+                  <circle cx="52" cy="7" r="6.5" fill="#d7263d" />
+                  <circle cx="50" cy="5" r="1.8" fill="rgba(255,255,255,.7)" />
+                {/if}
+              </svg>
+            {/each}
+          </div>
+
+          <span
+            class="absolute left-3 top-3 inline-flex items-center rounded-full bg-[#ffc93c] px-2.5 py-0.5 text-xs font-semibold text-[#3a2a00]"
+          >
+            {$t('games.badge_new')}
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-2.5 p-4">
+          <div class="flex flex-col gap-0.5">
+            <span class="font-bebas text-[30px] leading-none tracking-[.02em] text-white">
+              {$t('games.enche_ai_title')}
+            </span>
+            <span class="text-sm leading-[1.45] text-gray-400">{$t('games.enche_ai_desc')}</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <span class="badge bg-red-900/40 text-red-300">{$t('games.tag_puzzle')}</span>
+            <span class="badge bg-yellow-900/40 text-yellow-300">{$t('games.tag_daily')}</span>
+            <span class="badge bg-gray-700 text-gray-300">{$t('games.tag_offline')}</span>
+          </div>
+          <span
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ffc93c] text-[15px] font-semibold text-[#3a2a00] transition-colors group-hover:bg-[#ffd666]"
+          >
+            {$t('games.enche_ai_cta')}
+            <ArrowUpRight size={16} strokeWidth={2.2} />
+          </span>
+          <span class="text-xs text-gray-500">{$t('games.enche_ai_host')}</span>
+        </div>
+      </a>
+
       <!-- Paciência -->
       <a
         href="/paciencia"
@@ -112,11 +253,6 @@
             {/each}
           </div>
 
-          <span
-            class="absolute left-3 top-3 inline-flex items-center rounded-full bg-gold-400 px-2.5 py-0.5 text-xs font-semibold text-rachao-900"
-          >
-            {$t('games.badge_new')}
-          </span>
         </div>
 
         <div class="flex flex-col gap-2.5 p-4">
@@ -200,5 +336,14 @@
   /* 1 coluna no mobile, 2–3 no desktop */
   .games-grid {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+
+  /* Balcão do Enche Aí!: azulejo azul na parede, madeira no balcão. */
+  .enche-art {
+    background:
+      radial-gradient(70% 60% at 50% 100%, rgba(255, 214, 150, 0.16), transparent 70%),
+      linear-gradient(180deg, transparent 62%, #3b2519 62%, #1f130c 100%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' fill='%23183a69'/%3E%3Cpath d='M22 7C25 16 28 19 37 22C28 25 25 28 22 37C19 28 16 25 7 22C16 19 19 16 22 7Z' fill='%232f68ad'/%3E%3Ccircle cx='22' cy='22' r='3.5' fill='%23d4e3f6' fill-opacity='.6'/%3E%3C/svg%3E")
+        0 0 / 44px 44px;
   }
 </style>

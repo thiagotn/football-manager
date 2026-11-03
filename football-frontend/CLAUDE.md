@@ -31,7 +31,7 @@
 | `/draw` | Redirect 301 para `/simulator` (compatibilidade com URLs salvas) |
 | `/discover` | Rachões públicos abertos com filtros (público + autenticado) |
 | `/players/[id]` | Perfil público do jogador com Rachão Score |
-| `/games` | Seletor de passatempo — cards de Paciência e Tetris 3D (handoff `design_handoff_paciencia_games`) |
+| `/games` | Seletor de passatempo — cards de Enche Aí! (link externo para `games.thiagotn.com/enche-ai/`, PRD 053), Paciência e Tetris 3D (handoff `design_handoff_paciencia_games`) |
 | `/paciencia` | Paciência Klondike em tela cheia (`fixed inset-0 z-50`, sem Navbar). Abas internas: Início · Diário · Campanha · Ajustes. Move por **toque** (destino resolvido por prioridade) **ou arraste** (Pointer Events, destino escolhido pelo jogador; vira arraste após 6px). Sem backend: regras em `$lib/paciencia/engine.ts`, estado em `localStorage` (`rachao_paciencia`) |
 | `/tetris` | Tetris 3D em iframe (`static/tetris-game/`). O botão ESC volta para `/games` |
 

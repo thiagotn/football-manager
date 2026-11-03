@@ -35,11 +35,20 @@ def _saved_game(page: Page) -> dict | None:
 # ── /games ────────────────────────────────────────────────────────────────────
 
 
-def test_games_lista_os_dois_jogos(page: Page):
+def test_games_lista_os_jogos(page: Page):
     page.goto("/games")
     expect(page.get_by_role("heading", name="Passatempo")).to_be_visible()
     expect(page.get_by_role("link", name="Paciência")).to_have_attribute("href", "/paciencia")
     expect(page.get_by_role("link", name="Tetris 3D")).to_have_attribute("href", "/tetris")
+
+
+def test_games_linka_o_enche_ai_externo(page: Page):
+    """O Enche Aí! mora em games.thiagotn.com (PRD 053), fora do rachao.app."""
+    page.goto("/games")
+    card = page.get_by_role("link", name="Enche Aí!")
+    expect(card).to_have_attribute("href", "https://games.thiagotn.com/enche-ai/")
+    expect(card).to_have_attribute("target", "_blank")
+    expect(card).to_have_attribute("rel", "noopener")
 
 
 def test_games_abre_a_paciencia(page: Page):

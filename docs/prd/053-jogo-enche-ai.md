@@ -1,6 +1,6 @@
 # PRD 053 — Enche Aí! (puzzle de ordenar sabores, PWA em games.thiagotn.com)
 
-- **Status:** 🚧 Implementado em `games/`, aguardando deploy (2026-11-02)
+- **Status:** 🚧 Implementado em `games/` + card no `/games` do rachao.app, aguardando deploy (2026-11-03)
 - **Código:** [`games/`](../../games/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Protótipo jogável + especificação visual:** [`docs/design/enche-ai/prototipo.html`](../design/enche-ai/prototipo.html) (HTML único, abre direto no navegador)
 - **Referência de stack:** Paciência (`/paciencia`, `$lib/paciencia/*`) e Tetris 3D (`/tetris`) do `football-frontend`
@@ -122,4 +122,12 @@ games/                         # novo app, irmão de football-frontend
 ## Pendências
 
 - Criar projeto no Cloudflare Pages + DNS de `games.thiagotn.com` (passos em `games/README.md`).
-- Card do Enche Aí! em `football-frontend/src/routes/games/+page.svelte` apontando para `https://games.thiagotn.com/enche-ai/`.
+  Até isso existir, o card do `/games` aponta para um domínio que ainda não responde —
+  o merge do card deve acompanhar o deploy.
+
+## Concluído depois da implementação
+
+- Card do Enche Aí! em `football-frontend/src/routes/games/+page.svelte` apontando para
+  `https://games.thiagotn.com/enche-ai/` (link externo, `target="_blank"`), com a arte do
+  balcão em SVG, chaves `games.enche_ai_*`/`games.tag_puzzle` nos 3 idiomas e teste E2E
+  em `football-e2e/tests/test_games.py`. O selo "Novo" passou da Paciência para ele.
