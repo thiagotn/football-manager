@@ -6,6 +6,8 @@ export default {
       fontFamily: {
         sans: ['Nunito', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
         display: ['"Lilita One"', '"Arial Rounded MT Bold"', 'system-ui', 'sans-serif'],
+        // Só a Paciência usa (veio assim do rachao.app); o CSS é importado na rota.
+        bebas: ['"Bebas Neue"', 'Nunito', 'sans-serif'],
       },
       colors: {
         // Paleta do Enche Aí! — lanchonete à noite (ver docs/design/enche-ai/prototipo.html)

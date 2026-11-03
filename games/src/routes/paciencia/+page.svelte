@@ -11,6 +11,10 @@
    * 390px de largura e escala com o container (`cardW`), então todas as medidas
    * internas passam por `s()`.
    */
+  // A Paciência mantém a Bebas Neue que usava no rachao.app: a display do hub
+  // (Lilita One) é pesada demais para o HUD e as cartas. CSS importado aqui
+  // para entrar no chunk desta rota, e não no de todo mundo.
+  import '@fontsource/bebas-neue/400.css';
   import { goto } from '$app/navigation';
   import {
     Calendar,
@@ -708,7 +712,7 @@
       class="absolute flex flex-col items-center leading-[.85]"
       style="top:{s(2)}px;left:{s(4)}px"
     >
-      <span class="font-display" style="font-size:{s(19)}px">{RANKS[card.r]}</span>
+      <span class="font-bebas" style="font-size:{s(19)}px">{RANKS[card.r]}</span>
       <span style="font-size:{s(11)}px">{SUITS[card.s]}</span>
     </div>
     <div class="absolute leading-none" style="right:{s(3)}px;bottom:{s(2)}px;font-size:{s(24)}px">
@@ -757,7 +761,7 @@
         </button>
         <div class="flex items-center justify-center gap-[7px]">
           <Emblem size={26} />
-          <span class="whitespace-nowrap font-display text-[17px] tracking-[.02em]">
+          <span class="whitespace-nowrap font-bebas text-[21px] uppercase tracking-[.04em]">
             {gameTitle}
           </span>
         </div>
@@ -773,7 +777,7 @@
             <div class="text-[8.5px] font-bold uppercase tracking-[.18em] text-mustard">
               {box.label}
             </div>
-            <div class="font-display text-[20px] leading-[1.05] tabular-nums">{box.value}</div>
+            <div class="font-bebas text-[20px] leading-[1.05] tabular-nums">{box.value}</div>
           </div>
         {/each}
       </div>
@@ -800,7 +804,7 @@
       <!-- Placeholders: fundações, monte e colunas vazias -->
       {#each placeholders as p (p.key)}
         <div
-          class="absolute box-border flex items-center justify-center font-display"
+          class="absolute box-border flex items-center justify-center font-bebas"
           style="
             left:{p.x}px;top:{p.y}px;width:{cardW}px;height:{cardH}px;
             border-radius:{s(6)}px;border:2px {p.dashed ? 'dashed' : 'solid'} {p.color};
@@ -827,7 +831,7 @@
               : '0 2px 0 #0d3123,0 4px 0 #17533a,0 5px 8px rgba(0,0,0,.35)'
           )}
           <span
-            class="absolute box-border rounded-full bg-mustard text-center font-display text-mustard-ink shadow-[0_2px_4px_rgba(0,0,0,.35)]"
+            class="absolute box-border rounded-full bg-mustard text-center font-bebas text-mustard-ink shadow-[0_2px_4px_rgba(0,0,0,.35)]"
             style="
               right:{-s(7)}px;bottom:{-s(7)}px;min-width:{s(22)}px;height:{s(22)}px;
               padding:0 {s(5)}px;font-size:{s(13)}px;line-height:{s(22)}px"
@@ -1002,7 +1006,7 @@
                 {game.daily ? $t('paciencia.win_kicker_daily') : $t('paciencia.win_kicker')}
               </div>
               <div
-                class="mt-3 font-display text-[44px] leading-[1] text-white [text-shadow:0_4px_14px_rgba(0,0,0,.35)]"
+                class="mt-3 font-bebas text-[64px] uppercase leading-[.9] text-white [text-shadow:0_4px_14px_rgba(0,0,0,.35)]"
               >
                 {$t('paciencia.win_headline')}
               </div>
@@ -1013,7 +1017,7 @@
               <div class="mx-[22px] mt-2.5 grid grid-cols-3">
                 {#each [{ label: $t('paciencia.hud_time'), value: fmtTime(game.elapsed) }, { label: $t('paciencia.hud_moves'), value: String(game.moves) }, { label: $t('paciencia.hud_score'), value: String(game.score) }] as box (box.label)}
                   <div>
-                    <div class="font-display text-[26px] leading-none">{box.value}</div>
+                    <div class="font-bebas text-[26px] leading-none">{box.value}</div>
                     <div
                       class="mt-0.5 text-[9px] font-bold uppercase tracking-[.14em] text-mustard"
                     >
@@ -1030,7 +1034,7 @@
           <button
             type="button"
             onclick={() => startGame(null)}
-            class="h-[54px] rounded-xl bg-mustard font-display text-[17px] tracking-[.04em] text-mustard-ink shadow-[0_8px_20px_rgba(255,201,60,.3)] transition-colors hover:bg-[#ffd666]"
+            class="h-[54px] rounded-xl bg-mustard font-bebas text-[20px] uppercase tracking-[.06em] text-mustard-ink shadow-[0_8px_20px_rgba(255,201,60,.3)] transition-colors hover:bg-[#ffd666]"
           >
             {$t('paciencia.win_play_again')}
           </button>
@@ -1078,7 +1082,7 @@
             <!-- pt-2/-mt-1.5: o background-clip:text usa a caixa do elemento, então
                  sem folga no topo o acento de "PACIÊNCIA" ficaria transparente. -->
             <div
-              class="-mt-1.5 bg-[linear-gradient(180deg,#ffe29a_0%,#ffc93c_50%,#e0a21f_100%)] bg-clip-text pt-2 font-display text-[46px] leading-[1] tracking-[.01em] text-transparent"
+              class="-mt-1.5 bg-[linear-gradient(180deg,#ffe29a_0%,#ffc93c_50%,#e0a21f_100%)] bg-clip-text pt-2 font-bebas text-[64px] uppercase leading-[.9] tracking-[.01em] text-transparent"
             >
               {$t('paciencia.title')}
             </div>
@@ -1100,7 +1104,7 @@
                 <span class="text-[10.5px] font-bold uppercase tracking-[.16em] text-mustard">
                   {$t('paciencia.daily_today')}
                 </span>
-                <span class="font-display text-[18px] leading-[1.15] text-white">
+                <span class="font-bebas text-[21px] uppercase leading-[1.1] text-white">
                   {todayLabel}
                 </span>
                 <span class="text-[12px] font-medium text-white/70">
@@ -1112,7 +1116,7 @@
               <button
                 type="button"
                 onclick={() => startGame(todayKey)}
-                class="relative h-10 flex-none rounded-[10px] bg-mustard px-4 font-display text-[14px] tracking-[.04em] text-mustard-ink transition-colors hover:bg-[#ffd666] active:scale-95"
+                class="relative h-10 flex-none rounded-[10px] bg-mustard px-4 font-bebas text-[15px] uppercase tracking-[.06em] text-mustard-ink transition-colors hover:bg-[#ffd666] active:scale-95"
               >
                 {todayRecord ? $t('paciencia.replay') : $t('paciencia.play')}
               </button>
@@ -1123,7 +1127,7 @@
                 <button
                   type="button"
                   onclick={() => go('game')}
-                  class="flex h-[54px] items-center justify-center gap-2.5 rounded-xl bg-mustard font-display text-[17px] tracking-[.04em] text-mustard-ink shadow-[0_8px_20px_rgba(255,201,60,.3)] transition-colors hover:bg-[#ffd666] active:scale-[.98]"
+                  class="flex h-[54px] items-center justify-center gap-2.5 rounded-xl bg-mustard font-bebas text-[20px] uppercase tracking-[.06em] text-mustard-ink shadow-[0_8px_20px_rgba(255,201,60,.3)] transition-colors hover:bg-[#ffd666] active:scale-[.98]"
                 >
                   <Play size={20} fill="currentColor" />
                   {$t('paciencia.resume')} · {fmtTime(game.elapsed)}
@@ -1132,7 +1136,7 @@
               <button
                 type="button"
                 onclick={() => startGame(null)}
-                class="flex h-[54px] items-center justify-center gap-2.5 rounded-xl font-display text-[17px] tracking-[.04em] transition-[filter] hover:brightness-110 active:scale-[.98]
+                class="flex h-[54px] items-center justify-center gap-2.5 rounded-xl font-bebas text-[20px] uppercase tracking-[.06em] transition-[filter] hover:brightness-110 active:scale-[.98]
                   {hasRunningGame
                   ? 'border-[1.5px] border-white/25 bg-transparent text-white'
                   : 'bg-mustard text-mustard-ink'}"
@@ -1156,7 +1160,7 @@
             <div class="text-[11px] font-bold uppercase tracking-[.2em] text-mustard">
               {$t('paciencia.daily_kicker')}
             </div>
-            <div class="mt-0.5 font-display text-[32px] leading-tight">{monthLabel}</div>
+            <div class="mt-0.5 font-bebas text-[42px] uppercase leading-none">{monthLabel}</div>
             <p class="mt-2 text-[13.5px] leading-[1.5] text-gray-300">
               {$t('paciencia.daily_intro')}
             </p>
@@ -1167,7 +1171,7 @@
                   class="rounded-xl border bg-gray-800/85 py-2.5 text-center
                     {box.gold ? 'border-mustard/40' : 'border-gray-700'}"
                 >
-                  <div class="font-display text-[28px] leading-none {box.gold ? 'text-mustard' : ''}">
+                  <div class="font-bebas text-[28px] leading-none {box.gold ? 'text-mustard' : ''}">
                     {box.value}
                   </div>
                   <div
@@ -1220,7 +1224,7 @@
             <button
               type="button"
               onclick={() => startGame(todayKey)}
-              class="mt-4 h-[54px] w-full rounded-xl bg-mustard font-display text-[17px] tracking-[.04em] text-mustard-ink shadow-[0_8px_20px_rgba(255,201,60,.3)] transition-colors hover:bg-[#ffd666]"
+              class="mt-4 h-[54px] w-full rounded-xl bg-mustard font-bebas text-[20px] uppercase tracking-[.06em] text-mustard-ink shadow-[0_8px_20px_rgba(255,201,60,.3)] transition-colors hover:bg-[#ffd666]"
             >
               {todayRecord ? $t('paciencia.daily_cta_replay') : $t('paciencia.daily_cta_play')}
             </button>
@@ -1231,7 +1235,7 @@
             <div class="text-[11px] font-bold uppercase tracking-[.2em] text-mustard">
               {$t('paciencia.stats_kicker')}
             </div>
-            <div class="mt-0.5 font-display text-[32px] leading-tight">
+            <div class="mt-0.5 font-bebas text-[42px] uppercase leading-none">
               {$t('paciencia.stats_title')}
             </div>
 
@@ -1242,7 +1246,7 @@
                     {cell.highlight ? 'border-mustard/40' : 'border-gray-700'}"
                 >
                   <div
-                    class="font-display text-[28px] leading-none {cell.highlight
+                    class="font-bebas text-[28px] leading-none {cell.highlight
                       ? 'text-mustard'
                       : 'text-white'}"
                   >
@@ -1257,7 +1261,7 @@
               {/each}
             </div>
 
-            <div class="mb-2 mt-[22px] font-display text-[20px] uppercase tracking-[.04em]">
+            <div class="mb-2 mt-[22px] font-bebas text-[20px] uppercase tracking-[.04em]">
               {$t('paciencia.recent')}
             </div>
             {#if !history.length}
@@ -1309,7 +1313,7 @@
             <div class="text-[11px] font-bold uppercase tracking-[.2em] text-mustard">
               {$t('paciencia.settings_kicker')}
             </div>
-            <div class="mt-0.5 font-display text-[32px] leading-tight">
+            <div class="mt-0.5 font-bebas text-[42px] uppercase leading-none">
               {$t('paciencia.settings_title')}
             </div>
 
@@ -1365,7 +1369,7 @@
               <LanguageSwitcher tone="dark" />
             </div>
 
-            <div class="mb-2.5 mt-[22px] font-display text-[17px] tracking-[.02em]">
+            <div class="mb-2.5 mt-[22px] font-bebas text-[20px] uppercase tracking-[.04em]">
               {$t('paciencia.backs_title')}
             </div>
             <div class="grid grid-cols-4 gap-2">
@@ -1440,7 +1444,7 @@
 </div>
 
 <style>
-  /* Lilita One não tem peso bold — evita o negrito sintético do navegador. */
+  /* Bebas Neue só tem o peso 400 — evita o negrito sintético do navegador. */
   .paciencia {
     font-synthesis: none;
   }

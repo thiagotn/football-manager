@@ -13,7 +13,8 @@
   a instalação cacheia asset por asset (`Promise.allSettled`) para que um 404 não derrube o service worker inteiro — ver `test_service_worker_instala_e_o_jogo_abre_offline`
 - Um **manifesto por jogo** em `static/<jogo>/manifest.webmanifest` (`id`/`scope`/`start_url` = `/<jogo>/`), linkado no `<svelte:head>` da rota → cada jogo instala como app próprio. O hub `/` tem `static/manifest.webmanifest`
 - Sem backend: estado em `localStorage` (`games_<jogo>`)
-- Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache
+- Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
+  A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
 
 ## Rotas
