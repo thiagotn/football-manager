@@ -14,7 +14,7 @@ asyncpg = "^0.29.0"
 alembic = "^1.13.0"
 pydantic = { version = "^2.8.0", extras = ["email"] }
 pydantic-settings = "^2.4.0"
-python-jose = { version = "^3.3.0", extras = ["cryptography"] }
+pyjwt = "^2.15.0"
 passlib = { version = "^1.7.4", extras = ["bcrypt"] }
 bcrypt = "4.0.1"
 python-multipart = ">=0.0.26"
@@ -29,15 +29,17 @@ stripe = "^10.0.0"
 twilio = "^9.0.0"
 # Constraints diretas para forçar versões SEM vulnerabilidades conhecidas em deps
 # transitivas. Sem isso, o pip-audit no main.yml falha.
-aiohttp = ">=3.14.2"   # transitiva (pywebpush, twilio) — PYSEC-2026-{3546,3547}
+aiohttp = ">=3.14.4"   # transitiva (pywebpush, twilio) — PYSEC-2026-{3546,3547}, CVE-2026-{111063..111066,111748..111750}
+multidict = ">=6.9.1"  # transitiva (aiohttp) — PYSEC-2026-4244
+certifi = ">=2026.10.18"  # transitiva (httpx, requests) — PYSEC-2026-4320
+dnspython = ">=2.9.0"  # transitiva (pydantic[email]) — CVE-2026-114605
 idna = ">=3.15"        # transitiva (httpx, requests) — CVE-2026-45409
-pyjwt = ">=2.15.0"     # transitiva (python-jose) — PYSEC-2026-{175,177,178,179,4140-4152}
 urllib3 = ">=2.8.0"    # transitiva (requests, twilio, stripe) — PYSEC-2026-{4175,4176,4177}
-cryptography = ">=50.0.0"  # transitiva (python-jose) — PYSEC-2026-{3552,3553,3554}
+cryptography = ">=50.0.0"  # transitiva (pywebpush, twilio) — PYSEC-2026-{3552,3553,3554}
 prometheus-fastapi-instrumentator = "^8.0.0"  # 8.x libera starlette>=1.0.0 (fix de PYSEC-2026-161)
 prometheus-client = "^0.25.0"  # uso direto em app/core/job_metrics.py (antes só transitiva)
 starlette = ">=1.3.1"  # CVE-2026-54283 — bump direto até a transitiva alcançar
-pillow = "^12.0.0"
+pillow = "^13.0.0"     # 12.x acumulou PYSEC-2026-{4326..4343} e CVE-2026-112xxx
 anthropic = "^0.97.0"
 
 [tool.poetry.group.dev.dependencies]
