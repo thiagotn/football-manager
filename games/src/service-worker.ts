@@ -14,14 +14,28 @@ import { build, files, prerendered, version } from '$service-worker';
 declare const self: ServiceWorkerGlobalScope;
 
 const CACHE = `games-${version}`;
-const ASSETS = [...build, ...files, ...prerendered];
+
+/**
+ * Arquivos de configuração do Cloudflare Pages. Moram em `static/` para irem
+ * parar na raiz do build, mas o Pages os consome como configuração e nunca os
+ * serve — pedir por eles dá 404.
+ */
+const PAGES_CONFIG = ['/_headers', '/_redirects', '/_routes.json'];
+
+const ASSETS = [...build, ...files.filter((f) => !PAGES_CONFIG.includes(f)), ...prerendered];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE);
+      // Um `cache.addAll` falha inteiro se um único asset falhar — e sem
+      // instalação não existe offline nenhum. Cacheia um a um: o que faltar
+      // vira um aviso, não a perda do service worker.
+      const results = await Promise.allSettled(ASSETS.map((asset) => cache.add(asset)));
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed) console.warn(`[sw] ${failed} de ${ASSETS.length} assets ficaram fora do cache`);
+      await self.skipWaiting();
+    })()
   );
 });
 

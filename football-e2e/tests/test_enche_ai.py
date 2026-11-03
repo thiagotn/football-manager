@@ -191,6 +191,36 @@ def test_cardapio_bloqueado_ate_liberar(page: Page):
     expect(page.get_by_role("button", name="Padaria")).to_be_enabled()
 
 
+def test_service_worker_instala_e_o_jogo_abre_offline(page: Page, context):
+    """PWA: o service worker precisa ativar e servir o jogo sem rede.
+
+    Já quebrou em produção: `_headers` (configuração do Cloudflare Pages) ia
+    para a lista de precache, o Pages devolvia 404 e o `cache.addAll` original
+    derrubava a instalação inteira — ficava sem service worker e sem offline.
+    """
+    page.goto(f"{GAMES_BASE_URL}/enche-ai/")
+    page.wait_for_function("() => navigator.serviceWorker.controller !== null", timeout=45_000)
+
+    cached = page.evaluate(
+        """async () => {
+            const key = (await caches.keys())[0];
+            const reqs = await (await caches.open(key)).keys();
+            return reqs.map((r) => new URL(r.url).pathname);
+        }"""
+    )
+    assert len(cached) > 20, f"precache quase vazio: {cached}"
+    assert "/enche-ai/" in cached
+    # Config do Pages nunca é servida: se entrar no precache, a instalação falha
+    assert not [p for p in cached if p in ("/_headers", "/_redirects", "/_routes.json")]
+
+    context.set_offline(True)
+    try:
+        page.reload()
+        expect(page.get_by_role("region", name="Recipientes no balcão")).to_be_visible()
+    finally:
+        context.set_offline(False)
+
+
 def test_troca_de_idioma(page: Page):
     _open(page, _near_win())
     page.get_by_role("button", name="Início").click()
