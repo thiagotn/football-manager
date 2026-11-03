@@ -67,6 +67,7 @@ def paciencia(page: Page) -> Page:
 
 
 def test_hub_linka_a_paciencia(page: Page):
+    _open(page)  # fixa games_locale e volta ao hub: o runner do CI roda em inglês
     page.goto(f"{GAMES_BASE_URL}/")
     card = page.get_by_role("link", name="Paciência")
     expect(card).to_have_attribute("href", "/paciencia/")

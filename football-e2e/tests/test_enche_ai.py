@@ -198,7 +198,7 @@ def test_service_worker_instala_e_o_jogo_abre_offline(page: Page, context):
     para a lista de precache, o Pages devolvia 404 e o `cache.addAll` original
     derrubava a instalação inteira — ficava sem service worker e sem offline.
     """
-    page.goto(f"{GAMES_BASE_URL}/enche-ai/")
+    _open(page)  # fixa games_locale: o runner do CI roda em inglês
     page.wait_for_function("() => navigator.serviceWorker.controller !== null", timeout=45_000)
 
     cached = page.evaluate(
