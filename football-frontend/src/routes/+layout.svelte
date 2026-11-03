@@ -18,6 +18,8 @@
   import AndroidBetaBanner from '$lib/components/AndroidBetaBanner.svelte';
   import { initLocale, t } from '$lib/i18n';
 
+  // '/games', '/paciencia' e '/tetris' são redirects para games.thiagotn.com (PRD 054),
+  // mas continuam públicos: sem isso o guard mandaria para /login antes do redirect.
   const PUBLIC_ROUTES = ['/login', '/register', '/invite', '/claim', '/match/', '/faq', '/lp', '/terms', '/privacy', '/ranking', '/discover', '/players/', '/draw', '/simulator', '/tetris', '/games', '/paciencia'];
 
   onMount(() => {
