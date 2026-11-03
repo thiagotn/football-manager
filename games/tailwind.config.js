@@ -15,6 +15,10 @@ export default {
         mustard: { DEFAULT: '#ffc93c', ink: '#3a2a00' },
         ketchup: '#e8473b',
         paper: { DEFAULT: '#fbf4e4', ink: '#3b2a20', muted: '#8a7563' },
+        // Paciência — feltro da mesa de carteado
+        felt: { DEFAULT: '#17533a', dark: '#0d3123', light: '#1e6b4a' },
+        // Tetris — o poço à noite
+        night: { DEFAULT: '#010112', 2: '#0a1540', grid: '#1a4090' },
       },
     },
   },

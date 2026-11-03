@@ -1,8 +1,17 @@
 # games.thiagotn.com
 
-Jogos casuais em PWA — estáticos, offline, instaláveis um a um. Detalhes de
-arquitetura em [`CLAUDE.md`](CLAUDE.md); produto em
-[`docs/prd/053-jogo-enche-ai.md`](../docs/prd/053-jogo-enche-ai.md).
+Jogos casuais em PWA — estáticos, offline, instaláveis um a um.
+
+| Jogo | Rota |
+|------|------|
+| Enche Aí! — puzzle de ordenar sabores | `/enche-ai/` |
+| Paciência — Klondike | `/paciencia/` |
+| Tetris 3D | `/tetris/` |
+
+Detalhes de arquitetura em [`CLAUDE.md`](CLAUDE.md); produto nos PRDs
+[053](../docs/prd/053-jogo-enche-ai.md) (o app e o Enche Aí!) e
+[054](../docs/prd/054-migracao-paciencia-tetris-games.md) (a vinda da Paciência
+e do Tetris, que moravam no rachao.app).
 
 ```bash
 npm install

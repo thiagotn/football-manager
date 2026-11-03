@@ -19,6 +19,145 @@ body {
   display: none !important;
 }
 
+/**
+ * Componentes compartilhados pelos jogos. Nasceram no `<style>` do Enche Aí!;
+ * com mais de um jogo no app, viram classes globais para não serem copiadas
+ * de novo a cada port.
+ */
+@layer components {
+  /* ── Sobreposições (vitória, início, confirmação) ─────────────────── */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(10, 14, 22, 0.72);
+    backdrop-filter: blur(3px);
+  }
+  .card {
+    width: 100%;
+    max-width: 360px;
+    padding: 22px 20px 20px;
+    border-radius: 18px;
+    background: theme('colors.paper.DEFAULT');
+    color: theme('colors.paper.ink');
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Botões ───────────────────────────────────────────────────────── */
+  .btn {
+    display: flex;
+    width: 100%;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+  }
+  .btn-primary {
+    background: theme('colors.mustard.DEFAULT');
+    color: theme('colors.mustard.ink');
+  }
+  .btn-ghost {
+    box-shadow: inset 0 0 0 2px rgba(59, 42, 32, 0.2);
+  }
+  .btn-danger {
+    box-shadow: inset 0 0 0 2px theme('colors.ketchup');
+    color: theme('colors.ketchup');
+  }
+  .btn:disabled {
+    opacity: 0.45;
+  }
+
+  /* ── Rótulos e números ────────────────────────────────────────────── */
+  .stat-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: theme('colors.paper.muted');
+  }
+  .stat {
+    font-family: theme('fontFamily.display');
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+  }
+  .section-label {
+    margin: 16px 0 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: theme('colors.paper.muted');
+  }
+
+  /* ── Listas e controles das telas de menu ─────────────────────────── */
+  .menu-item {
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    text-align: left;
+    background: rgba(59, 42, 32, 0.07);
+  }
+  .menu-item:hover:not(:disabled) {
+    background: rgba(59, 42, 32, 0.13);
+  }
+  .menu-item:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 2px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .toggle input {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    accent-color: theme('colors.ketchup');
+  }
+
+  /* ── Avisos e etiquetas ───────────────────────────────────────────── */
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: calc(58px + env(safe-area-inset-bottom));
+    z-index: 8;
+    width: max-content;
+    max-width: calc(100% - 40px);
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: theme('colors.paper.DEFAULT');
+    color: theme('colors.paper.ink');
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

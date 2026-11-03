@@ -7,11 +7,15 @@ on:
     paths:
       - "games/**"
       - "football-e2e/tests/test_enche_ai.py"
+      - "football-e2e/tests/test_paciencia.py"
+      - "football-e2e/tests/test_tetris.py"
       - ".github/workflows/games.yml"
   pull_request:
     paths:
       - "games/**"
       - "football-e2e/tests/test_enche_ai.py"
+      - "football-e2e/tests/test_paciencia.py"
+      - "football-e2e/tests/test_tetris.py"
       - ".github/workflows/games.yml"
 
 permissions:
@@ -60,4 +64,6 @@ jobs:
           npx vite preview --port 4173 --strictPort &
           npx --yes wait-on http://localhost:4173/ --timeout 30000
           cd ../football-e2e
-          GAMES_BASE_URL=http://localhost:4173 pytest tests/test_enche_ai.py -v --tb=short
+          GAMES_BASE_URL=http://localhost:4173 pytest \
+            tests/test_enche_ai.py tests/test_paciencia.py tests/test_tetris.py \
+            -v --tb=short

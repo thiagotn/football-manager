@@ -130,7 +130,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 
 | # | PRD | Status | Notas |
 |---|-----|--------|-------|
-| 053 | [jogo-enche-ai.md](053-jogo-enche-ai.md) | 🚧 | Puzzle de ordenar sabores com tema de lanchonete; app `games/` (SvelteKit + adapter-static + SW nativo, manifesto por jogo) para `games.thiagotn.com`. Implementado, com card no `/games` do rachao.app; falta o deploy no Cloudflare Pages |
+| 053 | [jogo-enche-ai.md](053-jogo-enche-ai.md) | ✅ | Puzzle de ordenar sabores com tema de lanchonete; app `games/` (SvelteKit + adapter-static + SW nativo, manifesto por jogo). No ar em `games.thiagotn.com` desde 2026-11-03 |
+| 054 | [migracao-paciencia-tetris-games.md](054-migracao-paciencia-tetris-games.md) | 🚧 | Paciência e Tetris 3D saem do rachao.app para o `games/`, com re-skin neutro, three.js como dependência ESM e redirects 301 nas rotas antigas. Implementado, aguardando deploy |
 
 ---
 

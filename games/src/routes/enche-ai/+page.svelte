@@ -23,11 +23,11 @@
     type LevelConfig,
   } from '$lib/enche-ai/content';
   import { HISTORY_LIMIT, emptyState, loadState, saveState, type SavedState } from '$lib/enche-ai/storage';
-  import { SUPPORTED_LOCALES, locale, setLocale, t } from '$lib/i18n';
+  import { locale, t } from '$lib/i18n';
+  import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 
   const LIFT_PX = 18;
   const TILT_DEG = 72;
-  const LOCALE_LABEL: Record<string, string> = { 'pt-BR': 'PT', en: 'EN', es: 'ES' };
 
   let saved = $state<SavedState>(emptyState());
   let cfg = $state<LevelConfig>(levelConfig(1));
@@ -592,15 +592,7 @@
           </label>
           <div class="toggle">
             <span>{$t('enche_ai.language')}</span>
-            <span class="flex gap-1">
-              {#each SUPPORTED_LOCALES as l (l)}
-                <button
-                  class="h-8 rounded-lg px-2.5 text-xs font-extrabold {$locale === l ? 'bg-paper-ink text-paper' : 'bg-paper-ink/10'}"
-                  onclick={() => setLocale(l)}
-                  aria-pressed={$locale === l}
-                >{LOCALE_LABEL[l]}</button>
-              {/each}
-            </span>
+            <LanguageSwitcher />
           </div>
 
           <a href="/" class="mt-3 block text-center text-sm font-bold text-paper-muted underline underline-offset-2">{$t('enche_ai.all_games')}</a>
@@ -725,112 +717,5 @@
     to { transform: scaleY(1); }
   }
 
-  .toast {
-    position: absolute;
-    left: 50%;
-    bottom: calc(58px + env(safe-area-inset-bottom));
-    z-index: 8;
-    width: max-content;
-    max-width: calc(100% - 40px);
-    transform: translateX(-50%);
-    padding: 8px 14px;
-    border-radius: 10px;
-    background: #fbf4e4;
-    color: #3b2a20;
-    font-size: 14px;
-    font-weight: 700;
-    text-align: center;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  }
 
-  .overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    display: grid;
-    place-items: center;
-    padding: 20px;
-    background: rgba(10, 14, 22, 0.72);
-    backdrop-filter: blur(3px);
-  }
-  .card {
-    width: 100%;
-    max-width: 360px;
-    padding: 22px 20px 20px;
-    border-radius: 18px;
-    background: #fbf4e4;
-    color: #3b2a20;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-  }
-  .stat-label {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #8a7563;
-  }
-  .stat {
-    font-family: 'Lilita One', system-ui, sans-serif;
-    font-size: 24px;
-    font-variant-numeric: tabular-nums;
-  }
-  .btn {
-    display: flex;
-    width: 100%;
-    height: 48px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 800;
-    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
-  }
-  .btn-primary {
-    background: #ffc93c;
-    color: #3a2a00;
-  }
-  .btn-ghost {
-    box-shadow: inset 0 0 0 2px rgba(59, 42, 32, 0.2);
-  }
-  .section-label {
-    margin: 16px 0 6px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #8a7563;
-  }
-  .menu-item {
-    display: grid;
-    grid-template-columns: 26px 1fr auto;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 6px 10px;
-    border-radius: 10px;
-    text-align: left;
-    background: rgba(59, 42, 32, 0.07);
-  }
-  .menu-item:hover:not(:disabled) {
-    background: rgba(59, 42, 32, 0.13);
-  }
-  .menu-item:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-  .toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 6px 2px;
-    font-size: 14px;
-    font-weight: 700;
-  }
-  .toggle input {
-    width: 20px;
-    height: 20px;
-    flex: none;
-    accent-color: #e8473b;
-  }
 </style>

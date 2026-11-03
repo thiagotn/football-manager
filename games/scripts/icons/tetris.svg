@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <radialGradient id="sky" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="#0a1540"/><stop offset="1" stop-color="#010112"/></radialGradient>
+</defs>
+<rect width="512" height="512" fill="url(#sky)"/>
+<g fill="#fff" fill-opacity=".45">
+  <circle cx="60" cy="70" r="3"/><circle cx="150" cy="40" r="2.5"/><circle cx="430" cy="90" r="3"/>
+  <circle cx="470" cy="200" r="2.5"/><circle cx="40" cy="300" r="2.5"/><circle cx="360" cy="40" r="2"/>
+</g>
+<g>
+  <g fill="#00e5f5" filter="none"><rect x="96" y="320" width="76" height="76" rx="10"/><rect x="180" y="320" width="76" height="76" rx="10"/><rect x="264" y="320" width="76" height="76" rx="10"/><rect x="348" y="320" width="76" height="76" rx="10"/></g>
+  <g fill="#ffd000"><rect x="264" y="236" width="76" height="76" rx="10"/><rect x="348" y="236" width="76" height="76" rx="10"/></g>
+  <g fill="#ee00bb"><rect x="96" y="236" width="76" height="76" rx="10"/><rect x="180" y="236" width="76" height="76" rx="10"/><rect x="180" y="152" width="76" height="76" rx="10"/></g>
+  <g fill="#00ee77"><rect x="264" y="152" width="76" height="76" rx="10"/></g>
+</g>
+</svg>

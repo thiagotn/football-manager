@@ -24,6 +24,12 @@ const PAGES_CONFIG = ['/_headers', '/_redirects', '/_routes.json'];
 
 const ASSETS = [...build, ...files.filter((f) => !PAGES_CONFIG.includes(f)), ...prerendered];
 
+/**
+ * Páginas pré-renderizadas da mais específica para a mais genérica — `/` casa
+ * com tudo e fica por último. Jogo novo entra sozinho, sem editar nada aqui.
+ */
+const PAGES = [...prerendered].sort((a, b) => b.length - a.length);
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -66,7 +72,7 @@ self.addEventListener('fetch', (event) => {
       } catch {
         // Sem rede: navegação cai na página do jogo ou no hub, que estão no cache.
         if (request.mode === 'navigate') {
-          const page = url.pathname.startsWith('/enche-ai') ? '/enche-ai/' : '/';
+          const page = PAGES.find((p) => url.pathname.startsWith(p.slice(0, -1))) ?? '/';
           const fallback = await cache.match(page);
           if (fallback) return fallback;
         }

@@ -16,6 +16,7 @@
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.53.3",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
+    "@types/three": "^0.187.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "svelte": "^5.53.5",
@@ -28,6 +29,7 @@
   "dependencies": {
     "@fontsource/lilita-one": "^5.2.0",
     "@fontsource/nunito": "^5.2.0",
-    "lucide-svelte": "^0.460.0"
+    "lucide-svelte": "^0.460.0",
+    "three": "^0.187.0"
   }
 }

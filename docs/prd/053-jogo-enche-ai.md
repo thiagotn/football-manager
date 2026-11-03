@@ -1,6 +1,6 @@
 # PRD 053 — Enche Aí! (puzzle de ordenar sabores, PWA em games.thiagotn.com)
 
-- **Status:** 🚧 Implementado em `games/` + card no `/games` do rachao.app, aguardando deploy (2026-11-03)
+- **Status:** ✅ No ar em `games.thiagotn.com` desde 2026-11-03
 - **Código:** [`games/`](../../games/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Protótipo jogável + especificação visual:** [`docs/design/enche-ai/prototipo.html`](../design/enche-ai/prototipo.html) (HTML único, abre direto no navegador)
 - **Referência de stack:** Paciência (`/paciencia`, `$lib/paciencia/*`) e Tetris 3D (`/tetris`) do `football-frontend`
@@ -114,7 +114,7 @@ games/                         # novo app, irmão de football-frontend
 ## Decisões tomadas (2026-11-02)
 
 1. `games/` é pasta neste monorepo (reaproveita `football-e2e` e o fluxo de i18n).
-2. Só o Enche Aí! na v1; Paciência e Tetris continuam em `rachao.app/games` (o hub linka para lá).
+2. Só o Enche Aí! na v1; Paciência e Tetris migraram depois, no [PRD 054](054-migracao-paciencia-tetris-games.md).
 3. Nome mantido: **Enche Aí!** (en: *Fill It Up!*, es: *¡Llénalo!*).
 4. Ícone provisório gerado de `games/scripts/icons/*.svg`.
 5. Card no `rachao.app/games` só depois do deploy de `games.thiagotn.com`.
