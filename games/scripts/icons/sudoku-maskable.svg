@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="sepia" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2d23"/><stop offset="1" stop-color="#171310"/></linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbf3df"/><stop offset="1" stop-color="#e8dcc0"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="url(#sepia)"/>
+<!-- Conteúdo dentro da zona segura do maskable (60% do lado, centrado). -->
+<g transform="translate(256 256) scale(.62) translate(-256 -256)">
+  <g transform="rotate(-5 256 256)">
+    <rect x="70" y="78" width="356" height="356" rx="14" fill="url(#paper)"/>
+    <g stroke="#d6c4a0" stroke-width="3">
+      <path d="M109.6 78v356M149.1 78v356M228.2 78v356M267.8 78v356M346.9 78v356M386.4 78v356"/>
+      <path d="M70 117.6h356M70 157.1h356M70 236.2h356M70 275.8h356M70 354.9h356M70 394.4h356"/>
+    </g>
+    <g stroke="#8d7b5c" stroke-width="7">
+      <path d="M188.7 78v356M307.3 78v356M70 196.7h356M70 315.3h356"/>
+    </g>
+    <rect x="70" y="78" width="356" height="356" rx="14" fill="none" stroke="#8d7b5c" stroke-width="9"/>
+    <g font-family="Lilita One, Arial Rounded MT Bold, sans-serif" font-size="56" text-anchor="middle">
+      <text x="89.8" y="152" fill="#2a1f17">5</text>
+      <text x="208.5" y="152" fill="#2a1f17">3</text>
+      <text x="366.6" y="152" fill="#2a1f17">7</text>
+      <text x="129.4" y="271" fill="#c2410c">8</text>
+      <text x="248" y="271" fill="#2a1f17">1</text>
+      <text x="406.2" y="271" fill="#2a1f17">4</text>
+      <text x="89.8" y="389" fill="#2a1f17">9</text>
+      <text x="287.5" y="389" fill="#c2410c">6</text>
+      <text x="406.2" y="389" fill="#2a1f17">2</text>
+    </g>
+  </g>
+</g>
+</svg>

@@ -9,6 +9,7 @@ on:
       - "football-e2e/tests/test_cobrinha.py"
       - "football-e2e/tests/test_enche_ai.py"
       - "football-e2e/tests/test_paciencia.py"
+      - "football-e2e/tests/test_sudoku.py"
       - "football-e2e/tests/test_tetris.py"
       - ".github/workflows/games.yml"
   pull_request:
@@ -17,6 +18,7 @@ on:
       - "football-e2e/tests/test_cobrinha.py"
       - "football-e2e/tests/test_enche_ai.py"
       - "football-e2e/tests/test_paciencia.py"
+      - "football-e2e/tests/test_sudoku.py"
       - "football-e2e/tests/test_tetris.py"
       - ".github/workflows/games.yml"
 
@@ -68,5 +70,5 @@ jobs:
           cd ../football-e2e
           GAMES_BASE_URL=http://localhost:4173 pytest \
             tests/test_cobrinha.py tests/test_enche_ai.py tests/test_paciencia.py \
-            tests/test_tetris.py \
+            tests/test_sudoku.py tests/test_tetris.py \
             -v --tb=short

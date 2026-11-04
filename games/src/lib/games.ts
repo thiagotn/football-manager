@@ -56,6 +56,17 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#05222a',
+  },
+  {
+    slug: 'sudoku',
+    nameKey: 'sudoku.title',
+    descKey: 'sudoku.desc',
+    tags: [
+      { key: 'hub.tag_puzzle', tone: 'hot' },
+      { key: 'hub.tag_daily', tone: 'gold' },
+      { key: 'hub.tag_offline', tone: 'neutral' },
+    ],
+    themeColor: '#171310',
     isNew: true,
   },
   {

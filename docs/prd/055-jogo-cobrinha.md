@@ -1,6 +1,6 @@
 # PRD 055 — Cobrinha
 
-- **Status:** 🚧 Implementado, aguardando validação (2026-11-03)
+- **Status:** ✅ No ar em `games.thiagotn.com` desde 2026-11-03
 - **Código:** [`games/src/lib/cobrinha/`](../../games/src/lib/cobrinha/) e [`games/src/routes/cobrinha/`](../../games/src/routes/cobrinha/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Antecessores:** [PRD 053](053-jogo-enche-ai.md) criou o app `games/`; [PRD 054](054-migracao-paciencia-tetris-games.md) generalizou a infra para N jogos
 

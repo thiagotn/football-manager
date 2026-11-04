@@ -91,7 +91,8 @@ def test_hub_mostra_o_card_da_cobrinha(page: Page):
     card = page.locator("a[href='/cobrinha/']")
     expect(card).to_be_visible()
     expect(card.get_by_text("Cobrinha", exact=True)).to_be_visible()
-    expect(card.get_by_text("Novo")).to_be_visible()
+    # O selo "Novo" anda de jogo em jogo (agora está no Sudoku) — quem testa é o dono da vez.
+    expect(card.get_by_text("Clássico")).to_be_visible()
 
 
 def test_hub_leva_ao_jogo(page: Page):

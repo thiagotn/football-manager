@@ -1,0 +1,19 @@
+{
+  "id": "/sudoku/",
+  "name": "Sudoku",
+  "short_name": "Sudoku",
+  "description": "O sudoku clássico em papel de jornal: quatro dificuldades, anotações a lápis, dica e um tabuleiro novo por dia.",
+  "lang": "pt-BR",
+  "start_url": "/sudoku/",
+  "scope": "/sudoku/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#171310",
+  "theme_color": "#171310",
+  "categories": ["games", "puzzle"],
+  "icons": [
+    { "src": "/sudoku/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/sudoku/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/sudoku/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

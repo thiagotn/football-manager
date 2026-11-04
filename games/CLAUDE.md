@@ -16,7 +16,7 @@
 - Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
   A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
-- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha)
+- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku)
 
 ## Rotas
 
@@ -26,6 +26,7 @@
 | `/enche-ai/` | **Enche Aí!** — puzzle de ordenar sabores. Tela cheia (`fixed inset-0`), `ssr = false`. Overlays internos: Início (cardápios, pedido do dia, ajustes, idioma) e Vitória |
 | `/paciencia/` | **Paciência** Klondike (veio do rachao.app no PRD 054). Abas internas: Início · Diário · Partidas · Ajustes. Move por toque ou arraste |
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
+| `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e arraste para girar a câmera |
 
 ## Compartilhado
@@ -63,6 +64,21 @@
 - A cobra só anda depois do primeiro comando (`started`) — ninguém perde antes de pegar no controle
 - O desafio do dia ignora os ajustes do jogador (velocidade e travessia), senão o resultado não seria comparável
 
+## Sudoku (`src/lib/sudoku/`)
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `engine.ts` | Regras puras: grade de 81 posições, lances imutáveis (`place`/`toggleNote`/`erase`/`undo`), anotações em máscara de 9 bits, `solveLogically` (escada de técnicas), `hardnessOf`, `generate` (sorteio + unicidade + classificação), `hint`, `dailyGame`, `toLine`/`fromLine` |
+| `engine.test.ts` | Vitest: unicidade, faixa de dados, classificação por dificuldade, **determinismo do dia** e um teste que quebra se o gerador tocar em `Math.random` |
+| `themes.ts` + `themes.test.ts` | Os 6 visuais do tabuleiro (11 cores cada) e a liberação por partidas concluídas |
+| `storage.ts` | localStorage `games_sudoku`: **partida em andamento**, estatísticas por dificuldade, histórico (60), dias do desafio e ajustes |
+| `Emblem.svelte` · `CardArt.svelte` | Marca do jogo e arte do card no hub |
+
+- Dificuldade é **técnica exigida**, não quantidade de dados: com 24 dados, 19 em 30 tabuleiros saem só com singles. O gerador classifica e descarta o que não bate com a faixa (teto de 40 tentativas, depois aceita o mais duro que apareceu)
+- Gerar custa 2–44 ms: a tela mostra "Montando o tabuleiro…" e gera depois de dois `requestAnimationFrame`; o próximo da mesma faixa sai no `requestIdleCallback`
+- A partida **é** salva (ao contrário da Cobrinha) — sudoku leva minutos
+- O `ConfirmDialog` mora **dentro** da casca `fixed inset-0 z-50`: o `.overlay` é `position:absolute` e, fora dela, fica atrás do jogo
+
 ## Tetris 3D (`src/lib/tetris/`)
 
 | Arquivo | Conteúdo |
@@ -98,12 +114,13 @@ npm run build     # build/ estático
 npm run icons     # regera PNGs de scripts/icons/*.svg (precisa de Playwright)
 ```
 
-E2E: `football-e2e/tests/test_{cobrinha,enche_ai,paciencia,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
+E2E: `football-e2e/tests/test_{cobrinha,enche_ai,paciencia,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
 
 ## Novo jogo — checklist
 
 1. `src/lib/<jogo>/` com `engine.ts` puro + testes, `storage.ts` (chave `games_<jogo>`)
 2. `src/routes/<jogo>/+page.svelte` + `+page.ts` (só `ssr = false`; `prerender` vem do layout — sem pré-render não há `index.html`, manifesto nem offline)
 3. `static/<jogo>/manifest.webmanifest` + `scripts/icons/<jogo>{,-maskable}.svg` + `npm run icons`
+   (o Playwright de Node não está instalado aqui: na prática os PNGs saem de um script equivalente com o Playwright de Python do `football-e2e`)
 4. Entrada em `src/lib/games.ts` e `CardArt.svelte` do jogo (o hub e o fallback offline do service worker se viram sozinhos)
 5. Chaves i18n nos 3 idiomas e teste E2E em `football-e2e/tests/test_<jogo>.py` (fixar `games_locale`)

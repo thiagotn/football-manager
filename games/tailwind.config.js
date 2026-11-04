@@ -23,6 +23,8 @@ export default {
         night: { DEFAULT: '#010112', 2: '#0a1540', grid: '#1a4090' },
         // Cobrinha — a lagoa de hexágonos
         lagoon: { DEFAULT: '#05222a', 2: '#0b3d48', light: '#0f5a66' },
+        // Sudoku — o caderno de passatempos à noite (casca sepia, tabuleiro de papel)
+        news: { DEFAULT: '#171310', 2: '#241c16', light: '#3a2d23' },
       },
     },
   },

@@ -7,6 +7,7 @@
   import EncheAiArt from '$lib/enche-ai/CardArt.svelte';
   import PacienciaArt from '$lib/paciencia/CardArt.svelte';
   import CobrinhaArt from '$lib/cobrinha/CardArt.svelte';
+  import SudokuArt from '$lib/sudoku/CardArt.svelte';
   import TetrisArt from '$lib/tetris/CardArt.svelte';
   import { GAMES } from '$lib/games';
   import { t } from '$lib/i18n';
@@ -16,12 +17,14 @@
     'enche-ai': EncheAiArt,
     paciencia: PacienciaArt,
     cobrinha: CobrinhaArt,
+    sudoku: SudokuArt,
     tetris: TetrisArt,
   } as const;
   const ACCENT: Record<string, string> = {
     'enche-ai': '#ffc93c',
     paciencia: '#1e6b4a',
     cobrinha: '#8ede4f',
+    sudoku: '#e8dcc0',
     tetris: '#2e7cf0',
   };
 </script>
