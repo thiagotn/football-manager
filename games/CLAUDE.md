@@ -16,6 +16,7 @@
 - Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
   A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
+- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha)
 
 ## Rotas
 
@@ -24,6 +25,7 @@
 | `/` | Hub de jogos: itera `$lib/games.ts` e monta um `GameCard` por jogo |
 | `/enche-ai/` | **Enche Aí!** — puzzle de ordenar sabores. Tela cheia (`fixed inset-0`), `ssr = false`. Overlays internos: Início (cardápios, pedido do dia, ajustes, idioma) e Vitória |
 | `/paciencia/` | **Paciência** Klondike (veio do rachao.app no PRD 054). Abas internas: Início · Diário · Partidas · Ajustes. Move por toque ou arraste |
+| `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e arraste para girar a câmera |
 
 ## Compartilhado
@@ -46,6 +48,20 @@
 | `Emblem.svelte` | Espadilha num anel — marca do jogo (cabeçalho, verso das cartas, Início) |
 | `WinShell.svelte` | Moldura 300×360 da vitória (clip-path + borda mostarda) |
 | `CardArt.svelte` | Arte do card no hub |
+
+## Cobrinha (`src/lib/cobrinha/`)
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `engine.ts` | Regras puras: `step` imutável, `turn` (fila de 2 curvas, sem inversão), fruta e bônus sorteadas por PRNG guardado no estado, `wallsFor`/`dailyGoal` (desafio do dia), `levelFor`/`tickMs`, `fmtScore` |
+| `engine.test.ts` | Vitest: movimento, comer, morte, travessia, ritmo e **determinismo do desafio do dia** |
+| `skins.ts` + `skins.test.ts` | Os 6 visuais (cor por segmento) e a liberação por pontuação acumulada (`stats.total`) |
+| `storage.ts` | localStorage `games_cobrinha`: estatísticas de sempre, histórico (60), dias do desafio e ajustes. A partida em andamento **não** é salva |
+| `render.ts` | Canvas 2D: fundo (gradiente + hexágonos) num canvas fora da tela, cobra interpolada entre passos, fruta/bônus com pulso; `dispose()` ao sair da rota |
+| `Emblem.svelte` · `CardArt.svelte` | Marca do jogo e arte do card no hub |
+
+- A cobra só anda depois do primeiro comando (`started`) — ninguém perde antes de pegar no controle
+- O desafio do dia ignora os ajustes do jogador (velocidade e travessia), senão o resultado não seria comparável
 
 ## Tetris 3D (`src/lib/tetris/`)
 
@@ -82,7 +98,7 @@ npm run build     # build/ estático
 npm run icons     # regera PNGs de scripts/icons/*.svg (precisa de Playwright)
 ```
 
-E2E: `football-e2e/tests/test_{enche_ai,paciencia,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
+E2E: `football-e2e/tests/test_{cobrinha,enche_ai,paciencia,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
 
 ## Novo jogo — checklist
 

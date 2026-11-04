@@ -6,15 +6,22 @@
   import Patterns from '$lib/enche-ai/Patterns.svelte';
   import EncheAiArt from '$lib/enche-ai/CardArt.svelte';
   import PacienciaArt from '$lib/paciencia/CardArt.svelte';
+  import CobrinhaArt from '$lib/cobrinha/CardArt.svelte';
   import TetrisArt from '$lib/tetris/CardArt.svelte';
   import { GAMES } from '$lib/games';
   import { t } from '$lib/i18n';
 
   /** Arte e cor de destaque por jogo — o resto vem do registro. */
-  const ART = { 'enche-ai': EncheAiArt, paciencia: PacienciaArt, tetris: TetrisArt } as const;
+  const ART = {
+    'enche-ai': EncheAiArt,
+    paciencia: PacienciaArt,
+    cobrinha: CobrinhaArt,
+    tetris: TetrisArt,
+  } as const;
   const ACCENT: Record<string, string> = {
     'enche-ai': '#ffc93c',
     paciencia: '#1e6b4a',
+    cobrinha: '#8ede4f',
     tetris: '#2e7cf0',
   };
 </script>

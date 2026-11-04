@@ -34,7 +34,6 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#183a69',
-    isNew: true,
   },
   {
     slug: 'paciencia',
@@ -46,6 +45,18 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#0d3123',
+  },
+  {
+    slug: 'cobrinha',
+    nameKey: 'cobrinha.title',
+    descKey: 'cobrinha.desc',
+    tags: [
+      { key: 'hub.tag_classic', tone: 'hot' },
+      { key: 'hub.tag_daily', tone: 'gold' },
+      { key: 'hub.tag_offline', tone: 'neutral' },
+    ],
+    themeColor: '#05222a',
+    isNew: true,
   },
   {
     slug: 'tetris',

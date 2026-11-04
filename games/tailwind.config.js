@@ -21,6 +21,8 @@ export default {
         felt: { DEFAULT: '#17533a', dark: '#0d3123', light: '#1e6b4a' },
         // Tetris — o poço à noite
         night: { DEFAULT: '#010112', 2: '#0a1540', grid: '#1a4090' },
+        // Cobrinha — a lagoa de hexágonos
+        lagoon: { DEFAULT: '#05222a', 2: '#0b3d48', light: '#0f5a66' },
       },
     },
   },

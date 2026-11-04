@@ -1,6 +1,6 @@
 # PRD 054 — Paciência e Tetris 3D mudam para games.thiagotn.com
 
-- **Status:** 🚧 Implementado, aguardando deploy (2026-11-03)
+- **Status:** ✅ No ar desde 2026-11-03
 - **Código:** [`games/`](../../games/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Antecessor:** [PRD 053](053-jogo-enche-ai.md) criou o app `games/` e o domínio próprio
 

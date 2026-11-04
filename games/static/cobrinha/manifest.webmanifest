@@ -1,0 +1,19 @@
+{
+  "id": "/cobrinha/",
+  "name": "Cobrinha",
+  "short_name": "Cobrinha",
+  "description": "A cobrinha clássica numa lagoa de hexágonos: coma, cresça e não encoste em você mesmo.",
+  "lang": "pt-BR",
+  "start_url": "/cobrinha/",
+  "scope": "/cobrinha/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05222a",
+  "theme_color": "#05222a",
+  "categories": ["games", "arcade"],
+  "icons": [
+    { "src": "/cobrinha/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/cobrinha/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/cobrinha/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
