@@ -153,11 +153,18 @@ class UpdateMemberRequest(BaseModel):
     skill_stars: int | None = Field(None, ge=1, le=5)
     position: str | None = Field(None, pattern=r'^(gk|zag|lat|mei|ata)$')
     nickname: str | None = Field(None, max_length=50)
+    # Só admin do grupo, e só enquanto o jogador estiver com cadastro pendente (validado no router)
+    name: str | None = Field(None, min_length=2, max_length=100)
 
     @field_validator("nickname", mode="before")
     @classmethod
     def trim_nickname(cls, v: str | None) -> str | None:
         return normalize_nickname(v)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def trim_name(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
 
 
 class SelfUpdatePositionRequest(BaseModel):

@@ -351,6 +351,22 @@ async def update_member(
     if body.nickname is not None:
         member.nickname = body.nickname or None
 
+    # Nome é dado global do jogador: admin do grupo só pode corrigi-lo enquanto
+    # o cadastro estiver pendente (ninguém assumiu a conta ainda).
+    if body.name is not None:
+        target = await PlayerRepository(db).get(player_id)
+        if not target:
+            raise NotFoundError("Jogador não encontrado")
+        if not target.pending_registration:
+            raise ConflictError("PLAYER_NOT_PENDING")
+        target.name = body.name
+        logger.info(
+            "pending_member_name_changed",
+            actor_id=str(current.id),
+            group_id=str(group_id),
+            player_id=str(player_id),
+        )
+
     await db.flush()
     await db.refresh(member, ["player"])
     r = GroupMemberResponse.model_validate(member)

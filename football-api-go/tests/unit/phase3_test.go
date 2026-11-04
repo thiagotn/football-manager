@@ -666,6 +666,7 @@ type mockGroupStoreForBusiness struct {
 	ensurePlayerSubscriptionFn    func(ctx context.Context, playerID uuid.UUID) error
 	ensureMemberInCurrentPeriodFn func(ctx context.Context, groupID, playerID uuid.UUID, playerName string) error
 	getPlayerByIDFn               func(ctx context.Context, playerID uuid.UUID) (*db.Player, error)
+	updatePlayerNameFn            func(ctx context.Context, playerID uuid.UUID, name string) error
 	setAttendanceFn               func(ctx context.Context, matchID, playerID uuid.UUID, status string) error
 	getGroupStatsFn               func(ctx context.Context, groupID uuid.UUID, monthStart, monthEnd *time.Time, year int) ([]db.GroupPlayerStat, error)
 }
@@ -745,6 +746,13 @@ func (m *mockGroupStoreForBusiness) GetPlayerByID(ctx context.Context, playerID 
 		return m.getPlayerByIDFn(ctx, playerID)
 	}
 	return nil, db.ErrNotFound
+}
+
+func (m *mockGroupStoreForBusiness) UpdatePlayerName(ctx context.Context, playerID uuid.UUID, name string) error {
+	if m.updatePlayerNameFn != nil {
+		return m.updatePlayerNameFn(ctx, playerID, name)
+	}
+	return nil
 }
 
 func (m *mockGroupStoreForBusiness) SetAttendance(ctx context.Context, matchID, playerID uuid.UUID, status string) error {
