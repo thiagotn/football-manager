@@ -102,7 +102,8 @@ def test_hub_mostra_o_card_do_sudoku(page: Page) -> None:
     card = page.locator("a[href='/sudoku/']")
     expect(card).to_be_visible()
     expect(card.get_by_text("Sudoku", exact=True)).to_be_visible()
-    expect(card.get_by_text("Novo")).to_be_visible()
+    # O selo "Novo" anda de jogo em jogo (agora está no Comilão) — quem testa é o dono da vez.
+    expect(card.get_by_text("Puzzle")).to_be_visible()
 
 
 def test_hub_leva_ao_jogo(page: Page) -> None:

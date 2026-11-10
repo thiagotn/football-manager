@@ -67,6 +67,17 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#171310',
+  },
+  {
+    slug: 'comilao',
+    nameKey: 'comilao.title',
+    descKey: 'comilao.desc',
+    tags: [
+      { key: 'hub.tag_arcade', tone: 'hot' },
+      { key: 'hub.tag_daily', tone: 'gold' },
+      { key: 'hub.tag_offline', tone: 'neutral' },
+    ],
+    themeColor: '#140a24',
     isNew: true,
   },
   {

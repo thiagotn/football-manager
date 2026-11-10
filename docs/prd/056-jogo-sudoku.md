@@ -1,6 +1,6 @@
 # PRD 056 — Sudoku
 
-- **Status:** 🚧 Implementado, aguardando validação (2026-11-04)
+- **Status:** ✅ No ar desde 2026-11-04
 - **Código:** [`games/src/lib/sudoku/`](../../games/src/lib/sudoku/) e [`games/src/routes/sudoku/`](../../games/src/routes/sudoku/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Antecessores:** [PRD 053](053-jogo-enche-ai.md) criou o app `games/`; [PRD 054](054-migracao-paciencia-tetris-games.md) generalizou a infra; [PRD 055](055-jogo-cobrinha.md) foi o último jogo novo
 

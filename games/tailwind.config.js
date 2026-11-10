@@ -25,6 +25,8 @@ export default {
         lagoon: { DEFAULT: '#05222a', 2: '#0b3d48', light: '#0f5a66' },
         // Sudoku — o caderno de passatempos à noite (casca sepia, tabuleiro de papel)
         news: { DEFAULT: '#171310', 2: '#241c16', light: '#3a2d23' },
+        // Comilão — o fliperama synthwave (roxo profundo, parede de neon)
+        synth: { DEFAULT: '#140a24', 2: '#1f1038', light: '#2e1a52' },
       },
     },
   },

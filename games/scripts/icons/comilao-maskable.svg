@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e1a52"/><stop offset="1" stop-color="#140a24"/></linearGradient>
+  <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3df0"/><stop offset="1" stop-color="#2ae0ff"/></linearGradient>
+  <radialGradient id="neon" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#ff3df0" stop-opacity=".28"/><stop offset="1" stop-color="#ff3df0" stop-opacity="0"/></radialGradient>
+  <filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+</defs>
+<rect width="512" height="512" fill="url(#floor)"/>
+<rect width="512" height="512" fill="url(#neon)"/>
+
+<!-- Tudo dentro da zona segura (círculo central de 410px) -->
+<g stroke="url(#wall)" stroke-width="14" stroke-linecap="round" fill="none">
+  <g filter="url(#blur)" opacity=".75"><path d="M146 162h220M146 350h220"/></g>
+  <path d="M146 162h220M146 350h220"/>
+</g>
+
+<g fill="#ffe9a8"><circle cx="118" cy="256" r="12"/><circle cx="156" cy="256" r="12"/></g>
+
+<path d="M284 256 L204 212 A92 92 0 1 1 204 300 Z" fill="#ffc93c"/>
+</svg>

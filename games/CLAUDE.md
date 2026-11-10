@@ -16,7 +16,7 @@
 - Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
   A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
-- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku)
+- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão)
 
 ## Rotas
 
@@ -27,6 +27,7 @@
 | `/paciencia/` | **Paciência** Klondike (veio do rachao.app no PRD 054). Abas internas: Início · Diário · Partidas · Ajustes. Move por toque ou arraste |
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
+| `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e arraste para girar a câmera |
 
 ## Compartilhado
@@ -79,6 +80,25 @@
 - A partida **é** salva (ao contrário da Cobrinha) — sudoku leva minutos
 - O `ConfirmDialog` mora **dentro** da casca `fixed inset-0 z-50`: o `.overlay` é `position:absolute` e, fora dela, fica atrás do jogo
 
+## Comilão (`src/lib/comilao/`)
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `maze.ts` | O labirinto 19×21 como desenho legível (`#` parede · `.` pastilha · `o` pastilhão · `-` porta), berço, casa dos fantasmas, travessia e as 198 pastilhas |
+| `maze.test.ts` | **É o teste que aprova o traçado**: borda, simetria, flood fill alcançando toda pastilha, nenhum beco de uma saída, porta única, contagem |
+| `engine.ts` | Regras puras: posição **contínua** em tiles (não é passo a passo na grade), curva aplicada no centro do tile, 4 personalidades de perseguição, ondas scatter/chase, susto com combo, fruta, vidas e desafio do dia |
+| `engine.test.ts` | Vitest: partidas rodadas em passos fixos, com números exatos; **determinismo do dia** e um teste que quebra se o engine tocar em `Math.random` |
+| `skins.ts` + `skins.test.ts` | Os 6 visuais do labirinto (parede, brilho, piso, herói, pastilha) e a liberação por pontuação somada. As **cores dos fantasmas moram aqui e são fixas** |
+| `render.ts` | Canvas 2D: fundo + esqueleto das paredes num canvas fora da tela (repintado só quando muda o tile, o visual ou o brilho); atores, pastilhas e os números que sobem por quadro; `dispose()` ao sair da rota |
+| `storage.ts` | localStorage `games_comilao`: **partida em andamento**, estatísticas de sempre, histórico (60), dias do desafio e ajustes |
+| `Emblem.svelte` · `CardArt.svelte` | Marca do jogo e arte do card no hub |
+
+- `tick` é chamado **sempre com `dt` fixo** (16,67 ms, no máximo 4 por quadro): a física não depende da taxa de quadros e o teste compara números exatos
+- A curva pedida **fica guardada** até caber — é o que perdoa o toque antecipado no celular
+- A partida **é** salva (como no Sudoku), mas retomar cai sempre em `phase: 'pronto'`: voltar no meio de um corredor com um fantasma a dois tiles seria roubo
+- Gradiente em SVG de card/ícone precisa de `gradientUnits="userSpaceOnUse"`: em `objectBoundingBox` uma linha horizontal tem caixa de altura zero e **não pinta nada**
+- Medido: `tick` custa 0,4 µs; parado no berço o jogador é pego em 12,9 s; um bot de um passo de visão sobrevive 3 min
+
 ## Tetris 3D (`src/lib/tetris/`)
 
 | Arquivo | Conteúdo |
@@ -114,7 +134,7 @@ npm run build     # build/ estático
 npm run icons     # regera PNGs de scripts/icons/*.svg (precisa de Playwright)
 ```
 
-E2E: `football-e2e/tests/test_{cobrinha,enche_ai,paciencia,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
+E2E: `football-e2e/tests/test_{cobrinha,comilao,enche_ai,paciencia,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
 
 ## Novo jogo — checklist
 

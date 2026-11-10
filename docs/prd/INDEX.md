@@ -133,7 +133,8 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 053 | [jogo-enche-ai.md](053-jogo-enche-ai.md) | ✅ | Puzzle de ordenar sabores com tema de lanchonete; app `games/` (SvelteKit + adapter-static + SW nativo, manifesto por jogo). No ar em `games.thiagotn.com` desde 2026-11-03 |
 | 054 | [migracao-paciencia-tetris-games.md](054-migracao-paciencia-tetris-games.md) | ✅ | Paciência e Tetris 3D saem do rachao.app para o `games/`, com re-skin neutro, three.js como dependência ESM e redirects 301 nas rotas antigas. No ar desde 2026-11-03 |
 | 055 | [jogo-cobrinha.md](055-jogo-cobrinha.md) | ✅ | Cobrinha clássica em grade na "lagoa de hexágonos", com desafio diário, visuais desbloqueáveis por pontuação acumulada e canvas 2D sem dependência nova. No ar desde 2026-11-03 |
-| 056 | [jogo-sudoku.md](056-jogo-sudoku.md) | 🚧 | Sudoku em papel de jornal: quatro dificuldades classificadas pela técnica que exigem, tabuleiro do dia que endurece na semana, lápis, dica explicada e visuais por partidas concluídas. Implementado, aguardando validação |
+| 056 | [jogo-sudoku.md](056-jogo-sudoku.md) | ✅ | Sudoku em papel de jornal: quatro dificuldades classificadas pela técnica que exigem, tabuleiro do dia que endurece na semana, lápis, dica explicada e visuais por partidas concluídas. No ar desde 2026-11-04 |
+| 057 | [jogo-comilao.md](057-jogo-comilao.md) | 🚧 | Comilão, o clássico do labirinto em neon synthwave: labirinto próprio 19 × 21 aprovado por teste, quatro fantasmas com personalidades distintas, susto com combo, desafio do dia e visuais por pontuação. Implementado, aguardando validação |
 
 ---
 

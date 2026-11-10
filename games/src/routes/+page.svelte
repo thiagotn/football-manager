@@ -8,6 +8,7 @@
   import PacienciaArt from '$lib/paciencia/CardArt.svelte';
   import CobrinhaArt from '$lib/cobrinha/CardArt.svelte';
   import SudokuArt from '$lib/sudoku/CardArt.svelte';
+  import ComilaoArt from '$lib/comilao/CardArt.svelte';
   import TetrisArt from '$lib/tetris/CardArt.svelte';
   import { GAMES } from '$lib/games';
   import { t } from '$lib/i18n';
@@ -18,6 +19,7 @@
     paciencia: PacienciaArt,
     cobrinha: CobrinhaArt,
     sudoku: SudokuArt,
+    comilao: ComilaoArt,
     tetris: TetrisArt,
   } as const;
   const ACCENT: Record<string, string> = {
@@ -25,6 +27,7 @@
     paciencia: '#1e6b4a',
     cobrinha: '#8ede4f',
     sudoku: '#e8dcc0',
+    comilao: '#ff3df0',
     tetris: '#2e7cf0',
   };
 </script>

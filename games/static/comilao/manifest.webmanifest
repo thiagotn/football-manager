@@ -1,0 +1,19 @@
+{
+  "id": "/comilao/",
+  "name": "Comilão",
+  "short_name": "Comilão",
+  "description": "O clássico do labirinto em neon: coma tudo, fuja dos quatro fantasmas e vire o jogo no pastilhão.",
+  "lang": "pt-BR",
+  "start_url": "/comilao/",
+  "scope": "/comilao/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#140a24",
+  "theme_color": "#140a24",
+  "categories": ["games", "arcade"],
+  "icons": [
+    { "src": "/comilao/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/comilao/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/comilao/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
