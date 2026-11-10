@@ -3,7 +3,9 @@ E2E — Tetris 3D (games.thiagotn.com, app `games/`).
 
 O jogo virou rota Svelte com o three.js importado como módulo (PRD 054). Como
 o canvas WebGL roda em software no CI, nenhuma asserção olha o que foi
-desenhado: tudo se apoia no HUD e no DOM.
+desenhado: tudo se apoia no HUD e no DOM. O modo da arena aparece no DOM em
+`canvas[data-depth]` justamente por isso — a câmera em si não é observável
+daqui, e a trava do arraste é verificada à mão no navegador.
 
     cd games && npm run build && npx vite preview --port 4173
     cd football-e2e && pytest tests/test_tetris.py
@@ -35,13 +37,30 @@ def _hud(page: Page, label: str) -> int:
     return int(page.get_by_text(label, exact=True).locator("xpath=following-sibling::div").inner_text())
 
 
+def _ajustes(page: Page) -> dict:
+    """O que está salvo em `games_tetris`."""
+    return page.evaluate("() => JSON.parse(localStorage.getItem('games_tetris') ?? 'null')")
+
+
 @pytest.fixture
-def tetris(page: Page) -> Page:
+def tetris_novo(page: Page) -> Page:
+    """Aparelho sem nada salvo: a pergunta do 3D ainda vai aparecer."""
     page.goto(f"{GAMES_BASE_URL}/")
     page.evaluate("() => { localStorage.clear(); localStorage.setItem('games_locale', 'pt-BR'); }")
     page.goto(f"{GAMES_BASE_URL}/tetris/")
     expect(page.get_by_role("button", name="Jogar", exact=True)).to_be_visible()
     return page
+
+
+@pytest.fixture
+def tetris(tetris_novo: Page) -> Page:
+    """Pergunta do 3D já respondida (arena plana) — é o estado da maioria dos testes."""
+    tetris_novo.evaluate(
+        "() => localStorage.setItem('games_tetris', JSON.stringify({ settings: { depth: false }, asked: true }))"
+    )
+    tetris_novo.reload()
+    expect(tetris_novo.get_by_role("button", name="Jogar", exact=True)).to_be_visible()
+    return tetris_novo
 
 
 def test_hub_linka_o_tetris(page: Page):
@@ -104,6 +123,80 @@ def test_volta_para_o_hub(tetris: Page):
     # O link do overlay — o do HUD fica atrás dele enquanto o jogo não começou.
     tetris.get_by_role("link", name="Todos os jogos").last.click()
     expect(tetris.get_by_role("heading", name="Jogos")).to_be_visible()
+
+
+def test_3d_desligado_por_padrao(tetris_novo: Page):
+    assert _ajustes(tetris_novo) is None
+    expect(tetris_novo.locator("canvas[data-depth]")).to_have_attribute("data-depth", "false")
+    expect(tetris_novo.get_by_text("Toque na arena para rotacionar a peça")).to_be_visible()
+
+
+def test_pergunta_o_3d_na_primeira_partida(tetris_novo: Page):
+    tetris_novo.get_by_role("button", name="Jogar", exact=True).click()
+    expect(tetris_novo.get_by_role("heading", name="Jogar em 3D?")).to_be_visible()
+    # A pergunta vem antes da partida: o HUD segue zerado.
+    assert _hud(tetris_novo, "Pontos") == 0
+
+
+def test_responder_plano_mantem_a_arena_fixa(tetris_novo: Page):
+    tetris_novo.get_by_role("button", name="Jogar", exact=True).click()
+    tetris_novo.get_by_role("button", name="Jogar plano").click()
+
+    expect(tetris_novo.get_by_role("heading", name="Jogar em 3D?")).to_have_count(0)
+    expect(tetris_novo.get_by_role("button", name="Jogar", exact=True)).to_have_count(0)
+    expect(tetris_novo.locator("canvas[data-depth]")).to_have_attribute("data-depth", "false")
+    assert _ajustes(tetris_novo) == {"settings": {"depth": False}, "asked": True}
+
+
+def test_responder_3d_liga_o_ajuste(tetris_novo: Page):
+    tetris_novo.get_by_role("button", name="Jogar", exact=True).click()
+    tetris_novo.get_by_role("button", name="Jogar em 3D").click()
+
+    expect(tetris_novo.locator("canvas[data-depth]")).to_have_attribute("data-depth", "true")
+    expect(tetris_novo.get_by_text("Arraste para girar a câmera · toque para rotacionar a peça")).to_be_visible()
+    assert _ajustes(tetris_novo) == {"settings": {"depth": True}, "asked": True}
+
+
+def test_pergunta_nao_volta_na_proxima_partida(tetris_novo: Page):
+    tetris_novo.get_by_role("button", name="Jogar", exact=True).click()
+    tetris_novo.get_by_role("button", name="Jogar plano").click()
+    tetris_novo.reload()
+
+    tetris_novo.get_by_role("button", name="Jogar", exact=True).click()
+    expect(tetris_novo.get_by_role("heading", name="Jogar em 3D?")).to_have_count(0)
+    expect(tetris_novo.get_by_role("button", name="Jogar", exact=True)).to_have_count(0)
+
+
+def test_chave_do_3d_no_inicio_liga_e_desliga(tetris: Page):
+    chave = tetris.get_by_label("Arena em 3D")
+    expect(chave).not_to_be_checked()
+
+    chave.check()
+    expect(tetris.locator("canvas[data-depth]")).to_have_attribute("data-depth", "true")
+    assert _ajustes(tetris)["settings"]["depth"] is True
+
+    chave.uncheck()
+    expect(tetris.locator("canvas[data-depth]")).to_have_attribute("data-depth", "false")
+    assert _ajustes(tetris)["settings"]["depth"] is False
+
+
+def test_chave_do_3d_na_pausa_vale_no_meio_da_partida(tetris: Page):
+    tetris.get_by_role("button", name="Jogar", exact=True).click()
+    tetris.get_by_role("button", name="Pausar").click()
+
+    tetris.get_by_label("Arena em 3D").check()
+    expect(tetris.locator("canvas[data-depth]")).to_have_attribute("data-depth", "true")
+
+    tetris.get_by_role("button", name="Continuar").click()
+    expect(tetris.get_by_text("Pausado")).to_have_count(0)
+    assert _ajustes(tetris)["settings"]["depth"] is True
+
+
+def test_3d_salvo_volta_ligado_no_reload(tetris: Page):
+    tetris.get_by_label("Arena em 3D").check()
+    tetris.reload()
+    expect(tetris.locator("canvas[data-depth]")).to_have_attribute("data-depth", "true")
+    expect(tetris.get_by_label("Arena em 3D")).to_be_checked()
 
 
 def test_sem_erro_de_console(tetris: Page):

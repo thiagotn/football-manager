@@ -1,6 +1,6 @@
 # PRD 057 — Comilão
 
-- **Status:** 🚧 Implementado, aguardando validação (2026-11-10)
+- **Status:** ✅ No ar desde 2026-11-10
 - **Código:** [`games/src/lib/comilao/`](../../games/src/lib/comilao/) e [`games/src/routes/comilao/`](../../games/src/routes/comilao/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Antecessores:** [PRD 053](053-jogo-enche-ai.md) criou o app `games/`; [PRD 054](054-migracao-paciencia-tetris-games.md) generalizou a infra; [PRD 056](056-jogo-sudoku.md) foi o último jogo novo
 

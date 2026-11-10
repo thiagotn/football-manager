@@ -4,7 +4,11 @@
    *
    * Rota em tela cheia: o canvas é a cena three (`$lib/tetris/scene`), o HUD e
    * os controles são Svelte, e as regras ficam em `$lib/tetris/engine`.
-   * Arrastar no canvas gira a câmera; tocar sem arrastar rotaciona a peça.
+   *
+   * O 3D é opcional e **vem desligado**: na primeira partida o jogo pergunta,
+   * e depois a chave fica no overlay de início e no de pausa. Com 3D, arrastar
+   * no canvas gira a câmera e tocar sem arrastar rotaciona a peça; sem 3D a
+   * arena fica fixa de frente e o toque só rotaciona.
    */
   import { onMount } from 'svelte';
   import { ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronsDown, Pause, Play, RotateCw } from 'lucide-svelte';
@@ -30,6 +34,7 @@
     type PieceType,
   } from '$lib/tetris/engine';
   import { createScene, type TetrisScene } from '$lib/tetris/scene';
+  import { emptyState, loadState, saveState, type SavedState } from '$lib/tetris/storage';
 
   /** Passo do arraste a partir do qual o gesto vira câmera, não rotação. */
   const DRAG_PX = 7;
@@ -49,6 +54,10 @@
   let paused = $state(false);
   let started = $state(false);
   let webgl = $state(true);
+  let saved = $state<SavedState>(emptyState());
+  /** Pergunta do 3D, mostrada uma vez só antes da primeira partida. */
+  let asking = $state(false);
+  let settings = $derived(saved.settings);
 
   let scene: TetrisScene | null = null;
   let frame = 0;
@@ -57,6 +66,35 @@
   let fastFall: ReturnType<typeof setInterval> | null = null;
 
   const playable = () => running && !paused && piece;
+
+  // Carga dos ajustes: `$effect`, não `onMount` — a build de produção já
+  // engoliu callback de `onMount` neste projeto.
+  $effect(() => {
+    const state = loadState();
+    saved = state;
+    scene?.setDepth(state.settings.depth);
+  });
+
+  function setDepth(on: boolean) {
+    saved = { settings: { ...saved.settings, depth: on }, asked: true };
+    saveState(saved);
+    scene?.setDepth(on);
+  }
+
+  /** Jogar: na primeira vez, a pergunta do 3D vem antes da partida. */
+  function play() {
+    if (!saved.asked) {
+      asking = true;
+      return;
+    }
+    startGame();
+  }
+
+  function answer(on: boolean) {
+    asking = false;
+    setDepth(on);
+    startGame();
+  }
 
   function redraw() {
     scene?.draw(board, piece, piece ? ghostRow(board, piece) : null);
@@ -249,6 +287,7 @@
       webgl = false;
       return;
     }
+    scene.setDepth(saved.settings.depth);
     resize();
     redraw();
 
@@ -288,6 +327,7 @@
   <canvas
     bind:this={canvas}
     class="absolute inset-0 h-full w-full touch-none"
+    data-depth={settings.depth}
     onpointerdown={onCanvasPointerDown}
     onpointermove={onCanvasPointerMove}
     onpointerup={onCanvasPointerUp}
@@ -361,11 +401,11 @@
     class="pointer-events-none absolute inset-x-0 mx-auto max-w-[300px] px-4 text-center text-[10px] leading-snug text-white/35"
     style="bottom:calc(88px + env(safe-area-inset-bottom))"
   >
-    {$t('tetris.hint_camera')}
+    {settings.depth ? $t('tetris.hint_camera') : $t('tetris.hint_flat')}
   </p>
 
   <!-- ── Overlay de início / fim ──────────────────────────────────────── -->
-  {#if !running && webgl}
+  {#if !running && webgl && !asking}
     <div class="overlay">
       <div class="card flex flex-col items-center gap-3 text-center">
         <h1 class="font-display text-[34px] leading-none">
@@ -377,7 +417,9 @@
         {:else}
           <p class="text-sm font-semibold text-paper-muted">{$t('tetris.desc')}</p>
         {/if}
-        <button type="button" class="btn btn-primary mt-1" onclick={startGame}>
+        <!-- Antes da pergunta a chave não aparece: ela é a própria pergunta. -->
+        {#if saved.asked}{@render depthSwitch()}{/if}
+        <button type="button" class="btn btn-primary {saved.asked ? '' : 'mt-1'}" onclick={play}>
           {gameOver ? $t('tetris.play_again') : $t('tetris.play')}
         </button>
         <a href="/" class="text-xs font-bold uppercase tracking-[.14em] text-paper-muted">
@@ -391,11 +433,46 @@
     <div class="overlay">
       <div class="card flex flex-col items-center gap-3 text-center">
         <h2 class="font-display text-[28px]">{$t('tetris.paused')}</h2>
+        {@render depthSwitch()}
         <button type="button" class="btn btn-primary" onclick={togglePause}>{$t('tetris.resume')}</button>
       </div>
     </div>
   {/if}
+
+  <!-- ── Pergunta do 3D (primeira partida) ────────────────────────────── -->
+  {#if asking && webgl}
+    <div class="overlay">
+      <div class="card flex flex-col items-center gap-3 text-center">
+        <h2 class="font-display text-[28px] leading-none">{$t('tetris.ask_title')}</h2>
+        <p class="text-sm font-semibold text-paper-muted">{$t('tetris.ask_body')}</p>
+        <button type="button" class="btn btn-primary mt-1" onclick={() => answer(true)}>
+          {$t('tetris.ask_3d')}
+        </button>
+        <button type="button" class="btn btn-ghost" onclick={() => answer(false)}>
+          {$t('tetris.ask_flat')}
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
+
+<!-- A chave do 3D, igual no overlay de início e no de pausa. -->
+{#snippet depthSwitch()}
+  <label class="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-black/[.06] px-3 py-2.5 text-left">
+    <input
+      type="checkbox"
+      class="h-5 w-5 flex-none accent-mustard"
+      checked={settings.depth}
+      onchange={(event) => setDepth(event.currentTarget.checked)}
+    />
+    <span class="min-w-0">
+      <span class="block text-[14px] font-bold">{$t('tetris.setting_depth')}</span>
+      <span class="block text-[11.5px] font-semibold leading-snug text-paper-muted">
+        {$t('tetris.setting_depth_hint')}
+      </span>
+    </span>
+  </label>
+{/snippet}
 
 <style>
   .stage {

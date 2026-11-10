@@ -6,6 +6,10 @@
  * vez de um material novo por bloco a cada quadro como no jogo original. Tudo
  * o que é alocado aqui é liberado em `dispose()`, porque numa rota SPA a cena
  * monta e desmonta várias vezes na mesma aba.
+ *
+ * A mesma cena serve aos dois modos: com 3D é uma câmera em perspectiva que
+ * orbita o poço; sem 3D é uma câmera ortográfica fixa de frente, em que o cubo
+ * não mostra lado nenhum — é o Tetris plano, sem como girar a arena.
  */
 import {
   AmbientLight,
@@ -21,6 +25,7 @@ import {
   LineSegments,
   Mesh,
   MeshStandardMaterial,
+  OrthographicCamera,
   PerspectiveCamera,
   Points,
   PointsMaterial,
@@ -42,7 +47,9 @@ const KIND_STYLE: Record<CellKind, { emissive: number; opacity: number; z: numbe
 export type TetrisScene = {
   render: () => void;
   resize: (width: number, height: number) => void;
-  /** Gira a câmera em torno do poço (radianos acumulados). */
+  /** Liga o 3D (câmera orbital) ou volta à arena plana e fixa. */
+  setDepth: (on: boolean) => void;
+  /** Gira a câmera em torno do poço (radianos acumulados). Sem 3D, não faz nada. */
   orbit: (dTheta: number, dPhi: number) => void;
   draw: (board: Board, piece: Piece | null, ghost: number | null) => void;
   dispose: () => void;
@@ -57,6 +64,10 @@ export function createScene(canvas: HTMLCanvasElement): TetrisScene {
   scene.fog = new Fog(0x010112, 38, 75);
 
   const camera = new PerspectiveCamera(62, 1, 0.1, 200);
+  /** Câmera do modo plano: de frente, sem perspectiva e sem para onde girar. */
+  const flatCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+  flatCamera.position.set(0, 0, 30);
+  flatCamera.lookAt(0, 0, 0);
 
   scene.add(new AmbientLight(0x6682bb, 2.4));
   const sun = new DirectionalLight(0xffffff, 2.6);
@@ -147,8 +158,15 @@ export function createScene(canvas: HTMLCanvasElement): TetrisScene {
     used++;
   }
 
-  // ── Câmera orbital ────────────────────────────────────────────────────
+  // ── Câmeras: orbital no 3D, de frente no plano ────────────────────────
   const orb = { theta: 0.28, phi: 1.08, radius: 26 };
+  /** Folga em volta do poço no modo plano, em tiles — o HUD e os botões moram nela. */
+  const FLAT_MARGIN = 3;
+
+  /** Começa plano: o 3D é opcional e a rota liga depois do ajuste salvo. */
+  let depth = false;
+  let view = { width: 1, height: 1 };
+
   function applyCamera() {
     camera.position.set(
       orb.radius * Math.sin(orb.phi) * Math.sin(orb.theta),
@@ -159,16 +177,41 @@ export function createScene(canvas: HTMLCanvasElement): TetrisScene {
   }
   applyCamera();
 
+  /** Enquadra o poço inteiro, com folga, em qualquer proporção de tela. */
+  function applyFlatCamera() {
+    const aspect = view.width / Math.max(1, view.height);
+    let halfH = (BOARD_H + FLAT_MARGIN) / 2;
+    let halfW = halfH * aspect;
+    const minHalfW = (BOARD_W + FLAT_MARGIN) / 2;
+    if (halfW < minHalfW) {
+      halfW = minHalfW;
+      halfH = halfW / aspect;
+    }
+    flatCamera.left = -halfW;
+    flatCamera.right = halfW;
+    flatCamera.top = halfH;
+    flatCamera.bottom = -halfH;
+    flatCamera.updateProjectionMatrix();
+  }
+  applyFlatCamera();
+
   return {
-    render: () => renderer.render(scene, camera),
+    render: () => renderer.render(scene, depth ? camera : flatCamera),
 
     resize(width, height) {
+      view = { width, height };
       renderer.setSize(width, height);
       camera.aspect = width / Math.max(1, height);
       camera.updateProjectionMatrix();
+      applyFlatCamera();
+    },
+
+    setDepth(on) {
+      depth = on;
     },
 
     orbit(dTheta, dPhi) {
+      if (!depth) return;
       orb.theta -= dTheta;
       orb.phi = Math.max(0.15, Math.min(Math.PI - 0.1, orb.phi + dPhi));
       applyCamera();

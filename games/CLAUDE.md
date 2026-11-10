@@ -28,7 +28,7 @@
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
-| `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e arraste para girar a câmera |
+| `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e, com o 3D ligado, arraste para girar a câmera |
 
 ## Compartilhado
 
@@ -105,8 +105,14 @@
 |---------|----------|
 | `engine.ts` | Regras puras: `shapeOf`, `isValid`, `ghostRow`, `lock` (imutável), `clearLines`, `rotate` (com kicks), `scoreForLines`, `levelFor`, `dropIntervalMs` |
 | `engine.test.ts` | Vitest: rotação, colisão, limpeza de linhas, pontuação, fim de jogo |
-| `scene.ts` | three.js isolado: poço, luzes, estrelas, 21 materiais criados uma vez e pool de cubos; `dispose()` libera tudo ao sair da rota |
+| `scene.ts` | three.js isolado: poço, luzes, estrelas, 21 materiais criados uma vez e pool de cubos; as duas câmeras (orbital e plana) e `setDepth`; `dispose()` libera tudo ao sair da rota |
+| `storage.ts` | localStorage `games_tetris`: só `{ settings: { depth }, asked }` — o jogo não guarda partida nem recorde |
+| `storage.test.ts` | Vitest: padrão desligado, ida e volta, json quebrado e valor estranho caindo no padrão |
 | `CardArt.svelte` | Arte do card no hub — **não importa three** (senão o chunk vai para o bundle do hub) |
+
+- **O 3D é opcional e vem desligado.** Ligado: câmera em perspectiva orbitando o poço, arraste gira a arena. Desligado: câmera **ortográfica** de frente (`FLAT_MARGIN` enquadra o poço em qualquer tela), `orbit()` não faz nada e a arena não tem como ser movida — o toque só rotaciona a peça
+- A pergunta "Jogar em 3D?" aparece **uma vez**, ao tocar Jogar sem `asked` salvo; depois a chave fica no overlay de início e no de pausa
+- `canvas[data-depth]` existe para o E2E: o modo é observável no DOM, a câmera não (a trava do arraste foi medida à mão no navegador — arrastar no plano muda 0% dos pixels)
 
 ## Enche Aí! (`src/lib/enche-ai/`)
 
