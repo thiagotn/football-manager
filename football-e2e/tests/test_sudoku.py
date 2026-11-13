@@ -144,6 +144,19 @@ def test_comecar_um_facil_monta_o_tabuleiro(sudoku: Page) -> None:
     expect(sudoku.get_by_text("0:00")).to_be_visible()
 
 
+def test_linha_sem_numeros_tem_a_mesma_altura(sudoku: Page) -> None:
+    """Regressão: a altura da linha seguia o conteúdo e uma linha vazia encolhia."""
+    _start(sudoku)
+    heights = sudoku.evaluate(
+        """() => {
+          const cells = [...document.querySelectorAll('.board .cell')];
+          for (let i = 9; i < 18; i++) cells[i].replaceChildren();  // linha 2 sem nada
+          return [...Array(9)].map((_, r) => cells[r * 9].getBoundingClientRect().height);
+        }"""
+    )
+    assert max(heights) - min(heights) < 1, heights
+
+
 def test_escrever_um_numero_na_casa_escolhida(sudoku: Page) -> None:
     _start(sudoku)
     cell = _first_empty(sudoku)
