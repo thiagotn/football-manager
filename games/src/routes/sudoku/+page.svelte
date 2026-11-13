@@ -1103,7 +1103,11 @@
 
   .board {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
+    /* Linhas fixas também: sem isso a altura de cada linha segue o conteúdo e
+       uma linha só com casas vazias encolhe. `minmax(0, …)` impede que um
+       dígito ou as anotações empurrem a trilha. */
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
     border: 3px solid var(--edge);
     border-radius: 8px;
     overflow: hidden;
