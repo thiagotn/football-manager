@@ -16,7 +16,7 @@
 - Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
   A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
-- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão)
+- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão), `crayon` (Bê-á-Bá — o único jogo de casca clara)
 
 ## Rotas
 
@@ -28,6 +28,7 @@
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
+| `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças em alfabetização (PRD 058). Abas: Início (trilhas Letras e Números) · Álbum · Pais (protegida por pergunta). A rodada de 5 desafios entra por cima das abas |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e, com o 3D ligado, arraste para girar a câmera |
 
 ## Compartilhado
@@ -99,6 +100,28 @@
 - Gradiente em SVG de card/ícone precisa de `gradientUnits="userSpaceOnUse"`: em `objectBoundingBox` uma linha horizontal tem caixa de altura zero e **não pinta nada**
 - Medido: `tick` custa 0,4 µs; parado no berço o jogador é pego em 12,9 s; um bot de um passo de visão sobrevive 3 min
 
+## Bê-á-Bá (`src/lib/be-a-ba/`)
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `words.ts` | Banco de 74 palavras em 4 níveis por **estrutura silábica** (UVA → BOLA → BONECA → CARRO/ELEFANTE), cada uma com o código do desenho; `plain()` tira acento |
+| `letters.ts` | Regras puras das Letras: modos `first`/`build`/`type`, `sameLetter` (acento e cedilha nunca são erro), bandeja embaralhada, teclado ABC + Ç, `cleanFamilyWord` |
+| `numbers.ts` | Gerador puro dos Números: `count`, `compare`, `add`, `sub`, sempre com 3 opções vizinhas da resposta |
+| `progress.ts` | Estágios das trilhas (`LETTER_STAGES`, `NUMBER_STAGES`), caixas de Leitner, sorteio ponderado, `letterRound`/`numberRound` (5 desafios; 1 palavra da família por rodada) e `afterRound` (sobe depois de 2 rodadas boas seguidas, nunca desce) |
+| `be-a-ba.test.ts` | Vitest: todo desenho usado existe em `static/`, banco de palavras, acentos, bandeja, faixa de toda conta gerada, Leitner, estágios e rodadas |
+| `stickers.ts` | Álbum de 24 figurinhas (4 páginas de 6) + a especial "Meu nome" |
+| `storage.ts` | localStorage `games_be_a_ba`: criança, palavras da família, progresso das trilhas, figurinhas, estrelas, tempo por dia e ajustes. A rodada **não** é salva |
+| `photos.ts` | Fotos das palavras da família no **IndexedDB** (reduzidas a 512 px no aparelho; nunca enviadas) |
+| `speech.ts` | Voz com `speechSynthesis` (voz do aparelho). O último texto falado fica em `<html data-spoken>` para o E2E |
+| `art.ts` | Mascote (corujinha Lili), estrela, medalha e `imgUrl()` |
+| `LetterChallenge.svelte` · `NumberChallenge.svelte` | Um desafio cada; expõem `data-mode`/`data-kind` e `data-answer` (o E2E joga rodadas inteiras com eles) |
+| `Picture.svelte` · `Objects.svelte` · `CardArt.svelte` | Imagem da palavra (desenho, foto ou inicial), objetos de contagem em fileiras de 5, arte do card no hub |
+
+- **Desenhos: Twemoji** (CC-BY 4.0, créditos na área dos pais). Só os usados ficam em `static/be-a-ba/img/` (~180 KB), copiados por `npm run twemoji` (lê os códigos de `words.ts`, `stickers.ts`, `numbers.ts`, `art.ts`; devDependency `twemoji-svg`). `mesa.svg` é desenho próprio — não há mesa na Twemoji
+- Erro não pune: a resposta errada balança e fica marcada; depois de 2 erros a certa **pulsa a luz** (não o tamanho — o alvo não pode fugir do dedo, e animação de escala deixa o Playwright sem conseguir clicar)
+- Letras só em pt-BR na fase 1: em en/es o card de Letras fica desligado ("em breve") e os Números funcionam no idioma da interface
+- Portão dos pais: tocar no número escrito por extenso. Sair da aba Pais tranca de novo
+
 ## Tetris 3D (`src/lib/tetris/`)
 
 | Arquivo | Conteúdo |
@@ -138,9 +161,10 @@ npm run check     # svelte-check
 npm test          # vitest (engine)
 npm run build     # build/ estático
 npm run icons     # regera PNGs de scripts/icons/*.svg (precisa de Playwright)
+npm run twemoji   # copia os desenhos Twemoji usados pelo Bê-á-Bá para static/be-a-ba/img/
 ```
 
-E2E: `football-e2e/tests/test_{cobrinha,comilao,enche_ai,paciencia,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
+E2E: `football-e2e/tests/test_{be_a_ba,cobrinha,comilao,enche_ai,paciencia,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
 
 ## Novo jogo — checklist
 

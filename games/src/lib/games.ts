@@ -78,6 +78,16 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#140a24',
+  },
+  {
+    slug: 'be-a-ba',
+    nameKey: 'be_a_ba.title',
+    descKey: 'be_a_ba.desc',
+    tags: [
+      { key: 'hub.tag_kids', tone: 'hot' },
+      { key: 'hub.tag_offline', tone: 'neutral' },
+    ],
+    themeColor: '#8fd3ff',
     isNew: true,
   },
   {

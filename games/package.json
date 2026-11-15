@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
-    "icons": "node scripts/render-icons.mjs"
+    "icons": "node scripts/render-icons.mjs",
+    "twemoji": "node scripts/copy-twemoji.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.8",
@@ -22,6 +23,7 @@
     "svelte": "^5.53.5",
     "svelte-check": "^4.0.0",
     "tailwindcss": "^3.4.14",
+    "twemoji-svg": "^17.0.2",
     "typescript": "^5.6.2",
     "vite": "^6.4.1",
     "vitest": "^3.2.4"
