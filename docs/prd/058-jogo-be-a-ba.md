@@ -1,6 +1,7 @@
 # PRD 058 — Bê-á-Bá (letras e números para crianças)
 
-- **Status:** 📋 Proposto, aguardando revisão (2026-11-15)
+- **Status:** 🚧 Fase 1 implementada (2026-11-15) · fases 2 e 3 propostas
+- **Código:** [`games/src/lib/be-a-ba/`](../../games/src/lib/be-a-ba/) e [`games/src/routes/be-a-ba/`](../../games/src/routes/be-a-ba/) — estado corrente em [`games/CLAUDE.md`](../../games/CLAUDE.md)
 - **Onde:** novo jogo no app `games/` → `games.thiagotn.com/be-a-ba/`, mesma stack dos outros (ver [`games/CLAUDE.md`](../../games/CLAUDE.md))
 - **Nome provisório:** **Bê-á-Bá** (en *ABC 123*, es *Abecé*). Alternativas: "Letrinhas", "ABC da Turma"
 
@@ -168,7 +169,33 @@ de Letras aparece como "em breve" e a de Números funciona normalmente.
 - Reconhecimento de fala (a criança falar a palavra)
 - Banco de palavras em inglês e espanhol
 
-## Perguntas para revisão
+## Decisões da fase 1 (2026-11-15)
+
+O plano foi aprovado sem respostas às perguntas abaixo; a fase 1 seguiu as recomendações:
+
+| Pergunta | Decisão |
+|---|---|
+| Nome | **Bê-á-Bá** (en *ABC 123*, es *Abecé*) |
+| Idade | 4 a 7 anos — começa por "Primeira letra" |
+| Digitar desde o início? | Não: estágios 1–2 só montam com letras; o teclado (L4) entra no estágio 3 |
+| Maiúsculas | Só CAIXA ALTA na fase 1 (minúsculas ficam para a fase 3) |
+| Imagens | Twemoji |
+| Prêmios | Estrela por acerto, figurinha por rodada, álbum de 24 + figurinha especial do próprio nome, mascote corujinha "Lili" |
+
+### O que a fase 1 entregou
+
+- Letras L1 (primeira letra), L3 (montar) e L4 (escrever), com **74 palavras em 4 níveis** — o nível 4 (CARRO, ELEFANTE…) entrou já na fase 1 porque estava nos exemplos do pedido
+- Números N1 (quantos tem), N3 (quem tem mais), N5 (somar) e N6 (tirar), até 10
+- 5 estágios nas Letras e 4 nos Números; sobe sozinho depois de 2 rodadas boas seguidas (≥ 4 de 5 sem erro nem dica), nunca desce. Leitner por palavra/tipo de conta já ativo (estava na fase 2)
+- Álbum com 24 figurinhas + "Meu nome"; estrelas; subida de fase anunciada no prêmio
+- Área dos pais: nome da criança (vira palavra da família automaticamente), palavras da família com foto (IndexedDB), fixar fase, voz e velocidade, relatório (rodadas, estrelas, figurinhas, minutos hoje, palavras que já sabe / para treinar, nível de cada conta), idioma, zerar progresso
+- Testes: 19 Vitest (`be-a-ba.test.ts`) e 19 E2E (`football-e2e/tests/test_be_a_ba.py`)
+
+### Ficou para as próximas fases
+
+L2 (sílabas) e L5 (letra que falta) · N2, N4, N7–N10 · mundos · perfis múltiplos · limite de tempo · minúsculas · áudio gravado
+
+## Perguntas da revisão (respondidas acima)
 
 1. **Nome:** "Bê-á-Bá" está bom, ou prefere outro?
 2. **Idade-alvo:** 4 a 7 anos? Muda o ponto de partida (com ou sem o modo "Primeira letra").

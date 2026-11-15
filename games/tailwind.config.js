@@ -27,6 +27,18 @@ export default {
         news: { DEFAULT: '#171310', 2: '#241c16', light: '#3a2d23' },
         // Comilão — o fliperama synthwave (roxo profundo, parede de neon)
         synth: { DEFAULT: '#140a24', 2: '#1f1038', light: '#2e1a52' },
+        // Bê-á-Bá — caderno de desenho num dia de sol (o único jogo claro do hub)
+        crayon: {
+          sky: '#8fd3ff',
+          cloud: '#e6f6ff',
+          ink: '#24345a',
+          muted: '#5d6e94',
+          sun: '#ffcf3f',
+          berry: '#ff5d8f',
+          grape: '#7b5cff',
+          leaf: '#43b85c',
+          orange: '#ff9b3d',
+        },
       },
     },
   },

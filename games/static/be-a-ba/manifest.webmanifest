@@ -1,0 +1,19 @@
+{
+  "id": "/be-a-ba/",
+  "name": "Bê-á-Bá",
+  "short_name": "Bê-á-Bá",
+  "description": "Letras e números para quem está aprendendo a ler: monte palavras, conte, some e ganhe figurinhas.",
+  "lang": "pt-BR",
+  "start_url": "/be-a-ba/",
+  "scope": "/be-a-ba/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#8fd3ff",
+  "theme_color": "#8fd3ff",
+  "categories": ["games", "education", "kids"],
+  "icons": [
+    { "src": "/be-a-ba/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/be-a-ba/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/be-a-ba/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

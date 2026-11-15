@@ -10,6 +10,7 @@
   import SudokuArt from '$lib/sudoku/CardArt.svelte';
   import ComilaoArt from '$lib/comilao/CardArt.svelte';
   import TetrisArt from '$lib/tetris/CardArt.svelte';
+  import BeABaArt from '$lib/be-a-ba/CardArt.svelte';
   import { GAMES } from '$lib/games';
   import { t } from '$lib/i18n';
 
@@ -21,6 +22,7 @@
     sudoku: SudokuArt,
     comilao: ComilaoArt,
     tetris: TetrisArt,
+    'be-a-ba': BeABaArt,
   } as const;
   const ACCENT: Record<string, string> = {
     'enche-ai': '#ffc93c',
@@ -29,6 +31,7 @@
     sudoku: '#e8dcc0',
     comilao: '#ff3df0',
     tetris: '#2e7cf0',
+    'be-a-ba': '#ff5d8f',
   };
 </script>
 
