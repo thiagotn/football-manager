@@ -361,13 +361,15 @@
       URL.revokeObjectURL(photoUrls[f.id]);
       delete photoUrls[f.id];
     }
+    removing = null;
+    // Grava antes de apagar a foto: a remoção não pode depender do IndexedDB
+    // (assíncrono) — fechar o app no meio não pode trazer a palavra de volta.
+    persist();
     try {
       await deletePhoto(f.id);
     } catch {
       // sem IndexedDB: nada a apagar
     }
-    removing = null;
-    persist();
   }
 
   function setStage(trail: Trail, value: string) {
