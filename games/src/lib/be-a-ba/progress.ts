@@ -36,8 +36,6 @@ export const NUMBER_STAGES: NumberStage[] = [
   { kinds: ['add', 'sub'], max: 10 },
 ];
 
-export const stagesOf = (trail: Trail) => (trail === 'letters' ? LETTER_STAGES : NUMBER_STAGES);
-
 /** Caixa de domínio de um item (palavra ou tipo de conta). */
 export type BoxEntry = { box: number; seen: number; misses: number };
 export type Boxes = Record<string, BoxEntry>;
@@ -66,14 +64,20 @@ export function recordOutcome(boxes: Boxes, id: string, outcome: Outcome): Boxes
 
 /**
  * Fim de rodada: conta as rodadas boas seguidas e sobe de estágio depois de
- * `GOOD_ROUNDS_TO_ADVANCE`. Nunca desce sozinho; estágio fixado não muda.
+ * `GOOD_ROUNDS_TO_ADVANCE`. Rodada boa = ≥ 80% dos desafios sem erro nem dica
+ * (4 de 5; no modo Pequenos, 3 de 3). Nunca desce sozinho; estágio fixado
+ * pelo adulto não muda.
  */
-export function afterRound(p: TrailProgress, trail: Trail, cleanCount: number): { progress: TrailProgress; leveledUp: boolean } {
+export function afterRound(
+  p: TrailProgress,
+  stageCount: number,
+  cleanCount: number,
+  roundSize = ROUND_SIZE
+): { progress: TrailProgress; leveledUp: boolean } {
   if (p.locked) return { progress: p, leveledUp: false };
-  const good = cleanCount >= GOOD_ROUND_CLEAN;
-  const goodRounds = good ? p.goodRounds + 1 : cleanCount <= 2 ? 0 : p.goodRounds;
-  const last = stagesOf(trail).length - 1;
-  if (goodRounds >= GOOD_ROUNDS_TO_ADVANCE && p.stage < last) {
+  const good = cleanCount >= Math.ceil(roundSize * (GOOD_ROUND_CLEAN / ROUND_SIZE));
+  const goodRounds = good ? p.goodRounds + 1 : cleanCount <= Math.floor(roundSize / 2) ? 0 : p.goodRounds;
+  if (goodRounds >= GOOD_ROUNDS_TO_ADVANCE && p.stage < stageCount - 1) {
     return { progress: { ...p, stage: p.stage + 1, goodRounds: 0 }, leveledUp: true };
   }
   return { progress: { ...p, goodRounds }, leveledUp: false };

@@ -10,6 +10,10 @@ import {
   GOOD_ROUNDS_TO_ADVANCE, LETTER_STAGES, NUMBER_STAGES, ROUND_SIZE, afterRound, emptyTrail, letterRound,
   numberRound, outcomeOf, pickWeighted, recordOutcome,
 } from './progress';
+import {
+  HEAR_ARTICLES, HEAR_WORDS, LITTLE_LETTER_STAGES, LITTLE_NUMBER_STAGES, LITTLE_ROUND_SIZE, VOWELS, letterPool,
+  littleAnswer, littleItemId, littleLetterRound, littleNumberRound,
+} from './little';
 import { mulberry32 } from '../enche-ai/engine';
 
 // Arquivos de desenho que existem de fato em static/ (só os nomes; nada é carregado).
@@ -161,22 +165,27 @@ describe('progresso', () => {
   });
 
   it('sobe de estágio após rodadas boas seguidas; nunca desce; estágio fixo não muda', () => {
+    const L = LETTER_STAGES.length;
     let p = emptyTrail();
-    for (let i = 0; i < GOOD_ROUNDS_TO_ADVANCE - 1; i++) p = afterRound(p, 'letters', 5).progress;
+    for (let i = 0; i < GOOD_ROUNDS_TO_ADVANCE - 1; i++) p = afterRound(p, L, 5).progress;
     expect(p.stage).toBe(0);
-    const up = afterRound(p, 'letters', 4);
+    const up = afterRound(p, L, 4);
     expect(up.leveledUp).toBe(true);
     expect(up.progress.stage).toBe(1);
-    expect(afterRound(up.progress, 'letters', 0).progress.stage).toBe(1);
+    expect(afterRound(up.progress, L, 0).progress.stage).toBe(1);
     // Rodada ruim zera a sequência
-    p = afterRound(emptyTrail(), 'numbers', 5).progress;
-    expect(afterRound(p, 'numbers', 1).progress.goodRounds).toBe(0);
+    p = afterRound(emptyTrail(), NUMBER_STAGES.length, 5).progress;
+    expect(afterRound(p, NUMBER_STAGES.length, 1).progress.goodRounds).toBe(0);
     // Teto
     p = { ...emptyTrail(), stage: NUMBER_STAGES.length - 1, goodRounds: 5 };
-    expect(afterRound(p, 'numbers', 5).leveledUp).toBe(false);
+    expect(afterRound(p, NUMBER_STAGES.length, 5).leveledUp).toBe(false);
     // Fixado pelo adulto
     p = { ...emptyTrail(), locked: true };
-    expect(afterRound(afterRound(p, 'letters', 5).progress, 'letters', 5).progress.stage).toBe(0);
+    expect(afterRound(afterRound(p, L, 5).progress, L, 5).progress.stage).toBe(0);
+    // Rodada de 3 (modo Pequenos): boa só com as 3 limpas
+    expect(afterRound(emptyTrail(), 3, 3, 3).progress.goodRounds).toBe(1);
+    expect(afterRound({ ...emptyTrail(), goodRounds: 1 }, 3, 2, 3).progress.goodRounds).toBe(1);
+    expect(afterRound({ ...emptyTrail(), goodRounds: 1 }, 3, 1, 3).progress.goodRounds).toBe(0);
   });
 
   it('sorteio ponderado não repete e respeita n', () => {
@@ -226,5 +235,74 @@ describe('progresso', () => {
     }
     // Só a UVA não está dominada: aparece em mais que o dobro das rodadas do acaso (5/36 ≈ 14%).
     expect(uva / 200).toBeGreaterThan(0.3);
+  });
+});
+
+describe('modo Pequenos (3–4 anos)', () => {
+  it('toda palavra do "Cadê?" existe no banco e tem artigo', () => {
+    expect(HEAR_WORDS.length).toBe(Object.keys(HEAR_ARTICLES).length);
+    expect(HEAR_WORDS.length).toBeGreaterThanOrEqual(30);
+  });
+
+  it('letras: vogais primeiro; depois consoantes e a inicial do nome', () => {
+    expect(letterPool(LITTLE_LETTER_STAGES[0], 'Arthur')).toEqual(VOWELS);
+    const later = letterPool(LITTLE_LETTER_STAGES[2], 'Rafael');
+    expect(later).toEqual(expect.arrayContaining([...VOWELS, 'B', 'M', 'R']));
+    expect(letterPool(LITTLE_LETTER_STAGES[2], 'Ícaro').filter((l) => l === 'I')).toHaveLength(1);
+    expect(letterPool(LITTLE_LETTER_STAGES[2], '')).not.toContain('');
+  });
+
+  it('rodada de letras: 3 desafios, opções do estágio, resposta entre elas', () => {
+    LITTLE_LETTER_STAGES.forEach((stage, i) => {
+      for (let s = 1; s < 40; s++) {
+        const round = littleLetterRound({ ...emptyTrail(), stage: i }, 'Bia', rng(s));
+        expect(round).toHaveLength(LITTLE_ROUND_SIZE);
+        for (const c of round) {
+          expect(stage.kinds).toContain(c.kind);
+          if (c.kind === 'hear') {
+            expect(c.options).toHaveLength(stage.options);
+            expect(c.options.map((o) => o.id)).toContain(c.word.id);
+            expect(new Set(c.options.map((o) => o.id)).size).toBe(stage.options);
+            expect(c.article).toBe(HEAR_ARTICLES[c.word.id]);
+          } else if (c.kind === 'pick_letter') {
+            expect(c.options).toHaveLength(stage.options);
+            expect(c.options).toContain(c.letter);
+            expect(new Set(c.options).size).toBe(stage.options);
+          }
+        }
+      }
+    });
+  });
+
+  it('rodada de números: 3 desafios na faixa, sem repetir, resposta certa', () => {
+    LITTLE_NUMBER_STAGES.forEach((stage, i) => {
+      for (let s = 1; s < 60; s++) {
+        const round = littleNumberRound({ ...emptyTrail(), stage: i }, rng(s));
+        expect(round).toHaveLength(LITTLE_ROUND_SIZE);
+        for (const c of round) {
+          expect(stage.kinds).toContain(c.kind);
+          if (c.kind === 'tap') expect(c.n).toBeGreaterThanOrEqual(1);
+          if (c.kind === 'tap' || c.kind === 'find_number' || c.kind === 'where') expect(c.n).toBeLessThanOrEqual(stage.max);
+          if (c.kind === 'find_number') {
+            expect(c.options).toHaveLength(stage.options);
+            expect(c.options).toContain(c.n);
+            expect(littleAnswer(c)).toBe(c.n);
+          }
+          if (c.kind === 'where') {
+            expect(c.groups).toHaveLength(2);
+            expect(c.groups[0]).not.toBe(c.groups[1]);
+            expect(c.groups[littleAnswer(c) as number]).toBe(c.n);
+            for (const g of c.groups) expect(g).toBeGreaterThanOrEqual(1);
+          }
+        }
+      }
+    });
+  });
+
+  it('chave do Leitner separa palavra, letra e tipo de conta', () => {
+    const [hear] = littleLetterRound({ ...emptyTrail(), stage: 0 }, '', rng(3));
+    expect(littleItemId(hear)).toMatch(/^hear:/);
+    expect(littleItemId({ kind: 'pick_letter', letter: 'A', options: ['A', 'E'] })).toBe('letter:A');
+    expect(littleItemId({ kind: 'tap', item: '1f34e', n: 2 })).toBe('tap');
   });
 });

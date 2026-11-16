@@ -54,10 +54,15 @@ def _saved(page: Page) -> dict:
 
 def _state(**over) -> dict:
     base = {
+        "ageMode": "kids",
         "childName": "",
         "family": [],
         "letters": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
         "numbers": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
+        "little": {
+            "letters": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
+            "numbers": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
+        },
         "stickers": [],
         "stars": 0,
         "rounds": 0,
@@ -69,8 +74,22 @@ def _state(**over) -> dict:
     return base
 
 
+def _little(letters: int = 0, numbers: int = 0, **over) -> dict:
+    """Estado no modo Pequenos (3–4 anos), com os estágios fixos."""
+    trail = lambda stage: {"stage": stage, "locked": True, "goodRounds": 0, "boxes": {}}  # noqa: E731
+    return _state(ageMode="little", little={"letters": trail(letters), "numbers": trail(numbers)}, **over)
+
+
+def _open_fresh(page: Page) -> Page:
+    """Primeira visita de verdade: nada salvo (o jogo pergunta a idade)."""
+    page.goto(f"{GAMES_BASE_URL}/")
+    page.evaluate("() => { localStorage.clear(); localStorage.setItem('games_locale', 'pt-BR'); }")
+    page.goto(f"{GAMES_BASE_URL}/be-a-ba/")
+    return page
+
+
 def _open(page: Page, state: dict | None = None, locale: str = "pt-BR") -> Page:
-    """Abre o jogo com o localStorage limpo (ou com `state`).
+    """Abre o jogo com `state` (padrão: modo 5–7 anos, fase 1, nada ganho).
 
     O estado é gravado a partir do hub: a tela do jogo salva ao sair
     (`pagehide`) e sobrescreveria o que fosse injetado com ela aberta.
@@ -79,7 +98,7 @@ def _open(page: Page, state: dict | None = None, locale: str = "pt-BR") -> Page:
     page.evaluate(
         "([k, s, l]) => { localStorage.clear(); localStorage.setItem('games_locale', l);"
         " if (s) localStorage.setItem(k, s); }",
-        [STORAGE_KEY, json.dumps(state) if state else None, locale],
+        [STORAGE_KEY, json.dumps(state or _state()), locale],
     )
     page.goto(f"{GAMES_BASE_URL}/be-a-ba/")
     expect(page.get_by_role("button", name=re.compile("Números|Numbers"))).to_be_visible()
@@ -112,15 +131,34 @@ def _solve_number(page: Page) -> str:
     return answer
 
 
+def _solve_little(page: Page) -> str:
+    """Resolve o desafio do modo Pequenos na tela; devolve o tipo."""
+    ch = page.locator("[data-little-kind]")
+    kind = ch.get_attribute("data-little-kind")
+    answer = ch.get_attribute("data-answer")
+    if kind == "hear":
+        ch.locator(f"[data-option='{answer}']").click()
+    elif kind == "pick_letter":
+        ch.get_by_role("button", name=f"Letra {answer}", exact=True).click()
+    elif kind == "tap":
+        for obj in ch.locator(".tap-object").all():
+            obj.click()
+    elif kind == "find_number":
+        ch.get_by_role("button", name=answer, exact=True).click()
+    else:
+        ch.locator(".group").nth(int(answer)).click()
+    return kind
+
+
 def _next(page: Page) -> None:
     """Espera o elogio do acerto aparecer e sumir (o próximo desafio ou o prêmio entra)."""
     expect(page.locator(".praise")).to_be_visible()
     expect(page.locator(".praise")).to_have_count(0, timeout=5000)
 
 
-def _play_round(page: Page, solve) -> list[str]:
+def _play_round(page: Page, solve, size: int = 5) -> list[str]:
     answers = []
-    for _ in range(5):
+    for _ in range(size):
         expect(page.locator("[data-answer]")).to_be_visible()
         answers.append(solve(page))
         _next(page)
@@ -409,3 +447,85 @@ def test_em_ingles_as_letras_ficam_para_depois_e_os_numeros_funcionam(page: Page
     expect(page.get_by_text("Coming soon in English")).to_be_visible()
     page.get_by_role("button", name=re.compile("Numbers")).click()
     expect(page.get_by_text("How many?")).to_be_visible()
+
+
+# ── Modo Pequenos (3–4 anos) ────────────────────────────────────────────────
+
+
+def test_primeira_visita_pergunta_a_idade(page: Page) -> None:
+    _open_fresh(page)
+    expect(page.get_by_text("Quantos anos tem quem vai brincar?")).to_be_visible()
+    page.get_by_role("button", name=re.compile("Pequenos")).click()
+    expect(page.locator("[data-age=little]")).to_be_visible()
+    assert _saved(page)["ageMode"] == "little"
+
+
+def test_quem_ja_jogava_continua_no_modo_de_5_a_7(page: Page) -> None:
+    state = _state()
+    del state["ageMode"], state["little"]
+    _open(page, state)
+    expect(page.locator("[data-age=kids]")).to_be_visible()
+
+
+def test_pequenos_rodada_de_letras_tem_3_desafios_e_figurinha(page: Page) -> None:
+    _open(page, _little(letters=1))
+    page.get_by_role("button", name=re.compile("Letras")).click()
+    kinds = _play_round(page, _solve_little, size=3)
+    assert set(kinds) <= {"hear", "pick_letter"}
+    expect(page.get_by_text("Você ganhou uma figurinha!")).to_be_visible()
+    saved = _saved(page)
+    assert saved["stars"] == 3 and len(saved["stickers"]) == 1
+    keys = saved["little"]["letters"]["boxes"].keys()
+    assert keys and all(k.startswith(("hear:", "letter:")) for k in keys)
+    assert saved["letters"]["boxes"] == {}  # o modo 5–7 anos não é tocado
+
+
+def test_pequenos_cade_figura_errada_fica_apagada(page: Page) -> None:
+    _open(page, _little(letters=0))
+    page.get_by_role("button", name=re.compile("Letras")).click()
+    ch = page.locator("[data-little-kind=hear]")
+    answer = ch.get_attribute("data-answer")
+    word = page.evaluate("() => document.documentElement.dataset.spoken")
+    assert word.startswith("Cadê ")
+    wrong = ch.locator(f".choice:not([data-option='{answer}'])").first
+    wrong.click()
+    expect(wrong).to_have_class(re.compile("wrong"))
+    expect(page.locator(".praise")).to_have_count(0)
+    ch.locator(f"[data-option='{answer}']").click()
+    expect(page.locator(".praise")).to_be_visible()
+
+
+def test_pequenos_contar_tocando_cada_objeto(page: Page) -> None:
+    _open(page, _little(numbers=0))
+    page.get_by_role("button", name=re.compile("Números")).click()
+    ch = page.locator("[data-little-kind=tap]")
+    n = int(ch.get_attribute("data-answer"))
+    objects = ch.locator(".tap-object")
+    expect(objects).to_have_count(n)
+    objects.first.click()
+    objects.first.click()  # tocar de novo não conta duas vezes
+    expect(ch.locator(".badge")).to_have_count(1)
+    assert page.evaluate("() => document.documentElement.dataset.spoken") == "1"
+    for obj in objects.all()[1:]:
+        obj.click()
+    expect(ch.locator(".badge")).to_have_text([str(i + 1) for i in range(n)])
+    expect(page.locator(".praise")).to_be_visible()
+
+
+def test_pequenos_rodada_de_numeros_ate_5(page: Page) -> None:
+    _open(page, _little(numbers=2))
+    page.get_by_role("button", name=re.compile("Números")).click()
+    kinds = _play_round(page, _solve_little, size=3)
+    assert set(kinds) <= {"find_number", "where", "tap"}
+    assert set(_saved(page)["little"]["numbers"]["boxes"]) == set(kinds)
+
+
+def test_trocar_a_idade_na_area_dos_pais(page: Page) -> None:
+    _open(page)
+    _enter_parents(page)
+    page.locator("#bab-age").select_option("little")
+    expect(page.locator("#bab-stage-letters option").nth(1)).to_have_text(re.compile("Cadê"))
+    assert _saved(page)["ageMode"] == "little"
+    page.locator("#bab-stage-numbers").select_option("2")
+    assert _saved(page)["little"]["numbers"]["stage"] == 2
+    assert _saved(page)["numbers"]["stage"] == 0

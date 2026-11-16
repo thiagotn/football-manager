@@ -28,7 +28,7 @@
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
-| `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças em alfabetização (PRD 058). Abas: Início (trilhas Letras e Números) · Álbum · Pais (protegida por pergunta). A rodada de 5 desafios entra por cima das abas |
+| `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças de 3 a 7 anos (PRD 058). Na 1ª abertura pergunta a idade (modo **Pequenos** 3–4 ou **Crianças** 5–7). Abas: Início (trilhas Letras e Números) · Álbum · Pais (protegida por pergunta). A rodada (3 ou 5 desafios) entra por cima das abas |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e, com o 3D ligado, arraste para girar a câmera |
 
 ## Compartilhado
@@ -107,10 +107,12 @@
 | `words.ts` | Banco de 74 palavras em 4 níveis por **estrutura silábica** (UVA → BOLA → BONECA → CARRO/ELEFANTE), cada uma com o código do desenho; `plain()` tira acento |
 | `letters.ts` | Regras puras das Letras: modos `first`/`build`/`type`, `sameLetter` (acento e cedilha nunca são erro), bandeja embaralhada, teclado ABC + Ç, `cleanFamilyWord` |
 | `numbers.ts` | Gerador puro dos Números: `count`, `compare`, `add`, `sub`, sempre com 3 opções vizinhas da resposta |
-| `progress.ts` | Estágios das trilhas (`LETTER_STAGES`, `NUMBER_STAGES`), caixas de Leitner, sorteio ponderado, `letterRound`/`numberRound` (5 desafios; 1 palavra da família por rodada) e `afterRound` (sobe depois de 2 rodadas boas seguidas, nunca desce) |
+| `progress.ts` | Estágios das trilhas (`LETTER_STAGES`, `NUMBER_STAGES`), caixas de Leitner, sorteio ponderado, `letterRound`/`numberRound` (5 desafios; 1 palavra da família por rodada) e `afterRound(p, nº de estágios, limpas, tamanho da rodada)` (rodada boa = ≥ 80% sem erro nem dica; sobe depois de 2 boas seguidas, nunca desce) |
 | `be-a-ba.test.ts` | Vitest: todo desenho usado existe em `static/`, banco de palavras, acentos, bandeja, faixa de toda conta gerada, Leitner, estágios e rodadas |
+| `little.ts` | Modo **Pequenos** (3–4 anos): `hear` (Cadê a uva? — figura certa), `pick_letter` (letra igual; vogais, depois consoantes e a inicial do nome), `tap` (contar tocando), `find_number` (numeral com bolinhas), `where` (onde tem N?). Rodadas de 3, estágios próprios (`LITTLE_*_STAGES`), Leitner com chaves `hear:<id>`/`letter:<L>`/tipo |
+| `LittleChallenge.svelte` | Os 5 desafios do modo Pequenos (`data-little-kind` + `data-answer`) |
 | `stickers.ts` | Álbum de 24 figurinhas (4 páginas de 6) + a especial "Meu nome" |
-| `storage.ts` | localStorage `games_be_a_ba`: criança, palavras da família, progresso das trilhas, figurinhas, estrelas, tempo por dia e ajustes. A rodada **não** é salva |
+| `storage.ts` | localStorage `games_be_a_ba`: `ageMode` (`little`/`kids`; `null` = ainda não escolhido; estado salvo antigo sem a chave vira `kids`), criança, palavras da família, progresso das trilhas (`letters`/`numbers` e `little.{letters,numbers}`, independentes), figurinhas, estrelas, tempo por dia e ajustes. A rodada **não** é salva |
 | `photos.ts` | Fotos das palavras da família no **IndexedDB** (reduzidas a 512 px no aparelho; nunca enviadas) |
 | `speech.ts` | Voz com `speechSynthesis` (voz do aparelho). O último texto falado fica em `<html data-spoken>` para o E2E |
 | `art.ts` | Mascote (corujinha Lili), estrela, medalha e `imgUrl()` |
@@ -121,6 +123,7 @@
 - Erro não pune: a resposta errada balança e fica marcada; depois de 2 erros a certa **pulsa a luz** (não o tamanho — o alvo não pode fugir do dedo, e animação de escala deixa o Playwright sem conseguir clicar)
 - Letras só em pt-BR na fase 1: em en/es o card de Letras fica desligado ("em breve") e os Números funcionam no idioma da interface
 - Portão dos pais: tocar no número escrito por extenso. Sair da aba Pais tranca de novo
+- Modo Pequenos não tem nada para ler nem teclado: figura, letra grande ou número com bolinhas; cada toque é falado. A idade troca na área dos pais (os dois modos guardam progresso separado)
 
 ## Tetris 3D (`src/lib/tetris/`)
 
