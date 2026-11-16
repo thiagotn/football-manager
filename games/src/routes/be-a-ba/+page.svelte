@@ -16,6 +16,17 @@
   import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
   import LetterChallengeView from '$lib/be-a-ba/LetterChallenge.svelte';
   import NumberChallengeView from '$lib/be-a-ba/NumberChallenge.svelte';
+  import LittleChallengeView from '$lib/be-a-ba/LittleChallenge.svelte';
+  import {
+    LITTLE_LETTER_STAGES,
+    LITTLE_NUMBER_STAGES,
+    LITTLE_ROUND_SIZE,
+    littleAnswer,
+    littleItemId,
+    littleLetterRound,
+    littleNumberRound,
+    type LittleChallenge,
+  } from '$lib/be-a-ba/little';
   import { MASCOT, MEDAL, PARTY, STAR, imgUrl } from '$lib/be-a-ba/art';
   import { WORDS, plain } from '$lib/be-a-ba/words';
   import { cleanFamilyWord, type PlayWord } from '$lib/be-a-ba/letters';
@@ -35,14 +46,16 @@
     type Trail,
   } from '$lib/be-a-ba/progress';
   import { NAME_STICKER, PAGE_SIZE, STICKERS, nextSticker, stickerById, type Sticker } from '$lib/be-a-ba/stickers';
-  import { emptyState, loadState, saveState, type FamilyWord, type SavedState } from '$lib/be-a-ba/storage';
+  import { emptyState, loadState, saveState, type AgeMode, type FamilyWord, type SavedState } from '$lib/be-a-ba/storage';
+  import type { TrailProgress } from '$lib/be-a-ba/progress';
   import { deletePhoto, loadPhoto, savePhoto, shrinkPhoto } from '$lib/be-a-ba/photos';
   import { speak, stopSpeaking } from '$lib/be-a-ba/speech';
   import { mulberry32, dateKey } from '$lib/enche-ai/engine';
   import { locale, t } from '$lib/i18n';
 
   type Screen = 'home' | 'album' | 'parents';
-  type Round = { trail: Trail; challenges: Challenge[]; index: number; outcomes: Outcome[]; wroteName: boolean };
+  type AnyChallenge = Challenge | LittleChallenge;
+  type Round = { trail: Trail; little: boolean; challenges: AnyChallenge[]; index: number; outcomes: Outcome[]; wroteName: boolean };
   type Reward = {
     trail: Trail;
     sticker: Sticker | null;
@@ -89,6 +102,8 @@
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   const lettersAvailable = $derived($locale === 'pt-BR');
+  /** Modo Pequenos (3–4 anos): outras atividades, rodadas de 3 e estágios próprios. */
+  const isLittle = $derived(saved.ageMode === 'little');
   const current = $derived(round ? round.challenges[round.index] : null);
   const familyWords = $derived<PlayWord[]>(
     saved.family.map((f) => ({ id: f.id, text: f.text, family: true, photo: f.photo ? f.id : undefined }))
@@ -100,6 +115,24 @@
 
   function persist() {
     saveState($state.snapshot(saved));
+  }
+
+  /** Progresso da trilha no modo atual (Pequenos e 5–7 anos são independentes). */
+  function progressOf(trail: Trail, little = isLittle): TrailProgress {
+    return little ? saved.little[trail] : saved[trail];
+  }
+  function setProgress(trail: Trail, p: TrailProgress, little = isLittle) {
+    if (little) saved.little[trail] = p;
+    else saved[trail] = p;
+  }
+  const stageCountOf = (trail: Trail, little = isLittle) =>
+    little
+      ? (trail === 'letters' ? LITTLE_LETTER_STAGES : LITTLE_NUMBER_STAGES).length
+      : (trail === 'letters' ? LETTER_STAGES : NUMBER_STAGES).length;
+
+  function chooseAge(mode: AgeMode) {
+    saved.ageMode = mode;
+    persist();
   }
 
   function say(text: string, lang: string = $locale, rate = saved.settings.rate) {
@@ -147,7 +180,23 @@
 
   // ───────── Instruções ─────────
 
-  function instruction(c: Challenge): { show: string; ask: string; lang: string } {
+  function instruction(c: AnyChallenge): { show: string; ask: string; lang: string } {
+    switch (c.kind) {
+      case 'hear':
+        return {
+          show: $t('be_a_ba.show_hear'),
+          ask: $t(`be_a_ba.ask_hear_${c.article}`, { word: c.word.text.toLocaleLowerCase('pt-BR') }),
+          lang: LETTERS_LANG,
+        };
+      case 'pick_letter':
+        return { show: $t('be_a_ba.show_pick_letter'), ask: $t('be_a_ba.ask_pick_letter', { letter: c.letter.toLowerCase() }), lang: LETTERS_LANG };
+      case 'tap':
+        return { show: $t('be_a_ba.show_tap'), ask: $t('be_a_ba.ask_tap'), lang: $locale };
+      case 'find_number':
+        return { show: $t('be_a_ba.show_find_number'), ask: $t('be_a_ba.ask_find_number', { n: c.n }), lang: $locale };
+      case 'where':
+        return { show: $t('be_a_ba.show_where'), ask: $t('be_a_ba.ask_where', { n: c.n }), lang: $locale };
+    }
     if (c.kind === 'letter') {
       const word = c.word.text.toLocaleLowerCase('pt-BR');
       return { show: $t(`be_a_ba.show_${c.mode}`), ask: $t(`be_a_ba.ask_${c.mode}`, { word }), lang: LETTERS_LANG };
@@ -185,9 +234,16 @@
     if (trail === 'letters' && !lettersAvailable) return;
     reward = null;
     praise = null;
-    const challenges: Challenge[] =
-      trail === 'letters' ? letterRound(saved.letters, familyWords, rnd) : numberRound(saved.numbers, rnd);
-    round = { trail, challenges, index: 0, outcomes: [], wroteName: false };
+    const little = isLittle;
+    const p = progressOf(trail, little);
+    const challenges: AnyChallenge[] = little
+      ? trail === 'letters'
+        ? littleLetterRound(p, saved.childName, rnd)
+        : littleNumberRound(p, rnd)
+      : trail === 'letters'
+        ? letterRound(p, familyWords, rnd)
+        : numberRound(p, rnd);
+    round = { trail, little, challenges, index: 0, outcomes: [], wroteName: false };
   }
 
   function quitRound() {
@@ -201,19 +257,32 @@
     if (!round || !current) return;
     const outcome = outcomeOf(mistakes, hinted);
     let spoken: string;
-    if (current.kind === 'letter') {
+    let lang: string = $locale;
+    if (round.little) {
+      const c = current as LittleChallenge;
+      const p = progressOf(round.trail, true);
+      setProgress(round.trail, { ...p, boxes: recordOutcome(p.boxes, littleItemId(c), outcome) }, true);
+      if (c.kind === 'hear') {
+        spoken = c.word.text.toLocaleLowerCase('pt-BR');
+        lang = LETTERS_LANG;
+      } else if (c.kind === 'pick_letter') {
+        spoken = c.letter.toLowerCase();
+        lang = LETTERS_LANG;
+      } else spoken = c.kind === 'where' ? String(c.n) : String(littleAnswer(c));
+    } else if (current.kind === 'letter') {
+      lang = LETTERS_LANG;
       saved.letters.boxes = recordOutcome(saved.letters.boxes, current.word.id, outcome);
       if (saved.family.some((f) => f.isChildName && f.id === current.word.id)) round.wroteName = true;
       spoken = current.word.text.toLocaleLowerCase('pt-BR');
     } else {
-      saved.numbers.boxes = recordOutcome(saved.numbers.boxes, numberItemId(current), outcome);
-      const ans = answerOf(current);
+      saved.numbers.boxes = recordOutcome(saved.numbers.boxes, numberItemId(current as Exclude<Challenge, { kind: 'letter' }>), outcome);
+      const ans = answerOf(current as Exclude<Challenge, { kind: 'letter' }>);
       spoken = typeof ans === 'number' ? String(ans) : '';
     }
     saved.stars++;
     round.outcomes = [...round.outcomes, outcome];
     praise = $t(`be_a_ba.praise_${Math.floor(rnd() * 4)}`);
-    say(`${praise} ${spoken}`, current.kind === 'letter' ? LETTERS_LANG : $locale);
+    say(`${praise} ${spoken}`, lang);
     persist();
 
     setTimeout(() => {
@@ -228,8 +297,13 @@
     if (!round) return;
     const r = round;
     const clean = r.outcomes.filter((o) => o === 'clean').length;
-    const { progress, leveledUp } = afterRound(saved[r.trail], r.trail, clean);
-    saved[r.trail] = progress;
+    const { progress, leveledUp } = afterRound(
+      progressOf(r.trail, r.little),
+      stageCountOf(r.trail, r.little),
+      clean,
+      r.little ? LITTLE_ROUND_SIZE : ROUND_SIZE
+    );
+    setProgress(r.trail, progress, r.little);
     saved.rounds++;
 
     let nameSticker = false;
@@ -373,32 +447,36 @@
   }
 
   function setStage(trail: Trail, value: string) {
-    const p = saved[trail];
-    saved[trail] = value === 'auto' ? { ...p, locked: false } : { ...p, locked: true, stage: Number(value), goodRounds: 0 };
+    const p = progressOf(trail);
+    setProgress(trail, value === 'auto' ? { ...p, locked: false } : { ...p, locked: true, stage: Number(value), goodRounds: 0 });
     persist();
   }
 
   function resetProgress() {
-    const keep = { childName: saved.childName, family: saved.family, settings: saved.settings };
+    const keep = { ageMode: saved.ageMode, childName: saved.childName, family: saved.family, settings: saved.settings };
     saved = { ...emptyState(), ...keep };
     persist();
   }
 
-  function wordText(id: string): string {
+  /** Texto de um item do Leitner: palavra do banco, da família ou a letra (`letter:A`). */
+  function wordText(key: string): string {
+    const id = key.includes(':') ? key.slice(key.indexOf(':') + 1) : key;
     return WORDS.find((w) => w.id === id)?.text ?? saved.family.find((f) => f.id === id)?.text ?? id;
   }
 
+  const letterBoxes = $derived(progressOf('letters').boxes);
+  const numberBoxes = $derived(progressOf('numbers').boxes);
   const mastered = $derived(
-    Object.entries(saved.letters.boxes)
+    Object.entries(letterBoxes)
       .filter(([, b]) => b.box >= 3)
       .map(([id]) => wordText(id))
   );
   const struggling = $derived(
-    Object.entries(saved.letters.boxes)
+    Object.entries(letterBoxes)
       .filter(([, b]) => b.misses > 0 && b.box <= 2)
       .map(([id]) => wordText(id))
   );
-  const KINDS: NumberKind[] = ['count', 'compare', 'add', 'sub'];
+  const KINDS = $derived<string[]>(isLittle ? ['tap', 'find_number', 'where'] : (['count', 'compare', 'add', 'sub'] satisfies NumberKind[]));
 
   // ───────── Teclado físico ─────────
 
@@ -444,7 +522,15 @@
       </button>
 
       {#key round.index}
-        {#if current.kind === 'letter'}
+        {#if round.little}
+          <LittleChallengeView
+            challenge={current as LittleChallenge}
+            sayNumber={(n) => say(String(n))}
+            sayLetter={(l) => say(l.toLowerCase(), LETTERS_LANG)}
+            sayWord={(w) => say(w, LETTERS_LANG)}
+            onresult={onResult}
+          />
+        {:else if current.kind === 'letter'}
           <LetterChallengeView
             challenge={current}
             photoUrl={current.word.photo ? (photoUrls[current.word.photo] ?? null) : null}
@@ -453,7 +539,7 @@
             onresult={onResult}
           />
         {:else}
-          <NumberChallengeView challenge={current} sayNumber={(n) => say(String(n))} sayHint={askCurrent} onresult={onResult} />
+          <NumberChallengeView challenge={current as Exclude<Challenge, { kind: 'letter' }>} sayNumber={(n) => say(String(n))} sayHint={askCurrent} onresult={onResult} />
         {/if}
       {/key}
     </main>
@@ -507,8 +593,34 @@
   {:else}
     <!-- ── Abas ───────────────────────────────────────────────────────── -->
     <div class="min-h-0 flex-1 overflow-y-auto" style="padding-top:calc(env(safe-area-inset-top) + 12px)">
-      {#if screen === 'home'}
-        <main class="mx-auto flex max-w-md flex-col gap-5 px-4 pb-8">
+      {#if screen === 'home' && !saved.ageMode}
+        <!-- Primeira abertura: para quem é? (dá para trocar na área dos pais) -->
+        <main class="mx-auto flex max-w-md flex-col gap-5 px-4 pb-8" data-age-chooser>
+          <div class="flex items-center gap-3">
+            <img src={imgUrl(MASCOT)} alt="" class="mascot h-24 w-24 flex-none" />
+            <span class="bubble">
+              <span class="block font-display text-[26px] leading-tight">{$t('be_a_ba.hello')}</span>
+              <span class="text-base font-bold text-crayon-muted">{$t('be_a_ba.age_question')}</span>
+            </span>
+          </div>
+          <button type="button" class="trail bg-crayon-orange" onclick={() => chooseAge('little')}>
+            <span class="trail-glyph text-[34px]">3–4</span>
+            <span class="flex flex-col items-start">
+              <span class="font-display text-[30px] leading-none">{$t('be_a_ba.age_little')}</span>
+              <span class="text-sm font-extrabold opacity-90">{$t('be_a_ba.age_little_desc')}</span>
+            </span>
+          </button>
+          <button type="button" class="trail bg-crayon-leaf" onclick={() => chooseAge('kids')}>
+            <span class="trail-glyph text-[34px]">5–7</span>
+            <span class="flex flex-col items-start">
+              <span class="font-display text-[30px] leading-none">{$t('be_a_ba.age_kids')}</span>
+              <span class="text-sm font-extrabold opacity-90">{$t('be_a_ba.age_kids_desc')}</span>
+            </span>
+          </button>
+          <p class="text-center text-sm font-bold text-crayon-muted">{$t('be_a_ba.age_change_hint')}</p>
+        </main>
+      {:else if screen === 'home'}
+        <main class="mx-auto flex max-w-md flex-col gap-5 px-4 pb-8" data-age={saved.ageMode}>
           <div class="flex items-center justify-between">
             <span class="pill"><img src={imgUrl(STAR)} alt="" class="h-6 w-6" /> <b data-stars>{saved.stars}</b></span>
             <button type="button" class="pill" onclick={() => go('album')}>
@@ -535,7 +647,7 @@
             <span class="flex flex-col items-start">
               <span class="font-display text-[32px] leading-none">{$t('be_a_ba.trail_letters')}</span>
               <span class="text-sm font-extrabold opacity-90">
-                {lettersAvailable ? $t('be_a_ba.stage', { n: saved.letters.stage + 1 }) : $t('be_a_ba.letters_soon')}
+                {lettersAvailable ? $t('be_a_ba.stage', { n: progressOf('letters').stage + 1 }) : $t('be_a_ba.letters_soon')}
               </span>
             </span>
             <img src={imgUrl('1f347')} alt="" class="ml-auto h-14 w-14" />
@@ -545,7 +657,7 @@
             <span class="trail-glyph">123</span>
             <span class="flex flex-col items-start">
               <span class="font-display text-[32px] leading-none">{$t('be_a_ba.trail_numbers')}</span>
-              <span class="text-sm font-extrabold opacity-90">{$t('be_a_ba.stage', { n: saved.numbers.stage + 1 })}</span>
+              <span class="text-sm font-extrabold opacity-90">{$t('be_a_ba.stage', { n: progressOf('numbers').stage + 1 })}</span>
             </span>
             <img src={imgUrl('1f34e')} alt="" class="ml-auto h-14 w-14" />
           </button>
@@ -650,14 +762,19 @@
             <div class="flex flex-col gap-4">
               <section class="panel">
                 <h2 class="panel-title">{$t('be_a_ba.levels')}</h2>
+                <label class="field-label mt-2" for="bab-age">{$t('be_a_ba.age')}</label>
+                <select id="bab-age" class="field" value={saved.ageMode ?? 'kids'} onchange={(e) => chooseAge(e.currentTarget.value as AgeMode)}>
+                  <option value="little">{$t('be_a_ba.age_little_option')}</option>
+                  <option value="kids">{$t('be_a_ba.age_kids_option')}</option>
+                </select>
                 <p class="hint-text">{$t('be_a_ba.levels_hint')}</p>
-                {#each [['letters', LETTER_STAGES.length], ['numbers', NUMBER_STAGES.length]] as [trail, count] (trail)}
-                  {@const p = saved[trail as Trail]}
+                {#each [['letters', stageCountOf('letters')], ['numbers', stageCountOf('numbers')]] as [trail, count] (`${saved.ageMode}-${trail}`)}
+                  {@const p = progressOf(trail as Trail)}
                   <label class="field-label mt-3" for="bab-stage-{trail}">{$t(trail === 'letters' ? 'be_a_ba.trail_letters' : 'be_a_ba.trail_numbers')}</label>
                   <select id="bab-stage-{trail}" class="field" value={p.locked ? String(p.stage) : 'auto'} onchange={(e) => setStage(trail as Trail, e.currentTarget.value)}>
                     <option value="auto">{$t('be_a_ba.level_auto', { n: p.stage + 1 })}</option>
                     {#each Array.from({ length: count as number }, (_, i) => i) as i (i)}
-                      <option value={String(i)}>{$t('be_a_ba.level_fixed', { n: i + 1, name: $t(`be_a_ba.stage_${trail}_${i}`) })}</option>
+                      <option value={String(i)}>{$t('be_a_ba.level_fixed', { n: i + 1, name: $t(`be_a_ba.${isLittle ? 'little_' : ''}stage_${trail}_${i}`) })}</option>
                     {/each}
                   </select>
                 {/each}
@@ -695,11 +812,11 @@
                 <h3 class="field-label mt-3">{$t('be_a_ba.numbers_report')}</h3>
                 <ul class="text-sm font-bold">
                   {#each KINDS as kind (kind)}
-                    {#if saved.numbers.boxes[kind]}
-                      <li>{$t(`be_a_ba.kind.${kind}`)} — {$t('be_a_ba.box', { n: saved.numbers.boxes[kind].box })}</li>
+                    {#if numberBoxes[kind]}
+                      <li>{$t(`be_a_ba.kind.${kind}`)} — {$t('be_a_ba.box', { n: numberBoxes[kind].box })}</li>
                     {/if}
                   {/each}
-                  {#if !KINDS.some((k) => saved.numbers.boxes[k])}<li class="text-crayon-muted">{$t('be_a_ba.none_yet')}</li>{/if}
+                  {#if !KINDS.some((k) => numberBoxes[k])}<li class="text-crayon-muted">{$t('be_a_ba.none_yet')}</li>{/if}
                 </ul>
               </section>
 

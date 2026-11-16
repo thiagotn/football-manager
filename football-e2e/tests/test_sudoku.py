@@ -91,6 +91,21 @@ def _digit(page: Page, digit: int):
     return page.locator(".grid-cols-9 > button").nth(digit - 1)
 
 
+def _free_digits(page: Page, count: int = 1) -> list[int]:
+    """Números que ainda faltam no tabuleiro sorteado.
+
+    Um número com as nove casas já impressas fica com o botão desabilitado — e
+    o tabuleiro é sorteado a cada partida, então nenhum número fixo é garantido.
+    """
+    expect(page.locator(".grid-cols-9 > button")).to_have_count(9)
+    free = page.evaluate(
+        "() => [...document.querySelectorAll('.grid-cols-9 > button')]"
+        ".map((b, i) => (b.disabled ? 0 : i + 1)).filter(Boolean)"
+    )
+    assert len(free) >= count, free
+    return free[:count]
+
+
 # ── Hub e abertura ──────────────────────────────────────────────────────────
 
 
@@ -159,52 +174,57 @@ def test_linha_sem_numeros_tem_a_mesma_altura(sudoku: Page) -> None:
 
 def test_escrever_um_numero_na_casa_escolhida(sudoku: Page) -> None:
     _start(sudoku)
+    (d,) = _free_digits(sudoku)
     cell = _first_empty(sudoku)
     cell.click()
-    _digit(sudoku, 5).click()
+    _digit(sudoku, d).click()
 
-    expect(cell).to_have_text("5")
+    expect(cell).to_have_text(str(d))
     assert _saved(sudoku)["game"]["values"].count(0) < 81
 
 
 def test_sem_casa_escolhida_o_jogo_avisa(sudoku: Page) -> None:
     _start(sudoku)
-    _digit(sudoku, 5).click()
+    (d,) = _free_digits(sudoku)
+    _digit(sudoku, d).click()
     expect(sudoku.get_by_text("Toque numa casa antes de escolher o número.")).to_be_visible()
 
 
 def test_o_mesmo_numero_duas_vezes_apaga(sudoku: Page) -> None:
     _start(sudoku)
+    (d,) = _free_digits(sudoku)
     cell = _first_empty(sudoku)
     cell.click()
-    _digit(sudoku, 4).click()
-    expect(cell).to_have_text("4")
-    _digit(sudoku, 4).click()
+    _digit(sudoku, d).click()
+    expect(cell).to_have_text(str(d))
+    _digit(sudoku, d).click()
     expect(cell).to_have_text("")
 
 
 def test_lapis_escreve_anotacao_e_desfazer_volta(sudoku: Page) -> None:
     _start(sudoku)
+    a, b = _free_digits(sudoku, 2)
     cell = _first_empty(sudoku)
     cell.click()
     sudoku.get_by_role("button", name="Lápis").click()
-    _digit(sudoku, 2).click()
-    _digit(sudoku, 7).click()
+    _digit(sudoku, a).click()
+    _digit(sudoku, b).click()
 
     expect(cell.locator(".notes")).to_be_visible()
-    expect(cell).to_contain_text("2")
-    expect(cell).to_contain_text("7")
+    expect(cell).to_contain_text(str(a))
+    expect(cell).to_contain_text(str(b))
 
     sudoku.get_by_role("button", name="Desfazer").click()
-    expect(cell).not_to_contain_text("7")
+    expect(cell).not_to_contain_text(str(b))
 
 
 def test_apagar_limpa_a_casa(sudoku: Page) -> None:
     _start(sudoku)
+    (d,) = _free_digits(sudoku)
     cell = _first_empty(sudoku)
     cell.click()
-    _digit(sudoku, 6).click()
-    expect(cell).to_have_text("6")
+    _digit(sudoku, d).click()
+    expect(cell).to_have_text(str(d))
 
     cell.click()
     sudoku.get_by_role("button", name="Apagar").click()
@@ -266,8 +286,9 @@ def test_pausar_mostra_o_overlay_e_volta(sudoku: Page) -> None:
 
 def test_sair_guarda_a_partida_e_o_inicio_oferece_continuar(sudoku: Page) -> None:
     _start(sudoku)
+    (d,) = _free_digits(sudoku)
     _first_empty(sudoku).click()
-    _digit(sudoku, 1).click()
+    _digit(sudoku, d).click()
     sudoku.get_by_role("button", name="Sair").click()
 
     expect(sudoku.get_by_role("button", name="Continuar", exact=False)).to_be_visible()
@@ -405,10 +426,11 @@ def test_numero_primeiro_inverte_a_ordem_do_toque(sudoku: Page) -> None:
     sudoku.get_by_role("button", name="Início", exact=True).click()
     _start(sudoku)
 
-    _digit(sudoku, 3).click()
+    (d,) = _free_digits(sudoku)
+    _digit(sudoku, d).click()
     cell = _first_empty(sudoku)
     cell.click()
-    expect(cell).to_have_text("3")
+    expect(cell).to_have_text(str(d))
 
 
 def test_zerar_estatisticas_pelo_confirm_dialog(page: Page) -> None:

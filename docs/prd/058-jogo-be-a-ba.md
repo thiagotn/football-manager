@@ -195,6 +195,24 @@ O plano foi aprovado sem respostas às perguntas abaixo; a fase 1 seguiu as reco
 
 L2 (sílabas) e L5 (letra que falta) · N2, N4, N7–N10 · mundos · perfis múltiplos · limite de tempo · minúsculas · áudio gravado
 
+## Modo Pequenos — 3 e 4 anos (2026-11-16)
+
+Pedido: um modo também para crianças de 3 e 4 anos. Nessa idade a criança ainda não lê nem
+escreve, então o modo troca escrever por **escutar, reconhecer e tocar**:
+
+| Trilha | Desafio | Como funciona |
+|---|---|---|
+| Letras | **Cadê?** | Ouve "Cadê a uva?" e toca na figura certa (42 palavras concretas, com artigo para a fala) |
+| Letras | **Ache a letra igual** | Letra grande no alto, toca na igual. Vogais primeiro; depois B, M, P, S, L, T e a **inicial do nome da criança** |
+| Números | **Vamos contar!** | Toca em cada objeto; ele ganha o número e a voz conta "um, dois, três". Não tem erro |
+| Números | **Ache o número** | Ouve "Ache o número 3"; numeral grande com bolinhas embaixo |
+| Números | **Onde tem?** | "Onde tem 2?" — dois grupos, toca no certo |
+
+- Rodadas de **3** desafios (atenção curta); começa com 2 opções e vai para 3. Estágios: Letras 3, Números 3 (até 3, depois até 5)
+- Mesmos prêmios (estrela, figurinha por rodada — sai mais rápido) e a mesma regra de erro sem punição
+- **A idade é escolhida na 1ª abertura** ("3–4 anos" ou "5–7 anos") e muda na área dos pais. Os dois modos guardam progresso separado; quem já jogava antes segue no 5–7
+- Código: `games/src/lib/be-a-ba/little.ts` e `LittleChallenge.svelte`; 5 testes Vitest e 7 E2E novos
+
 ## Perguntas da revisão (respondidas acima)
 
 1. **Nome:** "Bê-á-Bá" está bom, ou prefere outro?

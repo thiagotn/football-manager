@@ -1,15 +1,23 @@
 <script lang="ts">
   /**
    * `n` objetos desenhados, em fileiras de até 5 (como o material dourado e a
-   * "caixa de dez" da escola). Os últimos `leaving` vão embora animados — é a
-   * subtração ("2 voaram").
+   * "caixa de dez" da escola) — ou `perRow`, em cartões estreitos. Os últimos
+   * `leaving` vão embora animados — é a subtração ("2 voaram").
    */
   import { imgUrl } from './art';
 
-  let { item, n, leaving = 0, size = 38 }: { item: string; n: number; leaving?: number; size?: number } = $props();
+  let {
+    item,
+    n,
+    leaving = 0,
+    size = 38,
+    perRow = 5,
+  }: { item: string; n: number; leaving?: number; size?: number; perRow?: number } = $props();
 
   const rows = $derived(
-    Array.from({ length: Math.ceil(n / 5) }, (_, r) => Array.from({ length: Math.min(5, n - r * 5) }, (_, c) => r * 5 + c))
+    Array.from({ length: Math.ceil(n / perRow) }, (_, r) =>
+      Array.from({ length: Math.min(perRow, n - r * perRow) }, (_, c) => r * perRow + c)
+    )
   );
 </script>
 

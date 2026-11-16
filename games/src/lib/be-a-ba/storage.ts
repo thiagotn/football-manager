@@ -26,11 +26,17 @@ export type Settings = {
   rate: number;
 };
 
+/** `little` = modo Pequenos (3–4 anos); `kids` = 5–7 anos. `null` = ainda não escolhido. */
+export type AgeMode = 'little' | 'kids';
+
 export type SavedState = {
+  ageMode: AgeMode | null;
   childName: string;
   family: FamilyWord[];
   letters: TrailProgress;
   numbers: TrailProgress;
+  /** Progresso do modo Pequenos — trilhas e estágios próprios. */
+  little: { letters: TrailProgress; numbers: TrailProgress };
   /** Figurinhas na ordem em que foram ganhas. */
   stickers: string[];
   stars: number;
@@ -44,10 +50,12 @@ export const DEFAULT_SETTINGS: Settings = { voice: true, rate: 0.85 };
 
 export function emptyState(): SavedState {
   return {
+    ageMode: null,
     childName: '',
     family: [],
     letters: emptyTrail(),
     numbers: emptyTrail(),
+    little: { letters: emptyTrail(), numbers: emptyTrail() },
     stickers: [],
     stars: 0,
     rounds: 0,
@@ -73,11 +81,15 @@ export function loadState(): SavedState {
     if (!raw) return emptyState();
     const s = JSON.parse(raw) as Partial<SavedState> | null;
     if (!s || typeof s !== 'object') return emptyState();
+    const little = (s.little ?? {}) as Partial<SavedState['little']>;
     return {
+      // Quem já jogava antes do modo Pequenos existir segue no modo de 5–7 anos.
+      ageMode: s.ageMode === 'little' || s.ageMode === 'kids' ? s.ageMode : 'kids',
       childName: typeof s.childName === 'string' ? s.childName : '',
       family: Array.isArray(s.family) ? s.family.filter((f) => f && typeof f.text === 'string' && f.text) : [],
       letters: trailOf(s.letters),
       numbers: trailOf(s.numbers),
+      little: { letters: trailOf(little.letters), numbers: trailOf(little.numbers) },
       stickers: Array.isArray(s.stickers) ? s.stickers.filter((x) => typeof x === 'string') : [],
       stars: Math.max(0, Number(s.stars) || 0),
       rounds: Math.max(0, Number(s.rounds) || 0),
