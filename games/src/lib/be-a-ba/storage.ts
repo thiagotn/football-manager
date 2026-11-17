@@ -37,6 +37,8 @@ export type SavedState = {
   numbers: TrailProgress;
   /** Progresso do modo Pequenos — trilhas e estágios próprios. */
   little: { letters: TrailProgress; numbers: TrailProgress };
+  /** Trilha Inglês — uma só para as duas idades (o conteúdo não muda; só o tamanho da rodada). */
+  english: TrailProgress;
   /** Figurinhas na ordem em que foram ganhas. */
   stickers: string[];
   stars: number;
@@ -56,6 +58,7 @@ export function emptyState(): SavedState {
     letters: emptyTrail(),
     numbers: emptyTrail(),
     little: { letters: emptyTrail(), numbers: emptyTrail() },
+    english: emptyTrail(),
     stickers: [],
     stars: 0,
     rounds: 0,
@@ -90,6 +93,7 @@ export function loadState(): SavedState {
       letters: trailOf(s.letters),
       numbers: trailOf(s.numbers),
       little: { letters: trailOf(little.letters), numbers: trailOf(little.numbers) },
+      english: trailOf(s.english),
       stickers: Array.isArray(s.stickers) ? s.stickers.filter((x) => typeof x === 'string') : [],
       stars: Math.max(0, Number(s.stars) || 0),
       rounds: Math.max(0, Number(s.rounds) || 0),

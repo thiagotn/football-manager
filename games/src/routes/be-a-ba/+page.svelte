@@ -49,7 +49,18 @@
   import { emptyState, loadState, saveState, type AgeMode, type FamilyWord, type SavedState } from '$lib/be-a-ba/storage';
   import type { TrailProgress } from '$lib/be-a-ba/progress';
   import { deletePhoto, loadPhoto, savePhoto, shrinkPhoto } from '$lib/be-a-ba/photos';
-  import { speak, stopSpeaking } from '$lib/be-a-ba/speech';
+  import { speak, speakSequence, stopSpeaking } from '$lib/be-a-ba/speech';
+  import {
+    EN_LANG,
+    EN_NUMBERS,
+    EN_PRAISE,
+    EN_STAGES,
+    EN_WORDS,
+    enAnswerWord,
+    enPrompt,
+    enSlug,
+    englishRound,
+  } from '$lib/be-a-ba/english';
   import { mulberry32, dateKey } from '$lib/enche-ai/engine';
   import { locale, t } from '$lib/i18n';
 
@@ -79,6 +90,8 @@
   let screen = $state<Screen>('home');
   let round = $state<Round | null>(null);
   let praise = $state<string | null>(null);
+  /** Trilha Inglês: a palavra em inglês que aparece escrita debaixo do elogio. */
+  let praiseWord = $state<string | null>(null);
   let reward = $state<Reward | null>(null);
   let photoUrls = $state<Record<string, string>>({});
   let toast = $state<string | null>(null);
@@ -117,18 +130,25 @@
     saveState($state.snapshot(saved));
   }
 
-  /** Progresso da trilha no modo atual (Pequenos e 5–7 anos são independentes). */
+  /**
+   * Progresso da trilha no modo atual (Pequenos e 5–7 anos são independentes).
+   * O Inglês é um só para as duas idades — o conteúdo é o mesmo.
+   */
   function progressOf(trail: Trail, little = isLittle): TrailProgress {
+    if (trail === 'english') return saved.english;
     return little ? saved.little[trail] : saved[trail];
   }
   function setProgress(trail: Trail, p: TrailProgress, little = isLittle) {
-    if (little) saved.little[trail] = p;
+    if (trail === 'english') saved.english = p;
+    else if (little) saved.little[trail] = p;
     else saved[trail] = p;
   }
   const stageCountOf = (trail: Trail, little = isLittle) =>
-    little
-      ? (trail === 'letters' ? LITTLE_LETTER_STAGES : LITTLE_NUMBER_STAGES).length
-      : (trail === 'letters' ? LETTER_STAGES : NUMBER_STAGES).length;
+    trail === 'english'
+      ? EN_STAGES.length
+      : little
+        ? (trail === 'letters' ? LITTLE_LETTER_STAGES : LITTLE_NUMBER_STAGES).length
+        : (trail === 'letters' ? LETTER_STAGES : NUMBER_STAGES).length;
 
   function chooseAge(mode: AgeMode) {
     saved.ageMode = mode;
@@ -181,6 +201,10 @@
   // ───────── Instruções ─────────
 
   function instruction(c: AnyChallenge): { show: string; ask: string; lang: string } {
+    if (round?.trail === 'english') {
+      const ask = enPrompt(c as LittleChallenge);
+      return { show: ask, ask, lang: EN_LANG };
+    }
     switch (c.kind) {
       case 'hear':
         return {
@@ -196,6 +220,11 @@
         return { show: $t('be_a_ba.show_find_number'), ask: $t('be_a_ba.ask_find_number', { n: c.n }), lang: $locale };
       case 'where':
         return { show: $t('be_a_ba.show_where'), ask: $t('be_a_ba.ask_where', { n: c.n }), lang: $locale };
+      case 'pick_color': {
+        // Só existe na trilha Inglês, tratada acima.
+        const ask = enPrompt(c);
+        return { show: ask, ask, lang: EN_LANG };
+      }
     }
     if (c.kind === 'letter') {
       const word = c.word.text.toLocaleLowerCase('pt-BR');
@@ -234,9 +263,13 @@
     if (trail === 'letters' && !lettersAvailable) return;
     reward = null;
     praise = null;
-    const little = isLittle;
-    const p = progressOf(trail, little);
-    const challenges: AnyChallenge[] = little
+    // O Inglês usa os desafios de toque do modo Pequenos nas duas idades.
+    const little = isLittle || trail === 'english';
+    const p = progressOf(trail, isLittle);
+    const challenges: AnyChallenge[] =
+      trail === 'english'
+        ? englishRound(p, isLittle ? LITTLE_ROUND_SIZE : ROUND_SIZE, rnd)
+        : little
       ? trail === 'letters'
         ? littleLetterRound(p, saved.childName, rnd)
         : littleNumberRound(p, rnd)
@@ -258,6 +291,40 @@
     const outcome = outcomeOf(mistakes, hinted);
     let spoken: string;
     let lang: string = $locale;
+    if (round.trail === 'english') {
+      const c = current as LittleChallenge;
+      saved.english = { ...saved.english, boxes: recordOutcome(saved.english.boxes, littleItemId(c), outcome) };
+      saved.stars++;
+      round.outcomes = [...round.outcomes, outcome];
+      // "Great job! Apple!" em inglês e a ponte "maçã" no idioma da interface.
+      const word = enAnswerWord(c);
+      const bridge =
+        c.kind === 'hear'
+          ? $t(`be_a_ba.en_word.${enSlug(c.word)}`)
+          : c.kind === 'pick_color'
+            ? $t(`be_a_ba.en_color.${c.color}`)
+            : 'n' in c
+              ? String(c.n)
+              : '';
+      praise = EN_PRAISE[Math.floor(rnd() * EN_PRAISE.length)];
+      praiseWord = word;
+      speakSequence(
+        [
+          { text: `${praise} ${word}!`, lang: EN_LANG },
+          { text: $locale.startsWith('en') ? '' : bridge, lang: $locale },
+        ],
+        { rate: saved.settings.rate, enabled: saved.settings.voice }
+      );
+      persist();
+      setTimeout(() => {
+        praise = null;
+        praiseWord = null;
+        if (!round) return;
+        if (round.index < round.challenges.length - 1) round.index++;
+        else finishRound();
+      }, PRAISE_MS + 500);
+      return;
+    }
     if (round.little) {
       const c = current as LittleChallenge;
       const p = progressOf(round.trail, true);
@@ -301,7 +368,7 @@
       progressOf(r.trail, r.little),
       stageCountOf(r.trail, r.little),
       clean,
-      r.little ? LITTLE_ROUND_SIZE : ROUND_SIZE
+      r.challenges.length
     );
     setProgress(r.trail, progress, r.little);
     saved.rounds++;
@@ -464,6 +531,12 @@
     return WORDS.find((w) => w.id === id)?.text ?? saved.family.find((f) => f.id === id)?.text ?? id;
   }
 
+  /** Palavras e cores do Inglês já dominadas (caixa ≥ 3), em inglês. */
+  const englishKnown = $derived(
+    Object.entries(saved.english.boxes)
+      .filter(([k, b]) => b.box >= 3 && (k.startsWith('hear:') || k.startsWith('color:')))
+      .map(([k]) => (k.startsWith('color:') ? k.slice(6) : (EN_WORDS.find((w) => `hear:${w.id}` === k)?.text ?? k)))
+  );
   const letterBoxes = $derived(progressOf('letters').boxes);
   const numberBoxes = $derived(progressOf('numbers').boxes);
   const mastered = $derived(
@@ -523,11 +596,12 @@
 
       {#key round.index}
         {#if round.little}
+          {@const english = round.trail === 'english'}
           <LittleChallengeView
             challenge={current as LittleChallenge}
-            sayNumber={(n) => say(String(n))}
+            sayNumber={(n) => (english ? say(EN_NUMBERS[n] ?? String(n), EN_LANG) : say(String(n)))}
             sayLetter={(l) => say(l.toLowerCase(), LETTERS_LANG)}
-            sayWord={(w) => say(w, LETTERS_LANG)}
+            sayWord={(w) => say(w, english ? EN_LANG : LETTERS_LANG)}
             onresult={onResult}
           />
         {:else if current.kind === 'letter'}
@@ -548,6 +622,9 @@
       <div class="praise" role="status">
         <img src={imgUrl(STAR)} alt="" class="praise-star" />
         <p class="font-display text-[44px] leading-none text-white [text-shadow:0_4px_0_rgba(36,52,90,.35)]">{praise}</p>
+        {#if praiseWord}
+          <p class="praise-word" lang="en" data-praise-word>{praiseWord}</p>
+        {/if}
       </div>
     {/if}
   {:else if reward}
@@ -661,6 +738,17 @@
             </span>
             <img src={imgUrl('1f34e')} alt="" class="ml-auto h-14 w-14" />
           </button>
+
+          <button type="button" class="trail bg-crayon-sea" onclick={() => startRound('english')}>
+            <span class="trail-glyph" lang="en">Hi!</span>
+            <span class="flex flex-col items-start">
+              <span class="font-display text-[32px] leading-none">{$t('be_a_ba.trail_english')}</span>
+              <span class="text-sm font-extrabold opacity-90">
+                {$t('be_a_ba.stage', { n: progressOf('english').stage + 1 })} · {$t('be_a_ba.english_desc')}
+              </span>
+            </span>
+            <img src={imgUrl('1f981')} alt="" class="ml-auto h-14 w-14" />
+          </button>
         </main>
       {:else if screen === 'album'}
         <main class="mx-auto flex max-w-md flex-col gap-4 px-4 pb-8">
@@ -768,13 +856,13 @@
                   <option value="kids">{$t('be_a_ba.age_kids_option')}</option>
                 </select>
                 <p class="hint-text">{$t('be_a_ba.levels_hint')}</p>
-                {#each [['letters', stageCountOf('letters')], ['numbers', stageCountOf('numbers')]] as [trail, count] (`${saved.ageMode}-${trail}`)}
+                {#each [['letters', stageCountOf('letters')], ['numbers', stageCountOf('numbers')], ['english', stageCountOf('english')]] as [trail, count] (`${saved.ageMode}-${trail}`)}
                   {@const p = progressOf(trail as Trail)}
                   <label class="field-label mt-3" for="bab-stage-{trail}">{$t(trail === 'letters' ? 'be_a_ba.trail_letters' : 'be_a_ba.trail_numbers')}</label>
                   <select id="bab-stage-{trail}" class="field" value={p.locked ? String(p.stage) : 'auto'} onchange={(e) => setStage(trail as Trail, e.currentTarget.value)}>
                     <option value="auto">{$t('be_a_ba.level_auto', { n: p.stage + 1 })}</option>
                     {#each Array.from({ length: count as number }, (_, i) => i) as i (i)}
-                      <option value={String(i)}>{$t('be_a_ba.level_fixed', { n: i + 1, name: $t(`be_a_ba.${isLittle ? 'little_' : ''}stage_${trail}_${i}`) })}</option>
+                      <option value={String(i)}>{$t('be_a_ba.level_fixed', { n: i + 1, name: $t(`be_a_ba.${isLittle && trail !== 'english' ? 'little_' : ''}stage_${trail}_${i}`) })}</option>
                     {/each}
                   </select>
                 {/each}
@@ -818,6 +906,9 @@
                   {/each}
                   {#if !KINDS.some((k) => numberBoxes[k])}<li class="text-crayon-muted">{$t('be_a_ba.none_yet')}</li>{/if}
                 </ul>
+                <h3 class="field-label mt-3">{$t('be_a_ba.english_report')}</h3>
+                <p class="word-list" lang="en" data-english-known>{englishKnown.length ? englishKnown.join(' · ') : $t('be_a_ba.none_yet')}</p>
+                <p class="hint-text">{$t('be_a_ba.english_hint')}</p>
               </section>
 
               <section class="panel">
@@ -1005,6 +1096,16 @@
     gap: 10px;
     background: rgba(143, 211, 255, 0.55);
     animation: fade 0.2s ease-out;
+  }
+  .praise-word {
+    padding: 4px 18px;
+    border-radius: 9999px;
+    background: #fff;
+    color: theme('colors.crayon.ink');
+    font-family: theme('fontFamily.display');
+    font-size: 34px;
+    line-height: 1.1;
+    box-shadow: 0 4px 0 rgba(36, 52, 90, 0.18);
   }
   .praise-star {
     width: 140px;

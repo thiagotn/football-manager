@@ -213,6 +213,37 @@ escreve, então o modo troca escrever por **escutar, reconhecer e tocar**:
 - **A idade é escolhida na 1ª abertura** ("3–4 anos" ou "5–7 anos") e muda na área dos pais. Os dois modos guardam progresso separado; quem já jogava antes segue no 5–7
 - Código: `games/src/lib/be-a-ba/little.ts` e `LittleChallenge.svelte`; 5 testes Vitest e 7 E2E novos
 
+## Trilha Inglês — introdução (2026-11-17)
+
+Pedido: um modo de introdução ao inglês com frutas, comidas simples, animais, números e cores,
+para acompanhar o Arthur (4 anos), que já sabe o básico.
+
+**O que entrou e por quê**
+
+- **Só de ouvido, sem escrita em inglês.** A criança está se alfabetizando em português; soletrar
+  "apple" ao mesmo tempo confunde letra e som. Ela ouve a palavra (voz en-US) e toca. A palavra
+  escrita aparece só no elogio, como exposição.
+- **Ponte em português** depois de cada acerto: "Great job! Apple!" e a voz em português diz
+  "maçã". Com a interface em inglês a ponte some.
+- **Figuras erradas da mesma categoria** (apple × pear, não apple × dog): é diferenciar dentro do
+  grupo que ensina vocabulário.
+- **Os 5 temas pedidos fazem sentido nessa idade**, em 3 estágios do mais ao menos frequente:
+
+| Estágio | Conteúdo | Opções |
+|---|---|---|
+| 1 | Bichos (15) · cores red, blue, yellow, green · números 1–3 | 2 |
+| 2 | + frutas (10) · + orange, purple, pink · números 1–5 | 3 |
+| 3 | + comidas simples (12) · + brown, black, white · números 1–10 · contar tocando em inglês (até 6) | 3 |
+
+- **Ficou de fora de propósito:** frases além da pergunta, plurais/artigos explicados, alfabeto em
+  inglês (o nome das letras em inglês colide com o do português na fase de alfabetização) e
+  qualquer digitação.
+- **Trilha própria no Início das duas idades**: rodadas de 3 no modo Pequenos e de 5 no 5–7; o
+  progresso é um só. A fase pode ser fixada na área dos pais, e o relatório mostra as palavras e
+  cores em inglês já dominadas.
+- Código: `games/src/lib/be-a-ba/english.ts`; `pick_color` em `LittleChallenge.svelte`;
+  `speakSequence` em `speech.ts`. 4 testes Vitest e 6 E2E novos.
+
 ## Perguntas da revisão (respondidas acima)
 
 1. **Nome:** "Bê-á-Bá" está bom, ou prefere outro?

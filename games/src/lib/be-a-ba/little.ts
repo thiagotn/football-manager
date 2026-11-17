@@ -9,6 +9,7 @@
  * - `tap`         — "Vamos contar!": toca em cada objeto e ele fala o número
  * - `find_number` — "Ache o número 3": numeral com bolinhas embaixo
  * - `where`       — "Onde tem 2?": dois grupos, toca no que tem a quantidade
+ * - `pick_color`  — só na trilha Inglês (`english.ts`): "Touch red!"
  *
  * Rodadas de 3 desafios, começando com 2 opções.
  */
@@ -19,11 +20,14 @@ import { pickWeighted, MAX_BOX, type Boxes, type TrailProgress } from './progres
 
 export const LITTLE_ROUND_SIZE = 3;
 
-export type LittleKind = 'hear' | 'pick_letter' | 'tap' | 'find_number' | 'where';
+export type LittleKind = 'hear' | 'pick_letter' | 'pick_color' | 'tap' | 'find_number' | 'where';
 
 export type LittleChallenge =
-  | { kind: 'hear'; word: Word; article: 'a' | 'o'; options: Word[] }
+  /** `article` só no português ("Cadê **a** uva?"); a trilha Inglês não usa. */
+  | { kind: 'hear'; word: Word; article?: 'a' | 'o'; options: Word[] }
   | { kind: 'pick_letter'; letter: string; options: string[] }
+  /** Só na trilha Inglês ("Touch red!"): `color` e `options` são ids de `EN_COLORS`. */
+  | { kind: 'pick_color'; color: string; options: string[] }
   | { kind: 'tap'; item: string; n: number }
   | { kind: 'find_number'; n: number; options: number[] }
   | { kind: 'where'; item: string; n: number; groups: number[] };
@@ -101,6 +105,8 @@ export function littleItemId(c: LittleChallenge): string {
       return `hear:${c.word.id}`;
     case 'pick_letter':
       return `letter:${c.letter}`;
+    case 'pick_color':
+      return `color:${c.color}`;
     default:
       return c.kind;
   }
@@ -113,6 +119,8 @@ export function littleAnswer(c: LittleChallenge): string | number {
       return c.word.id;
     case 'pick_letter':
       return c.letter;
+    case 'pick_color':
+      return c.color;
     case 'tap':
     case 'find_number':
       return c.n;

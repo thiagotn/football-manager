@@ -50,6 +50,29 @@ export function speak(text: string, { lang, rate = 0.85, enabled = true }: Speak
   }
 }
 
+/**
+ * Fala várias partes em sequência, cada uma no seu idioma — é a ponte da
+ * trilha Inglês: "Great job! Apple!" (en-US) e depois "maçã" (pt-BR).
+ */
+export function speakSequence(parts: { text: string; lang: string }[], { rate = 0.85, enabled = true } = {}): void {
+  const said = parts.filter((p) => p.text);
+  if (typeof document !== 'undefined') document.documentElement.dataset.spoken = said.map((p) => p.text).join(' | ');
+  if (!enabled || typeof speechSynthesis === 'undefined') return;
+  try {
+    speechSynthesis.cancel();
+    for (const part of said) {
+      const u = new SpeechSynthesisUtterance(part.text.toLocaleLowerCase(part.lang));
+      u.lang = part.lang;
+      const voice = pickVoice(part.lang) as SpeechSynthesisVoice | null;
+      if (voice) u.voice = voice;
+      u.rate = rate;
+      speechSynthesis.speak(u);
+    }
+  } catch {
+    // Motor de voz indisponível: segue sem som.
+  }
+}
+
 export function stopSpeaking(): void {
   try {
     if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();

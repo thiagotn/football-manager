@@ -28,7 +28,7 @@
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×19 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
-| `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças de 3 a 7 anos (PRD 058). Na 1ª abertura pergunta a idade (modo **Pequenos** 3–4 ou **Crianças** 5–7). Abas: Início (trilhas Letras e Números) · Álbum · Pais (protegida por pergunta). A rodada (3 ou 5 desafios) entra por cima das abas |
+| `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças de 3 a 7 anos (PRD 058). Na 1ª abertura pergunta a idade (modo **Pequenos** 3–4 ou **Crianças** 5–7). Abas: Início (trilhas Letras, Números e **Inglês**) · Álbum · Pais (protegida por pergunta). A rodada (3 ou 5 desafios) entra por cima das abas |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e, com o 3D ligado, arraste para girar a câmera |
 
 ## Compartilhado
@@ -110,19 +110,21 @@
 | `progress.ts` | Estágios das trilhas (`LETTER_STAGES`, `NUMBER_STAGES`), caixas de Leitner, sorteio ponderado, `letterRound`/`numberRound` (5 desafios; 1 palavra da família por rodada) e `afterRound(p, nº de estágios, limpas, tamanho da rodada)` (rodada boa = ≥ 80% sem erro nem dica; sobe depois de 2 boas seguidas, nunca desce) |
 | `be-a-ba.test.ts` | Vitest: todo desenho usado existe em `static/`, banco de palavras, acentos, bandeja, faixa de toda conta gerada, Leitner, estágios e rodadas |
 | `little.ts` | Modo **Pequenos** (3–4 anos): `hear` (Cadê a uva? — figura certa), `pick_letter` (letra igual; vogais, depois consoantes e a inicial do nome), `tap` (contar tocando), `find_number` (numeral com bolinhas), `where` (onde tem N?). Rodadas de 3, estágios próprios (`LITTLE_*_STAGES`), Leitner com chaves `hear:<id>`/`letter:<L>`/tipo |
-| `LittleChallenge.svelte` | Os 5 desafios do modo Pequenos (`data-little-kind` + `data-answer`) |
+| `LittleChallenge.svelte` | Os desafios de toque do modo Pequenos e da trilha Inglês (`data-little-kind` + `data-answer`; `pick_color` só no Inglês) |
+| `english.ts` | Trilha **Inglês** (introdução, só de ouvido): 37 palavras (bichos, frutas, comidas), 10 cores e números 1–10 em 3 estágios; perguntas e elogios em inglês (`enPrompt`, `EN_PRAISE` — conteúdo da aula, não i18n); figuras erradas da **mesma categoria**; `englishRound(p, tamanho)` (3 no modo Pequenos, 5 no 5–7). A ponte para o português vem de `be_a_ba.en_word.<slug>` / `be_a_ba.en_color.<id>` |
 | `stickers.ts` | Álbum de 24 figurinhas (4 páginas de 6) + a especial "Meu nome" |
-| `storage.ts` | localStorage `games_be_a_ba`: `ageMode` (`little`/`kids`; `null` = ainda não escolhido; estado salvo antigo sem a chave vira `kids`), criança, palavras da família, progresso das trilhas (`letters`/`numbers` e `little.{letters,numbers}`, independentes), figurinhas, estrelas, tempo por dia e ajustes. A rodada **não** é salva |
+| `storage.ts` | localStorage `games_be_a_ba`: `ageMode` (`little`/`kids`; `null` = ainda não escolhido; estado salvo antigo sem a chave vira `kids`), criança, palavras da família, progresso das trilhas (`letters`/`numbers`, `little.{letters,numbers}` e `english` — este último um só para as duas idades), figurinhas, estrelas, tempo por dia e ajustes. A rodada **não** é salva |
 | `photos.ts` | Fotos das palavras da família no **IndexedDB** (reduzidas a 512 px no aparelho; nunca enviadas) |
-| `speech.ts` | Voz com `speechSynthesis` (voz do aparelho). O último texto falado fica em `<html data-spoken>` para o E2E |
+| `speech.ts` | Voz com `speechSynthesis` (voz do aparelho). `speakSequence` fala partes em idiomas diferentes em fila (inglês → ponte em português). O último texto falado fica em `<html data-spoken>` para o E2E (partes separadas por ` \| `) |
 | `art.ts` | Mascote (corujinha Lili), estrela, medalha e `imgUrl()` |
 | `LetterChallenge.svelte` · `NumberChallenge.svelte` | Um desafio cada; expõem `data-mode`/`data-kind` e `data-answer` (o E2E joga rodadas inteiras com eles) |
 | `Picture.svelte` · `Objects.svelte` · `CardArt.svelte` | Imagem da palavra (desenho, foto ou inicial), objetos de contagem em fileiras de 5, arte do card no hub |
 
-- **Desenhos: Twemoji** (CC-BY 4.0, créditos na área dos pais). Só os usados ficam em `static/be-a-ba/img/` (~180 KB), copiados por `npm run twemoji` (lê os códigos de `words.ts`, `stickers.ts`, `numbers.ts`, `art.ts`; devDependency `twemoji-svg`). `mesa.svg` é desenho próprio — não há mesa na Twemoji
+- **Desenhos: Twemoji** (CC-BY 4.0, créditos na área dos pais). Só os usados ficam em `static/be-a-ba/img/` (~180 KB), copiados por `npm run twemoji` (lê os códigos de `words.ts`, `stickers.ts`, `numbers.ts`, `art.ts`, `english.ts`; devDependency `twemoji-svg`). `mesa.svg` é desenho próprio — não há mesa na Twemoji
 - Erro não pune: a resposta errada balança e fica marcada; depois de 2 erros a certa **pulsa a luz** (não o tamanho — o alvo não pode fugir do dedo, e animação de escala deixa o Playwright sem conseguir clicar)
 - Letras só em pt-BR na fase 1: em en/es o card de Letras fica desligado ("em breve") e os Números funcionam no idioma da interface
 - Portão dos pais: tocar no número escrito por extenso. Sair da aba Pais tranca de novo
+- Inglês **não tem escrita** (soletrar em inglês atrapalharia a alfabetização em português): ouvir "Where is the apple?" e tocar; a palavra só aparece escrita no elogio, seguida da ponte falada em português (omitida com a interface em inglês)
 - Modo Pequenos não tem nada para ler nem teclado: figura, letra grande ou número com bolinhas; cada toque é falado. A idade troca na área dos pais (os dois modos guardam progresso separado)
 
 ## Tetris 3D (`src/lib/tetris/`)

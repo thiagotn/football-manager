@@ -63,6 +63,7 @@ def _state(**over) -> dict:
             "letters": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
             "numbers": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
         },
+        "english": {"stage": 0, "locked": True, "goodRounds": 0, "boxes": {}},
         "stickers": [],
         "stars": 0,
         "rounds": 0,
@@ -136,7 +137,7 @@ def _solve_little(page: Page) -> str:
     ch = page.locator("[data-little-kind]")
     kind = ch.get_attribute("data-little-kind")
     answer = ch.get_attribute("data-answer")
-    if kind == "hear":
+    if kind in ("hear", "pick_color"):
         ch.locator(f"[data-option='{answer}']").click()
     elif kind == "pick_letter":
         ch.get_by_role("button", name=f"Letra {answer}", exact=True).click()
@@ -529,3 +530,90 @@ def test_trocar_a_idade_na_area_dos_pais(page: Page) -> None:
     page.locator("#bab-stage-numbers").select_option("2")
     assert _saved(page)["little"]["numbers"]["stage"] == 2
     assert _saved(page)["numbers"]["stage"] == 0
+
+
+# ── Trilha Inglês ───────────────────────────────────────────────────────────
+
+ENGLISH_PROMPT = re.compile(r"^(Where (is|are) the [a-z ]+\?|Touch [a-z]+!|Find number [a-z]+!|Let's count!)$")
+
+
+def test_ingles_rodada_no_modo_pequenos(page: Page) -> None:
+    _open(page, _state(ageMode="little", english={"stage": 0}))
+    page.get_by_role("button", name=re.compile("Inglês")).click()
+    kinds = []
+    for _ in range(3):
+        expect(page.locator("[data-little-kind]")).to_be_visible()
+        assert ENGLISH_PROMPT.match(page.locator(".instruction").inner_text().strip())
+        kinds.append(_solve_little(page))
+        _next(page)
+    assert set(kinds) <= {"hear", "pick_color", "find_number"}
+    expect(page.get_by_role("heading", name="Rodada completa!")).to_be_visible()
+    saved = _saved(page)
+    assert saved["stars"] == 3 and len(saved["stickers"]) == 1
+    assert saved["english"]["boxes"]
+    assert saved["little"]["letters"]["boxes"] == {}  # o Inglês tem progresso próprio
+
+
+def test_ingles_elogio_em_ingles_com_ponte_em_portugues(page: Page) -> None:
+    _open(page, _state(ageMode="little", english={"stage": 0}))
+    page.get_by_role("button", name=re.compile("Inglês")).click()
+    for _ in range(3):
+        ch = page.locator("[data-little-kind]")
+        if ch.get_attribute("data-little-kind") == "hear":
+            break
+        _solve_little(page)
+        _next(page)
+    else:
+        pytest.fail("a rodada não teve figura")
+    word = page.locator(".instruction").inner_text().strip().removeprefix("Where is the ").removeprefix("Where are the ").rstrip("?")
+    _solve_little(page)
+    expect(page.locator("[data-praise-word]")).to_have_text(word)
+    english, bridge = page.evaluate("() => document.documentElement.dataset.spoken").split(" | ")
+    assert english.endswith(f"{word}!")
+    assert bridge and bridge != word  # a palavra em português (ex.: "elefante")
+
+
+def test_ingles_cor_errada_fica_apagada(page: Page) -> None:
+    # Estágio 1: 3 tipos (figura, cor, número) numa rodada de 3 — sempre tem cor.
+    _open(page, _state(ageMode="little", english={"stage": 0}))
+    page.get_by_role("button", name=re.compile("Inglês")).click()
+    for _ in range(3):
+        if page.locator("[data-little-kind]").get_attribute("data-little-kind") == "pick_color":
+            break
+        _solve_little(page)
+        _next(page)
+    else:
+        pytest.fail("a rodada não teve cor")
+    ch = page.locator("[data-little-kind=pick_color]")
+    answer = ch.get_attribute("data-answer")
+    assert page.locator(".instruction").inner_text().strip() == f"Touch {answer}!"
+    wrong = ch.locator(f".choice:not([data-option='{answer}'])").first
+    wrong.click()
+    expect(wrong).to_have_class(re.compile("wrong"))
+    ch.locator(f"[data-option='{answer}']").click()
+    expect(page.locator("[data-praise-word]")).to_have_text(answer)
+
+
+def test_ingles_no_modo_5_a_7_tem_5_desafios(page: Page) -> None:
+    _open(page, _state(english={"stage": 2}))
+    page.get_by_role("button", name=re.compile("Inglês")).click()
+    kinds = _play_round(page, _solve_little, size=5)
+    assert set(kinds) <= {"hear", "pick_color", "find_number", "tap"}
+
+
+def test_ingles_com_a_interface_em_ingles_nao_tem_ponte(page: Page) -> None:
+    _open(page, _state(ageMode="little", english={"stage": 0}), locale="en")
+    page.get_by_role("button", name=re.compile("Listen and tap")).click()
+    _solve_little(page)
+    expect(page.locator(".praise")).to_be_visible()
+    assert " | " not in page.evaluate("() => document.documentElement.dataset.spoken")
+
+
+def test_ingles_fase_fixada_pelos_pais(page: Page) -> None:
+    _open(page, _state(english={"stage": 0, "locked": False}))
+    _enter_parents(page)
+    page.locator("#bab-stage-english").select_option("2")
+    saved = _saved(page)["english"]
+    assert saved["locked"] is True and saved["stage"] == 2
+    page.get_by_role("button", name="Início").click()
+    expect(page.get_by_role("button", name=re.compile("Inglês.*Fase 3"))).to_be_visible()
