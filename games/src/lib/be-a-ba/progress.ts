@@ -13,7 +13,7 @@ export const MAX_BOX = 5;
 export const GOOD_ROUNDS_TO_ADVANCE = 2;
 export const GOOD_ROUND_CLEAN = 4;
 
-export type Trail = 'letters' | 'numbers';
+export type Trail = 'letters' | 'numbers' | 'english';
 export type Challenge = LetterChallenge | NumberChallenge;
 export type Outcome = 'clean' | 'hint' | 'miss';
 

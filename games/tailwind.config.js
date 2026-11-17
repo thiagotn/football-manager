@@ -38,6 +38,7 @@ export default {
           grape: '#7b5cff',
           leaf: '#43b85c',
           orange: '#ff9b3d',
+          sea: '#2e9bff',
         },
       },
     },

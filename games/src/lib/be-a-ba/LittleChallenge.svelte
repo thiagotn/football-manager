@@ -10,6 +10,7 @@
   import Objects from './Objects.svelte';
   import { imgUrl } from './art';
   import { littleAnswer, type LittleChallenge } from './little';
+  import { colorHex } from './english';
   import { t } from '$lib/i18n';
 
   let {
@@ -22,6 +23,7 @@
     challenge: LittleChallenge;
     sayNumber: (n: number) => void;
     sayLetter: (l: string) => void;
+    /** Fala a palavra da figura tocada (português ou inglês, conforme a trilha). */
     sayWord: (w: string) => void;
     onresult: (mistakes: number, hinted: boolean) => void;
   } = $props();
@@ -109,6 +111,35 @@
           }}
           aria-label={$t('be_a_ba.letter', { letter })}
         >{letter}</button>
+      {/each}
+    </div>
+  {:else if challenge.kind === 'pick_color'}
+    <div class="choices" style="--n:{challenge.options.length}">
+      {#each challenge.options as color (color)}
+        <button
+          type="button"
+          class="choice paint"
+          class:wrong={wrong.includes(color)}
+          class:glow={glow === color}
+          class:shake={shaking === color}
+          class:right={finished && color === answer}
+          onclick={() => {
+            sayWord(color);
+            pick(color);
+          }}
+          aria-label={color}
+          data-option={color}
+        >
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path
+              d="M50 8c14 0 22 9 30 14s14 14 12 28-6 22-14 30-20 14-32 12-22-4-30-14S4 58 6 44 14 20 26 14 36 8 50 8Z"
+              fill={colorHex(color)}
+              stroke="rgba(36,52,90,.18)"
+              stroke-width="3"
+            />
+            <ellipse cx="36" cy="32" rx="12" ry="7" fill="rgba(255,255,255,.35)" transform="rotate(-25 36 32)" />
+          </svg>
+        </button>
       {/each}
     </div>
   {:else if challenge.kind === 'tap'}
@@ -252,6 +283,10 @@
     height: 12px;
     border-radius: 50%;
     background: theme('colors.crayon.grape');
+  }
+  .paint svg {
+    width: min(110px, 100%);
+    aspect-ratio: 1;
   }
   .group {
     min-height: 170px;

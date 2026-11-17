@@ -14,6 +14,7 @@ import {
   HEAR_ARTICLES, HEAR_WORDS, LITTLE_LETTER_STAGES, LITTLE_NUMBER_STAGES, LITTLE_ROUND_SIZE, VOWELS, letterPool,
   littleAnswer, littleItemId, littleLetterRound, littleNumberRound,
 } from './little';
+import { EN_COLORS, EN_STAGES, EN_WORDS, enAnswerWord, enPrompt, enSlug, englishRound, wordsOfStage } from './english';
 import { mulberry32 } from '../enche-ai/engine';
 
 // Arquivos de desenho que existem de fato em static/ (só os nomes; nada é carregado).
@@ -304,5 +305,70 @@ describe('modo Pequenos (3–4 anos)', () => {
     expect(littleItemId(hear)).toMatch(/^hear:/);
     expect(littleItemId({ kind: 'pick_letter', letter: 'A', options: ['A', 'E'] })).toBe('letter:A');
     expect(littleItemId({ kind: 'tap', item: '1f34e', n: 2 })).toBe('tap');
+  });
+});
+
+describe('trilha Inglês', () => {
+  it('toda palavra tem desenho, id único e categoria', () => {
+    expect(new Set(EN_WORDS.map((w) => w.id)).size).toBe(EN_WORDS.length);
+    for (const w of EN_WORDS) {
+      expect(IMG_FILES.has(w.img), w.text).toBe(true);
+      expect(w.text).toMatch(/^[a-z ]+$/);
+    }
+    for (const c of ['animals', 'fruits', 'foods'] as const) {
+      expect(EN_WORDS.filter((w) => w.category === c).length).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('perguntas em inglês, com "are" no plural', () => {
+    const word = (id: string) => EN_WORDS.find((w) => w.id === id)!;
+    expect(enPrompt({ kind: 'hear', word: word('en-apple'), options: [] })).toBe('Where is the apple?');
+    expect(enPrompt({ kind: 'hear', word: word('en-grapes'), options: [] })).toBe('Where are the grapes?');
+    expect(enPrompt({ kind: 'pick_color', color: 'red', options: [] })).toBe('Touch red!');
+    expect(enPrompt({ kind: 'find_number', n: 3, options: [] })).toBe('Find number three!');
+    expect(enAnswerWord({ kind: 'tap', item: '1f34e', n: 7 })).toBe('seven');
+    expect(enSlug(word('en-ice-cream'))).toBe('ice_cream');
+  });
+
+  it('rodada: tamanho pedido, conteúdo do estágio e figuras erradas da mesma categoria', () => {
+    EN_STAGES.forEach((stage, i) => {
+      for (const size of [3, 5]) {
+        for (let s = 1; s < 60; s++) {
+          const round = englishRound({ ...emptyTrail(), stage: i }, size, rng(s * 7 + size));
+          expect(round).toHaveLength(size);
+          for (const c of round) {
+            expect(stage.kinds).toContain(c.kind);
+            if (c.kind === 'hear') {
+              const w = c.word as (typeof EN_WORDS)[number];
+              expect(stage.categories).toContain(w.category);
+              expect(c.options).toHaveLength(stage.options);
+              expect(new Set(c.options.map((o) => o.id)).size).toBe(stage.options);
+              for (const o of c.options) expect((o as typeof w).category).toBe(w.category);
+            } else if (c.kind === 'pick_color') {
+              const allowed = EN_COLORS.slice(0, stage.colors).map((x) => x.id);
+              expect(c.options).toHaveLength(stage.options);
+              expect(c.options).toContain(c.color);
+              for (const o of c.options) expect(allowed).toContain(o);
+            } else if (c.kind === 'find_number') {
+              expect(c.options).toContain(c.n);
+              for (const o of c.options) expect(o).toBeLessThanOrEqual(stage.numberMax);
+            } else if (c.kind === 'tap') {
+              expect(c.n).toBeGreaterThanOrEqual(2);
+              expect(c.n).toBeLessThanOrEqual(6);
+            }
+          }
+          // A mesma palavra ou cor não se repete na rodada
+          const ids = round.map((c) => (c.kind === 'hear' ? c.word.id : c.kind === 'pick_color' ? c.color : null)).filter(Boolean);
+          expect(new Set(ids).size).toBe(ids.length);
+        }
+      }
+    });
+  });
+
+  it('o 1º estágio é só bichos, 4 cores e números até 3', () => {
+    expect(wordsOfStage(EN_STAGES[0]).every((w) => w.category === 'animals')).toBe(true);
+    expect(EN_STAGES[0].colors).toBe(4);
+    expect(EN_STAGES[0].numberMax).toBe(3);
+    expect(littleItemId({ kind: 'pick_color', color: 'red', options: [] })).toBe('color:red');
   });
 });
