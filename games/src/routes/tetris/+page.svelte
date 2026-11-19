@@ -6,12 +6,15 @@
    * os controles são Svelte, e as regras ficam em `$lib/tetris/engine`.
    *
    * O 3D é opcional e **vem desligado**: na primeira partida o jogo pergunta,
-   * e depois a chave fica no overlay de início e no de pausa. Com 3D, arrastar
-   * no canvas gira a câmera e tocar sem arrastar rotaciona a peça; sem 3D a
-   * arena fica fixa de frente e o toque só rotaciona.
+   * e depois a chave fica no overlay de início e no de pausa.
+   *
+   * No celular não há botões: um dedo na arena joga (`$lib/tetris/gestures` —
+   * toque gira, arrastar para o lado move, para baixo desce, deslizar rápido
+   * solta). Com 3D, **dois dedos** (ou Shift + arrastar no mouse) giram a
+   * câmera. No computador, o teclado continua valendo.
    */
   import { onMount } from 'svelte';
-  import { ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronsDown, Pause, Play, RotateCw } from 'lucide-svelte';
+  import { ChevronLeft, Pause, Play } from 'lucide-svelte';
   import { t } from '$lib/i18n';
   import {
     TETROMINOES,
@@ -34,10 +37,9 @@
     type PieceType,
   } from '$lib/tetris/engine';
   import { createScene, type TetrisScene } from '$lib/tetris/scene';
+  import { createGesture, type Gesture, type GestureAction } from '$lib/tetris/gestures';
   import { emptyState, loadState, saveState, type SavedState } from '$lib/tetris/storage';
 
-  /** Passo do arraste a partir do qual o gesto vira câmera, não rotação. */
-  const DRAG_PX = 7;
   const ORBIT_SPEED = 0.0085;
 
   let stage = $state<HTMLDivElement>();
@@ -60,6 +62,8 @@
   let settings = $derived(saved.settings);
 
   let scene: TetrisScene | null = null;
+  /** Tamanho da casa na tela — o passo do arraste; exposto em `data-cell` para o E2E. */
+  let cellPx = $state(30);
   let frame = 0;
   let dropAt = 0;
   let dropMs = dropIntervalMs(1);
@@ -232,52 +236,68 @@
     fastFall = null;
   }
 
-  /** Botões táteis com auto-repeat enquanto segurados. */
-  function hold(action: () => void, interval = 130) {
-    let timer: ReturnType<typeof setInterval> | null = null;
-    const stop = () => {
-      if (timer) clearInterval(timer);
-      timer = null;
-    };
-    return {
-      onpointerdown: (event: PointerEvent) => {
-        event.preventDefault();
-        action();
-        stop();
-        timer = setInterval(action, interval);
-      },
-      onpointerup: stop,
-      onpointerleave: stop,
-      onpointercancel: stop,
-    };
+  /** Dedos (ou o mouse) em contato com a arena, por `pointerId`. */
+  const pointers = new Map<number, { x: number; y: number }>();
+  /** O gesto de um dedo em andamento — vira ações na peça. */
+  let gesture: Gesture | null = null;
+  /** Dois dedos (ou Shift + mouse) no 3D: o arraste gira a câmera. */
+  let orbiting = false;
+
+  function apply(actions: GestureAction[]) {
+    for (const action of actions) {
+      if (action === 'left') move(-1);
+      else if (action === 'right') move(1);
+      else if (action === 'down') stepDown();
+      else if (action === 'rotate') turn();
+      else hardDrop();
+    }
   }
 
-  /** Arraste no canvas: gira a câmera; toque curto rotaciona a peça. */
-  let drag: { x: number; y: number; moved: boolean } | null = null;
-
   function onCanvasPointerDown(event: PointerEvent) {
-    drag = { x: event.clientX, y: event.clientY, moved: false };
     canvas?.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (settings.depth && (pointers.size >= 2 || event.shiftKey)) {
+      // O segundo dedo transforma o gesto em câmera e cancela o da peça.
+      gesture = null;
+      orbiting = true;
+      return;
+    }
+    if (pointers.size === 1) {
+      gesture = createGesture(cellPx, event.clientX, event.clientY, event.timeStamp);
+    }
   }
 
   function onCanvasPointerMove(event: PointerEvent) {
-    if (!drag) return;
-    const dx = event.clientX - drag.x;
-    const dy = event.clientY - drag.y;
-    if (Math.abs(dx) > DRAG_PX || Math.abs(dy) > DRAG_PX) drag.moved = true;
-    scene?.orbit(dx * ORBIT_SPEED, dy * ORBIT_SPEED);
-    drag.x = event.clientX;
-    drag.y = event.clientY;
+    const prev = pointers.get(event.pointerId);
+    if (!prev) return;
+    const cur = { x: event.clientX, y: event.clientY };
+    pointers.set(event.pointerId, cur);
+    if (orbiting) {
+      // Com dois dedos, cada um contribui com metade: a câmera segue o meio deles.
+      const share = ORBIT_SPEED / pointers.size;
+      scene?.orbit((cur.x - prev.x) * share, (cur.y - prev.y) * share);
+      return;
+    }
+    if (gesture && playable()) apply(gesture.move(cur.x, cur.y, event.timeStamp));
   }
 
-  function onCanvasPointerUp() {
-    if (drag && !drag.moved) turn();
-    drag = null;
+  function onCanvasPointerUp(event: PointerEvent) {
+    pointers.delete(event.pointerId);
+    if (gesture && playable()) apply(gesture.end(event.clientX, event.clientY, event.timeStamp));
+    gesture = null;
+    if (pointers.size === 0) orbiting = false;
+  }
+
+  function onCanvasPointerCancel(event: PointerEvent) {
+    pointers.delete(event.pointerId);
+    gesture = null;
+    if (pointers.size === 0) orbiting = false;
   }
 
   function resize() {
     if (!stage) return;
     scene?.resize(stage.clientWidth, stage.clientHeight);
+    cellPx = scene?.cellPx() ?? cellPx;
   }
 
   onMount(() => {
@@ -328,10 +348,15 @@
     bind:this={canvas}
     class="absolute inset-0 h-full w-full touch-none"
     data-depth={settings.depth}
+    data-cell={Math.round(cellPx)}
+    data-piece-type={piece?.type ?? ''}
+    data-piece-col={piece?.col ?? ''}
+    data-piece-row={piece?.row ?? ''}
+    data-piece-rot={piece?.rot ?? ''}
     onpointerdown={onCanvasPointerDown}
     onpointermove={onCanvasPointerMove}
     onpointerup={onCanvasPointerUp}
-    onpointercancel={onCanvasPointerUp}
+    onpointercancel={onCanvasPointerCancel}
   ></canvas>
 
   {#if !webgl}
@@ -345,13 +370,25 @@
     class="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3"
     style="padding-top:max(12px,env(safe-area-inset-top))"
   >
-    <a
-      href="/"
-      aria-label={$t('tetris.all_games')}
-      class="pointer-events-auto flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-white/20 bg-white/[.06]"
-    >
-      <ChevronLeft size={18} strokeWidth={2.2} />
-    </a>
+    <div class="flex flex-none gap-1.5">
+      <a
+        href="/"
+        aria-label={$t('tetris.all_games')}
+        class="pointer-events-auto flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-white/20 bg-white/[.06]"
+      >
+        <ChevronLeft size={18} strokeWidth={2.2} />
+      </a>
+      {#if running}
+        <button
+          type="button"
+          aria-label={$t('tetris.aria_pause')}
+          onclick={togglePause}
+          class="pointer-events-auto flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-white/20 bg-white/[.06]"
+        >
+          {#if paused}<Play size={16} strokeWidth={2.4} />{:else}<Pause size={16} strokeWidth={2.4} />{/if}
+        </button>
+      {/if}
+    </div>
 
     <div class="flex items-start gap-2">
       {#each [{ label: $t('tetris.score'), value: fmtScore(score) }, { label: $t('tetris.level'), value: String(level) }, { label: $t('tetris.lines'), value: String(lines) }] as box (box.label)}
@@ -367,41 +404,13 @@
     </div>
   </div>
 
-  <!-- ── Controles ────────────────────────────────────────────────────── -->
-  <div
-    class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 px-2.5 pt-3"
-    style="padding-bottom:max(18px,env(safe-area-inset-bottom))"
-  >
-    <div class="flex gap-1">
-      <button type="button" class="cb" aria-label={$t('tetris.aria_left')} {...hold(() => move(-1))}>
-        <ArrowLeft size={24} strokeWidth={2.4} />
-      </button>
-      <button type="button" class="cb" aria-label={$t('tetris.aria_right')} {...hold(() => move(1))}>
-        <ArrowRight size={24} strokeWidth={2.4} />
-      </button>
-      <button type="button" class="cb" aria-label={$t('tetris.aria_down')} {...hold(stepDown, 60)}>
-        <ArrowDown size={24} strokeWidth={2.4} />
-      </button>
-    </div>
-
-    <div class="flex items-center gap-1">
-      <button type="button" class="cb" aria-label={$t('tetris.aria_pause')} onclick={togglePause}>
-        {#if paused}<Play size={20} strokeWidth={2.4} />{:else}<Pause size={20} strokeWidth={2.4} />{/if}
-      </button>
-      <button type="button" class="cb cb-gold" aria-label={$t('tetris.aria_rotate')} onclick={turn}>
-        <RotateCw size={24} strokeWidth={2.4} />
-      </button>
-      <button type="button" class="cb cb-drop" aria-label={$t('tetris.aria_drop')} onclick={hardDrop}>
-        <ChevronsDown size={26} strokeWidth={2.4} />
-      </button>
-    </div>
-  </div>
-
+  <!-- Sem botões: a dica dos gestos fica na folga de baixo do poço. -->
   <p
-    class="pointer-events-none absolute inset-x-0 mx-auto max-w-[300px] px-4 text-center text-[10px] leading-snug text-white/35"
-    style="bottom:calc(88px + env(safe-area-inset-bottom))"
+    class="pointer-events-none absolute inset-x-0 mx-auto max-w-[340px] px-4 text-center text-[10.5px] leading-snug text-white/40"
+    style="bottom:calc(8px + env(safe-area-inset-bottom))"
   >
     {settings.depth ? $t('tetris.hint_camera') : $t('tetris.hint_flat')}
+    <span class="keys">{$t('tetris.hint_keys')}</span>
   </p>
 
   <!-- ── Overlay de início / fim ──────────────────────────────────────── -->
@@ -478,29 +487,13 @@
   .stage {
     height: 100dvh;
   }
-  .cb {
-    display: flex;
-    height: 44px;
-    width: 44px;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.07);
-    touch-action: none;
-    user-select: none;
+  /* A linha do teclado só aparece onde há teclado (mouse = ponteiro fino). */
+  .keys {
+    display: none;
   }
-  .cb:active {
-    transform: scale(0.9);
-  }
-  .cb-gold {
-    border-color: rgba(255, 201, 60, 0.5);
-    color: theme('colors.mustard.DEFAULT');
-  }
-  .cb-drop {
-    border-color: transparent;
-    background: theme('colors.mustard.DEFAULT');
-    color: theme('colors.mustard.ink');
+  @media (pointer: fine) {
+    .keys {
+      display: block;
+    }
   }
 </style>

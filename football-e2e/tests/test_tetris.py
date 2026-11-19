@@ -5,7 +5,9 @@ O jogo virou rota Svelte com o three.js importado como módulo (PRD 054). Como
 o canvas WebGL roda em software no CI, nenhuma asserção olha o que foi
 desenhado: tudo se apoia no HUD e no DOM. O modo da arena aparece no DOM em
 `canvas[data-depth]` justamente por isso — a câmera em si não é observável
-daqui, e a trava do arraste é verificada à mão no navegador.
+daqui. A peça em jogo (`data-piece-*`) e o tamanho da casa (`data-cell`)
+também, para os testes dos gestos: no celular não há botões, um dedo na arena
+joga e, no 3D, dois dedos giram a câmera.
 
     cd games && npm run build && npx vite preview --port 4173
     cd football-e2e && pytest tests/test_tetris.py
@@ -35,6 +37,41 @@ def _hud(page: Page, label: str) -> int:
     """Valor de uma caixa do HUD. `label` é o texto do DOM, que o CSS exibe em
     caixa alta — por isso 'Pontos', não 'PONTOS'."""
     return int(page.get_by_text(label, exact=True).locator("xpath=following-sibling::div").inner_text())
+
+
+def _peca(page: Page) -> dict:
+    """A peça em jogo, lida de `canvas[data-piece-*]` (e o tamanho da casa)."""
+    cv = page.locator("canvas[data-depth]")
+    return {
+        "type": cv.get_attribute("data-piece-type"),
+        "col": int(cv.get_attribute("data-piece-col") or -99),
+        "row": int(cv.get_attribute("data-piece-row") or -99),
+        "rot": int(cv.get_attribute("data-piece-rot") or 0),
+        "cell": int(cv.get_attribute("data-cell")),
+    }
+
+
+def _arrastar(page: Page, x0: float, y0: float, x1: float, y1: float, steps: int, pausa_ms: int = 0) -> None:
+    """Um dedo (o mouse gera os mesmos pointer events) arrastando na arena."""
+    page.mouse.move(x0, y0)
+    page.mouse.down()
+    for i in range(1, steps + 1):
+        page.mouse.move(x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps)
+        if pausa_ms:
+            page.wait_for_timeout(pausa_ms)
+    page.mouse.up()
+
+
+def _jogando_com_peca_que_gira(page: Page) -> dict:
+    """Começa a partida e garante uma peça que não seja o quadrado (O não gira)."""
+    page.get_by_role("button", name="Jogar", exact=True).click()
+    for _ in range(6):
+        peca = _peca(page)
+        if peca["type"] and peca["type"] != "O":
+            return peca
+        page.keyboard.press("Space")
+        page.wait_for_timeout(150)
+    pytest.fail("só vieram quadrados")
 
 
 def _ajustes(page: Page) -> dict:
@@ -88,14 +125,6 @@ def test_abre_no_overlay_e_comeca_zerado(tetris: Page):
     assert _hud(tetris, "Linhas") == 0
 
 
-def test_soltar_pontua(tetris: Page):
-    tetris.get_by_role("button", name="Jogar", exact=True).click()
-    tetris.get_by_role("button", name="Soltar").click()
-    tetris.wait_for_timeout(300)
-    # Hard drop paga 2 por linha percorrida — a peça nasce no topo do poço.
-    assert _hud(tetris, "Pontos") > 0
-
-
 def test_teclado_tambem_solta(tetris: Page):
     tetris.get_by_role("button", name="Jogar", exact=True).click()
     tetris.keyboard.press("Space")
@@ -103,12 +132,81 @@ def test_teclado_tambem_solta(tetris: Page):
     assert _hud(tetris, "Pontos") > 0
 
 
-def test_botoes_tateis_nao_quebram_o_jogo(tetris: Page):
+def test_sem_setas_na_tela(tetris: Page):
     tetris.get_by_role("button", name="Jogar", exact=True).click()
-    for name in ["Mover para a esquerda", "Mover para a direita", "Rotacionar", "Descer"]:
-        tetris.get_by_role("button", name=name).click()
-        tetris.wait_for_timeout(120)
-    assert _hud(tetris, "Nível") == 1
+    for nome in ["Mover para a esquerda", "Mover para a direita", "Rotacionar", "Descer", "Soltar"]:
+        expect(tetris.get_by_role("button", name=nome)).to_have_count(0)
+    # A pausa continua, no topo, ao lado do voltar.
+    expect(tetris.get_by_role("button", name="Pausar")).to_be_visible()
+
+
+def test_toque_na_arena_gira_a_peca(tetris: Page):
+    antes = _jogando_com_peca_que_gira(tetris)
+    tetris.mouse.click(195, 450)
+    assert _peca(tetris)["rot"] == antes["rot"] + 1
+
+
+def test_arrastar_para_o_lado_move_a_peca(tetris: Page):
+    antes = _jogando_com_peca_que_gira(tetris)
+    cell = antes["cell"]
+    _arrastar(tetris, 120, 450, 120 + 2 * cell + cell // 2, 452, steps=10)
+    depois = _peca(tetris)
+    assert depois["col"] == antes["col"] + 2
+    assert depois["rot"] == antes["rot"]  # arrastar não gira
+
+    _arrastar(tetris, 260, 450, 260 - 2 * cell - cell // 2, 449, steps=10)
+    assert _peca(tetris)["col"] == antes["col"]
+
+
+def test_arrastar_para_baixo_devagar_desce_sem_soltar(tetris: Page):
+    antes = _jogando_com_peca_que_gira(tetris)
+    cell = antes["cell"]
+    _arrastar(tetris, 195, 250, 196, 250 + 3 * cell + 5, steps=12, pausa_ms=40)
+    depois = _peca(tetris)
+    assert depois["type"] == antes["type"]
+    assert depois["row"] >= antes["row"] + 3
+    assert _hud(tetris, "Pontos") == 0  # descer devagar não pontua nem trava
+
+
+def test_deslizar_rapido_para_baixo_solta_a_peca(tetris: Page):
+    antes = _jogando_com_peca_que_gira(tetris)
+    _arrastar(tetris, 195, 200, 195, 200 + 8 * antes["cell"], steps=4)
+    tetris.wait_for_timeout(200)
+    # Soltou: a peça travou no fundo e a próxima nasceu no topo.
+    assert _peca(tetris)["row"] < antes["row"] + 3
+    assert _hud(tetris, "Pontos") > 0
+
+
+def test_dois_dedos_giram_a_camera_no_3d_sem_mexer_na_peca(browser):
+    ctx = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
+    page = ctx.new_page()
+    page.goto(f"{GAMES_BASE_URL}/")
+    page.evaluate(
+        "() => { localStorage.setItem('games_locale', 'pt-BR');"
+        " localStorage.setItem('games_tetris', JSON.stringify({ settings: { depth: true }, asked: true })); }"
+    )
+    page.goto(f"{GAMES_BASE_URL}/tetris/")
+    page.get_by_role("button", name="Jogar", exact=True).click()
+    page.get_by_role("button", name="Pausar").click()  # a peça fica parada durante o gesto
+    page.get_by_role("button", name="Continuar").click()
+    antes = _peca(page)
+    tela_antes = page.screenshot()
+
+    cdp = ctx.new_cdp_session(page)
+
+    def toque(tipo: str, pontos: list[tuple[float, float]]) -> None:
+        cdp.send("Input.dispatchTouchEvent", {"type": tipo, "touchPoints": [{"x": x, "y": y, "id": i} for i, (x, y) in enumerate(pontos)]})
+
+    toque("touchStart", [(120, 450), (270, 450)])
+    for i in range(1, 9):
+        toque("touchMove", [(120 + i * 15, 450), (270 + i * 15, 450)])
+    toque("touchEnd", [])
+    page.wait_for_timeout(150)
+
+    depois = _peca(page)
+    assert (depois["col"], depois["rot"]) == (antes["col"], antes["rot"])
+    assert page.screenshot() != tela_antes  # a câmera girou
+    ctx.close()
 
 
 def test_pausa_e_retoma(tetris: Page):
@@ -128,7 +226,7 @@ def test_volta_para_o_hub(tetris: Page):
 def test_3d_desligado_por_padrao(tetris_novo: Page):
     assert _ajustes(tetris_novo) is None
     expect(tetris_novo.locator("canvas[data-depth]")).to_have_attribute("data-depth", "false")
-    expect(tetris_novo.get_by_text("Toque na arena para rotacionar a peça")).to_be_visible()
+    expect(tetris_novo.get_by_text("Arraste para mover · toque para girar", exact=False)).to_be_visible()
 
 
 def test_pergunta_o_3d_na_primeira_partida(tetris_novo: Page):
@@ -153,7 +251,7 @@ def test_responder_3d_liga_o_ajuste(tetris_novo: Page):
     tetris_novo.get_by_role("button", name="Jogar em 3D").click()
 
     expect(tetris_novo.locator("canvas[data-depth]")).to_have_attribute("data-depth", "true")
-    expect(tetris_novo.get_by_text("Arraste para girar a câmera · toque para rotacionar a peça")).to_be_visible()
+    expect(tetris_novo.get_by_text("dois dedos giram a câmera", exact=False)).to_be_visible()
     assert _ajustes(tetris_novo) == {"settings": {"depth": True}, "asked": True}
 
 

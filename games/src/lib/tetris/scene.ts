@@ -51,6 +51,8 @@ export type TetrisScene = {
   setDepth: (on: boolean) => void;
   /** Gira a câmera em torno do poço (radianos acumulados). Sem 3D, não faz nada. */
   orbit: (dTheta: number, dPhi: number) => void;
+  /** Tamanho de uma casa do poço em px na tela (modo plano) — o passo do arraste. */
+  cellPx: () => number;
   draw: (board: Board, piece: Piece | null, ghost: number | null) => void;
   dispose: () => void;
 };
@@ -160,8 +162,15 @@ export function createScene(canvas: HTMLCanvasElement): TetrisScene {
 
   // ── Câmeras: orbital no 3D, de frente no plano ────────────────────────
   const orb = { theta: 0.28, phi: 1.08, radius: 26 };
-  /** Folga em volta do poço no modo plano, em tiles — o HUD e os botões moram nela. */
-  const FLAT_MARGIN = 3;
+  /**
+   * Folga em volta do poço no modo plano, em tiles. Em cima mora o placar;
+   * embaixo, a dica dos gestos. Nos lados quase nada: sem botões na tela, o
+   * poço ocupa a largura toda do celular.
+   */
+  const FLAT_MARGIN_X = 0.6;
+  const FLAT_MARGIN_TOP = 2.4;
+  const FLAT_MARGIN_BOTTOM = 1.1;
+  let cell = 1;
 
   /** Começa plano: o 3D é opcional e a rota liga depois do ajuste salvo. */
   let depth = false;
@@ -177,20 +186,22 @@ export function createScene(canvas: HTMLCanvasElement): TetrisScene {
   }
   applyCamera();
 
-  /** Enquadra o poço inteiro, com folga, em qualquer proporção de tela. */
+  /**
+   * Enquadra o poço inteiro em qualquer proporção de tela, com a folga de
+   * cima (placar) maior que a de baixo. A sobra, quando a tela é mais alta
+   * que o poço, é dividida igualmente.
+   */
   function applyFlatCamera() {
-    const aspect = view.width / Math.max(1, view.height);
-    let halfH = (BOARD_H + FLAT_MARGIN) / 2;
-    let halfW = halfH * aspect;
-    const minHalfW = (BOARD_W + FLAT_MARGIN) / 2;
-    if (halfW < minHalfW) {
-      halfW = minHalfW;
-      halfH = halfW / aspect;
-    }
+    const needW = BOARD_W + 2 * FLAT_MARGIN_X;
+    const needH = BOARD_H + FLAT_MARGIN_TOP + FLAT_MARGIN_BOTTOM;
+    cell = Math.max(1, Math.min(view.width / needW, view.height / needH));
+    const halfW = view.width / cell / 2;
+    const totalH = view.height / cell;
+    const bottom = -BOARD_H / 2 - FLAT_MARGIN_BOTTOM - (totalH - needH) / 2;
     flatCamera.left = -halfW;
     flatCamera.right = halfW;
-    flatCamera.top = halfH;
-    flatCamera.bottom = -halfH;
+    flatCamera.bottom = bottom;
+    flatCamera.top = bottom + totalH;
     flatCamera.updateProjectionMatrix();
   }
   applyFlatCamera();
@@ -209,6 +220,8 @@ export function createScene(canvas: HTMLCanvasElement): TetrisScene {
     setDepth(on) {
       depth = on;
     },
+
+    cellPx: () => cell,
 
     orbit(dTheta, dPhi) {
       if (!depth) return;
