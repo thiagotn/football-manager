@@ -29,7 +29,7 @@
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças de 3 a 7 anos (PRD 058). Na 1ª abertura pergunta a idade (modo **Pequenos** 3–4 ou **Crianças** 5–7). Abas: Início (trilhas Letras, Números e **Inglês**) · Álbum · Pais (protegida por pergunta). A rodada (3 ou 5 desafios) entra por cima das abas |
-| `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte; teclado, botões táteis e, com o 3D ligado, arraste para girar a câmera |
+| `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte. **Sem botões na tela**: gestos de um dedo na arena (toque gira, arrastar move/desce, deslizar rápido solta) e teclado no computador; com o 3D ligado, dois dedos (ou Shift + arrastar) giram a câmera |
 
 ## Compartilhado
 
@@ -133,14 +133,16 @@
 |---------|----------|
 | `engine.ts` | Regras puras: `shapeOf`, `isValid`, `ghostRow`, `lock` (imutável), `clearLines`, `rotate` (com kicks), `scoreForLines`, `levelFor`, `dropIntervalMs` |
 | `engine.test.ts` | Vitest: rotação, colisão, limpeza de linhas, pontuação, fim de jogo |
-| `scene.ts` | three.js isolado: poço, luzes, estrelas, 21 materiais criados uma vez e pool de cubos; as duas câmeras (orbital e plana) e `setDepth`; `dispose()` libera tudo ao sair da rota |
+| `scene.ts` | three.js isolado: poço, luzes, estrelas, 21 materiais criados uma vez e pool de cubos; as duas câmeras (orbital e plana) e `setDepth`; `cellPx()` (tamanho da casa na tela, o passo do arraste); `dispose()` libera tudo ao sair da rota |
+| `gestures.ts` + `gestures.test.ts` | Gestos de um dedo, puros: `createGesture(cellPx, x, y, t)` → `move`/`end` devolvem `left`/`right`/`down`/`rotate`/`drop`. Eixo trava após `LOCK_PX`; toque ≤ `TAP_MS` gira; flick = velocidade final ≥ `FLICK_PX_PER_MS` medida **só nos movimentos** (o `pointerup` chega ~50 ms depois, parado) |
 | `storage.ts` | localStorage `games_tetris`: só `{ settings: { depth }, asked }` — o jogo não guarda partida nem recorde |
 | `storage.test.ts` | Vitest: padrão desligado, ida e volta, json quebrado e valor estranho caindo no padrão |
 | `CardArt.svelte` | Arte do card no hub — **não importa three** (senão o chunk vai para o bundle do hub) |
 
-- **O 3D é opcional e vem desligado.** Ligado: câmera em perspectiva orbitando o poço, arraste gira a arena. Desligado: câmera **ortográfica** de frente (`FLAT_MARGIN` enquadra o poço em qualquer tela), `orbit()` não faz nada e a arena não tem como ser movida — o toque só rotaciona a peça
+- **Sem botões na tela** (só voltar e pausa, no topo): o poço plano usa a largura toda — folga de 0,6 casa nos lados, 2,4 em cima (placar) e 1,1 embaixo (dica dos gestos). A linha do teclado na dica só aparece com `pointer: fine`
+- **O 3D é opcional e vem desligado.** Ligado: câmera em perspectiva orbitando o poço — **dois dedos** (ou Shift + arrastar no mouse) giram a arena, um dedo continua jogando. Desligado: câmera **ortográfica** de frente, `orbit()` não faz nada
 - A pergunta "Jogar em 3D?" aparece **uma vez**, ao tocar Jogar sem `asked` salvo; depois a chave fica no overlay de início e no de pausa
-- `canvas[data-depth]` existe para o E2E: o modo é observável no DOM, a câmera não (a trava do arraste foi medida à mão no navegador — arrastar no plano muda 0% dos pixels)
+- `canvas[data-depth]`, `data-piece-{type,col,row,rot}` e `data-cell` existem para o E2E: o modo e a peça são observáveis no DOM, a câmera não. O teste dos dois dedos usa toques reais via CDP (`Input.dispatchTouchEvent`) num contexto `has_touch`
 
 ## Enche Aí! (`src/lib/enche-ai/`)
 
