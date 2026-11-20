@@ -1,0 +1,19 @@
+{
+  "id": "/quebra-cuca/",
+  "name": "Quebra-Cuca",
+  "short_name": "Quebra-Cuca",
+  "description": "Quebra-cabeças de arrastar e soltar para crianças: dinossauros, heróis, fazenda e circo.",
+  "lang": "pt-BR",
+  "start_url": "/quebra-cuca/",
+  "scope": "/quebra-cuca/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff3dc",
+  "theme_color": "#fff3dc",
+  "categories": ["games", "kids", "puzzle"],
+  "icons": [
+    { "src": "/quebra-cuca/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/quebra-cuca/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/quebra-cuca/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

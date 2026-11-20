@@ -16,7 +16,7 @@
 - Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
   A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
-- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão), `crayon` (Bê-á-Bá — o único jogo de casca clara)
+- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão), `crayon` (Bê-á-Bá), `puzzle` (Quebra-Cuca) — os dois jogos de casca clara
 
 ## Rotas
 
@@ -29,6 +29,7 @@
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
 | `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças de 3 a 7 anos (PRD 058). Na 1ª abertura pergunta a idade (modo **Pequenos** 3–4 ou **Crianças** 5–7). Abas: Início (trilhas Letras, Números e **Inglês**) · Álbum · Pais (protegida por pergunta). A rodada (3 ou 5 desafios) entra por cima das abas |
+| `/quebra-cuca/` | **Quebra-Cuca** — quebra-cabeça de arrastar e soltar para crianças (PRD 059). Início (4 temas) → cenas do tema (3 cada, com estrelas) → quantas peças (4/6/9/12) → montar. A partida não é salva; só as estrelas e os ajustes |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte. **Sem botões na tela**: gestos de um dedo na arena (toque gira, arrastar move/desce, deslizar rápido solta) e teclado no computador; com o 3D ligado, dois dedos (ou Shift + arrastar) giram a câmera |
 
 ## Compartilhado
@@ -39,6 +40,7 @@
 | `src/lib/components/GameCard.svelte` | Card do hub; recebe o `Game` e o componente de arte do jogo |
 | `src/lib/components/LanguageSwitcher.svelte` | PT/EN/ES (`tone="paper"` em card claro, `"dark"` no hub) |
 | `src/lib/components/ConfirmDialog.svelte` | Confirmação destrutiva sobre `.overlay`/`.card` |
+| `src/lib/speech.ts` | Voz dos jogos infantis com `speechSynthesis` (voz do aparelho). `speakSequence` fala partes em idiomas diferentes em fila (inglês → ponte em português). O último texto falado fica em `<html data-spoken>` para o E2E (partes separadas por ` \| `) |
 | `src/app.css` | `@layer components` com as classes de todos os jogos: `.btn`/`.btn-primary`/`.btn-ghost`/`.btn-danger`, `.card`, `.overlay`, `.tag`, `.toggle`, `.toast`, `.stat`, `.stat-label`, `.section-label`, `.menu-item` |
 
 ## Paciência (`src/lib/paciencia/`)
@@ -115,7 +117,6 @@
 | `stickers.ts` | Álbum de 24 figurinhas (4 páginas de 6) + a especial "Meu nome" |
 | `storage.ts` | localStorage `games_be_a_ba`: `ageMode` (`little`/`kids`; `null` = ainda não escolhido; estado salvo antigo sem a chave vira `kids`), criança, palavras da família, progresso das trilhas (`letters`/`numbers`, `little.{letters,numbers}` e `english` — este último um só para as duas idades), figurinhas, estrelas, tempo por dia e ajustes. A rodada **não** é salva |
 | `photos.ts` | Fotos das palavras da família no **IndexedDB** (reduzidas a 512 px no aparelho; nunca enviadas) |
-| `speech.ts` | Voz com `speechSynthesis` (voz do aparelho). `speakSequence` fala partes em idiomas diferentes em fila (inglês → ponte em português). O último texto falado fica em `<html data-spoken>` para o E2E (partes separadas por ` \| `) |
 | `art.ts` | Mascote (corujinha Lili), estrela, medalha e `imgUrl()` |
 | `LetterChallenge.svelte` · `NumberChallenge.svelte` | Um desafio cada; expõem `data-mode`/`data-kind` e `data-answer` (o E2E joga rodadas inteiras com eles) |
 | `Picture.svelte` · `Objects.svelte` · `CardArt.svelte` | Imagem da palavra (desenho, foto ou inicial), objetos de contagem em fileiras de 5, arte do card no hub |
@@ -126,6 +127,22 @@
 - Portão dos pais: tocar no número escrito por extenso. Sair da aba Pais tranca de novo
 - Inglês **não tem escrita** (soletrar em inglês atrapalharia a alfabetização em português): ouvir "Where is the apple?" e tocar; a palavra só aparece escrita no elogio, seguida da ponte falada em português (omitida com a interface em inglês)
 - Modo Pequenos não tem nada para ler nem teclado: figura, letra grande ou número com bolinhas; cada toque é falado. A idade troca na área dos pais (os dois modos guardam progresso separado)
+
+## Quebra-Cuca (`src/lib/quebra-cuca/`)
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `scenes.ts` | 4 temas (`dinos`, `herois`, `fazenda`, `circo`) × 3 cenas. Cada cena é um céu em degradê, um chão de morros (ou nenhum, no espaço) e figuras Twemoji em posições fixas numa área de `SCENE_W × SCENE_H` = 400×300. Heróis são genéricos (capa, bombeiro, ambulância) — nada de personagem com dono |
+| `jigsaw.ts` | Recorte puro: `SIZES` (4 = 2×2, 6 = 3×2, 9 = 3×3, 12 = 4×3), encaixes por seed (`makeEdges`; vizinhos sempre complementares, borda reta), `piecePath` (contorno com orelha/buraco em coordenadas da cena), `pieceBox` (célula + folga da orelha — **o centro da caixa é o centro da célula**), `trayLayout` (bandeja em fileiras, escala 0,3–1), `isNear`, `shuffledOrder` |
+| `storage.ts` | localStorage `games_quebra_cuca`: `done` (cena → maior nº de peças montado) e ajustes (`ghost` figura de fundo, `voice`, `pieces` última escolha). `starsOf` = posição em `SIZES` (1–4 estrelas) |
+| `SceneArt.svelte` | Desenha a cena num `<svg>` (prop `uid` para ids de gradiente únicos quando há várias na tela) |
+| `art.ts` · `CardArt.svelte` | Logo, estrela, festa, `imgUrl()`; arte do card no hub |
+| `quebra-cuca.test.ts` | Vitest: temas/cenas, todo desenho existe em `static/`, figuras dentro da cena, encaixes complementares, contorno fechado e dentro da caixa, bandeja sem sobreposição |
+
+- A cena da partida é desenhada **uma vez** num `<defs>` (`#qc-scene`) e cada peça é um `<use>` dela recortado pelo `clipPath` da peça — o tabuleiro usa o mesmo `<use>` com opacidade 0,3 como figura de fundo
+- Arrastar: pointer events com `setPointerCapture`; o ponto agarrado fica debaixo do dedo mesmo quando a peça cresce da escala da bandeja para o tamanho real. Solta com o canto a até 40% da célula da vaga certa → encaixa; longe → volta deslizando para a bandeja (nunca há "erro")
+- E2E: peças têm `data-piece="linha-coluna"` e `data-placed`; tabuleiro `[data-board]`. O teste arrasta cada peça até o centro da vaga calculado pelo retângulo do tabuleiro
+- Desenhos Twemoji em `static/quebra-cuca/img/` (lê os códigos de `scenes.ts` e `art.ts`)
 
 ## Tetris 3D (`src/lib/tetris/`)
 
@@ -168,10 +185,10 @@ npm run check     # svelte-check
 npm test          # vitest (engine)
 npm run build     # build/ estático
 npm run icons     # regera PNGs de scripts/icons/*.svg (precisa de Playwright)
-npm run twemoji   # copia os desenhos Twemoji usados pelo Bê-á-Bá para static/be-a-ba/img/
+npm run twemoji   # copia os desenhos Twemoji usados (Bê-á-Bá, Quebra-Cuca) para static/<jogo>/img/
 ```
 
-E2E: `football-e2e/tests/test_{be_a_ba,cobrinha,comilao,enche_ai,paciencia,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
+E2E: `football-e2e/tests/test_{be_a_ba,cobrinha,comilao,enche_ai,paciencia,quebra_cuca,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
 
 ## Novo jogo — checklist
 

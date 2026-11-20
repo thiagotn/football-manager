@@ -1,6 +1,6 @@
 /**
- * Voz do Bê-á-Bá: `speechSynthesis` com a voz do próprio aparelho, no idioma
- * pedido. Sem suporte (ou com a voz desligada nos ajustes) vira silêncio — o
+ * Voz dos jogos infantis (Bê-á-Bá, Quebra-Cuca): `speechSynthesis` com a voz
+ * do próprio aparelho, no idioma pedido. Sem suporte (ou com a voz desligada nos ajustes) vira silêncio — o
  * jogo continua jogável só com imagem e animação.
  *
  * O último texto falado fica em `document.documentElement.dataset.spoken`
