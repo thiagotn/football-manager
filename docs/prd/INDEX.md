@@ -136,6 +136,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 056 | [jogo-sudoku.md](056-jogo-sudoku.md) | ✅ | Sudoku em papel de jornal: quatro dificuldades classificadas pela técnica que exigem, tabuleiro do dia que endurece na semana, lápis, dica explicada e visuais por partidas concluídas. No ar desde 2026-11-04 |
 | 057 | [jogo-comilao.md](057-jogo-comilao.md) | ✅ | Comilão, o clássico do labirinto em neon synthwave: labirinto próprio 19 × 21 aprovado por teste, quatro fantasmas com personalidades distintas, susto com combo, desafio do dia e visuais por pontuação. No ar desde 2026-11-10 |
 | 058 | [jogo-be-a-ba.md](058-jogo-be-a-ba.md) | 🚧 | Bê-á-Bá: jogo para crianças em alfabetização — imagem + montar/digitar a palavra (inclui palavras da família com foto) e desafios de números (contar, comparar, somar, subtrair…), com álbum de figurinhas como prêmio. Fase 1 implementada em `/be-a-ba/` + modo Pequenos (3–4 anos) + trilha Inglês (introdução de ouvido); fases 2 e 3 propostas |
+| 059 | [jogo-quebra-cuca.md](059-jogo-quebra-cuca.md) | ✅ | Quebra-Cuca: quebra-cabeça infantil de arrastar e soltar (dinossauros, heróis, fazenda, circo), 4 a 12 peças com encaixes de verdade, em `/quebra-cuca/` |
 
 ---
 

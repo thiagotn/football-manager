@@ -88,6 +88,17 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#8fd3ff',
+  },
+  {
+    slug: 'quebra-cuca',
+    nameKey: 'quebra_cuca.title',
+    descKey: 'quebra_cuca.desc',
+    tags: [
+      { key: 'hub.tag_kids', tone: 'hot' },
+      { key: 'hub.tag_puzzle', tone: 'cool' },
+      { key: 'hub.tag_offline', tone: 'neutral' },
+    ],
+    themeColor: '#fff3dc',
     isNew: true,
   },
   {

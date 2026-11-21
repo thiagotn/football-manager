@@ -11,6 +11,7 @@
   import ComilaoArt from '$lib/comilao/CardArt.svelte';
   import TetrisArt from '$lib/tetris/CardArt.svelte';
   import BeABaArt from '$lib/be-a-ba/CardArt.svelte';
+  import QuebraCucaArt from '$lib/quebra-cuca/CardArt.svelte';
   import { GAMES } from '$lib/games';
   import { t } from '$lib/i18n';
 
@@ -23,6 +24,7 @@
     comilao: ComilaoArt,
     tetris: TetrisArt,
     'be-a-ba': BeABaArt,
+    'quebra-cuca': QuebraCucaArt,
   } as const;
   const ACCENT: Record<string, string> = {
     'enche-ai': '#ffc93c',
@@ -32,6 +34,7 @@
     comilao: '#ff3df0',
     tetris: '#2e7cf0',
     'be-a-ba': '#ff5d8f',
+    'quebra-cuca': '#ff7a3d',
   };
 </script>
 

@@ -40,6 +40,15 @@ export default {
           orange: '#ff9b3d',
           sea: '#2e9bff',
         },
+        // Quebra-Cuca — mesa de brincar (creme quente, tinta roxa)
+        puzzle: {
+          table: '#fff3dc',
+          wood: '#f2c98a',
+          ink: '#3b2a5a',
+          muted: '#7d6b96',
+          pop: '#ff7a3d',
+          leaf: '#43b85c',
+        },
       },
     },
   },

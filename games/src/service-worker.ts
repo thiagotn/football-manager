@@ -30,6 +30,26 @@ const ASSETS = [...build, ...files.filter((f) => !PAGES_CONFIG.includes(f)), ...
  */
 const PAGES = [...prerendered].sort((a, b) => b.length - a.length);
 
+/** Tempo máximo por asset no pré-cache (download + gravação). */
+const PRECACHE_TIMEOUT_MS = 15_000;
+
+/**
+ * `cache.add` com prazo. Sem ele, uma única requisição que nunca responde
+ * prende a instalação para sempre (o `allSettled` espera todas) e o jogo
+ * nunca fica offline — foi o que derrubou o E2E de offline num runner do CI.
+ */
+async function precache(cache: Cache, asset: string): Promise<void> {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), PRECACHE_TIMEOUT_MS);
+  try {
+    const response = await fetch(asset, { signal: abort.signal });
+    if (!response.ok) throw new Error(`${asset}: HTTP ${response.status}`);
+    await cache.put(asset, response);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -37,7 +57,7 @@ self.addEventListener('install', (event) => {
       // Um `cache.addAll` falha inteiro se um único asset falhar — e sem
       // instalação não existe offline nenhum. Cacheia um a um: o que faltar
       // vira um aviso, não a perda do service worker.
-      const results = await Promise.allSettled(ASSETS.map((asset) => cache.add(asset)));
+      const results = await Promise.allSettled(ASSETS.map((asset) => precache(cache, asset)));
       const failed = results.filter((r) => r.status === 'rejected').length;
       if (failed) console.warn(`[sw] ${failed} de ${ASSETS.length} assets ficaram fora do cache`);
       await self.skipWaiting();

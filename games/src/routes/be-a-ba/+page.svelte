@@ -49,7 +49,7 @@
   import { emptyState, loadState, saveState, type AgeMode, type FamilyWord, type SavedState } from '$lib/be-a-ba/storage';
   import type { TrailProgress } from '$lib/be-a-ba/progress';
   import { deletePhoto, loadPhoto, savePhoto, shrinkPhoto } from '$lib/be-a-ba/photos';
-  import { speak, speakSequence, stopSpeaking } from '$lib/be-a-ba/speech';
+  import { speak, speakSequence, stopSpeaking } from '$lib/speech';
   import {
     EN_LANG,
     EN_NUMBERS,
