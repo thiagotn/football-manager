@@ -71,14 +71,7 @@ def cobrinha(page: Page) -> Page:
 
 def _start_free_game(page: Page) -> None:
     page.get_by_role("button", name="Nova partida").click()
-    expect(page.get_by_text("Arraste ou use o direcional")).to_be_visible()
-
-
-def _hold(page: Page, label: str, times: int, pause_ms: int = 260) -> None:
-    """Aperta um botão do direcional algumas vezes, dando tempo de a cobra andar."""
-    for _ in range(times):
-        page.get_by_role("button", name=label, exact=True).click()
-        page.wait_for_timeout(pause_ms)
+    expect(page.get_by_text("Arraste para começar")).to_be_visible()
 
 
 # ── Hub e abertura ────────────────────────────────────────────────────────────
@@ -121,17 +114,17 @@ def test_a_cobra_so_anda_depois_do_primeiro_comando(cobrinha: Page):
     _start_free_game(cobrinha)
     cobrinha.wait_for_timeout(1200)
     # Nada aconteceu: o aviso continua e o placar está zerado.
-    expect(cobrinha.get_by_text("Arraste ou use o direcional")).to_be_visible()
+    expect(cobrinha.get_by_text("Arraste para começar")).to_be_visible()
     expect(cobrinha.get_by_text("Fim de jogo")).to_have_count(0)
 
-    cobrinha.get_by_role("button", name="Para baixo", exact=True).click()
-    expect(cobrinha.get_by_text("Arraste ou use o direcional")).to_have_count(0)
+    cobrinha.keyboard.press("ArrowDown")
+    expect(cobrinha.get_by_text("Arraste para começar")).to_have_count(0)
 
 
 def test_bater_na_parede_encerra_a_partida_e_salva(cobrinha: Page):
     _start_free_game(cobrinha)
-    # Reto para baixo: são 9 linhas até a borda de baixo.
-    cobrinha.get_by_role("button", name="Para baixo", exact=True).click()
+    # Reto para baixo: são 11 linhas até a borda de baixo.
+    cobrinha.keyboard.press("ArrowDown")
     expect(cobrinha.get_by_text("Fim de jogo")).to_be_visible(timeout=10_000)
     expect(cobrinha.get_by_text("Jogo atual")).to_be_visible()
     expect(cobrinha.get_by_text("De sempre")).to_be_visible()
@@ -144,17 +137,17 @@ def test_bater_na_parede_encerra_a_partida_e_salva(cobrinha: Page):
 
 def test_jogar_de_novo_recomeca_a_partida(cobrinha: Page):
     _start_free_game(cobrinha)
-    cobrinha.get_by_role("button", name="Para baixo", exact=True).click()
+    cobrinha.keyboard.press("ArrowDown")
     expect(cobrinha.get_by_text("Fim de jogo")).to_be_visible(timeout=10_000)
 
     cobrinha.get_by_role("button", name="Jogar de novo").click()
     expect(cobrinha.get_by_text("Fim de jogo")).to_have_count(0)
-    expect(cobrinha.get_by_text("Arraste ou use o direcional")).to_be_visible()
+    expect(cobrinha.get_by_text("Arraste para começar")).to_be_visible()
 
 
 def test_sair_volta_para_o_inicio(cobrinha: Page):
     _start_free_game(cobrinha)
-    cobrinha.get_by_role("button", name="Para baixo", exact=True).click()
+    cobrinha.keyboard.press("ArrowDown")
     expect(cobrinha.get_by_text("Fim de jogo")).to_be_visible(timeout=10_000)
     cobrinha.locator(".card").get_by_role("button", name="Sair").click()
     expect(cobrinha.get_by_role("button", name="Nova partida")).to_be_visible()
@@ -162,7 +155,7 @@ def test_sair_volta_para_o_inicio(cobrinha: Page):
 
 def test_pausa_e_continua(cobrinha: Page):
     _start_free_game(cobrinha)
-    cobrinha.get_by_role("button", name="Para cima", exact=True).click()
+    cobrinha.keyboard.press("ArrowUp")
     cobrinha.get_by_role("button", name="Pausar").click()
     expect(cobrinha.get_by_text("Pausado")).to_be_visible()
 
@@ -194,7 +187,7 @@ def test_o_dia_concluido_aparece_no_inicio_e_no_diario(page: Page):
             "stats": {"games": 3, "total": 600, "best": 260, "bestFruits": 9, "bestLevel": 2},
             "history": [],
             "daily": {today: {"best": 260, "done": True}},
-            "settings": {"wrap": False, "pad": True, "speed": "normal", "skin": "folha"},
+            "settings": {"wrap": False, "speed": "normal", "skin": "folha"},
         },
     )
     expect(page.get_by_text("Concluído com 260 pontos")).to_be_visible()
@@ -230,7 +223,7 @@ def test_visual_liberado_pela_pontuacao_pode_ser_usado(page: Page):
             "stats": {"games": 20, "total": 4000, "best": 500, "bestFruits": 20, "bestLevel": 5},
             "history": [],
             "daily": {},
-            "settings": {"wrap": False, "pad": True, "speed": "normal", "skin": "folha"},
+            "settings": {"wrap": False, "speed": "normal", "skin": "folha"},
         },
     )
     page.get_by_role("button", name="Visuais", exact=True).click()
@@ -252,12 +245,27 @@ def test_ajustes_ficam_salvos(cobrinha: Page):
     assert saved["settings"]["speed"] == "veloz"
 
 
-def test_esconder_o_direcional(cobrinha: Page):
+def test_sem_direcional_na_tela(cobrinha: Page):
+    """A partida é só no toque (ou teclado): nada de botões fora da arena."""
     cobrinha.get_by_role("button", name="Ajustes", exact=True).click()
-    cobrinha.get_by_text("Mostrar o direcional").click()
+    expect(cobrinha.get_by_text("Mostrar o direcional")).to_have_count(0)
     cobrinha.get_by_role("button", name="Início", exact=True).click()
     _start_free_game(cobrinha)
     expect(cobrinha.get_by_role("button", name="Para baixo", exact=True)).to_have_count(0)
+
+
+def test_arrastar_no_tabuleiro_comanda_a_cobra(cobrinha: Page):
+    _start_free_game(cobrinha)
+    box = cobrinha.locator("canvas").bounding_box()
+    assert box
+    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 4
+    cobrinha.mouse.move(x, y)
+    cobrinha.mouse.down()
+    cobrinha.mouse.move(x, y + 60, steps=4)
+    cobrinha.mouse.up()
+    expect(cobrinha.get_by_text("Arraste para começar")).to_have_count(0)
+    # Virou para baixo: bate na borda de baixo e a partida acaba.
+    expect(cobrinha.get_by_text("Fim de jogo")).to_be_visible(timeout=10_000)
 
 
 def test_zerar_estatisticas(page: Page):
@@ -267,7 +275,7 @@ def test_zerar_estatisticas(page: Page):
             "stats": {"games": 9, "total": 9000, "best": 820, "bestFruits": 30, "bestLevel": 7},
             "history": [{"at": 1, "score": 820, "fruits": 30, "level": 7, "daily": None}],
             "daily": {},
-            "settings": {"wrap": False, "pad": True, "speed": "normal", "skin": "neon"},
+            "settings": {"wrap": False, "speed": "normal", "skin": "neon"},
         },
     )
     expect(page.get_by_text("820 recorde")).to_be_visible()

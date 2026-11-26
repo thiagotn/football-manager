@@ -40,8 +40,6 @@ export type DailyRecord = { best: number; done: boolean };
 export type Settings = {
   /** Atravessar as paredes em vez de morrer nelas. */
   wrap: boolean;
-  /** Mostrar o direcional na tela. */
-  pad: boolean;
   speed: Speed;
   skin: SkinKey;
 };
@@ -56,7 +54,6 @@ export type SavedState = {
 
 export const DEFAULT_SETTINGS: Settings = {
   wrap: false,
-  pad: true,
   speed: 'normal',
   skin: DEFAULT_SKIN,
 };

@@ -12,7 +12,7 @@
  */
 
 export const COLS = 15;
-export const ROWS = 19;
+export const ROWS = 23;
 
 /** A cada quantas frutas aparece uma bônus, e por quantos passos ela fica. */
 export const BONUS_EVERY = 5;

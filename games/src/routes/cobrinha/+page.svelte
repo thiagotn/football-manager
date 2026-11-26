@@ -9,10 +9,6 @@
    * a entrada do jogador e a interface.
    */
   import {
-    ArrowDown,
-    ArrowLeft,
-    ArrowRight,
-    ArrowUp,
     Calendar,
     ChevronLeft,
     House,
@@ -273,13 +269,6 @@
     swipeFrom = { x: event.clientX, y: event.clientY };
   }
 
-  function press(dir: Dir) {
-    if (!game || game.over) return;
-    game = turn(game, dir);
-    paused = false;
-    started = true;
-  }
-
   // ── Ajustes e visuais ─────────────────────────────────────────────────────
 
   function update<K extends keyof SavedState['settings']>(key: K, value: SavedState['settings'][K]) {
@@ -439,7 +428,7 @@
       bind:this={boardEl}
       role="application"
       aria-label={$t('cobrinha.title')}
-      class="board relative z-10 min-h-0 flex-1 touch-none select-none p-3"
+      class="board relative z-10 min-h-0 flex-1 touch-none select-none p-2"
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={() => (swipeFrom = null)}
@@ -466,31 +455,7 @@
       </div>
     </div>
 
-    <!-- Direcional -->
-    {#if settings.pad}
-      <div
-        class="relative z-10 flex-none pb-2 pt-1"
-        style="padding-bottom:calc(env(safe-area-inset-bottom) + 8px)"
-      >
-        <div class="mx-auto grid w-[168px] grid-cols-3 grid-rows-3 gap-1.5">
-          {#each [{ dir: 'up' as const, icon: ArrowUp, cls: 'col-start-2 row-start-1', label: $t('cobrinha.dir_up') }, { dir: 'left' as const, icon: ArrowLeft, cls: 'col-start-1 row-start-2', label: $t('cobrinha.dir_left') }, { dir: 'right' as const, icon: ArrowRight, cls: 'col-start-3 row-start-2', label: $t('cobrinha.dir_right') }, { dir: 'down' as const, icon: ArrowDown, cls: 'col-start-2 row-start-3', label: $t('cobrinha.dir_down') }] as btn (btn.dir)}
-            <button
-              type="button"
-              class="pad {btn.cls}"
-              aria-label={btn.label}
-              onpointerdown={(e) => {
-                e.preventDefault();
-                press(btn.dir);
-              }}
-            >
-              <btn.icon size={22} strokeWidth={2.4} />
-            </button>
-          {/each}
-        </div>
-      </div>
-    {:else}
-      <div class="flex-none" style="height:calc(env(safe-area-inset-bottom) + 8px)"></div>
-    {/if}
+    <div class="flex-none" style="height:calc(env(safe-area-inset-bottom) + 4px)"></div>
 
     <!-- Pausa -->
     {#if paused && !game.over}
@@ -840,7 +805,7 @@
                 </div>
               </div>
 
-              {#each [{ key: 'wrap' as const, label: $t('cobrinha.setting_wrap'), hint: $t('cobrinha.setting_wrap_hint') }, { key: 'pad' as const, label: $t('cobrinha.setting_pad'), hint: $t('cobrinha.setting_pad_hint') }] as item (item.key)}
+              {#each [{ key: 'wrap' as const, label: $t('cobrinha.setting_wrap'), hint: $t('cobrinha.setting_wrap_hint') }] as item (item.key)}
                 <label class="flex cursor-pointer items-center justify-between gap-3 px-3.5 py-3">
                   <span class="min-w-0">
                     <span class="block text-[15px] font-bold">{item.label}</span>
@@ -907,19 +872,5 @@
   /* Lilita One não tem peso bold — evita o negrito sintético do navegador. */
   .cobrinha {
     font-synthesis: none;
-  }
-  .pad {
-    display: flex;
-    height: 52px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.85);
-  }
-  .pad:active {
-    background: theme('colors.mustard.DEFAULT');
-    color: theme('colors.mustard.ink');
   }
 </style>

@@ -29,7 +29,7 @@ mesma linguagem visual do hub.
 
 | Arquivo | Conteúdo |
 |---|---|
-| `src/lib/cobrinha/engine.ts` | Regras puras: grade 15×19, `step` imutável, fila de curvas, fruta e bônus, obstáculos, nível, pontuação, seed do dia |
+| `src/lib/cobrinha/engine.ts` | Regras puras: grade 15×23, `step` imutável, fila de curvas, fruta e bônus, obstáculos, nível, pontuação, seed do dia |
 | `src/lib/cobrinha/render.ts` | Canvas 2D: fundo (gradiente + hexágonos) desenhado uma vez fora da tela, cobra interpolada entre dois passos, fruta com pulso |
 | `src/lib/cobrinha/skins.ts` | 6 visuais como função de cor por segmento (`folha`, `brasa`, `fita`, `gelo`, `neon`, `arco`) |
 | `src/lib/cobrinha/storage.ts` | `games_cobrinha`: estatísticas de sempre, histórico (60), dias do desafio e ajustes |
@@ -50,8 +50,9 @@ comparável.
 3 500 / 7 000 / 12 000), com a barra de progresso que as capturas têm. Zerar estatísticas
 bloqueia tudo de novo e volta ao visual padrão.
 
-**Controles.** Arrastar em qualquer ponto do tabuleiro, direcional de 4 botões (pode ser
-escondido nos ajustes) e setas/WASD no teclado. Espaço, `P` ou Esc pausam.
+**Controles.** Arrastar em qualquer ponto do tabuleiro (só toque no celular — o direcional
+na tela saiu para a arena ocupar a altura toda, e a grade passou de 15×19 para 15×23) e
+setas/WASD no teclado. Espaço, `P` ou Esc pausam.
 
 ## Integração
 
@@ -71,7 +72,7 @@ escondido nos ajustes) e setas/WASD no teclado. Espaço, `P` ou Esc pausam.
   desafio do dia** (mesma data ⇒ mesma sequência de frutas).
 - `src/lib/cobrinha/skins.test.ts` — 6 testes: ordem das metas, liberação por pontuação,
   próximo a liberar e queda para o visual padrão quando a chave salva não existe mais.
-- `football-e2e/tests/test_cobrinha.py` — 19 testes: card no hub, abas, a cobra parada até o
+- `football-e2e/tests/test_cobrinha.py` — 20 testes: card no hub, abas, a cobra parada até o
   primeiro comando, fim de partida com a tabela Jogo atual × De sempre, persistência,
   pausa, desafio do dia, visual bloqueado × liberado, ajustes, zerar estatísticas,
   manifesto e **offline com o service worker**.
