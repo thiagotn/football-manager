@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="space" x1="0" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#070b1d"/><stop offset="1" stop-color="#1a2a66"/></linearGradient>
+  <radialGradient id="glow" cx="256" cy="430" r="300" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4f7dff" stop-opacity=".45"/><stop offset="1" stop-color="#4f7dff" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="512" height="512" fill="url(#space)"/>
+<rect width="512" height="512" fill="url(#glow)"/>
+<g fill="#fff"><circle cx="70" cy="80" r="4" opacity=".8"/><circle cx="150" cy="150" r="3" opacity=".5"/><circle cx="440" cy="260" r="4" opacity=".7"/><circle cx="60" cy="330" r="3" opacity=".6"/><circle cx="430" cy="420" r="3" opacity=".5"/><circle cx="330" cy="50" r="3" opacity=".6"/><circle cx="120" cy="440" r="4" opacity=".5"/></g>
+<g transform="translate(256 318) scale(15)"><path d="M-1.7 7 0 11 1.7 7Z" fill="#ffc93c"/><path d="M-3 0-8 6V8L-3 5ZM3 0 8 6V8L3 5Z" fill="#4f7dff"/><path d="M0-9 3-2V5L0 7-3 5V-2Z" fill="#e8eefc"/><ellipse cx="0" cy="-2.2" rx="1.4" ry="2.3" fill="#12224a"/></g>
+<rect x="248" y="118" width="16" height="46" rx="8" fill="#8fe9ff"/>
+<rect x="248" y="44" width="16" height="46" rx="8" fill="#8fe9ff" opacity=".65"/>
+<path d="M366 92l46 12 20 42-26 44-50 6-32-34 8-48z" fill="#8a7767"/><circle cx="380" cy="138" r="12" fill="#6b5b4e"/><circle cx="404" cy="166" r="7" fill="#6b5b4e"/>
+<path d="M98 214l26 7 10 24-16 22-28-3-12-24z" fill="#8a7767"/>
+</svg>

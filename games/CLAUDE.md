@@ -16,7 +16,7 @@
 - Fontes self-hosted via `@fontsource` (Lilita One + Nunito) — entram no precache.
   A Paciência mantém a **Bebas Neue** que usava no rachao.app (CSS importado na rota, `font-bebas`)
 - `three` (ESM, só o Tetris usa) entra no chunk da rota `/tetris/`: ~545 KB com hash e cache longo
-- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão), `crayon` (Bê-á-Bá), `puzzle` (Quebra-Cuca) — os dois jogos de casca clara
+- Tokens de cor por jogo no `tailwind.config.js`: `ink`/`mustard`/`paper` (base), `felt` (Paciência), `night` (Tetris), `lagoon` (Cobrinha), `news` (Sudoku), `synth` (Comilão), `cosmos` (Astronave), `crayon` (Bê-á-Bá), `puzzle` (Quebra-Cuca) — os dois últimos são os jogos de casca clara
 
 ## Rotas
 
@@ -28,6 +28,7 @@
 | `/cobrinha/` | **Cobrinha** clássica em grade 15×23 (PRD 055). Abas internas: Início · Diário · Visuais · Ajustes. Arraste ou teclado (sem direcional na tela) |
 | `/sudoku/` | **Sudoku** 9×9 em papel de jornal (PRD 056). Abas internas: Início · Diário · Visuais · Ajustes. Toque, teclado numérico na tela e teclado físico |
 | `/comilao/` | **Comilão** — labirinto 19×21 em neon synthwave (PRD 057). Abas internas: Início · Diário · Visuais · Ajustes. Arraste, direcional ou teclado |
+| `/astronave/` | **Astronave** — nave contra meteoros e inimigos, em ondas (PRD 060). Abas internas: Início · Diário · Naves · Ajustes. Dois modos de controle: **só toque** (arrastar move, segurar atira, arena na tela toda) ou **botões** embaixo da arena; teclado nos dois |
 | `/be-a-ba/` | **Bê-á-Bá** — letras e números para crianças de 3 a 7 anos (PRD 058). Na 1ª abertura pergunta a idade (modo **Pequenos** 3–4 ou **Crianças** 5–7). Abas: Início (trilhas Letras, Números e **Inglês**) · Álbum · Pais (protegida por pergunta). A rodada (3 ou 5 desafios) entra por cima das abas |
 | `/quebra-cuca/` | **Quebra-Cuca** — quebra-cabeça de arrastar e soltar para crianças (PRD 059). Início (4 temas) → cenas do tema (3 cada, com estrelas) → quantas peças (4/6/9/12) → montar. A partida não é salva; só as estrelas e os ajustes |
 | `/tetris/` | **Tetris 3D** (veio do rachao.app no PRD 054). Canvas three.js + HUD em Svelte. **Sem botões na tela**: gestos de um dedo na arena (toque gira, arrastar move/desce, deslizar rápido solta) e teclado no computador; com o 3D ligado, dois dedos (ou Shift + arrastar) giram a câmera |
@@ -101,6 +102,24 @@
 - A partida **é** salva (como no Sudoku), mas retomar cai sempre em `phase: 'pronto'`: voltar no meio de um corredor com um fantasma a dois tiles seria roubo
 - Gradiente em SVG de card/ícone precisa de `gradientUnits="userSpaceOnUse"`: em `objectBoundingBox` uma linha horizontal tem caixa de altura zero e **não pinta nada**
 - Medido: `tick` custa 0,4 µs; parado no berço o jogador é pego em 12,9 s; um bot de um passo de visão sobrevive 3 min
+
+## Astronave (`src/lib/astronave/`)
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `engine.ts` | Regras puras num campo lógico de `W × H` = 100 × 170: nave (só horizontal), tiros, meteoros (o grande racha em dois), batedor e artilheiro, prêmios (escudo, tiro duplo, vida), ondas, vidas e desafio do dia. `tick(g, input)` **muda o estado no lugar** e devolve os eventos do passo |
+| `engine.test.ts` | Vitest: movimento, cadência, colisões, dano/escudo, ondas, **determinismo do dia**, um teste que quebra se o engine tocar em `Math.random` e dois de equilíbrio |
+| `skins.ts` + `skins.test.ts` | As 6 naves (cores sobre o mesmo contorno — `SHIP_HULL`/`SHIP_WINGS`/`SHIP_FLAME`, usados no canvas e no SVG) e a liberação por pontuação somada |
+| `render.ts` | Canvas 2D desenhado em unidades do campo (uma escala só no contexto): estrelas, meteoros com forma estável por `id`, inimigos, faíscas (`fx(events)`); `dispose()` ao sair da rota |
+| `storage.ts` | localStorage `games_astronave`: estatísticas de sempre, histórico (60), dias do desafio e ajustes (`controls`: `touch`/`pad`, `skin`). A partida **não** é salva |
+| `Ship.svelte` · `Emblem.svelte` · `CardArt.svelte` | A nave em SVG (aba Naves), a marca do jogo e a arte do card no hub |
+
+- `tick` é chamado **sempre com `dt` fixo** (`STEP` = 1/60 s, no máximo 4 por quadro). A partida fica **fora da reatividade** do Svelte; só o resumo `hud` é copiado a cada quadro
+- Dois sorteios no estado: `rng` decide o que nasce (igual para todos no desafio do dia) e `rngDrop` decide os prêmios
+- Modo `touch`: arraste **relativo** (a nave anda o tanto que o dedo anda, de onde estava) e o dedo na tela atira. Modo `pad`: botões com `setPointerCapture`, valem enquanto o dedo está em cima. O modo troca nos Ajustes ou na pausa
+- Nada se mexe antes do primeiro comando (`started`); `visibilitychange` pausa
+- E2E lê a arena por `[data-board]` (`data-ship-x`, `data-fired`, `data-started`, `data-controls`), `data-testid="score"` e `data-testid="lives"` (`data-lives`); os botões ficam em `[data-pad]`
+- Medido: parada e sem atirar, a nave dura ~19 s (6 a 60 s conforme a seed)
 
 ## Bê-á-Bá (`src/lib/be-a-ba/`)
 
@@ -188,7 +207,7 @@ npm run icons     # regera PNGs de scripts/icons/*.svg (precisa de Playwright)
 npm run twemoji   # copia os desenhos Twemoji usados (Bê-á-Bá, Quebra-Cuca) para static/<jogo>/img/
 ```
 
-E2E: `football-e2e/tests/test_{be_a_ba,cobrinha,comilao,enche_ai,paciencia,quebra_cuca,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
+E2E: `football-e2e/tests/test_{astronave,be_a_ba,cobrinha,comilao,enche_ai,paciencia,quebra_cuca,sudoku,tetris}.py` (usam `GAMES_BASE_URL`, padrão `http://localhost:4173` do `vite preview`; são pulados se o app não estiver no ar). CI: `.github/workflows/games.yml`.
 
 ## Novo jogo — checklist
 

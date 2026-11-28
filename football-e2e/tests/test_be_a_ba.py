@@ -197,7 +197,7 @@ def test_hub_mostra_o_card(page: Page) -> None:
     card = page.get_by_role("link", name=re.compile("Bê-á-Bá"))
     expect(card).to_have_attribute("href", "/be-a-ba/")
     expect(card.get_by_text("Para crianças")).to_be_visible()
-    # O selo "Novo" anda de jogo em jogo (agora está no Quebra-Cuca) — quem testa é o dono da vez.
+    # O selo "Novo" anda de jogo em jogo (agora está na Astronave) — quem testa é o dono da vez.
 
 
 def test_manifesto_tem_escopo_proprio(page: Page) -> None:

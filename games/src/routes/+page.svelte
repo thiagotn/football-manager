@@ -12,6 +12,7 @@
   import TetrisArt from '$lib/tetris/CardArt.svelte';
   import BeABaArt from '$lib/be-a-ba/CardArt.svelte';
   import QuebraCucaArt from '$lib/quebra-cuca/CardArt.svelte';
+  import AstronaveArt from '$lib/astronave/CardArt.svelte';
   import { GAMES } from '$lib/games';
   import { t } from '$lib/i18n';
 
@@ -25,6 +26,7 @@
     tetris: TetrisArt,
     'be-a-ba': BeABaArt,
     'quebra-cuca': QuebraCucaArt,
+    astronave: AstronaveArt,
   } as const;
   const ACCENT: Record<string, string> = {
     'enche-ai': '#ffc93c',
@@ -35,6 +37,7 @@
     tetris: '#2e7cf0',
     'be-a-ba': '#ff5d8f',
     'quebra-cuca': '#ff7a3d',
+    astronave: '#4f7dff',
   };
 </script>
 
