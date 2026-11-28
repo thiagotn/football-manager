@@ -137,6 +137,7 @@ Referência rápida de todos os documentos de produto. Atualizar o status aqui a
 | 057 | [jogo-comilao.md](057-jogo-comilao.md) | ✅ | Comilão, o clássico do labirinto em neon synthwave: labirinto próprio 19 × 21 aprovado por teste, quatro fantasmas com personalidades distintas, susto com combo, desafio do dia e visuais por pontuação. No ar desde 2026-11-10 |
 | 058 | [jogo-be-a-ba.md](058-jogo-be-a-ba.md) | 🚧 | Bê-á-Bá: jogo para crianças em alfabetização — imagem + montar/digitar a palavra (inclui palavras da família com foto) e desafios de números (contar, comparar, somar, subtrair…), com álbum de figurinhas como prêmio. Fase 1 implementada em `/be-a-ba/` + modo Pequenos (3–4 anos) + trilha Inglês (introdução de ouvido); fases 2 e 3 propostas |
 | 059 | [jogo-quebra-cuca.md](059-jogo-quebra-cuca.md) | ✅ | Quebra-Cuca: quebra-cabeça infantil de arrastar e soltar (dinossauros, heróis, fazenda, circo), 4 a 12 peças com encaixes de verdade, em `/quebra-cuca/` |
+| 060 | [jogo-astronave.md](060-jogo-astronave.md) | ✅ | Astronave: jogo de nave em canvas 2D — desviar de meteoros e de tiros inimigos e atirar de volta, em ondas; controle só por toque (arena na tela toda) ou com botões, desafio do dia e naves por pontuação. No ar desde 2026-11-27 |
 
 ---
 

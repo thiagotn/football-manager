@@ -129,7 +129,7 @@ def test_hub_mostra_o_card_do_comilao(page: Page):
     card = page.locator("a[href='/comilao/']")
     expect(card).to_be_visible()
     expect(card.get_by_text("Comilão", exact=True)).to_be_visible()
-    # O selo "Novo" anda de jogo em jogo (agora está no Quebra-Cuca) — quem testa é o dono da vez.
+    # O selo "Novo" anda de jogo em jogo (agora está na Astronave) — quem testa é o dono da vez.
     expect(card.get_by_text("Arcade")).to_be_visible()
 
 

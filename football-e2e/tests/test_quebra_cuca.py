@@ -93,7 +93,7 @@ def _solve(page: Page, pieces: int) -> None:
 # ── Hub e abertura ──────────────────────────────────────────────────────────
 
 
-def test_hub_mostra_o_card_com_selo_novo(page: Page) -> None:
+def test_hub_mostra_o_card(page: Page) -> None:
     page.goto(f"{GAMES_BASE_URL}/")
     page.evaluate("() => localStorage.setItem('games_locale', 'pt-BR')")
     page.reload()
@@ -101,7 +101,7 @@ def test_hub_mostra_o_card_com_selo_novo(page: Page) -> None:
     expect(card).to_be_visible()
     expect(card.get_by_text("Quebra-Cuca", exact=True)).to_be_visible()
     expect(card.get_by_text("Para crianças", exact=True)).to_be_visible()
-    expect(card.get_by_text("Novo", exact=True)).to_be_visible()
+    # O selo "Novo" anda de jogo em jogo (agora está na Astronave) — quem testa é o dono da vez.
 
 
 def test_manifesto_tem_escopo_proprio(page: Page) -> None:

@@ -27,6 +27,8 @@ export default {
         news: { DEFAULT: '#171310', 2: '#241c16', light: '#3a2d23' },
         // Comilão — o fliperama synthwave (roxo profundo, parede de neon)
         synth: { DEFAULT: '#140a24', 2: '#1f1038', light: '#2e1a52' },
+        // Astronave — o espaço fundo (azul quase preto, brilho de nebulosa)
+        cosmos: { DEFAULT: '#070b1d', 2: '#111a3d', light: '#24337a' },
         // Bê-á-Bá — caderno de desenho num dia de sol (o único jogo claro do hub)
         crayon: {
           sky: '#8fd3ff',

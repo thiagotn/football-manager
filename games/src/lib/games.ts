@@ -80,6 +80,18 @@ export const GAMES: Game[] = [
     themeColor: '#140a24',
   },
   {
+    slug: 'astronave',
+    nameKey: 'astronave.title',
+    descKey: 'astronave.desc',
+    tags: [
+      { key: 'hub.tag_arcade', tone: 'hot' },
+      { key: 'hub.tag_daily', tone: 'gold' },
+      { key: 'hub.tag_offline', tone: 'neutral' },
+    ],
+    themeColor: '#070b1d',
+    isNew: true,
+  },
+  {
     slug: 'be-a-ba',
     nameKey: 'be_a_ba.title',
     descKey: 'be_a_ba.desc',
@@ -99,7 +111,6 @@ export const GAMES: Game[] = [
       { key: 'hub.tag_offline', tone: 'neutral' },
     ],
     themeColor: '#fff3dc',
-    isNew: true,
   },
   {
     slug: 'tetris',

@@ -1,0 +1,19 @@
+{
+  "id": "/astronave/",
+  "name": "Astronave",
+  "short_name": "Astronave",
+  "description": "Pilote a nave entre meteoros e tiros inimigos — desvie, atire e aguente o máximo de ondas.",
+  "lang": "pt-BR",
+  "start_url": "/astronave/",
+  "scope": "/astronave/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b1d",
+  "theme_color": "#070b1d",
+  "categories": ["games", "arcade"],
+  "icons": [
+    { "src": "/astronave/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/astronave/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/astronave/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
